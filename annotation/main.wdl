@@ -41,10 +41,10 @@ workflow ei_annotation {
         annotation = wf_sanitize.annotation
     }
 
-    call portcullis_s.wf_portcullis {
+    call portcullis_s.portcullis {
         input:
         annotation = wf_sanitize.annotation,
-        bams = wf_align_short.bams
+        bams = wf_align_short.indexed_bams
     }
 
     output {
@@ -60,5 +60,7 @@ workflow ei_annotation {
         Array[File] stats = wf_align_short.stats
         Array[Array[File]] plots = wf_align_short.plots
         Array[Array[File]] short_assemblies = wf_assembly_short.assemblies
+
+        Array[Array[File]] filtered_tabs = portcullis.tabs
     }
 }
