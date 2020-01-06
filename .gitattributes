@@ -1,0 +1,13 @@
+inputs/transcriptome/short_rna/PRJEB7093_1.ss.fastq.gz filter=lfs diff=lfs merge=lfs -text
+inputs/transcriptome/short_rna/PRJEB7093_2.ss.fastq.gz filter=lfs diff=lfs merge=lfs -text
+inputs/genome/tair10.ss.fa filter=lfs diff=lfs merge=lfs -text
+inputs/genome/chr4.Araport11_GFF3_genes_transposons.gtf filter=lfs diff=lfs merge=lfs -text
+inputs/genome/chr4.Araport11_GFF3_genes_transposons.gff filter=lfs diff=lfs merge=lfs -text
+inputs/transcriptome/long_rna/SRR3655756.ss.fastq.gz filter=lfs diff=lfs merge=lfs -text
+inputs/genome/Araport11_GFF3_genes_transposons.201606.junctions.bed filter=lfs diff=lfs merge=lfs -text
+inputs/genome/chr4.Araport11_GFF3_genes_transposons.bed.gz filter=lfs diff=lfs merge=lfs -text
+inputs/genome/Araport11_GFF3_genes_transposons.201606.gtf filter=lfs diff=lfs merge=lfs -text
+inputs/genome/tair10.fa filter=lfs diff=lfs merge=lfs -text
+inputs/genome/Araport11_GFF3_genes_transposons.201606.no_codon.gtf filter=lfs diff=lfs merge=lfs -text
+inputs/genome/Araport11_GFF3_genes_transposons.201606.transcript.gtf filter=lfs diff=lfs merge=lfs -text
+inputs/genome/Araport11_GFF3_genes_transposons.201606.gff filter=lfs diff=lfs merge=lfs -text

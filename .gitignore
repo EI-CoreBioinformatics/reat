@@ -1,0 +1,4 @@
+.DS_Store
+cromwell-executions/
+cromwell-workflow-logs/
+workflows.zip
