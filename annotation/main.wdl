@@ -43,6 +43,7 @@ workflow ei_annotation {
 
     call portcullis_s.portcullis {
         input:
+        reference = wf_sanitize.reference,
         annotation = wf_sanitize.annotation,
         bams = wf_align_short.indexed_bams
     }

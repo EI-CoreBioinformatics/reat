@@ -1,16 +1,18 @@
 workflow portcullis {
+    File reference
     File? annotation
     Array[Pair[File,File]] bams
 
-    call PrepareRef {
-        input:
-        annotation = annotation
+    if (defined(annotation)) {
+        call PrepareRef {
+            input:
+            annotation = annotation
+        }
     }
-
     scatter (bam in bams) {
         call Prepare {
             input:
-            reference = PrepareRef.refbed,
+            reference = reference,
             bam = bam.left
         }
         call Junction {
@@ -19,6 +21,7 @@ workflow portcullis {
         }
         call Filter {
             input:
+            reference_bed = PrepareRef.refbed,
             prep_dir = Prepare.prep_dir,
             junc_dir = Junction.junc_dir,
             tab = Junction.tab
@@ -49,7 +52,7 @@ task PrepareRef {
 }
 
 task Prepare {
-    File reference
+    File? reference
     File bam
 
     command {
@@ -65,17 +68,17 @@ task Prepare {
 task Junction {
     Array[File] prep_dir
     String dollar = "$"
-    String strand = "fr-firststrand"
+    String strand = "firststrand"
 
     command <<<
-        prep_dir_path=dirname ${prep_dir[0]}
+        prep_dir_path=`dirname ${prep_dir[0]}`
 
-        portcullis junc -c -o portcullis_junc ${strand} -t 4  ${dollar}{prep_dir_path}
+        portcullis junc -c ${"--strandedness="+strand} -t 4  ${dollar}{prep_dir_path}
     >>>
 
     output {
         Array[File] junc_dir = glob("portcullis_junc/*")
-        File tab = "portcullus_junc/portcullis.junctions.tab"
+        File tab = "portcullis_junc/portcullis.junctions.tab"
     }
 }
 
