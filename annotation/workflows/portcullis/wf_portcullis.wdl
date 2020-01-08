@@ -28,14 +28,15 @@ workflow portcullis {
         }
     }
     
-    # Add the call to merge after knowing how the output of the previous steps looks like 
-    # call Merge {
-    #     input:
-    #     tabs = Filter.filter_dir
-    # }
+    call Merge {
+        input:
+        tabs = Filter.pass
+    }
 
     output {
-        Array[Array[File]] tabs = Filter.filter_dir
+        File tab = Merge.tab
+        File bed = Merge.bed
+        File gff3 = Merge.gff3
     }
 }
 
@@ -90,32 +91,32 @@ task Filter {
     File tab
 
     command <<<
-        junc_dir_path=dirname ${junc_dir[0]}
-        prep_dir_path=dirname ${prep_dir[0]}
+        junc_dir_path=`dirname ${junc_dir[0]}`
+        prep_dir_path=`dirname ${prep_dir[0]}`
 
-        portcullis filter -o portcullis_filter --canonical=OFF \
+        /Users/yanesl/CLionProjects/portcullis/src/portcullis filter -o portcullis_filter --canonical=OFF \
         --max_length=2000 ${"--reference " + reference_bed } \
         --threads=4 ${dollar}{prep_dir_path} ${tab}
     >>>
 
     output {
-        Array[File] filter_dir = glob("portcullis_filter/*")
+        File pass = "portcullis_filter.pass.junctions.tab"
     }
 
 }
 
-# task Merge {
-#     Array[Array[File]] tabs
+task Merge {
+    Array[File] tabs
 
-#     command {
-#         (junctools set --prefix=portcullis_merged --output=portcullis.merged.tab --operator=mean union ${sep=" " tabs} || touch portcullis.merged.tab)
-#         junctools convert -if portcullis -of ebed --output=portcullis.merged.bed portcullis.merged.tab
-#         junctools convert -if portcullis -of igff --output=portcullis.merged.gff3 portcullis.merged.tab
-#     }
+    command {
+        (junctools set --prefix=portcullis_merged --output=portcullis.merged.tab --operator=mean union ${sep=" " tabs} || touch portcullis.merged.tab)
+        junctools convert -if portcullis -of ebed --output=portcullis.merged.bed portcullis.merged.tab
+        junctools convert -if portcullis -of igff --output=portcullis.merged.gff3 portcullis.merged.tab
+    }
 
-#     output {
-#         File tab = "portcullis.merged.tab"
-#         File bed = "portcullis.merged.bed"
-#         File gff3 = "portcullis.merged.gff3"
-#     }
-# }
+    output {
+        File tab = "portcullis.merged.tab"
+        File bed = "portcullis.merged.bed"
+        File gff3 = "portcullis.merged.gff3"
+    }
+}

@@ -62,6 +62,8 @@ workflow ei_annotation {
         Array[Array[File]] plots = wf_align_short.plots
         Array[Array[File]] short_assemblies = wf_assembly_short.assemblies
 
-        Array[Array[File]] filtered_tabs = portcullis.tabs
+        File filtered_tab = portcullis.tab
+        File filtered_bed = portcullis.bed
+        File filtered_gff3 = portcullis.gff3
     }
 }
