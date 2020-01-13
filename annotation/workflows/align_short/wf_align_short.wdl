@@ -5,7 +5,6 @@ workflow wf_align_short {
     Array[File] gsnap_index
     Array[File] hisat_index
     Array[File] star_index
-    Array[File] tophat_index
 
     if (defined(annotation)) {
         call hisat2SpliceSites {

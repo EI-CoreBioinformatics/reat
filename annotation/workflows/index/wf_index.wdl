@@ -13,16 +13,11 @@ workflow wf_index {
         input: reference = reference
     }
 
-    call tophatIndex {
-        input: reference = reference
-    }
-
     output {
         Array[File] gsnap_index = GSnapIndex.index
 
         Array[File] hisat_index = hisat2Index.index
 
-        Array[File] tophat_index = tophatIndex.index
         Array[File] star_index = starIndex.index
     }
 }

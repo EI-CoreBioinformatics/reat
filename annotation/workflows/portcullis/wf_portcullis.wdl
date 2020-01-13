@@ -57,7 +57,7 @@ task Prepare {
     File bam
 
     command {
-        portcullis prep -c -o portcullis_prep -t 4 ${reference} ${bam}
+        /Users/yanesl/CLionProjects/portcullis/src/portcullis prep -c -o portcullis_prep -t 4 ${reference} ${bam}
     }
 
     output {
@@ -74,7 +74,7 @@ task Junction {
     command <<<
         prep_dir_path=`dirname ${prep_dir[0]}`
 
-        portcullis junc -c ${"--strandedness="+strand} -t 4  ${dollar}{prep_dir_path}
+        /Users/yanesl/CLionProjects/portcullis/src/portcullis junc -c ${"--strandedness="+strand} -t 4  ${dollar}{prep_dir_path}
     >>>
 
     output {

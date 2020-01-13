@@ -1,6 +1,7 @@
 import "workflows/portcullis/wf_portcullis.wdl" as portcullis_s
 import "workflows/assembly_short/wf_assembly_short.wdl" as assm_s
 import "workflows/align_short/wf_align_short.wdl" as aln_s
+import "workflows/align_long/wf_align_long.wdl" as aln_l
 import "workflows/sanitize/wf_sanitize.wdl" as san
 import "workflows/index/wf_index.wdl" as idx
 
@@ -29,7 +30,6 @@ workflow ei_annotation {
         annotation = wf_sanitize.annotation,
         gsnap_index = wf_index.gsnap_index,
         hisat_index = wf_index.hisat_index,
-        tophat_index = wf_index.tophat_index,
         star_index = wf_index.star_index
     }
 
@@ -39,6 +39,16 @@ workflow ei_annotation {
         input:
         bams = wf_align_short.indexed_bams,
         annotation = wf_sanitize.annotation
+    }
+
+    if (defined(long_R)) {
+        call aln_l.wf_align_long {
+            input:
+            reference = wf_sanitize.reference,
+            annotation = wf_sanitize.annotation,
+            LR = long_R,
+            star_index = wf_index.star_index
+        }
     }
 
     call portcullis_s.portcullis {
@@ -54,8 +64,7 @@ workflow ei_annotation {
         File? clean_annotation = wf_sanitize.annotation
         Array[File] gsnap_index = wf_index.gsnap_index
         Array[File] hisat_index = wf_index.hisat_index
-        Array[File] star_index = wf_index.tophat_index
-        Array[File] tophat_index = wf_index.star_index
+        Array[File] star_index = wf_index.star_index
 
         Array[Pair[File,File]] bams = wf_align_short.indexed_bams
         Array[File] stats = wf_align_short.stats
@@ -65,5 +74,7 @@ workflow ei_annotation {
         File filtered_tab = portcullis.tab
         File filtered_bed = portcullis.bed
         File filtered_gff3 = portcullis.gff3
+
+        Array[File?]? l_bams = wf_align_long.bams
     }
 }
