@@ -76,5 +76,6 @@ workflow ei_annotation {
         File filtered_gff3 = portcullis.gff3
 
         Array[File?]? l_bams = wf_align_long.bams
+        Array[File?]? l_gff = wf_align_long.gff
     }
 }

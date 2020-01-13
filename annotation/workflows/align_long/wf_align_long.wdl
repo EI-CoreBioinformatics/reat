@@ -10,9 +10,11 @@ workflow wf_align_long {
             reference = reference
         }
 
-        call GMapExonsIIT {
-            input:
-            annotation = annotation
+        if (defined(annotation)) {
+            call GMapExonsIIT {
+                input:
+                annotation = annotation
+            }
         }
 
         call GMapLong {
@@ -52,7 +54,7 @@ task GMapIndex {
     }
 
     output {
-        Array[File] gmap_index = glob("gmapIndex/*")
+        Array[File] gmap_index = glob("gmapIndex/test_genome/*")
     }
 }
 
@@ -64,7 +66,7 @@ task GMapExonsIIT {
     }
 
     output {
-        File iit = "gmap_exons.iit"
+        File? iit = "gmap_exons.iit"
     }
 }
 
@@ -78,7 +80,7 @@ task GMapLong {
     String? strand
 
     command {
-        zcat ${LR} | $(determine_gmap.py ${reference}) --dir=`dirname ${gmap_index[0]}` --db=test_genome \
+        gzcat ${LR} | $(determine_gmap.py ${reference}) --dir=`dirname ${gmap_index[0]}` --db=test_genome \
         --min-intronlength=20 --intronlength=2000 \
         ${"-m " + iit} \
         ${"--min-trimmed-coverage=" + min_trimmed_coverage} \
