@@ -20,25 +20,6 @@ workflow wf_assembly_short {
     }
 }
 
-# Fix osx segfault related to the binary to test properly...
-# task Cufflinks {
-#     File bam
-#     File? annotation
-#     String strandness = "fr-firststrand"
-#     command {
-#         cufflinks --output-dir="cufflinks_outdir" --num-threads=4 \
-#         ${"--GTF-guide=" + annotation} \
-#         --library-type=${strandness} \
-#         --min-intron-length=20 \
-#         --max-intron-length=2000 \
-#         --no-update-check ${bam}
-#     }
-
-#     output {
-#         Array[File] assembled = glob("cufflinks_outdir/*")
-#     }
-# }
-
 task Stringtie {
     File bam
     File? annotation

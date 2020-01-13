@@ -8,21 +8,6 @@ workflow wf_align_short {
     Array[File] tophat_index
 
     if (defined(annotation)) {
-        call GSnapSpliceSites {
-            input:
-            annotation = annotation
-        }
-    }
-
-    call GSnap {
-        input:
-        sites = GSnapSpliceSites.sites,
-        R1 = R1,
-        R2 = R2,
-        index = gsnap_index
-    }
-
-    if (defined(annotation)) {
         call hisat2SpliceSites {
             input: annotation = annotation
         }
@@ -44,16 +29,33 @@ workflow wf_align_short {
         index = star_index
     }
 
-    call Tophat {
-        input:
-        index = tophat_index,
-        annotation = annotation,
-        R1 = R1,
-        R2 = R2,
-        strand = "fr-firststrand"
-    }
+    # if (defined(annotation)) {
+    #     call GSnapSpliceSites {
+    #         input:
+    #         annotation = annotation
+    #     }
+    # }
 
-    Array[File] bams = [GSnap.bam, Hisat.bam, Star.bam, Tophat.bam]
+    # call GSnap {
+    #     input:
+    #     sites = GSnapSpliceSites.sites,
+    #     R1 = R1,
+    #     R2 = R2,
+    #     index = gsnap_index
+    # }
+
+    # call Tophat {
+    #     input:
+    #     index = tophat_index,
+    #     annotation = annotation,
+    #     R1 = R1,
+    #     R2 = R2,
+    #     strand = "fr-firststrand"
+    # }
+
+    # Array[File] bams = [Hisat.bam, Star.bam, GSnap.bam, Tophat.bam]
+
+    Array[File] bams = [Hisat.bam, Star.bam]
 
     scatter (bam in bams) {
         call Sort {
