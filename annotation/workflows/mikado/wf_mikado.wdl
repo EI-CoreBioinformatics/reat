@@ -30,10 +30,10 @@ task GenerateModelsList {
     command {
         rm models_list.txt
         for i in ${sep=" " assemblies}; do
-          echo $i, "label", "stranded" >> models_list.txt
+          echo -e "$i\tlabel\tstranded" >> models_list.txt
         done;
         for i in ${sep=" " long_assemblies}; do
-          echo $i, "label", "stranded" >> models_list.txt
+          echo -e "$i\tlabel\tstranded" >> models_list.txt
         done;
     }
 
