@@ -57,7 +57,7 @@ task Prepare {
     File bam
 
     command {
-        /Users/yanesl/CLionProjects/portcullis/src/portcullis prep -c -o portcullis_prep -t 4 ${reference} ${bam}
+        portcullis prep -c -o portcullis_prep -t 4 ${reference} ${bam}
     }
 
     output {
@@ -72,9 +72,9 @@ task Junction {
     String strand = "firststrand"
 
     command <<<
-        prep_dir_path=`dirname ${prep_dir[0]}`
+        prep_dir_path="$(dirname ${prep_dir[0]})"
 
-        /Users/yanesl/CLionProjects/portcullis/src/portcullis junc -c ${"--strandedness="+strand} -t 4  ${dollar}{prep_dir_path}
+        portcullis junc -c ${"--strandedness="+strand} -t 4  ${dollar}{prep_dir_path}
     >>>
 
     output {
@@ -91,10 +91,10 @@ task Filter {
     File tab
 
     command <<<
-        junc_dir_path=`dirname ${junc_dir[0]}`
-        prep_dir_path=`dirname ${prep_dir[0]}`
+        junc_dir_path="$(dirname ${junc_dir[0]})"
+        prep_dir_path="$(dirname ${prep_dir[0]})"
 
-        /Users/yanesl/CLionProjects/portcullis/src/portcullis filter -o portcullis_filter --canonical=OFF \
+        portcullis filter -o portcullis_filter --canonical=OFF \
         --max_length=2000 ${"--reference " + reference_bed } \
         --threads=4 ${dollar}{prep_dir_path} ${tab}
     >>>

@@ -4,7 +4,7 @@ workflow wf_align_long {
     Array[File] star_index
     File reference
 
-    if (defined(LR)) {
+    if(defined(LR)) {
         call GMapIndex {
             input:
             reference = reference
@@ -36,12 +36,16 @@ workflow wf_align_long {
             LR = LR,
             reference = reference
         }
-    }
 
+        call Minimap2Long2Gff {
+            input:
+            bam = Minimap2Long.bam
+        }
+    }
 
     output {
         Array[File?] bams = [Minimap2Long.bam]
-        Array[File?] gff = [GMapLong.gff]
+        Array[File?] gff = [GMapLong.gff, Minimap2Long2Gff.gff]
     }
 
 }
@@ -62,7 +66,7 @@ task GMapExonsIIT {
     File? annotation
 
     command {
-        cat ${annotation} | gtf_genes | iit_store -o gmap_exons.iit
+        gtf_genes ${annotation} | iit_store -o gmap_exons.iit
     }
 
     output {
@@ -80,7 +84,7 @@ task GMapLong {
     String? strand
 
     command {
-        gzcat ${LR} | $(determine_gmap.py ${reference}) --dir=`dirname ${gmap_index[0]}` --db=test_genome \
+        gzcat ${LR} | $(determine_gmap.py ${reference}) --dir="$(dirname ${gmap_index[0]})" --db=test_genome \
         --min-intronlength=20 --intronlength=2000 \
         ${"-m " + iit} \
         ${"--min-trimmed-coverage=" + min_trimmed_coverage} \
@@ -114,7 +118,7 @@ task StarLong {
             ;;
         esac
 
-            STARlong --genomeDir `dirname ${index[0]}` \
+            STARlong --genomeDir "$(dirname ${index[0]})" \
     --runThreadN 4 \
     ${dollar}{compression} \
     --runMode alignReads \
@@ -170,5 +174,17 @@ task Minimap2Long {
 
     output {
         File bam = "minimap2.out.bam"
+    }
+}
+
+task Minimap2Long2Gff {
+    File bam
+
+    command {
+        paftools.js splice2bed -m <(samtools view -h ${bam}) | correct_bed12_mappings.py > output.bed12
+    }
+
+    output {
+        File gff = "output.bed12"
     }
 }

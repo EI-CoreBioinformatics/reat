@@ -16,7 +16,7 @@ workflow wf_assembly_short {
     }
 
     output {
-        Array[Array[File]] assemblies = [Stringtie.assembled, Scallop.assembled]
+        Array[File] assemblies = flatten([Stringtie.assembled, Scallop.assembled])
     }
 }
 

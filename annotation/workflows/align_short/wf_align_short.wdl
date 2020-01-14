@@ -107,7 +107,7 @@ task Stats {
 task GSnapSpliceSites {
     File? annotation
     command {
-        cat ${annotation} | gtf_splicesites | iit_store -o gsnapSplicesites.iit
+        gtf_splicesites ${annotation} | iit_store -o gsnapSplicesites.iit
     }
     output {
         File sites = "gsnapSplicesites.iit"
@@ -145,7 +145,7 @@ task GSnap {
             compression="${dollar}{compression}--bunzip2"
             ;;
         esac
-        gsnap --nthreads 4 --dir=`dirname "${index[0]}"` \
+        gsnap --nthreads 4 --dir="$(dirname "${index[0]}")" \
         --db=ref \
         --novelsplicing=1 \
         ${dollar}{compression} \
@@ -217,7 +217,7 @@ task Star {
             ;;
         esac
 
-            STAR --genomeDir `dirname ${index[0]}` \
+            STAR --genomeDir "$(dirname ${index[0]})" \
     --runThreadN 4 \
     ${dollar}{compression} \
     --runMode alignReads \
