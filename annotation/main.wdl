@@ -1,3 +1,4 @@
+import "workflows/mikado/wf_mikado.wdl" as mikado
 import "workflows/portcullis/wf_portcullis.wdl" as portcullis_s
 import "workflows/assembly_short/wf_assembly_short.wdl" as assm_s
 import "workflows/align_short/wf_align_short.wdl" as aln_s
@@ -11,6 +12,7 @@ workflow ei_annotation {
     File? long_R
     File reference_genome
     File? annotation
+    File? mikado_scoring_file
 
     call san.wf_sanitize {
         input:
@@ -58,6 +60,14 @@ workflow ei_annotation {
         bams = wf_align_short.indexed_bams
     }
 
+    call mikado.wf_mikado {
+        input:
+        scoring_file = mikado_scoring_file,
+        reference_annotation =  wf_sanitize.annotation,
+        assemblies = wf_assembly_short.assemblies,
+        long_assemblies = wf_align_long.gff
+    }
+
     output {
         File clean_reference = wf_sanitize.reference
         File clean_reference_index = wf_sanitize.index
@@ -69,7 +79,7 @@ workflow ei_annotation {
         Array[Pair[File,File]] bams = wf_align_short.indexed_bams
         Array[File] stats = wf_align_short.stats
         Array[Array[File]] plots = wf_align_short.plots
-        Array[Array[File]] short_assemblies = wf_assembly_short.assemblies
+        Array[File] short_assemblies = wf_assembly_short.assemblies
 
         File filtered_tab = portcullis.tab
         File filtered_bed = portcullis.bed
@@ -77,5 +87,7 @@ workflow ei_annotation {
 
         Array[File?]? l_bams = wf_align_long.bams
         Array[File?]? l_gff = wf_align_long.gff
+
+        File mikado_config = wf_mikado.mikado_config
     }
 }
