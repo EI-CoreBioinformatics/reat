@@ -1,7 +1,10 @@
+version 1.0
 workflow portcullis {
-    File reference
-    File? annotation
-    Array[Pair[File,File]] bams
+    input {
+        File reference
+        File? annotation
+        Array[Pair[File,File]] bams
+    }
 
     if (defined(annotation)) {
         call PrepareRef {
@@ -41,77 +44,79 @@ workflow portcullis {
 }
 
 task PrepareRef {
-    File? annotation
-
-    command {
-        junctools convert -if gtf -of ebed -o "reference.refbed" ${annotation}
+    input {
+        File? annotation
     }
 
     output {
         File refbed = "reference.refbed"
     }
+
+    command <<<
+        junctools convert -if gtf -of ebed -o "reference.refbed" ~{annotation}
+    >>>
+
 }
 
 task Prepare {
-    File? reference
-    File bam
-
-    command {
-        portcullis prep -c -o portcullis_prep -t 4 ${reference} ${bam}
+    input {
+        File? reference
+        File bam
     }
 
     output {
         Array[File] prep_dir = glob("portcullis_prep/*")
     }
 
+    command <<<
+        portcullis prep -c -o portcullis_prep -t 4 ~{reference} ~{bam}
+    >>>
+
 }
 
 task Junction {
-    Array[File] prep_dir
-    String dollar = "$"
-    String strand = "firststrand"
-
-    command <<<
-        prep_dir_path="$(dirname ${prep_dir[0]})"
-
-        portcullis junc -c ${"--strandedness="+strand} -t 4  ${dollar}{prep_dir_path}
-    >>>
+    input {
+        Array[File] prep_dir
+        String strand = "firststrand"
+    }
 
     output {
         Array[File] junc_dir = glob("portcullis_junc/*")
         File tab = "portcullis_junc/portcullis.junctions.tab"
     }
+
+    command <<<
+        prep_dir_path="$(dirname ~{prep_dir[0]})"
+        portcullis junc -c ~{"--strandedness="+strand} -t 4  "${prep_dir_path}"
+    >>>
 }
 
 task Filter {
-    Array[File] prep_dir
-    Array[File] junc_dir
-    File? reference_bed
-    String dollar = "$"
-    File tab
-
-    command <<<
-        junc_dir_path="$(dirname ${junc_dir[0]})"
-        prep_dir_path="$(dirname ${prep_dir[0]})"
-
-        portcullis filter -o portcullis_filter --canonical=OFF \
-        --max_length=2000 ${"--reference " + reference_bed } \
-        --threads=4 ${dollar}{prep_dir_path} ${tab}
-    >>>
+    input {
+        Array[File] prep_dir
+        Array[File] junc_dir
+        File? reference_bed
+        File tab
+    }
 
     output {
         File pass = "portcullis_filter.pass.junctions.tab"
     }
 
+    command <<<
+        # junc_dir_path="$(dirname ~{junc_dir[0]})"
+        prep_dir_path="$(dirname ~{prep_dir[0]})"
+
+        portcullis filter -o portcullis_filter --canonical=OFF \
+        --max_length=2000 ~{"--reference " + reference_bed } \
+        --threads=4 "${prep_dir_path}" ~{tab}
+    >>>
 }
 
 task Merge {
+    input {
     Array[File] tabs
 
-    command {
-        (junctools set --prefix=portcullis_merged --output=portcullis.merged.tab --operator=mean union ${sep=" " tabs} || touch portcullis.merged.tab)
-        junctools convert -if portcullis -of ebed --output=portcullis.merged.bed portcullis.merged.tab
-        junctools convert -if portcullis -of igff --output=portcullis.merged.gff3 portcullis.merged.tab
     }
 
     output {
@@ -119,4 +124,10 @@ task Merge {
         File bed = "portcullis.merged.bed"
         File gff3 = "portcullis.merged.gff3"
     }
+
+    command <<<
+        (junctools set --prefix=portcullis_merged --output=portcullis.merged.tab --operator=mean union ~{sep=" " tabs} || touch portcullis.merged.tab)
+        junctools convert -if portcullis -of ebed --output=portcullis.merged.bed portcullis.merged.tab
+        junctools convert -if portcullis -of igff --output=portcullis.merged.gff3 portcullis.merged.tab
+    >>>
 }

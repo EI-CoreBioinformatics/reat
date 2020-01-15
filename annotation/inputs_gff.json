@@ -3,5 +3,4 @@
   "ei_annotation.reference_genome": "/Users/yanesl/rundir/wdl_cromwell/inputs/genome/tair10.ss.fa",
   "ei_annotation.short_R1": "/Users/yanesl/rundir/wdl_cromwell/inputs/transcriptome/short_rna/PRJEB7093_1.ss.fastq.gz",
   "ei_annotation.short_R2": "/Users/yanesl/rundir/wdl_cromwell/inputs/transcriptome/short_rna/PRJEB7093_2.ss.fastq.gz",
-  "ei_annotation.wf_align_short.Hisat.strand": "fr-firststrand"
 }

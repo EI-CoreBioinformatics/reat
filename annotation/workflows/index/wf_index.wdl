@@ -1,5 +1,8 @@
+version 1.0
 workflow wf_index {
-    File reference
+    input {
+        File reference
+    }
 
     call GSnapIndex {
         input: reference = reference
@@ -23,51 +26,60 @@ workflow wf_index {
 }
 
 task GSnapIndex {
-    File reference
-
-    command {
-    mkdir gsnapIndex
-    gmap_build --dir="gsnapIndex" --db=ref ${reference}
+    input {
+        File reference
     }
+
     output {
         Array[File] index = glob("gsnapIndex/ref/*")
     }
+
+    command <<<
+    mkdir gsnapIndex
+    gmap_build --dir="gsnapIndex" --db=ref ~{reference}
+    >>>
 }
 
 task hisat2Index {
-    File reference
-
-    command {
-        hisat2-build ${reference} "ref"
+    input {
+        File reference
     }
 
     output {
         Array[File] index = glob("ref*")
     }
+
+    command <<<
+        hisat2-build ~{reference} "ref"
+    >>>
 }
 
 task starIndex {
-    File reference
-
-    command {
-        mkdir starIndex
-        STAR --runThreadN 4 --runMode genomeGenerate --genomeDir starIndex \
-        --genomeFastaFiles ${reference}
+    input {
+        File reference
     }
 
     output {
         Array[File] index = glob('starIndex/*')
     }
+
+    command <<<
+        mkdir starIndex
+        STAR --runThreadN 4 --runMode genomeGenerate --genomeDir starIndex \
+        --genomeFastaFiles ~{reference}
+    >>>
 }
 
 task tophatIndex {
-    File reference
-
-    command {
-        bowtie2-build --threads 4 ${reference} "ref"
+    input {
+        File reference
     }
 
     output {
         Array[File] index = glob('ref*')
     }
+
+    command <<<
+        bowtie2-build --threads 4 ~{reference} "ref"
+    >>>
 }

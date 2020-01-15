@@ -1,6 +1,9 @@
+version 1.0
 workflow wf_assembly_short {
-    Array[Pair[File,File]] bams
-    File? annotation
+    input {
+        Array[Pair[File,File]] bams
+        File? annotation
+    }
 
     scatter (bam in bams) {
         call Stringtie{
@@ -21,33 +24,38 @@ workflow wf_assembly_short {
 }
 
 task Stringtie {
-    File bam
-    File? annotation
-    String strand = "--fr" # this needs to be computed from input paramaters
-    command {
-        stringtie ${bam} \
-        -p 4 \
-        ${strand} \
-        ${"-G " + annotation} \
-        -o assembled.gtf
+    input {
+        File bam
+        File? annotation
+        String strand = "--fr" # this needs to be computed from input paramaters
     }
 
     output {
         File assembled = "assembled.gtf"
     }
+
+    command <<<
+        stringtie ~{bam} \
+        -p 4 \
+        ~{strand} \
+        ~{"-G " + annotation} \
+        -o assembled.gtf
+    >>>
 }
 
 
 # Needs to have the tool available... Not built yet for OSX
 task Scallop {
-    File bam
-    String strand = "--library_type first"
-
-    command {
-        scallop --verbose 0 -i ${bam} -o "scallop.gtf" ${strand}
+    input {
+        File bam
+        String strand = "--library_type first"
     }
 
     output {
         File assembled = "scallop.gtf"
     }
+
+    command <<<
+        scallop --verbose 0 -i ~{bam} -o "scallop.gtf" ~{strand}
+    >>>
 }

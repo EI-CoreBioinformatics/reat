@@ -1,8 +1,11 @@
+version 1.0
 workflow wf_align_long {
-    File? LR
-    File? annotation
-    Array[File] star_index
-    File reference
+    input {
+        File? LR
+        File? annotation
+        Array[File] star_index
+        File reference
+    }
 
     if(defined(LR)) {
         call GMapIndex {
@@ -51,76 +54,88 @@ workflow wf_align_long {
 }
 
 task GMapIndex {
-    File reference
-
-    command {
-        gmap_build --dir=gmapIndex --db=test_genome ${reference}
+    input {
+        File reference
     }
 
     output {
         Array[File] gmap_index = glob("gmapIndex/test_genome/*")
     }
+
+    command <<<
+        gmap_build --dir=gmapIndex --db=test_genome ~{reference}
+    >>>
 }
 
 task GMapExonsIIT {
-    File? annotation
-
-    command {
-        gtf_genes ${annotation} | iit_store -o gmap_exons.iit
+    input {
+        File? annotation
     }
 
     output {
-        File? iit = "gmap_exons.iit"
+        File iit = "gmap_exons.iit"
     }
+
+    command <<<
+        gtf_genes ~{annotation} | iit_store -o gmap_exons.iit
+    >>>
 }
 
 task GMapLong {
-    File reference
-    Array[File] gmap_index
-    File? LR
-    File? iit
-    Int? min_trimmed_coverage
-    Int? min_identity
-    String? strand
-
-    command {
-        gzcat ${LR} | $(determine_gmap.py ${reference}) --dir="$(dirname ${gmap_index[0]})" --db=test_genome \
-        --min-intronlength=20 --intronlength=2000 \
-        ${"-m " + iit} \
-        ${"--min-trimmed-coverage=" + min_trimmed_coverage} \
-        ${"--min-identity" + min_identity} \
-        ${"-z " + strand} \
-        --format=gff3_match_cdna \
-        --nthreads=4 > gmap.out.gff
+    input {
+        File reference
+        Array[File] gmap_index
+        File? LR
+        File? iit
+        Int? min_trimmed_coverage
+        Int? min_identity
+        String? strand
     }
 
     output {
         File gff = "gmap.out.gff"
     }
+
+    command <<<
+        gzcat ~{LR} | $(determine_gmap.py ~{reference}) --dir="$(dirname ~{gmap_index[0]})" --db=test_genome \
+        --min-intronlength=20 --intronlength=2000 \
+        ~{"-m " + iit} \
+        ~{"--min-trimmed-coverage=" + min_trimmed_coverage} \
+        ~{"--min-identity" + min_identity} \
+        ~{"-z " + strand} \
+        --format=gff3_match_cdna \
+        --nthreads=4 > gmap.out.gff
+    >>>
 }
 
 task StarLong {
-    File? LR
-    Array[File] index
-    File? annotation
-    String dollar = "$"
+    input {
+        File? LR
+        Array[File] index
+        File? annotation
+        String dollar = "$"
+    }
     
+    output {
+        File bam = "STARlong.out.bam"
+    }
+
     command <<<
-        lr_file=${LR}
-        lr_ext=${dollar}{lr_file##*.}
+        lr_file=~{LR}
+        lr_ext=${lr_file##*.}
         compression=""
-        case "${dollar}{lr_ext}" in
+        case "${lr_ext}" in
             gz)
-            compression="${dollar}{compression}--readFilesCommand \"gzip -dc\""
+            compression="${compression}--readFilesCommand \"gzip -dc\""
             ;;
             bz | bz2)
-            compression="${dollar}{compression}--readFilesCommand \"bzip2 -dc\""
+            compression="${compression}--readFilesCommand \"bzip2 -dc\""
             ;;
         esac
 
-            STARlong --genomeDir "$(dirname ${index[0]})" \
+            STARlong --genomeDir "$(dirname ~{index[0]})" \
     --runThreadN 4 \
-    ${dollar}{compression} \
+    ~{dollar}{compression} \
     --runMode alignReads \
     --readNameSeparator space \
     --outFilterMultimapScoreRange 1 \
@@ -144,22 +159,24 @@ task StarLong {
     --alignIntronMin 20 \
     --alignIntronMax 2000 \
     --alignMatesGapMax 2000 \
-    ${"--sjdbGTFfile " + annotation} \
+    ~{"--sjdbGTFfile " + annotation} \
     --outFileNamePrefix STARlong.out \
-    --readFilesIn ${LR}
+    --readFilesIn ~{LR}
     >>>
-
-    output {
-        File bam = "STARlong.out.bam"
-    }
 }
 
 
 task Minimap2Long {
-    File? LR
-    File reference
+    input {
+        File? LR
+        File reference
+    }
 
-    command {
+    output {
+        File bam = "minimap2.out.bam"
+    }
+
+    command <<<
         minimap2 \
         -x splice \
         --cs=long \
@@ -169,22 +186,20 @@ task Minimap2Long {
         -a -L --MD \
         --eqx -2 \
         --secondary=no \
-        ${reference} ${LR} | samtools view -bS - | samtools sort -@ 4 --reference ${reference} -T minimap2.sort -o minimap2.out.bam -
-    }
-
-    output {
-        File bam = "minimap2.out.bam"
-    }
+        ~{reference} ~{LR} | samtools view -bS - | samtools sort -@ 4 --reference ~{reference} -T minimap2.sort -o minimap2.out.bam -
+    >>>
 }
 
 task Minimap2Long2Gff {
-    File bam
-
-    command {
-        paftools.js splice2bed -m <(samtools view -h ${bam}) | correct_bed12_mappings.py > output.bed12
+    input {
+        File bam
     }
 
     output {
         File gff = "output.bed12"
     }
+
+    command <<<
+        paftools.js splice2bed -m <(samtools view -h ~{bam}) | correct_bed12_mappings.py > output.bed12
+    >>>
 }

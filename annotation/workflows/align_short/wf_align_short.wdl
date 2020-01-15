@@ -1,10 +1,13 @@
+version 1.0
 workflow wf_align_short {
-    File R1
-    File? R2
-    File? annotation
-    Array[File] gsnap_index
-    Array[File] hisat_index
-    Array[File] star_index
+    input {
+        File R1
+        File? R2
+        File? annotation
+        Array[File] gsnap_index
+        Array[File] hisat_index
+        Array[File] star_index
+    }
 
     if (defined(annotation)) {
         call hisat2SpliceSites {
@@ -78,182 +81,201 @@ workflow wf_align_short {
 }
 
 task Sort{
-    File bam
-    String name = basename(bam, ".bam")
-    command {
-        samtools sort ${bam} > ${name + ".sorted.bam"}
-        samtools index ${name + ".sorted.bam"}
+    input {
+        File bam
+        String name = basename(bam, ".bam")
     }
+
     output {
         Pair[File,File] indexed_bam = (name + ".sorted.bam", name + ".sorted.bam.bai")
     }
+
+    command <<<
+        samtools sort ~{bam} > ~{name + ".sorted.bam"}
+        samtools index ~{name + ".sorted.bam"}
+    >>>
 }
 
 task Stats {
-    File bam
-    String name = basename(bam, ".bam")
-    
-    command {
-        samtools stats ${bam} > ${name + ".stats"} && \
-        plot-bamstats -p plot/ ${name + ".stats"}
+    input {
+        File bam
+        String name = basename(bam, ".bam")
     }
 
     output {
         File stats = name + ".stats"
         Array[File] plots = glob("plot/*.png")
     }
+
+    command <<<
+        samtools stats ~{bam} > ~{name + ".stats"} && \
+        plot-bamstats -p plot/ ~{name + ".stats"}
+    >>>
 }
 
 task GSnapSpliceSites {
-    File? annotation
-    command {
-        gtf_splicesites ${annotation} | iit_store -o gsnapSplicesites.iit
+    input {
+        File? annotation
     }
+
     output {
         File sites = "gsnapSplicesites.iit"
     }
+
+    command <<<
+        gtf_splicesites ~{annotation} | iit_store -o gsnapSplicesites.iit
+    >>>
 }
 
 task hisat2SpliceSites {
-    File? annotation
-
-    command {
-        hisat2_extract_splice_sites.py ${annotation} > "hisat2Splicesites.txt"
+    input {
+        File? annotation
     }
 
     output {
         File sites = "hisat2Splicesites.txt"
     }
+
+    command <<<
+        hisat2_extract_splice_sites.py ~{annotation} > "hisat2Splicesites.txt"
+    >>>
 }
 
 task GSnap {
-    Array[File] index
-    File? sites
-    File R1
-    File? R2
-    String dollar = "$"
-
-    command <<<
-        r1_file=${R1}
-        r1_ext=${dollar}{r1_file##*.}
-        compression=""
-        case "${dollar}{r1_ext}" in
-            gz)
-            compression="${dollar}{compression}--gunzip"
-            ;;
-            bz | bz2)
-            compression="${dollar}{compression}--bunzip2"
-            ;;
-        esac
-        gsnap --nthreads 4 --dir="$(dirname "${index[0]}")" \
-        --db=ref \
-        --novelsplicing=1 \
-        ${dollar}{compression} \
-        ${"-s " + sites} \
-        --localsplicedist=2000 \
-        --format=sam --npaths=20 \
-        ${R1} ${R2} | samtools sort -@ 4 - > "gsnap.bam"
-    >>>
+    input {
+        Array[File] index
+        File? sites
+        File R1
+        File? R2
+    }
 
     output {
         File bam = "gsnap.bam"
     }
+
+    command <<<
+        r1_file=~{R1}
+        r1_ext=${r1_file##*.}
+        compression=""
+        case "${r1_ext}" in
+            gz)
+            compression="${compression}--gunzip"
+            ;;
+            bz | bz2)
+            compression="${compression}--bunzip2"
+            ;;
+        esac
+        gsnap --nthreads 4 --dir="$(dirname "~{index[0]}")" \
+        --db=ref \
+        --novelsplicing=1 \
+        ${compression} \
+        ~{"-s " + sites} \
+        --localsplicedist=2000 \
+        --format=sam --npaths=20 \
+        ~{R1} ~{R2} | samtools sort -@ 4 - > "gsnap.bam"
+    >>>
+
 }
 
 task Hisat {
-    Array[File] index
-    File? sites
-    File R1
-    File? R2
-    String strand = "fr-firststrand"
-    String dollar = "$"
-
-    command <<<
-        strandness=""
-        case "${strand}" in
-            fr-firststrand)
-            strandness="--rna-strandness=RF"
-            ;;
-            fr-secondstrand)
-            strandness = "--rna-strandness=FR"
-            ;;
-            f)
-            strandness = "--rna-strandness=F"
-            ;;
-            r)
-            strandness = "--rna-strandness=R"
-            ;;
-        esac
-    hisat2 -p 4 -x ${sub(index[0], "\\.\\d\\.ht2l?", "")} \
-    ${dollar}{strandness} \
-    --min-intronlen=20 \
-    --max-intronlen=2000 \
-    ${"--known-splicesite-infile " + sites} \
-    -1 ${R1} ${"-2 " + R2} | samtools sort -@ 4 - > "hisat.bam"
-    >>>
+    input {
+        Array[File] index
+        File? sites
+        File R1
+        File? R2
+        String strand = "fr-firststrand"
+    }
 
     output {
         File bam = "hisat.bam"
     }
+
+    command <<<
+        strandness=""
+        case "~{strand}" in
+            fr-firststrand)
+            strandness="--rna-strandness=RF"
+            ;;
+            fr-secondstrand)
+            strandness="--rna-strandness=FR"
+            ;;
+            f)
+            strandness="--rna-strandness=F"
+            ;;
+            r)
+            strandness="--rna-strandness=R"
+            ;;
+        esac
+    hisat2 -p 4 -x ~{sub(index[0], "\\.\\d\\.ht2l?", "")} \
+    ${strandness} \
+    --min-intronlen=20 \
+    --max-intronlen=2000 \
+    ~{"--known-splicesite-infile " + sites} \
+    -1 ~{R1} ~{"-2 " + R2} | samtools sort -@ 4 - > "hisat.bam"
+    >>>
 }
 
 task Star {
-    Array[File] index
-    File? annotation
-    File R1
-    File? R2
-    String dollar = "$"
-    
+    input {
+        Array[File] index
+        File? annotation
+        File R1
+        File? R2
+    }
+
+    output {
+        File test_ok = "Aligned.out.bam"
+        File bam = "star.bam"
+    }
+
     command <<<
-        r1_file=${R1}
-        r1_ext=${dollar}{r1_file##*.}
+        r1_file=~{R1}
+        r1_ext=${r1_file##*.}
         compression=""
-        case "${dollar}{r1_ext}" in
+        case "${r1_ext}" in
             gz)
-            compression="${dollar}{compression}--readFilesCommand \"gzip -dc\""
+            compression="{compression}--readFilesCommand \"gzip -dc\""
             ;;
             bz | bz2)
-            compression="${dollar}{compression}--readFilesCommand \"bzip2 -dc\""
+            compression="{compression}--readFilesCommand \"bzip2 -dc\""
             ;;
         esac
 
-            STAR --genomeDir "$(dirname ${index[0]})" \
+            STAR --genomeDir "$(dirname ~{index[0]})" \
     --runThreadN 4 \
-    ${dollar}{compression} \
+    "${compression}" \
     --runMode alignReads \
     --outSAMtype BAM Unsorted \
     --outSAMattributes NH HI AS nM XS NM MD --outSAMstrandField intronMotif \
     --alignIntronMin 20 \
     --alignIntronMax 2000 \
     --alignMatesGapMax 2000 \
-    ${"--sjdbGTFfile " + annotation} \
-    --readFilesIn ${R1} ${R2} && ln -s Aligned.out.bam star.bam
+    ~{"--sjdbGTFfile " + annotation} \
+    --readFilesIn ~{R1} ~{R2} && ln -s Aligned.out.bam star.bam
     >>>
-
-    output {
-        File test_ok = "Aligned.out.bam"
-        File bam = "star.bam"
-    }
 }
 
 task Tophat {
-    Array[File] index
-    File R1
-    File? R2
-    File? annotation
-    String strand
-    command {
-        tophat2 \
-        --num-threads 4 \
-        --library-type=${strand} \
-        --min-intron-length=20 \
-        --max-intron-length=2000 \
-        ${"--GTF " + annotation} \
-        ${sub(index[0], "\\.\\d\\.bt2l?", "")} \
-        ${R1} ${R2} && ln -s tophat_out/accepted_hits.bam tophat2_accepted.bam
+    input {
+        Array[File] index
+        File R1
+        File? R2
+        File? annotation
+        String strand
     }
 
     output {
         File bam = "tophat2_accepted.bam"
     }
+
+    command <<<
+        tophat2 \
+        --num-threads 4 \
+        --library-type=~{strand} \
+        --min-intron-length=20 \
+        --max-intron-length=2000 \
+        ~{"--GTF " + annotation} \
+        ~{sub(index[0], "\\.\\d\\.bt2l?", "")} \
+        ~{R1} ~{R2} && ln -s tophat_out/accepted_hits.bam tophat2_accepted.bam
+    >>>
 }

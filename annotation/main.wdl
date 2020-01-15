@@ -1,3 +1,4 @@
+version 1.0
 import "workflows/mikado/wf_mikado.wdl" as mikado
 import "workflows/portcullis/wf_portcullis.wdl" as portcullis_s
 import "workflows/assembly_short/wf_assembly_short.wdl" as assm_s
@@ -7,12 +8,14 @@ import "workflows/sanitize/wf_sanitize.wdl" as san
 import "workflows/index/wf_index.wdl" as idx
 
 workflow ei_annotation {
-    File short_R1
-    File? short_R2
-    File? long_R
-    File reference_genome
-    File? annotation
-    File? mikado_scoring_file
+    input {
+        File short_R1
+        File? short_R2
+        File? long_R
+        File reference_genome
+        File? annotation
+        File? mikado_scoring_file
+    }
 
     call san.wf_sanitize {
         input:

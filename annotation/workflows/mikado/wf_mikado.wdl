@@ -1,8 +1,11 @@
+version 1.0
 workflow wf_mikado {
-    Array[File] assemblies
-    Array[File?]? long_assemblies
-    File? reference_annotation
-    File? scoring_file
+    input {
+        Array[File] assemblies
+        Array[File?]? long_assemblies
+        File? reference_annotation
+        File? scoring_file
+    }
 
     call GenerateModelsList {
         input:
@@ -24,38 +27,42 @@ workflow wf_mikado {
 }
 
 task GenerateModelsList {
-    Array[File] assemblies
-    Array[File?]? long_assemblies
-
-    command {
-        rm models_list.txt
-        for i in ${sep=" " assemblies}; do
-          echo -e "$i\tlabel\tstranded" >> models_list.txt
-        done;
-        for i in ${sep=" " long_assemblies}; do
-          echo -e "$i\tlabel\tstranded" >> models_list.txt
-        done;
+    input {
+        Array[File] assemblies
+        Array[File?]? long_assemblies
     }
 
     output {
         File models = "models_list.txt"
     }
+
+    command <<<
+        rm models_list.txt
+        for i in ~{sep=" " assemblies}; do
+          echo -e "$i\tlabel\tstranded" >> models_list.txt
+        done;
+        for i in ~{sep=" " long_assemblies}; do
+          echo -e "$i\tlabel\tstranded" >> models_list.txt
+        done;
+    >>>
 }
 
 task MikadoConfigure {
-    File? reference_annotation
-    File models
-    File? scoring_file
-
-    command {
-        mikado configure \
-        ${"--scoring=" + scoring_file} \
-        --list=${models} \
-        ${"--reference=" + reference_annotation} \
-        mikado.yaml
+    input {
+        File? reference_annotation
+        File models
+        File? scoring_file
     }
 
     output {
         File mikado_config = "mikado.yaml"
     }
+
+    command <<<
+        mikado configure \
+        ~{"--scoring=" + scoring_file} \
+        --list=~{models} \
+        ~{"--reference=" + reference_annotation} \
+        mikado.yaml
+    >>>
 }
