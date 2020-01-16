@@ -2,7 +2,7 @@ version 1.0
 workflow wf_mikado {
     input {
         Array[File] assemblies
-        Array[File?]? long_assemblies
+        Array[File]? long_assemblies
         File? reference_annotation
         File? scoring_file
     }
@@ -10,7 +10,7 @@ workflow wf_mikado {
     call GenerateModelsList {
         input:
         assemblies = assemblies,
-        long_assemblies = long_assemblies
+        long_assemblies = select_first([long_assemblies])
     }
 
     call MikadoConfigure {
@@ -18,7 +18,6 @@ workflow wf_mikado {
         reference_annotation = reference_annotation,
         models = GenerateModelsList.models,
         scoring_file = scoring_file
-
     }
 
     output {
@@ -29,7 +28,7 @@ workflow wf_mikado {
 task GenerateModelsList {
     input {
         Array[File] assemblies
-        Array[File?]? long_assemblies
+        Array[File] long_assemblies
     }
 
     output {
@@ -37,13 +36,8 @@ task GenerateModelsList {
     }
 
     command <<<
-        rm models_list.txt
-        for i in ~{sep=" " assemblies}; do
-          echo -e "$i\tlabel\tstranded" >> models_list.txt
-        done;
-        for i in ~{sep=" " long_assemblies}; do
-          echo -e "$i\tlabel\tstranded" >> models_list.txt
-        done;
+        cat ~{write_lines(assemblies)} > models_list.txt
+        cat ~{write_lines(long_assemblies)} >> models_list.txt
     >>>
 }
 

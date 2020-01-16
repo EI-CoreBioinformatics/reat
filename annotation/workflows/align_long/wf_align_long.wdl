@@ -2,31 +2,32 @@ version 1.0
 workflow wf_align_long {
     input {
         File? LR
-        File? annotation
+        # File? annotation
         Array[File] star_index
         File reference
     }
 
     if(defined(LR)) {
-        call GMapIndex {
-            input:
-            reference = reference
-        }
+        # call GMapIndex {
+        #     input:
+        #     reference = reference
+        # }
 
-        if (defined(annotation)) {
-            call GMapExonsIIT {
-                input:
-                annotation = annotation
-            }
-        }
+        # if (defined(annotation)) {
+        #     call GMapExonsIIT {
+        #         input:
+        #         annotation = annotation
+        #     }
+        # }
 
-        call GMapLong {
-            input:
-            reference = reference,
-            LR = LR,
-            gmap_index = GMapIndex.gmap_index,
-            iit = GMapExonsIIT.iit
-        }
+        # call GMapLong {
+        #     input:
+        #     reference = reference,
+        #     LR = LR,
+        #     gmap_index = GMapIndex.gmap_index,
+        #     iit = GMapExonsIIT.iit
+        # }
+        
         # call StarLong {
         #     input:
         #     LR = LR,
@@ -48,7 +49,7 @@ workflow wf_align_long {
 
     output {
         Array[File?] bams = [Minimap2Long.bam]
-        Array[File?] gff = [GMapLong.gff, Minimap2Long2Gff.gff]
+        Array[File] gff = select_all([Minimap2Long2Gff.gff])
     }
 
 }

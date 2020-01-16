@@ -234,10 +234,10 @@ task Star {
         compression=""
         case "${r1_ext}" in
             gz)
-            compression="{compression}--readFilesCommand \"gzip -dc\""
+            compression="--readFilesCommand \"gzip -dc\""
             ;;
             bz | bz2)
-            compression="{compression}--readFilesCommand \"bzip2 -dc\""
+            compression="--readFilesCommand \"bzip2 -dc\""
             ;;
         esac
 

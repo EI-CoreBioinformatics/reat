@@ -50,7 +50,7 @@ workflow ei_annotation {
         call aln_l.wf_align_long {
             input:
             reference = wf_sanitize.reference,
-            annotation = wf_sanitize.annotation,
+            # annotation = wf_sanitize.annotation,
             LR = long_R,
             star_index = wf_index.star_index
         }
@@ -63,12 +63,13 @@ workflow ei_annotation {
         bams = wf_align_short.indexed_bams
     }
 
+    Array[File]? long_assemblies_valid = wf_align_long.gff
     call mikado.wf_mikado {
         input:
         scoring_file = mikado_scoring_file,
         reference_annotation =  wf_sanitize.annotation,
         assemblies = wf_assembly_short.assemblies,
-        long_assemblies = wf_align_long.gff
+        long_assemblies = long_assemblies_valid
     }
 
     output {
