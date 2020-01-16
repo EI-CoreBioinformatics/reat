@@ -1,43 +1,19 @@
 version 1.0
+
+import "../structs/structs.wdl"
+
 workflow wf_align_long {
     input {
-        File? LR
+        Array[LRSample] long_sample
         # File? annotation
         Array[File] star_index
         File reference
     }
 
-    if(defined(LR)) {
-        # call GMapIndex {
-        #     input:
-        #     reference = reference
-        # }
-
-        # if (defined(annotation)) {
-        #     call GMapExonsIIT {
-        #         input:
-        #         annotation = annotation
-        #     }
-        # }
-
-        # call GMapLong {
-        #     input:
-        #     reference = reference,
-        #     LR = LR,
-        #     gmap_index = GMapIndex.gmap_index,
-        #     iit = GMapExonsIIT.iit
-        # }
-        
-        # call StarLong {
-        #     input:
-        #     LR = LR,
-        #     annotation = annotation,
-        #     index = star_index
-        # }
-
+    if(defined(long_sample)) {
         call Minimap2Long {
             input:
-            LR = LR,
+            long_sample = long_sample[0],
             reference = reference
         }
 
@@ -169,7 +145,7 @@ task StarLong {
 
 task Minimap2Long {
     input {
-        File? LR
+        LRSample long_sample
         File reference
     }
 
@@ -187,7 +163,7 @@ task Minimap2Long {
         -a -L --MD \
         --eqx -2 \
         --secondary=no \
-        ~{reference} ~{LR} | samtools view -bS - | samtools sort -@ 4 --reference ~{reference} -T minimap2.sort -o minimap2.out.bam -
+        ~{reference} ~{long_sample.LR} | samtools view -bS - | samtools sort -@ 4 --reference ~{reference} -T minimap2.sort -o minimap2.out.bam -
     >>>
 }
 

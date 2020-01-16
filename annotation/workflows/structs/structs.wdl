@@ -1,6 +1,6 @@
 version 1.0
 
-struct LongReadSample {
+struct LRSample {
     String name
     String strand
     File LR

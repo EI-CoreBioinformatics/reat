@@ -1,4 +1,5 @@
 version 1.0
+import "workflows/structs/structs.wdl"
 import "workflows/mikado/wf_mikado.wdl" as mikado
 import "workflows/portcullis/wf_portcullis.wdl" as portcullis_s
 import "workflows/assembly_short/wf_assembly_short.wdl" as assm_s
@@ -9,9 +10,8 @@ import "workflows/index/wf_index.wdl" as idx
 
 workflow ei_annotation {
     input {
-        File short_R1
-        File? short_R2
-        File? long_R
+        Array[PRSample] paired_samples
+        Array[LRSample]? long_read_samples
         File reference_genome
         File? annotation
         File? mikado_scoring_file
@@ -30,8 +30,7 @@ workflow ei_annotation {
 
     call aln_s.wf_align_short {
         input:
-        R1 = short_R1,
-        R2 = short_R2,
+        samples = paired_samples,
         annotation = wf_sanitize.annotation,
         gsnap_index = wf_index.gsnap_index,
         hisat_index = wf_index.hisat_index,
@@ -46,12 +45,13 @@ workflow ei_annotation {
         annotation = wf_sanitize.annotation
     }
 
-    if (defined(long_R)) {
+    if (defined(long_read_samples)) {
+        Array[LRSample] def_long_sample = select_first([long_read_samples])
         call aln_l.wf_align_long {
             input:
             reference = wf_sanitize.reference,
             # annotation = wf_sanitize.annotation,
-            LR = long_R,
+            long_sample = def_long_sample,
             star_index = wf_index.star_index
         }
     }

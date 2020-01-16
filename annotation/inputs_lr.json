@@ -1,7 +1,14 @@
 {
   "ei_annotation.reference_genome": "/Users/yanesl/rundir/wdl_cromwell/inputs/genome/tair10.ss.fa",
-  "ei_annotation.short_R1": "/Users/yanesl/rundir/wdl_cromwell/inputs/transcriptome/short_rna/PRJEB7093_1.ss.fastq.gz",
-  "ei_annotation.short_R2": "/Users/yanesl/rundir/wdl_cromwell/inputs/transcriptome/short_rna/PRJEB7093_2.ss.fastq.gz",
-  "ei_annotation.long_R": "/Users/yanesl/rundir/wdl_cromwell/inputs/transcriptome/long_rna/SRR3655756.ss.fastq.gz"
+  "ei_annotation.paired_samples" : [{
+    "name": "sample1",
+    "strand": "fr-firststrand",
+    "R1": "/Users/yanesl/rundir/wdl_cromwell/inputs/transcriptome/short_rna/PRJEB7093_1.ss.fastq.gz",
+    "R2": "/Users/yanesl/rundir/wdl_cromwell/inputs/transcriptome/short_rna/PRJEB7093_2.ss.fastq.gz"
+  }],
+  "ei_annotation.long_read_samples": [{
+    "name": "long_read_sample",
+    "strand": "fr-firststrand",
+    "LR": "/Users/yanesl/rundir/wdl_cromwell/inputs/transcriptome/long_rna/SRR3655756.ss.fastq.gz"
+  }]
 }
-

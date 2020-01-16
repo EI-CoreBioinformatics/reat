@@ -1,8 +1,10 @@
 version 1.0
+
+import "../structs/structs.wdl"
+
 workflow wf_align_short {
     input {
-        File R1
-        File? R2
+        Array[PRSample] samples
         File? annotation
         Array[File] gsnap_index
         Array[File] hisat_index
@@ -18,44 +20,16 @@ workflow wf_align_short {
     call Hisat {
         input:
         sites = hisat2SpliceSites.sites,
-        R1 = R1,
-        R2 = R2,
+        sample = samples[0],
         index = hisat_index
     }
 
     call Star {
         input:
         annotation = annotation,
-        R1 = R1,
-        R2 = R2,
+        sample = samples[0],
         index = star_index
     }
-
-    # if (defined(annotation)) {
-    #     call GSnapSpliceSites {
-    #         input:
-    #         annotation = annotation
-    #     }
-    # }
-
-    # call GSnap {
-    #     input:
-    #     sites = GSnapSpliceSites.sites,
-    #     R1 = R1,
-    #     R2 = R2,
-    #     index = gsnap_index
-    # }
-
-    # call Tophat {
-    #     input:
-    #     index = tophat_index,
-    #     annotation = annotation,
-    #     R1 = R1,
-    #     R2 = R2,
-    #     strand = "fr-firststrand"
-    # }
-
-    # Array[File] bams = [Hisat.bam, Star.bam, GSnap.bam, Tophat.bam]
 
     Array[File] bams = [Hisat.bam, Star.bam]
 
@@ -145,8 +119,7 @@ task GSnap {
     input {
         Array[File] index
         File? sites
-        File R1
-        File? R2
+        PRSample sample
     }
 
     output {
@@ -154,7 +127,7 @@ task GSnap {
     }
 
     command <<<
-        r1_file=~{R1}
+        r1_file=~{sample.R1}
         r1_ext=${r1_file##*.}
         compression=""
         case "${r1_ext}" in
@@ -172,7 +145,7 @@ task GSnap {
         ~{"-s " + sites} \
         --localsplicedist=2000 \
         --format=sam --npaths=20 \
-        ~{R1} ~{R2} | samtools sort -@ 4 - > "gsnap.bam"
+        ~{sample.R1} ~{sample.R2} | samtools sort -@ 4 - > "gsnap.bam"
     >>>
 
 }
@@ -181,8 +154,7 @@ task Hisat {
     input {
         Array[File] index
         File? sites
-        File R1
-        File? R2
+        PRSample sample
         String strand = "fr-firststrand"
     }
 
@@ -211,7 +183,7 @@ task Hisat {
     --min-intronlen=20 \
     --max-intronlen=2000 \
     ~{"--known-splicesite-infile " + sites} \
-    -1 ~{R1} ~{"-2 " + R2} | samtools sort -@ 4 - > "hisat.bam"
+    -1 ~{sample.R1} ~{"-2 " + sample.R2} | samtools sort -@ 4 - > "hisat.bam"
     >>>
 }
 
@@ -219,8 +191,7 @@ task Star {
     input {
         Array[File] index
         File? annotation
-        File R1
-        File? R2
+        PRSample sample
     }
 
     output {
@@ -229,7 +200,7 @@ task Star {
     }
 
     command <<<
-        r1_file=~{R1}
+        r1_file=~{sample.R1}
         r1_ext=${r1_file##*.}
         compression=""
         case "${r1_ext}" in
@@ -251,15 +222,14 @@ task Star {
     --alignIntronMax 2000 \
     --alignMatesGapMax 2000 \
     ~{"--sjdbGTFfile " + annotation} \
-    --readFilesIn ~{R1} ~{R2} && ln -s Aligned.out.bam star.bam
+    --readFilesIn ~{sample.R1} ~{sample.R2} && ln -s Aligned.out.bam star.bam
     >>>
 }
 
 task Tophat {
     input {
         Array[File] index
-        File R1
-        File? R2
+        PRSample sample
         File? annotation
         String strand
     }
@@ -276,6 +246,6 @@ task Tophat {
         --max-intron-length=2000 \
         ~{"--GTF " + annotation} \
         ~{sub(index[0], "\\.\\d\\.bt2l?", "")} \
-        ~{R1} ~{R2} && ln -s tophat_out/accepted_hits.bam tophat2_accepted.bam
+        ~{sample.R1} ~{sample.R2} && ln -s tophat_out/accepted_hits.bam tophat2_accepted.bam
     >>>
 }
