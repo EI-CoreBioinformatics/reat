@@ -18,3 +18,24 @@ struct SESample {
     String strand
     File SR
 }
+
+struct AlignedSample {
+    String name
+    String strand
+    String aligner
+    File bam
+}
+
+struct IndexedAlignedSample {
+    String name
+    String strand
+    String aligner
+    File bam
+    File index
+}
+
+struct AlignedSampleStats {
+    String name
+    File stats
+    Array[File] plots
+}

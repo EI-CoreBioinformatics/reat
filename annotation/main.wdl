@@ -19,7 +19,7 @@ workflow ei_annotation {
 
     call san.wf_sanitize {
         input:
-        reference_genome = reference_genome, 
+        reference_genome = reference_genome,
         in_annotation = annotation
     }
 
@@ -41,7 +41,7 @@ workflow ei_annotation {
 
     call assm_s.wf_assembly_short {
         input:
-        bams = wf_align_short.indexed_bams,
+        aligned_samples = wf_align_short.indexed_aligned_samples,
         annotation = wf_sanitize.annotation
     }
 
@@ -60,7 +60,7 @@ workflow ei_annotation {
         input:
         reference = wf_sanitize.reference,
         annotation = wf_sanitize.annotation,
-        bams = wf_align_short.indexed_bams
+        aligned_samples = wf_align_short.indexed_aligned_samples
     }
 
     Array[File]? long_assemblies_valid = wf_align_long.gff
@@ -80,9 +80,10 @@ workflow ei_annotation {
         Array[File] hisat_index = wf_index.hisat_index
         Array[File] star_index = wf_index.star_index
 
-        Array[Pair[File,File]] bams = wf_align_short.indexed_bams
+        Array[IndexedAlignedSample] bams = wf_align_short.indexed_aligned_samples
         Array[File] stats = wf_align_short.stats
         Array[Array[File]] plots = wf_align_short.plots
+
         Array[File] short_assemblies = wf_assembly_short.assemblies
 
         File filtered_tab = portcullis.tab

@@ -31,23 +31,24 @@ workflow wf_align_short {
         index = star_index
     }
 
-    Array[File] bams = [Hisat.bam, Star.bam]
+    Array[AlignedSample] aligned_samples = [Hisat.aligned_sample, Star.aligned_sample]
 
-    scatter (bam in bams) {
+    scatter (aligned_sample in aligned_samples) {
         call Sort {
             input:
-            bam = bam
+            sample = aligned_sample
         }
     }
 
-    scatter (bam in bams) {
+    scatter (aligned_sample in aligned_samples) {
         call Stats {
             input:
-            bam = bam
+            sample = aligned_sample
         }
     }
 
     output {
+        Array[IndexedAlignedSample] indexed_aligned_samples = Sort.indexed_aligned_sample
         Array[Pair[File,File]] indexed_bams = Sort.indexed_bam
         Array[File] stats = Stats.stats
         Array[Array[File]] plots = Stats.plots
@@ -56,34 +57,39 @@ workflow wf_align_short {
 
 task Sort{
     input {
-        File bam
-        String name = basename(bam, ".bam")
+        AlignedSample sample
+        String name = basename(sample.bam, ".bam")
     }
 
     output {
         Pair[File,File] indexed_bam = (name + ".sorted.bam", name + ".sorted.bam.bai")
+        IndexedAlignedSample indexed_aligned_sample = { "name": sample.name, 
+                                                        "strand": sample.strand, 
+                                                        "aligner": sample.aligner, 
+                                                        "bam": sample.name+"."+sample.aligner+".sorted.bam", 
+                                                        "index": sample.name+"."+sample.aligner+".sorted.bam.bai"
+                                                    }
     }
 
     command <<<
-        samtools sort ~{bam} > ~{name + ".sorted.bam"}
-        samtools index ~{name + ".sorted.bam"}
+        samtools sort ~{sample.bam} > ~{sample.name + "." + sample.aligner + ".sorted.bam"}
+        samtools index ~{sample.name + "." + sample.aligner + ".sorted.bam"}
     >>>
 }
 
 task Stats {
     input {
-        File bam
-        String name = basename(bam, ".bam")
+        AlignedSample sample
     }
 
     output {
-        File stats = name + ".stats"
+        File stats = sample.name + "." + sample.aligner + ".stats"
         Array[File] plots = glob("plot/*.png")
     }
 
     command <<<
-        samtools stats ~{bam} > ~{name + ".stats"} && \
-        plot-bamstats -p plot/ ~{name + ".stats"}
+        samtools stats ~{sample.bam} > ~{sample.name + "." + sample.aligner + ".stats"} && \
+        plot-bamstats -p "plot/~{sample.name + "." + sample.aligner}" ~{sample.name + "." + sample.aligner + ".stats"}
     >>>
 }
 
@@ -155,16 +161,14 @@ task Hisat {
         Array[File] index
         File? sites
         PRSample sample
-        String strand = "fr-firststrand"
     }
 
     output {
-        File bam = "hisat.bam"
+        AlignedSample aligned_sample = {"name": sample.name, "strand": sample.strand, "aligner": "hisat", "bam": sample.name+".hisat.bam"}
     }
 
     command <<<
-        strandness=""
-        case "~{strand}" in
+        case "~{sample.strand}" in
             fr-firststrand)
             strandness="--rna-strandness=RF"
             ;;
@@ -183,7 +187,7 @@ task Hisat {
     --min-intronlen=20 \
     --max-intronlen=2000 \
     ~{"--known-splicesite-infile " + sites} \
-    -1 ~{sample.R1} ~{"-2 " + sample.R2} | samtools sort -@ 4 - > "hisat.bam"
+    -1 ~{sample.R1} ~{"-2 " + sample.R2} | samtools sort -@ 4 - > "~{sample.name}.hisat.bam"
     >>>
 }
 
@@ -195,8 +199,7 @@ task Star {
     }
 
     output {
-        File test_ok = "Aligned.out.bam"
-        File bam = "star.bam"
+        AlignedSample aligned_sample = {"name": sample.name, "strand": sample.strand, "aligner": "star", "bam": sample.name+".star.bam"}
     }
 
     command <<<
@@ -222,7 +225,7 @@ task Star {
     --alignIntronMax 2000 \
     --alignMatesGapMax 2000 \
     ~{"--sjdbGTFfile " + annotation} \
-    --readFilesIn ~{sample.R1} ~{sample.R2} && ln -s Aligned.out.bam star.bam
+    --readFilesIn ~{sample.R1} ~{sample.R2} && ln -s Aligned.out.bam "~{sample.name}.star.bam"
     >>>
 }
 
@@ -236,6 +239,8 @@ task Tophat {
 
     output {
         File bam = "tophat2_accepted.bam"
+        AlignedSample aligned_sample = {"name": sample.name, "strand": sample.strand, "aligner": "tophat2", "bam": sample.name+".tophat2.bam"}
+
     }
 
     command <<<
@@ -246,6 +251,6 @@ task Tophat {
         --max-intron-length=2000 \
         ~{"--GTF " + annotation} \
         ~{sub(index[0], "\\.\\d\\.bt2l?", "")} \
-        ~{sample.R1} ~{sample.R2} && ln -s tophat_out/accepted_hits.bam tophat2_accepted.bam
+        ~{sample.R1} ~{sample.R2} && ln -s tophat_out/accepted_hits.bam "~{sample.name}.tophat2.bam"
     >>>
 }

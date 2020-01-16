@@ -1,22 +1,26 @@
 version 1.0
+
+import "../structs/structs.wdl"
+
 workflow portcullis {
     input {
         File reference
+        Array[IndexedAlignedSample] aligned_samples
         File? annotation
-        Array[Pair[File,File]] bams
     }
 
     if (defined(annotation)) {
+        File def_annotation = select_first([annotation])
         call PrepareRef {
             input:
-            annotation = annotation
+            annotation = def_annotation
         }
     }
-    scatter (bam in bams) {
+    scatter (aligned_sample in aligned_samples) {
         call Prepare {
             input:
             reference = reference,
-            bam = bam.left
+            sample = aligned_sample
         }
         call Junction {
             input:
@@ -45,7 +49,7 @@ workflow portcullis {
 
 task PrepareRef {
     input {
-        File? annotation
+        File annotation
     }
 
     output {
@@ -61,7 +65,7 @@ task PrepareRef {
 task Prepare {
     input {
         File? reference
-        File bam
+        IndexedAlignedSample sample
     }
 
     output {
@@ -69,7 +73,7 @@ task Prepare {
     }
 
     command <<<
-        portcullis prep -c -o portcullis_prep -t 4 ~{reference} ~{bam}
+        portcullis prep -c -o portcullis_prep -t 4 ~{reference} ~{sample.bam}
     >>>
 
 }

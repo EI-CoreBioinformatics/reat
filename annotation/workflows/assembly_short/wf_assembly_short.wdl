@@ -1,20 +1,23 @@
 version 1.0
+
+import "../structs/structs.wdl"
+
 workflow wf_assembly_short {
     input {
-        Array[Pair[File,File]] bams
+        Array[IndexedAlignedSample] aligned_samples
         File? annotation
     }
 
-    scatter (bam in bams) {
+    scatter (aligned_sample in aligned_samples) {
         call Stringtie{
             input:
-            bam = bam.left,
+            aligned_sample = aligned_sample,
             annotation = annotation
         }
 
         call Scallop {
             input:
-            bam = bam.left
+            aligned_sample = aligned_sample
         }
     }
 
@@ -25,21 +28,29 @@ workflow wf_assembly_short {
 
 task Stringtie {
     input {
-        File bam
+        IndexedAlignedSample aligned_sample
         File? annotation
-        String strand = "--fr" # this needs to be computed from input paramaters
     }
 
     output {
-        File assembled = "assembled.gtf"
+        File assembled = aligned_sample.name+"."+aligned_sample.aligner+".stringtie.gtf"
     }
 
     command <<<
-        stringtie ~{bam} \
+        case "~{aligned_sample.strand}" in
+            fr-firststrand)
+            strandness="--rf"
+            ;;
+            fr-secondstrand)
+            strandness="--fr"
+            ;;
+        esac
+
+        stringtie ~{aligned_sample.bam} \
         -p 4 \
-        ~{strand} \
+        "${strandness}" \
         ~{"-G " + annotation} \
-        -o assembled.gtf
+        -o "~{aligned_sample.name+"."+aligned_sample.aligner}.stringtie.gtf"
     >>>
 }
 
@@ -47,15 +58,32 @@ task Stringtie {
 # Needs to have the tool available... Not built yet for OSX
 task Scallop {
     input {
-        File bam
-        String strand = "--library_type first"
+        IndexedAlignedSample aligned_sample
     }
 
     output {
-        File assembled = "scallop.gtf"
+        File assembled = aligned_sample.name+"."+aligned_sample.aligner+".scallop.gtf"
     }
 
     command <<<
-        scallop --verbose 0 -i ~{bam} -o "scallop.gtf" ~{strand}
+            case "~{aligned_sample.strand}" in
+            fr-firststrand)
+            strandness="--library_type first"
+            ;;
+            fr-secondstrand)
+            strandness="--library_type second"
+            ;;
+            f)
+            strandness="--library_type second"
+            ;;
+            r)
+            strandness="--library_type first"
+            ;;
+            fr-unstranded)
+            strandness="--library_type unstranded"
+            ;;
+        esac
+
+        scallop --verbose 0 -i ~{aligned_sample.bam} -o "~{aligned_sample.name+"."+aligned_sample.aligner}.scallop.gtf" "${strandness}"
     >>>
 }
