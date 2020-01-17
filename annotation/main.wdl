@@ -63,15 +63,15 @@ workflow ei_annotation {
         aligned_samples = wf_align_short.indexed_aligned_samples
     }
 
-    Array[File]? long_assemblies_valid = wf_align_long.gff
+    Array[AssembledSample]? long_assemblies_valid = wf_align_long.assemblies
     call mikado.wf_mikado {
         input:
         scoring_file = mikado_scoring_file,
-        reference_annotation =  wf_sanitize.annotation,
+        reference_fasta =  wf_sanitize.reference,
         assemblies = wf_assembly_short.assemblies,
         long_assemblies = long_assemblies_valid
     }
-
+    
     output {
         File clean_reference = wf_sanitize.reference
         File clean_reference_index = wf_sanitize.index
@@ -84,14 +84,14 @@ workflow ei_annotation {
         Array[File] stats = wf_align_short.stats
         Array[Array[File]] plots = wf_align_short.plots
 
-        Array[File] short_assemblies = wf_assembly_short.assemblies
+        Array[AssembledSample] short_assemblies = wf_assembly_short.assemblies
 
         File filtered_tab = portcullis.tab
         File filtered_bed = portcullis.bed
         File filtered_gff3 = portcullis.gff3
 
-        Array[File?]? l_bams = wf_align_long.bams
-        Array[File?]? l_gff = wf_align_long.gff
+        Array[AlignedSample?]? l_bams = wf_align_long.bams
+        Array[AssembledSample?]? l_gff = wf_align_long.assemblies
 
         File mikado_config = wf_mikado.mikado_config
     }

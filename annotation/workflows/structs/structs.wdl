@@ -39,3 +39,9 @@ struct AlignedSampleStats {
     File stats
     Array[File] plots
 }
+
+struct AssembledSample {
+    String name
+    String strand
+    File assembly
+}

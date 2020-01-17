@@ -22,7 +22,8 @@ workflow wf_assembly_short {
     }
 
     output {
-        Array[File] assemblies = flatten([Stringtie.assembled, Scallop.assembled])
+        Array[AssembledSample] assemblies = flatten([Stringtie.assembly, Scallop.assembly])
+        Array[File] fassemblies = flatten([Stringtie.assembled, Scallop.assembled])
     }
 }
 
@@ -34,6 +35,7 @@ task Stringtie {
 
     output {
         File assembled = aligned_sample.name+"."+aligned_sample.aligner+".stringtie.gtf"
+        AssembledSample assembly = {"name": aligned_sample.name+"."+aligned_sample.aligner+".stringtie", "strand": aligned_sample.strand, "assembly": aligned_sample.name+"."+aligned_sample.aligner+".stringtie.gtf"}
     }
 
     command <<<
@@ -63,6 +65,7 @@ task Scallop {
 
     output {
         File assembled = aligned_sample.name+"."+aligned_sample.aligner+".scallop.gtf"
+        AssembledSample assembly = {"name": aligned_sample.name+"."+aligned_sample.aligner+".scallop", "strand": aligned_sample.strand, "assembly": aligned_sample.name+"."+aligned_sample.aligner+".scallop.gtf"}
     }
 
     command <<<

@@ -19,13 +19,13 @@ workflow wf_align_long {
 
         call Minimap2Long2Gff {
             input:
-            bam = Minimap2Long.bam
+            aligned_sample = Minimap2Long.aligned_sample
         }
     }
 
     output {
-        Array[File?] bams = [Minimap2Long.bam]
-        Array[File] gff = select_all([Minimap2Long2Gff.gff])
+        Array[AlignedSample?] bams = [Minimap2Long.aligned_sample]
+        Array[AssembledSample] assemblies = select_all([Minimap2Long2Gff.assembled_sample])
     }
 
 }
@@ -150,7 +150,7 @@ task Minimap2Long {
     }
 
     output {
-        File bam = "minimap2.out.bam"
+        AlignedSample aligned_sample = {"name": long_sample.name, "strand": long_sample.strand, "aligner": "minimap2", "bam": "minimap2.out.bam"}
     }
 
     command <<<
@@ -169,14 +169,14 @@ task Minimap2Long {
 
 task Minimap2Long2Gff {
     input {
-        File bam
+        AlignedSample aligned_sample
     }
 
     output {
-        File gff = "output.bed12"
+        AssembledSample assembled_sample = {"name": aligned_sample.name, "strand": aligned_sample.strand, "assembly": "output.bed12"}
     }
 
     command <<<
-        paftools.js splice2bed -m <(samtools view -h ~{bam}) | correct_bed12_mappings.py > output.bed12
+        paftools.js splice2bed -m <(samtools view -h ~{aligned_sample.bam}) | correct_bed12_mappings.py > output.bed12
     >>>
 }

@@ -129,7 +129,7 @@ task GSnap {
     }
 
     output {
-        File bam = "gsnap.bam"
+        AlignedSample aligned_sample = {"name": sample.name, "strand": sample.strand, "aligner": "hisat", "bam": sample.name+".gsnap.bam"}
     }
 
     command <<<
@@ -151,7 +151,7 @@ task GSnap {
         ~{"-s " + sites} \
         --localsplicedist=2000 \
         --format=sam --npaths=20 \
-        ~{sample.R1} ~{sample.R2} | samtools sort -@ 4 - > "gsnap.bam"
+        ~{sample.R1} ~{sample.R2} | samtools sort -@ 4 - > "~{sample.name}.gsnap.bam"
     >>>
 
 }
@@ -199,6 +199,7 @@ task Star {
     }
 
     output {
+        File bam = "Aligned.out.bam"
         AlignedSample aligned_sample = {"name": sample.name, "strand": sample.strand, "aligner": "star", "bam": sample.name+".star.bam"}
     }
 
