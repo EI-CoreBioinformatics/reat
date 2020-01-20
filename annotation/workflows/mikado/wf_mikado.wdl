@@ -1,6 +1,7 @@
 version 1.0
 
 import "../structs/structs.wdl"
+import "orf_caller/wf_transdecoder.wdl" as tdc
 
 workflow wf_mikado {
     input {
@@ -30,34 +31,43 @@ workflow wf_mikado {
 
     File result = write_lines(flatten([sr_models.models, lr_models.models]))
 
-    call MikadoConfigure {
+    call MikadoPrepare {
         input:
         reference_fasta = reference_fasta,
         models = result,
         scoring_file = scoring_file
     }
 
-    if (orf_caller == "Prodigal") {
-        call Prodigal {
-            input:
-            gencode = gencode,
-            reference = reference_fasta
+    if (orf_caller != "None") {
+        if (orf_caller == "Prodigal") {
+            call Prodigal {
+                input:
+                gencode = gencode,
+                reference = MikadoPrepare.prepared_fasta
+            }
         }
-    }
 
-    if (orf_caller == "GTCDS") {
-        call GTCDS {
-            input:
-            reference = reference_fasta,
-            gtf = MikadoConfigure.prepared_gtf
+        if (orf_caller == "GTCDS") {
+            call GTCDS {
+                input:
+                reference = MikadoPrepare.prepared_fasta,
+                gtf = MikadoPrepare.prepared_gtf
+            }
         }
-    }
 
-    File def_orfs = select_first([Prodigal.orfs, GTCDS.orfs])
+        if (orf_caller == "Transdecoder") {
+            call tdc.wf_transdecoder {
+                input:
+                prepared_fa = MikadoPrepare.prepared_fasta
+            }
+        }
+
+        File def_orfs = select_first([Prodigal.orfs, GTCDS.orfs, Transdecoder.orfs])
+    }
 
     output {
-        File mikado_config = MikadoConfigure.mikado_config
-        File orfs = def_orfs
+        File mikado_config = MikadoPrepare.mikado_config
+        File? orfs = def_orfs
     }
 
 }
@@ -108,11 +118,15 @@ task GenerateModelsList {
     }
 
     command <<<
-        echo -e "~{assembly.assembly}\t~{assembly.name}\tTrue"
+        strand="False"
+        if [ ~{assembly.strand} != "fr-unstranded" ]; then
+            strand="True"
+        fi
+        echo -e "~{assembly.assembly}\t~{assembly.name}\t${strand}"
     >>>
 }
 
-task MikadoConfigure {
+task MikadoPrepare {
     input {
         File models
         File reference_fasta
