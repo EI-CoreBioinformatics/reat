@@ -2,15 +2,19 @@ version 1.0
 
 import "../structs/structs.wdl"
 import "orf_caller/wf_transdecoder.wdl" as tdc
+import "homology/wf_homology.wdl" as hml
 
 workflow wf_mikado {
     input {
         Array[AssembledSample] assemblies
         Array[AssembledSample]? long_assemblies
         File reference_fasta
-        String gencode
-        String orf_caller
+        File junctions
+        String gencode = "Universal"
+        String orf_caller = "None"
+        Boolean mikado_do_homology_assessment = false
         File? scoring_file
+        File? dbs
     }
 
     scatter (sr_assembly in assemblies) {
@@ -38,6 +42,7 @@ workflow wf_mikado {
         scoring_file = scoring_file
     }
 
+    # ORF Calling
     if (orf_caller != "None") {
         if (orf_caller == "Prodigal") {
             call Prodigal {
@@ -56,20 +61,64 @@ workflow wf_mikado {
         }
 
         if (orf_caller == "Transdecoder") {
-            call tdc.wf_transdecoder {
+            call tdc.wf_transdecoder as Transdecoder {
                 input:
                 prepared_fa = MikadoPrepare.prepared_fasta
             }
         }
 
-        File def_orfs = select_first([Prodigal.orfs, GTCDS.orfs, Transdecoder.orfs])
+        File maybe_orfs = select_first([Prodigal.orfs, GTCDS.orfs, Transdecoder.orfs])
+    }
+
+    # Mikado Homology
+    if (defined(mikado_do_homology_assessment)) {
+        call hml.wf_homology as Homology {
+            input:
+            program = "blastx",
+            reference = MikadoPrepare.prepared_fasta,
+            protein_db = dbs
+        }
+    }
+
+    call MikadoSerialise {
+        input:
+        homology_alignments = Homology.homology,
+        clean_seqs_db = Homology.homology_clean_db,
+        junctions = junctions,
+        orfs = maybe_orfs,
+        transcripts = MikadoPrepare.prepared_fasta,
+        indexed_reference = reference_fasta,
+        config = MikadoPrepare.mikado_config
     }
 
     output {
         File mikado_config = MikadoPrepare.mikado_config
-        File? orfs = def_orfs
+        File? orfs = maybe_orfs
+        Array[File]? homologies = Homology.homology
+        Array[File] serialise_out = MikadoSerialise.out
+    }
+}
+
+task MikadoSerialise {
+    input {
+        Array[File]? homology_alignments
+        File? clean_seqs_db
+        File junctions
+        File? orfs
+        File transcripts
+        File indexed_reference
+        File config
     }
 
+    output {
+        Array[File] out = glob("mikado_serialise/*")
+    }
+
+    command <<<
+    mikado serialise ~{sep=" " homology_alignments} ~{clean_seqs_db} ~{junctions} ~{orfs} 
+    ~{"--transcripts=" + transcripts} ~{"--genome_fai="+indexed_reference}
+    ~{"--json-conf=" + config} --force --start-method=spawn -od mikado_serialise --procs=4
+    >>>
 }
 
 task GTCDS {

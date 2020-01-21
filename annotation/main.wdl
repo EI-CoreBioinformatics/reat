@@ -71,7 +71,7 @@ workflow ei_annotation {
         assemblies = wf_assembly_short.assemblies,
         long_assemblies = long_assemblies_valid
     }
-    
+        
     output {
         File clean_reference = wf_sanitize.reference
         File clean_reference_index = wf_sanitize.index
@@ -94,5 +94,6 @@ workflow ei_annotation {
         Array[AssembledSample?]? l_gff = wf_align_long.assemblies
 
         File mikado_config = wf_mikado.mikado_config
+        File? mikdao_orfs = wf_mikado.orfs
     }
 }

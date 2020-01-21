@@ -1,12 +1,13 @@
 version 1.0
 
-import "../structs/structs.wdl"
+import "../../structs/structs.wdl"
+import "../align_protein/wf_protein_aligner.wdl" as prt_aln
 
 workflow wf_transdecoder {
     input {
         File prepared_fa
-        File prepared_gtf
-        Array[File]? dbs
+        String program = "blastx"
+        File? db
     }
 
     call TransdecoderLongOrf {
@@ -14,34 +15,47 @@ workflow wf_transdecoder {
             reference = prepared_fa
     }
 
-    if (defined(dbs)) {
-        call SanitiseProteinBlastDB { # Check if this is an input for both homology + orf_calling or just the same task
+    if (defined(db)) {
+        File def_db = select_first([db])
+        call prt_aln.SanitiseProteinBlastDB { # Check if this is an input for both homology + orf_calling or just the same task
             input:
-                dbs = dbs
+                db = def_db
         }
-    }
 
+        if (program == "blastx") {
+            call prt_aln.BlastIndex as BlastIndex {
+                input:
+                target = SanitiseProteinBlastDB.clean_db
+            }
+
+            call prt_aln.BlastAlign {
+                input:
+                query = TransdecoderLongOrf.pep,
+                index = BlastIndex.index
+            }
+        }
+        
+        if (program == "diamond") {
+            call prt_aln.DiamondIndex as DiamondIndex {
+                input:
+                target = SanitiseProteinBlastDB.clean_db
+            }
+
+            call prt_aln.DiamondAlign {
+                input:
+                query = TransdecoderLongOrf.pep,
+                index = DiamondIndex.index
+            }
+        }
+
+        File maybe_aligned_orfs = select_first([BlastAlign.out, DiamondAlign.out])
+    }
 
     output {
         File long_orfs = TransdecoderLongOrf.orfs
         File? clean_db = SanitiseProteinBlastDB.clean_db
+        File orfs = select_first([TransdecoderLongOrf.orfs, maybe_aligned_orfs])
     }
-}
-
-
-task SanitiseProteinBlastDB {
-    input {
-        Array[File]? dbs
-    }
-
-    output {
-        File clean_db = "output.db"
-    }
-
-    command <<<
-        sanitize_sequence_db.py -cstop ~{sep=" " dbs} | gt seqtransform -addstopaminos -width "60" > "output.db"
-
-    >>>
 }
 
 task TransdecoderLongOrf {
