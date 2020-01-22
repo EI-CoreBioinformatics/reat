@@ -102,7 +102,10 @@ workflow ei_annotation {
         Array[AlignedSample?]? l_bams = wf_align_long.bams
         Array[AssembledSample?]? l_gff = wf_align_long.assemblies
 
-        File mikado_config = wf_mikado.mikado_config
-        File? mikdao_orfs = wf_mikado.orfs
+        File mikado_long_config = Mikado_long.mikado_config
+        File? mikdao_long_orfs = Mikado_long.orfs
+
+        File mikado_short_config = Mikado_short.mikado_config
+        File? mikdao_short_orfs = Mikado_short.orfs
     }
 }
