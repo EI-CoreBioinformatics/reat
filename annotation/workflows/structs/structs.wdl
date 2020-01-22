@@ -45,3 +45,8 @@ struct AssembledSample {
     String strand
     File assembly
 }
+
+struct IndexedReference {
+    File fasta
+    File fai
+}

@@ -1,4 +1,7 @@
 version 1.0
+
+import "../structs/structs.wdl"
+
 workflow wf_sanitize {
     input {
         File reference_genome
@@ -27,6 +30,7 @@ workflow wf_sanitize {
         File? annotation = wf_maybe_clean_annotation
         File reference = sanitizeReference.sanitised_reference
         File index = indexReference.sanitised_reference_index
+        IndexedReference indexed_reference = {"fasta": sanitizeReference.sanitised_reference, "fai": indexReference.sanitised_reference_index}
     }
 }
 

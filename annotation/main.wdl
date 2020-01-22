@@ -64,14 +64,23 @@ workflow ei_annotation {
     }
 
     Array[AssembledSample]? long_assemblies_valid = wf_align_long.assemblies
-    call mikado.wf_mikado {
+    call mikado.wf_mikado as Mikado_long {
         input:
         scoring_file = mikado_scoring_file,
-        reference_fasta =  wf_sanitize.reference,
+        indexed_reference =  wf_sanitize.indexed_reference,
         assemblies = wf_assembly_short.assemblies,
-        long_assemblies = long_assemblies_valid
+        long_assemblies = long_assemblies_valid,
+        junctions = portcullis.bed
     }
-        
+
+    call mikado.wf_mikado as Mikado_short {
+        input:
+        scoring_file = mikado_scoring_file,
+        indexed_reference =  wf_sanitize.indexed_reference,
+        assemblies = wf_assembly_short.assemblies,
+        junctions = portcullis.bed
+    }
+
     output {
         File clean_reference = wf_sanitize.reference
         File clean_reference_index = wf_sanitize.index
