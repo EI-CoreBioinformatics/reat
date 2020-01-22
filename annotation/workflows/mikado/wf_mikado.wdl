@@ -24,17 +24,19 @@ workflow wf_mikado {
         }
     }
 
-    Array[AssembledSample] def_long_assemblies = select_first([long_assemblies])
+    if (defined(long_assemblies)) {
+        Array[AssembledSample] def_long_assemblies = select_first([long_assemblies])
 
-    scatter (lr_assembly in def_long_assemblies) {
-        call GenerateModelsList as lr_models {
-            input:
-            assembly = lr_assembly,
-            long_score_bias = 1
+        scatter (lr_assembly in def_long_assemblies) {
+            call GenerateModelsList as lr_models {
+                input:
+                assembly = lr_assembly,
+                long_score_bias = 1
+            }
         }
     }
 
-    File result = write_lines(flatten([sr_models.models, lr_models.models]))
+    File result = write_lines(flatten(select_all([sr_models.models, lr_models.models])))
 
     call MikadoPrepare {
         input:
