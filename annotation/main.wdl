@@ -1,6 +1,7 @@
 version 1.0
 import "workflows/structs/structs.wdl"
 import "workflows/mikado/wf_mikado.wdl" as mikado
+import "workflows/repeat_masker/wf_repeat_masker.wdl" as repeatmasker
 import "workflows/portcullis/wf_portcullis.wdl" as portcullis_s
 import "workflows/assembly_short/wf_assembly_short.wdl" as assm_s
 import "workflows/align_short/wf_align_short.wdl" as aln_s
@@ -81,6 +82,11 @@ workflow ei_annotation {
         junctions = portcullis.bed
     }
 
+    call repeatmasker.wf_repeat_masker as RepeatMasker {
+        input:
+        message = "test"
+    }
+
     output {
         File clean_reference = wf_sanitize.reference
         File clean_reference_index = wf_sanitize.index
@@ -103,9 +109,11 @@ workflow ei_annotation {
         Array[AssembledSample?]? l_gff = wf_align_long.assemblies
 
         File mikado_long_config = Mikado_long.mikado_config
-        File? mikdao_long_orfs = Mikado_long.orfs
+        File? mikado_long_orfs = Mikado_long.orfs
 
         File mikado_short_config = Mikado_short.mikado_config
-        File? mikdao_short_orfs = Mikado_short.orfs
+        File? mikado_short_orfs = Mikado_short.orfs
+
+        String rm_out = RepeatMasker.o
     }
 }
