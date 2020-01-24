@@ -3,9 +3,8 @@ version 1.0
 workflow wf_repeat_masker {
     input {
         File reference_fasta
-        File repeat_db
-        Boolean run_modeller
-        Boolean retrieve_known
+        Boolean run_modeller = true
+        Boolean retrieve_known = false
         Array[File]? safe_cds_sequences
         String? clade
         String? specie
@@ -33,7 +32,21 @@ workflow wf_repeat_masker {
         }
     }
 
+    call CreateLibrary {
+        input:
+        repeat_modeler_consensi = RepeatModeller.consensi,
+        retrieved_libraries = RetrieveLibraries.retrieved,
+    }
 
+    call RepeatMasker {
+        input:
+        rm_library = CreateLibrary.repeat_library,
+        reference_fasta = reference_fasta
+    }
+
+    output {
+        File masked_genome = RepeatMasker.masked_genome
+    }
 }
 
 task BuildModellerDB {
@@ -56,7 +69,7 @@ task RepeatModeller {
     }
 
     output {
-        File families = "families.txt"
+        Array[File] consensi = glob("RM*/consensi.fa.classified")
     }
 
     command <<<
@@ -78,5 +91,38 @@ task RetrieveLibraries {
 
     command <<<
     queryRepeatDatabase.pl ~{"-species " + specie} ~{"-clade " + clade} > "retrieved.fa"
+    >>>
+}
+
+task CreateLibrary {
+    input {
+        Array[File]? repeat_modeler_consensi
+        File? retrieved_libraries
+        File? extra
+    }
+
+    output {
+        File repeat_library = "rm_library.fa"
+    }
+
+    command <<<
+    cat ~{sep=" " repeat_modeler_consensi} ~{retrieved_libraries} ~{extra} > rm_library.fa
+    >>>
+}
+
+task RepeatMasker {
+    input {
+        File rm_library
+        File reference_fasta
+    }
+
+    output {
+        File masked_genome = basename(reference_fasta) + ".masked"
+        File masked_table = basename(reference_fasta) + ".out"
+        File table = basename(reference_fasta) + ".tbl"
+    }
+
+    command <<<
+    RepeatMasker -nolow -xsmall -dir . -gff -lib ~{rm_library} -pa 4 ~{reference_fasta}
     >>>
 }

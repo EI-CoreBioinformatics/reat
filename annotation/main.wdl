@@ -84,7 +84,7 @@ workflow ei_annotation {
 
     call repeatmasker.wf_repeat_masker as RepeatMasker {
         input:
-        message = "test"
+        reference_fasta = wf_sanitize.indexed_reference.fasta
     }
 
     output {
@@ -114,6 +114,6 @@ workflow ei_annotation {
         File mikado_short_config = Mikado_short.mikado_config
         File? mikado_short_orfs = Mikado_short.orfs
 
-        String rm_out = RepeatMasker.o
+        File rm_out = RepeatMasker.masked_genome
     }
 }
