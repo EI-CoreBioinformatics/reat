@@ -1,6 +1,7 @@
 version 1.0
 
 import "../../structs/structs.wdl"
+import "../../structs/tasks.wdl" as tasks
 import "../align_protein/wf_protein_aligner.wdl" as prt_aln
 
 workflow wf_homology {
@@ -13,7 +14,7 @@ workflow wf_homology {
     # Split sequence file
     if (defined(protein_db)) {
         File def_db = select_first([protein_db])
-        call SplitSequences {
+        call tasks.SplitSequences {
             input:
             sequences_file = reference
         }
@@ -57,20 +58,4 @@ workflow wf_homology {
         Array[File]? homology = maybe_align
         File? homology_clean_db = SanitiseProteinBlastDB.clean_db
     }
-}
-
-task SplitSequences {
-    input {
-        File sequences_file
-        String prefix = "out"
-        Int num_out_files = 10
-    }
-
-    output {
-        Array[File] seq_files = glob("out*")
-    }
-
-    command <<<
-        seqtk split -n ~{num_out_files} ~{prefix} ~{sequences_file}
-    >>>
 }

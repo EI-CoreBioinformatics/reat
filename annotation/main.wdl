@@ -1,6 +1,7 @@
 version 1.0
 import "workflows/structs/structs.wdl"
 import "workflows/mikado/wf_mikado.wdl" as mikado
+import "workflows/exonerate/wf_exonerate.wdl" as exonerate
 import "workflows/repeat_masker/wf_repeat_masker.wdl" as repeatmasker
 import "workflows/portcullis/wf_portcullis.wdl" as portcullis_s
 import "workflows/assembly_short/wf_assembly_short.wdl" as assm_s
@@ -85,6 +86,12 @@ workflow ei_annotation {
     call repeatmasker.wf_repeat_masker as RepeatMasker {
         input:
         reference_fasta = wf_sanitize.indexed_reference.fasta
+    }
+
+    call exonerate.wf_exonerate as Exonerate {
+        input:
+        clean_indexed_protein_db = "",
+        masked_genome = RepeatMasker.masked_genome
     }
 
     output {
