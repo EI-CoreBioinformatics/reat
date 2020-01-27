@@ -1,7 +1,7 @@
 version 1.0
 import "workflows/structs/structs.wdl"
 import "workflows/mikado/wf_mikado.wdl" as mikado
-import "workflows/exonerate/wf_exonerate.wdl" as exonerate
+# import "workflows/exonerate/wf_exonerate.wdl" as exonerate
 import "workflows/repeat_masker/wf_repeat_masker.wdl" as repeatmasker
 import "workflows/portcullis/wf_portcullis.wdl" as portcullis_s
 import "workflows/assembly_short/wf_assembly_short.wdl" as assm_s
@@ -88,15 +88,15 @@ workflow ei_annotation {
         reference_fasta = wf_sanitize.indexed_reference.fasta
     }
 
-    call exonerate.wf_exonerate as Exonerate {
-        input:
-        clean_indexed_protein_db = "",
-        masked_genome = RepeatMasker.masked_genome
-    }
+    # call exonerate.wf_exonerate as Exonerate {
+    #     input:
+    #     clean_indexed_protein_db = "",
+    #     masked_genome = RepeatMasker.masked_genome
+    # }
 
     output {
         File clean_reference = wf_sanitize.reference
-        File clean_reference_index = wf_sanitize.index
+        IndexedReference clean_reference_index = wf_sanitize.indexed_reference
         File? clean_annotation = wf_sanitize.annotation
         Array[File] gsnap_index = wf_index.gsnap_index
         Array[File] hisat_index = wf_index.hisat_index
@@ -121,6 +121,6 @@ workflow ei_annotation {
         File mikado_short_config = Mikado_short.mikado_config
         File? mikado_short_orfs = Mikado_short.orfs
 
-        File rm_out = RepeatMasker.masked_genome
+        IndexedReference masked_genome = RepeatMasker.masked_genome
     }
 }

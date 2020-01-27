@@ -1,6 +1,7 @@
 version 1.0
 
 import "../structs/structs.wdl"
+import "../structs/tasks.wdl" as tsk
 
 workflow wf_sanitize {
     input {
@@ -21,16 +22,15 @@ workflow wf_sanitize {
         File wf_maybe_clean_annotation = sanitizeAnnotation.sanitised_annotation
     }
 
-    call indexReference {
+    call tsk.IndexFasta {
         input:
-        reference = sanitizeReference.sanitised_reference
+        reference_fasta = sanitizeReference.sanitised_reference
     }
     
     output {
         File? annotation = wf_maybe_clean_annotation
         File reference = sanitizeReference.sanitised_reference
-        File index = indexReference.sanitised_reference_index
-        IndexedReference indexed_reference = {"fasta": sanitizeReference.sanitised_reference, "fai": indexReference.sanitised_reference_index}
+        IndexedReference indexed_reference = IndexFasta.indexed_fasta
     }
 }
 
@@ -40,7 +40,7 @@ task sanitizeReference {
     }
 
     output {
-        File sanitised_reference = 'reference.san.fasta'
+        File sanitised_reference = "reference.san.fasta"
     }
 
     command <<<
@@ -65,20 +65,5 @@ task sanitizeAnnotation {
         else
             ln ~{annotation} "reference.san.gtf"
         fi
-    >>>
-}
-
-task indexReference {
-    input {
-        File reference
-    }
-
-    output {
-        File sanitised_reference_index = "reference.san.fasta.fai"
-    }
-
-    command <<<
-        ln -s ~{reference} "reference.san.fasta"
-        samtools faidx "reference.san.fasta"
     >>>
 }
