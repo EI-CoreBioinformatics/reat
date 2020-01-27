@@ -1,5 +1,8 @@
 version 1.0
 
+import "../structs/structs.wdl"
+import "../structs/tasks.wdl"
+
 workflow wf_repeat_masker {
     input {
         File reference_fasta
@@ -23,12 +26,12 @@ workflow wf_repeat_masker {
     }
 
     if (retrieve_known) {
-        String def_one = select_first([clade, specie])
-        call RetrieveLibraries {
-            input:
-            clade = clade,
-            specie = specie,
-            any = def_one
+        if (defined(clade) || defined(specie)) {
+            call RetrieveLibraries {
+                input:
+                clade = clade,
+                specie = specie
+            }
         }
     }
 
@@ -44,8 +47,13 @@ workflow wf_repeat_masker {
         reference_fasta = reference_fasta
     }
 
+    call tasks.IndexFasta {
+        input: 
+        reference_fasta = RepeatMasker.masked_genome
+    }
+
     output {
-        File masked_genome = RepeatMasker.masked_genome
+        IndexedReference masked_genome = IndexFasta.indexed_fasta
     }
 }
 
@@ -82,7 +90,6 @@ task RetrieveLibraries {
     input {
         String? clade
         String? specie
-        String any
     }
 
     output {
