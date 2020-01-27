@@ -8,7 +8,7 @@ workflow wf_repeat_masker {
         File reference_fasta
         Boolean run_modeller = true
         Boolean retrieve_known = false
-        Array[File]? safe_cds_sequences
+        Array[File]? safe_proteins
         String? clade
         String? specie
     }

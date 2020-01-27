@@ -32,3 +32,17 @@ task IndexFasta {
         samtools faidx ~{basename(reference_fasta)}
     >>>
 }
+
+task sanitizeFasta {
+    input {
+        File reference
+    }
+
+    output {
+        File sanitised_reference = "reference.san.fasta"
+    }
+
+    command <<<
+        sanitize_sequence_db.py -o "reference.san.fasta" ~{reference}
+    >>>
+}
