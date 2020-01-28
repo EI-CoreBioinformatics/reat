@@ -10,7 +10,7 @@ task SplitSequences {
     }
 
     output {
-        Array[File] seq_files = glob("out*")
+        Array[File] seq_files = glob(prefix+"*")
     }
 
     command <<<

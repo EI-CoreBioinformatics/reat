@@ -6,7 +6,7 @@ import "../structs/tasks.wdl" as tasks
 workflow wf_exonerate {
     input {
         IndexedReference masked_reference_genome
-        Array[File] related_species_protein
+        Array[LabeledFasta] related_species_protein
     }
 
     call ExonerateDatabase {
@@ -14,14 +14,15 @@ workflow wf_exonerate {
         target = masked_reference_genome
     }
 
-    scatter (specie_protein in related_species_protein) {
+    scatter (specie_proteins in related_species_protein) {
         call tasks.sanitizeFasta {
             input:
-            reference = specie_protein
+            reference = specie_proteins.fasta
         }
 
         call tasks.SplitSequences {
             input:
+            prefix = specie_proteins.label,
             sequences_file = sanitizeFasta.sanitised_reference
         }
 
@@ -32,7 +33,6 @@ workflow wf_exonerate {
                 target_db = ExonerateDatabase.db
             }
         }
-
         Array[File] specie_exonerate_result = Exonerate.hits
     }
 
@@ -40,7 +40,6 @@ workflow wf_exonerate {
 
     output {
         Array[Array[File]] exonerate_results = exonerate_hits
-        String gff3 = "gff3"
     }
 }
 
@@ -55,7 +54,7 @@ task ExonerateDatabase {
     }
 
     command <<<
-    fasta2esd --softmask yes ~{target} ~{basename(target.fasta)}".esd"
+    fasta2esd --softmask yes ~{target.fasta} ~{basename(target.fasta)}".esd"
     esd2esi --translate yes ~{basename(target.fasta)}".esd" ~{basename(target.fasta)}".esi"
     >>>
 }
@@ -72,6 +71,6 @@ task Exonerate {
 
     command <<<
     exonerate_wrapper.py -ir 20 2000 -t 4 --geneseed 250 --hspfilter 100 --score 50 --percent 30 \
-    --serverlog server.log --log mapping.log ~{target_db} exonerate.txt
+    --serverlog server.log --log mapping.log ~{target_db} ~{basename(query)}.hits
     >>>
 }

@@ -1,0 +1,13 @@
+{
+  "ei_annotation.reference_genome": "/Users/yanesl/rundir/wdl_cromwell/inputs/genome/tair10.ss.fa",
+  "ei_annotation.paired_samples" : [{
+    "name": "sample1",
+    "strand": "fr-firststrand",
+    "R1": "/Users/yanesl/rundir/wdl_cromwell/inputs/transcriptome/short_rna/PRJEB7093_1.ss.fastq.gz",
+    "R2": "/Users/yanesl/rundir/wdl_cromwell/inputs/transcriptome/short_rna/PRJEB7093_2.ss.fastq.gz"
+  }],
+  "ei_annotation.protein_related_species": [{
+    "label": "BrapaFPsc_277",
+    "fasta": "/Users/yanesl/rundir/wdl_cromwell/inputs/proteins_related_species/BrapaFPsc_277_v1.3.protein.fa"
+  }]
+}

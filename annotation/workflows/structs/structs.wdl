@@ -50,3 +50,8 @@ struct IndexedReference {
     File fasta
     File fai
 }
+
+struct LabeledFasta {
+    String label
+    File fasta
+}

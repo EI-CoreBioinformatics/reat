@@ -15,7 +15,7 @@ workflow ei_annotation {
         Array[PRSample] paired_samples
         Array[LRSample]? long_read_samples
         File reference_genome
-        Array[File]? protein_related_species
+        Array[LabeledFasta]? protein_related_species
         File? annotation
         File? mikado_scoring_file
     }
@@ -90,7 +90,7 @@ workflow ei_annotation {
     }
 
     if (defined(protein_related_species)) {
-        Array[File] def_protein_related_species = select_first([protein_related_species])
+        Array[LabeledFasta] def_protein_related_species = select_first([protein_related_species])
         call exonerate.wf_exonerate as Exonerate {
             input:
             related_species_protein = def_protein_related_species,
