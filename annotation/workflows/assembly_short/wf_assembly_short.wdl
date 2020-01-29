@@ -1,6 +1,6 @@
 version 1.0
 
-import "../structs/structs.wdl"
+import "../common/structs.wdl"
 
 workflow wf_assembly_short {
     input {

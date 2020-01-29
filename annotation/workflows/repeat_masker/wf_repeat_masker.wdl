@@ -1,7 +1,7 @@
 version 1.0
 
-import "../structs/structs.wdl"
-import "../structs/tasks.wdl"
+import "../common/structs.wdl"
+import "../common/tasks.wdl"
 
 workflow wf_repeat_masker {
     input {

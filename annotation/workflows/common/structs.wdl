@@ -4,6 +4,8 @@ struct LRSample {
     String name
     String strand
     File LR
+    Int? score
+    Boolean? is_ref
 }
 
 struct PRSample {
@@ -11,12 +13,16 @@ struct PRSample {
     String strand
     File R1
     File R2
+    Int? score
+    Boolean? is_ref
 }
 
 struct SESample {
     String name
     String strand
     File SR
+    Int? score
+    Boolean? is_ref
 }
 
 struct AlignedSample {

@@ -1,7 +1,7 @@
 version 1.0
 
-import "../structs/structs.wdl"
-import "../structs/tasks.wdl" as tsk
+import "../common/structs.wdl"
+import "../common/tasks.wdl" as tsk
 
 workflow wf_sanitize {
     input {

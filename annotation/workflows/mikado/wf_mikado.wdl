@@ -1,15 +1,15 @@
 version 1.0
 
-import "../structs/structs.wdl"
+import "../common/structs.wdl"
 import "orf_caller/wf_transdecoder.wdl" as tdc
 import "homology/wf_homology.wdl" as hml
 
 workflow wf_mikado {
     input {
-        Array[AssembledSample] assemblies
+        Array[AssembledSample]? short_assemblies
         Array[AssembledSample]? long_assemblies
         IndexedReference indexed_reference
-        File junctions
+        File? junctions
         String gencode = "Universal"
         String orf_caller = "None"
         Boolean mikado_do_homology_assessment = false
@@ -17,10 +17,13 @@ workflow wf_mikado {
         File? dbs
     }
 
-    scatter (sr_assembly in assemblies) {
-        call GenerateModelsList as sr_models {
-            input:
-            assembly = sr_assembly
+    if (defined(short_assemblies)) {
+        Array[AssembledSample] def_short_assemblies = select_first([short_assemblies])
+        scatter (sr_assembly in def_short_assemblies) {
+            call GenerateModelsList as sr_models {
+                input:
+                assembly = sr_assembly
+            }
         }
     }
 
@@ -151,7 +154,7 @@ task MikadoSerialise {
         File transcripts
         Array[File]? homology_alignments
         File? clean_seqs_db
-        File junctions
+        File? junctions
         File? orfs
     }
 

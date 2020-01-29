@@ -1,7 +1,7 @@
 version 1.0
 
-import "../../structs/structs.wdl"
-import "../../structs/tasks.wdl" as tasks
+import "../../common/structs.wdl"
+import "../../common/tasks.wdl" as tasks
 import "../align_protein/wf_protein_aligner.wdl" as prt_aln
 
 workflow wf_homology {

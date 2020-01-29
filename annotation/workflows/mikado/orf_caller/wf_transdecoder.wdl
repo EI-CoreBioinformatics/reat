@@ -1,6 +1,6 @@
 version 1.0
 
-import "../../structs/structs.wdl"
+import "../../common/structs.wdl"
 import "../align_protein/wf_protein_aligner.wdl" as prt_aln
 
 workflow wf_transdecoder {
