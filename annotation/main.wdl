@@ -1,20 +1,19 @@
 version 1.0
-import "workflows/structs/structs.wdl"
-import "workflows/mikado/wf_mikado.wdl" as mikado
+
+import "mikado.wdl" as wfm
+import "align.wdl" as waln
+import "workflows/common/structs.wdl"
 import "workflows/exonerate/wf_exonerate.wdl" as exonerate
 import "workflows/repeat_masker/wf_repeat_masker.wdl" as repeatmasker
-import "workflows/portcullis/wf_portcullis.wdl" as portcullis_s
-import "workflows/assembly_short/wf_assembly_short.wdl" as assm_s
-import "workflows/align_short/wf_align_short.wdl" as aln_s
-import "workflows/align_long/wf_align_long.wdl" as aln_l
 import "workflows/sanitize/wf_sanitize.wdl" as san
 import "workflows/index/wf_index.wdl" as idx
 
 workflow ei_annotation {
     input {
-        Array[PRSample] paired_samples
-        Array[LRSample]? long_read_samples
         File reference_genome
+        Array[PRSample]? paired_samples
+        Array[LRSample]? LQ_long_read_samples
+        Array[LRSample]? HQ_long_read_samples
         Array[LabeledFasta]? protein_related_species
         File? annotation
         File? mikado_scoring_file
@@ -31,57 +30,22 @@ workflow ei_annotation {
         reference = wf_sanitize.reference
     }
 
-    call aln_s.wf_align_short {
+    call waln.wf_align {
         input:
-        samples = paired_samples,
-        annotation = wf_sanitize.annotation,
-        gsnap_index = wf_index.gsnap_index,
-        hisat_index = wf_index.hisat_index,
-        star_index = wf_index.star_index
-    }
-
-    # Sort and index the bams
-
-    call assm_s.wf_assembly_short {
-        input:
-        aligned_samples = wf_align_short.indexed_aligned_samples,
+        reference_genome = wf_sanitize.reference,
+        paired_samples = paired_samples,
+        LQ_long_read_samples = LQ_long_read_samples,
+        HQ_long_read_samples = HQ_long_read_samples,
         annotation = wf_sanitize.annotation
     }
 
-    if (defined(long_read_samples)) {
-        Array[LRSample] def_long_sample = select_first([long_read_samples])
-        call aln_l.wf_align_long {
-            input:
-            reference = wf_sanitize.reference,
-            # annotation = wf_sanitize.annotation,
-            long_sample = def_long_sample,
-            star_index = wf_index.star_index
-        }
-    }
-
-    call portcullis_s.portcullis {
+    call wfm.wf_mikado {
         input:
-        reference = wf_sanitize.reference,
-        annotation = wf_sanitize.annotation,
-        aligned_samples = wf_align_short.indexed_aligned_samples
-    }
-
-    Array[AssembledSample]? long_assemblies_valid = wf_align_long.assemblies
-    call mikado.wf_mikado as Mikado_long {
-        input:
-        scoring_file = mikado_scoring_file,
-        indexed_reference =  wf_sanitize.indexed_reference,
-        assemblies = wf_assembly_short.assemblies,
-        long_assemblies = long_assemblies_valid,
-        junctions = portcullis.bed
-    }
-
-    call mikado.wf_mikado as Mikado_short {
-        input:
-        scoring_file = mikado_scoring_file,
-        indexed_reference =  wf_sanitize.indexed_reference,
-        assemblies = wf_assembly_short.assemblies,
-        junctions = portcullis.bed
+        mikado_scoring_file = mikado_scoring_file,
+        reference_genome = wf_sanitize.indexed_reference,
+        LQ_align = wf_align.lq_gff,
+        HQ_align = wf_align.hq_gff,
+        SR_align = wf_align.sr_gff
     }
 
     call repeatmasker.wf_repeat_masker as RepeatMasker {
@@ -106,24 +70,11 @@ workflow ei_annotation {
         Array[File] hisat_index = wf_index.hisat_index
         Array[File] star_index = wf_index.star_index
 
-        Array[IndexedAlignedSample] bams = wf_align_short.indexed_aligned_samples
-        Array[File] stats = wf_align_short.stats
-        Array[Array[File]] plots = wf_align_short.plots
+        File mikado_long_config = wf_mikado.mikado_long_config
+        File? mikado_long_orfs = wf_mikado.mikado_long_orfs
 
-        Array[AssembledSample] short_assemblies = wf_assembly_short.assemblies
-
-        File filtered_tab = portcullis.tab
-        File filtered_bed = portcullis.bed
-        File filtered_gff3 = portcullis.gff3
-
-        Array[AlignedSample?]? l_bams = wf_align_long.bams
-        Array[AssembledSample?]? l_gff = wf_align_long.assemblies
-
-        File mikado_long_config = Mikado_long.mikado_config
-        File? mikado_long_orfs = Mikado_long.orfs
-
-        File mikado_short_config = Mikado_short.mikado_config
-        File? mikado_short_orfs = Mikado_short.orfs
+        File mikado_short_config = wf_mikado.mikado_short_config
+        File? mikado_short_orfs = wf_mikado.mikado_short_orfs
 
         IndexedReference masked_genome = RepeatMasker.masked_genome
 
