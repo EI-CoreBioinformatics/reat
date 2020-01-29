@@ -1,19 +1,18 @@
 version 1.0
 
-import "../structs/structs.wdl"
+import "../common/structs.wdl"
 
 workflow wf_align_long {
     input {
-        Array[LRSample] long_sample
-        # File? annotation
-        Array[File] star_index
         File reference
+        Array[LRSample] long_samples
+        # File? annotation
     }
 
-    if(defined(long_sample)) {
+    scatter (sample in long_samples) {
         call Minimap2Long {
             input:
-            long_sample = long_sample[0],
+            long_sample = sample,
             reference = reference
         }
 
@@ -24,8 +23,8 @@ workflow wf_align_long {
     }
 
     output {
-        Array[AlignedSample?] bams = [Minimap2Long.aligned_sample]
-        Array[AssembledSample] assemblies = select_all([Minimap2Long2Gff.assembled_sample])
+        Array[AlignedSample] bams = Minimap2Long.aligned_sample
+        Array[AssembledSample] assemblies = Minimap2Long2Gff.assembled_sample
     }
 
 }
@@ -84,64 +83,6 @@ task GMapLong {
         --nthreads=4 > gmap.out.gff
     >>>
 }
-
-task StarLong {
-    input {
-        File? LR
-        Array[File] index
-        File? annotation
-        String dollar = "$"
-    }
-    
-    output {
-        File bam = "STARlong.out.bam"
-    }
-
-    command <<<
-        lr_file=~{LR}
-        lr_ext=${lr_file##*.}
-        compression=""
-        case "${lr_ext}" in
-            gz)
-            compression="${compression}--readFilesCommand \"gzip -dc\""
-            ;;
-            bz | bz2)
-            compression="${compression}--readFilesCommand \"bzip2 -dc\""
-            ;;
-        esac
-
-            STARlong --genomeDir "$(dirname ~{index[0]})" \
-    --runThreadN 4 \
-    ~{dollar}{compression} \
-    --runMode alignReads \
-    --readNameSeparator space \
-    --outFilterMultimapScoreRange 1 \
-    --outFilterMismatchNmax 2000 \
-    --scoreGapNoncan -20 \
-    --scoreGapGCAG -4 \
-    --scoreGapATAC -8 \
-    --scoreDelOpen -1 \
-    --scoreDelBase -1 \
-    --scoreInsOpen -1 \
-    --scoreInsBase -1 \
-    --alignEndsType Local \
-    --seedSearchStartLmax 50 \
-    --seedPerReadNmax 100000 \
-    --seedPerWindowNmax 1000 \
-    --alignTranscriptsPerReadNmax 100000 \
-    --alignTranscriptsPerWindowNmax 10000 \
-    --outSAMtype BAM Unsorted \
-    --outSAMattributes NH HI NM MD \
-    --outSAMstrandField intronMotif \
-    --alignIntronMin 20 \
-    --alignIntronMax 2000 \
-    --alignMatesGapMax 2000 \
-    ~{"--sjdbGTFfile " + annotation} \
-    --outFileNamePrefix STARlong.out \
-    --readFilesIn ~{LR}
-    >>>
-}
-
 
 task Minimap2Long {
     input {
