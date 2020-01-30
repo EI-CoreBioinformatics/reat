@@ -30,7 +30,8 @@ workflow wf_exonerate {
             call Exonerate {
                 input:
                 query = seq_file,
-                target_db = ExonerateDatabase.db
+                db_esi = ExonerateDatabase.esi,
+                db_esd = ExonerateDatabase.esd
             }
         }
 
@@ -51,18 +52,20 @@ task ExonerateDatabase {
     }
 
     output {
-        File db = basename(target.fasta)+".esi"
+        File esi = basename(target.fasta)+".esi"
+        File esd = basename(target.fasta)+".esd"
     }
 
     command <<<
-    fasta2esd --softmask yes ~{target.fasta} ~{basename(target.fasta)}".esd"
-    esd2esi --translate yes ~{basename(target.fasta)}".esd" ~{basename(target.fasta)}".esi"
+    fasta2esd --softmask yes "~{target.fasta}" "~{basename(target.fasta)}.esd" && \
+    esd2esi --translate yes "~{basename(target.fasta)}.esd" "~{basename(target.fasta)}.esi"
     >>>
 }
 
 task Exonerate {
     input {
-        File target_db
+        File db_esd
+        File db_esi
         File query
     }
 
@@ -71,7 +74,9 @@ task Exonerate {
     }
 
     command <<<
-    exonerate_wrapper.py -M 2000 -ir 20 2000 -t 4 --geneseed 250 --hspfilter 100 --score 50 --percent 30 \
-    --serverlog server.log --log mapping.log ~{target_db} ~{query} exonerate.hits
+    ln ~{db_esd} .
+    ln ~{db_esi} .
+    exonerate_wrapper.py -M 2 -ir 20 2000 -t 4 --geneseed 250 --hspfilter 100 --score 50 --percent 30 \
+    --serverlog server.log --log mapping.log ~{basename(db_esi)} ~{query} exonerate.hits
     >>>
 }
