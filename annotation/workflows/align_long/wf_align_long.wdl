@@ -6,25 +6,71 @@ workflow wf_align_long {
     input {
         File reference
         Array[LRSample] long_samples
+        File? junctions
+        String aligner = "minimap2"
+        String assembler = "None"
         # File? annotation
     }
 
-    scatter (sample in long_samples) {
-        call Minimap2Long {
-            input:
-            long_sample = sample,
-            reference = reference
-        }
+    # Add aligner option
+    if (aligner == "minimap2") {
+        scatter (sample in long_samples) {
+            call Minimap2Long {
+                input:
+                long_sample = sample,
+                reference = reference
+            }
 
-        call Minimap2Long2Gff {
-            input:
-            aligned_sample = Minimap2Long.aligned_sample
+            call Minimap2Long2Gff {
+                input:
+                aligned_sample = Minimap2Long.aligned_sample
+            }
         }
     }
 
+    if (aligner == "gmap") {
+        scatter (sample in long_samples) {
+            call GMapIndex {
+                input:
+                reference = reference
+            }
+
+            call GMapLong {
+                input:
+                gmap_index = GMapIndex.gmap_index,
+                reference = reference,
+                sample = sample
+
+            }
+        }
+    }
+
+    Array[AlignedSample] def_alignments = select_first([GMapLong.aligned_sample, Minimap2Long.aligned_sample])
+
+    # if (assembler != "None") {
+        # if ( assembler == "gffread" ) {
+        #     call GffRead {
+        #         input:
+        #         genome = reference_fasta,
+        #     }
+        # }
+        # if ( assembler == "stringtie" ) {
+        #     call Stringtie2 {
+        #         input:
+        #         samples = def_alignments,
+
+        #     }
+        # }
+        # Select assembled from options
+    # }
+
+    # Store optional assemblies or outputs from alignments
+
+    # Add assembler option
+
     output {
-        Array[AlignedSample] bams = Minimap2Long.aligned_sample
-        Array[AssembledSample] assemblies = Minimap2Long2Gff.assembled_sample
+        Array[AlignedSample] bams = def_alignments
+        Array[AssembledSample] assemblies = select_first([Minimap2Long2Gff.assembled_sample])
     }
 
 }
@@ -61,7 +107,7 @@ task GMapLong {
     input {
         File reference
         Array[File] gmap_index
-        File? LR
+        LRSample sample
         File? iit
         Int? min_trimmed_coverage
         Int? min_identity
@@ -69,11 +115,12 @@ task GMapLong {
     }
 
     output {
+        AlignedSample aligned_sample = {"name": sample.name, "strand": sample.strand, "aligner": "gmap", "bam": "gmap.out.gff"}
         File gff = "gmap.out.gff"
     }
 
     command <<<
-        gzcat ~{LR} | $(determine_gmap.py ~{reference}) --dir="$(dirname ~{gmap_index[0]})" --db=test_genome \
+        gzcat ~{sample.LR} | $(determine_gmap.py ~{reference}) --dir="$(dirname ~{gmap_index[0]})" --db=test_genome \
         --min-intronlength=20 --intronlength=2000 \
         ~{"-m " + iit} \
         ~{"--min-trimmed-coverage=" + min_trimmed_coverage} \
@@ -118,6 +165,6 @@ task Minimap2Long2Gff {
     }
 
     command <<<
-        paftools.js splice2bed -m <(samtools view -h ~{aligned_sample.bam}) | correct_bed12_mappings.py > output.bed12
+        paftools.js splice2bed -m <(samtools view -h ~{aligned_sample.bam}) | correct_bed12_mappings.py > "output.bed12"
     >>>
 }
