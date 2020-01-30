@@ -1,8 +1,8 @@
 version 1.0
 
 import "../common/structs.wdl"
-import "orf_caller/wf_transdecoder.wdl" as tdc
-import "homology/wf_homology.wdl" as hml
+import "./orf_caller/wf_transdecoder.wdl" as tdc
+import "./homology/wf_homology.wdl" as hml
 
 workflow wf_mikado {
     input {
@@ -13,6 +13,7 @@ workflow wf_mikado {
         String gencode = "Universal"
         String orf_caller = "None"
         Boolean mikado_do_homology_assessment = false
+        File? extra_config
         File? scoring_file
         File? dbs
     }
@@ -45,7 +46,8 @@ workflow wf_mikado {
         input:
         reference_fasta = indexed_reference.fasta,
         models = result,
-        scoring_file = scoring_file
+        scoring_file = scoring_file,
+        extra_config = extra_config
     }
 
     # ORF Calling
@@ -237,6 +239,7 @@ task MikadoPrepare {
         File models
         File reference_fasta
         File? scoring_file
+        File? extra_config
     }
 
     output {
@@ -251,6 +254,9 @@ task MikadoPrepare {
         --list=~{models} \
         ~{"--reference=" + reference_fasta} \
         mikado.yaml
+
+        # Merge special configuration file for this run here
+        yaml-merge mikado.yaml ~{extra_config}
 
         mikado prepare --procs=4 --json-conf=mikado.yaml -od mikado_prepare --strip_cds
     >>>
