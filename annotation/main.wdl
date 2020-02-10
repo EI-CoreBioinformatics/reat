@@ -43,8 +43,6 @@ workflow ei_annotation {
         input:
         mikado_scoring_file = mikado_scoring_file,
         reference_genome = wf_sanitize.indexed_reference,
-        LQ_align = wf_align.lq_gff,
-        HQ_align = wf_align.hq_gff,
         SR_align = wf_align.sr_gff
     }
 

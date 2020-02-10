@@ -104,8 +104,6 @@ workflow wf_align {
         File? filtered_gff3 = portcullis.gff3
 
         Array[AlignedSample]? lq_bams = LQ_align.bams
-        Array[AssembledSample]? lq_gff = LQ_align.assemblies
         Array[AlignedSample]? hq_bams = HQ_align.bams
-        Array[AssembledSample]? hq_gff = HQ_align.assemblies
     }
 }
