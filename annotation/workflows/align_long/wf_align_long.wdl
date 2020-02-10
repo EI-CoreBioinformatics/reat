@@ -116,7 +116,6 @@ task GMapLong {
 
     output {
         AlignedSample aligned_sample = {"name": sample.name, "strand": sample.strand, "aligner": "gmap", "bam": "gmap."+sample.name+".sam"}
-        File gff = "gmap.out.gff"
     }
 
     command <<<
