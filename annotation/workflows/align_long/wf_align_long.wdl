@@ -20,11 +20,6 @@ workflow wf_align_long {
                 long_sample = sample,
                 reference = reference
             }
-
-            call Minimap2Long2Gff {
-                input:
-                aligned_sample = Minimap2Long.aligned_sample
-            }
         }
     }
 
@@ -34,13 +29,11 @@ workflow wf_align_long {
                 input:
                 reference = reference
             }
-
             call GMapLong {
                 input:
                 gmap_index = GMapIndex.gmap_index,
                 reference = reference,
                 sample = sample
-
             }
         }
     }
@@ -48,21 +41,28 @@ workflow wf_align_long {
     Array[AlignedSample] def_alignments = select_first([GMapLong.aligned_sample, Minimap2Long.aligned_sample])
 
     # if (assembler != "None") {
-        # if ( assembler == "gffread" ) {
-        #     call GffRead {
-        #         input:
-        #         genome = reference_fasta,
-        #     }
-        # }
-        # if ( assembler == "stringtie" ) {
-        #     call Stringtie2 {
-        #         input:
-        #         samples = def_alignments,
-
-        #     }
-        # }
-        # Select assembled from options
+    #     if ( assembler == "gffread" ) {
+    #         call GffRead {
+    #             input:
+    #             genome = reference_fasta
+    #         }
+    #     }
+    #     if ( assembler == "stringtie" ) {
+    #         call Stringtie2 {
+    #             input:
+    #             samples = def_alignments
+    #         }
+    #     }
+    #     # Select assembled from options
     # }
+
+    # if (assembler == "None") {
+    #     call splicedSam2Gff {
+    #         input:
+    #         alignments = def_alignments
+    #     }
+    # }
+
 
     # Store optional assemblies or outputs from alignments
 
@@ -70,7 +70,7 @@ workflow wf_align_long {
 
     output {
         Array[AlignedSample] bams = def_alignments
-        Array[AssembledSample] assemblies = select_first([Minimap2Long2Gff.assembled_sample])
+        # Array[AssembledSample] assemblies = select_first([Minimap2Long.assembled_sample])
     }
 
 }
@@ -115,7 +115,7 @@ task GMapLong {
     }
 
     output {
-        AlignedSample aligned_sample = {"name": sample.name, "strand": sample.strand, "aligner": "gmap", "bam": "gmap.out.gff"}
+        AlignedSample aligned_sample = {"name": sample.name, "strand": sample.strand, "aligner": "gmap", "bam": "gmap."+sample.name+".sam"}
         File gff = "gmap.out.gff"
     }
 
@@ -126,8 +126,8 @@ task GMapLong {
         ~{"--min-trimmed-coverage=" + min_trimmed_coverage} \
         ~{"--min-identity" + min_identity} \
         ~{"-z " + strand} \
-        --format=gff3_match_cdna \
-        --nthreads=4 > gmap.out.gff
+        --format=samse \
+        --nthreads=4 | samtools view -bS - | samtools sort -@ 4 --reference ~{reference} -T gmap.sort -o gmap.~{sample.name}.bam -
     >>>
 }
 
@@ -138,7 +138,7 @@ task Minimap2Long {
     }
 
     output {
-        AlignedSample aligned_sample = {"name": long_sample.name, "strand": long_sample.strand, "aligner": "minimap2", "bam": "minimap2.out.bam"}
+        AlignedSample aligned_sample = {"name": long_sample.name, "strand": long_sample.strand, "aligner": "minimap2", "bam": "minimap2."+long_sample.name+".bam"}
     }
 
     command <<<
@@ -151,20 +151,6 @@ task Minimap2Long {
         -a -L --MD \
         --eqx -2 \
         --secondary=no \
-        ~{reference} ~{long_sample.LR} | samtools view -bS - | samtools sort -@ 4 --reference ~{reference} -T minimap2.sort -o minimap2.out.bam -
-    >>>
-}
-
-task Minimap2Long2Gff {
-    input {
-        AlignedSample aligned_sample
-    }
-
-    output {
-        AssembledSample assembled_sample = {"name": aligned_sample.name, "strand": aligned_sample.strand, "assembly": "output.bed12"}
-    }
-
-    command <<<
-        paftools.js splice2bed -m <(samtools view -h ~{aligned_sample.bam}) | correct_bed12_mappings.py > "output.bed12"
+        ~{reference} ~{long_sample.LR} | samtools view -bS - | samtools sort -@ 4 --reference ~{reference} -T minimap2.sort -o minimap2.~{long_sample.name}.bam -
     >>>
 }
