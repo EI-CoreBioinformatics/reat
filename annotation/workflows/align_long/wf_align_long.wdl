@@ -40,37 +40,8 @@ workflow wf_align_long {
 
     Array[AlignedSample] def_alignments = select_first([GMapLong.aligned_sample, Minimap2Long.aligned_sample])
 
-    # if (assembler != "None") {
-    #     if ( assembler == "gffread" ) {
-    #         call GffRead {
-    #             input:
-    #             genome = reference_fasta
-    #         }
-    #     }
-    #     if ( assembler == "stringtie" ) {
-    #         call Stringtie2 {
-    #             input:
-    #             samples = def_alignments
-    #         }
-    #     }
-    #     # Select assembled from options
-    # }
-
-    # if (assembler == "None") {
-    #     call splicedSam2Gff {
-    #         input:
-    #         alignments = def_alignments
-    #     }
-    # }
-
-
-    # Store optional assemblies or outputs from alignments
-
-    # Add assembler option
-
     output {
         Array[AlignedSample] bams = def_alignments
-        # Array[AssembledSample] assemblies = select_first([Minimap2Long.assembled_sample])
     }
 
 }
@@ -126,7 +97,7 @@ task GMapLong {
         ~{"--min-identity" + min_identity} \
         ~{"-z " + strand} \
         --format=samse \
-        --nthreads=4 | samtools view -bS - | samtools sort -@ 4 --reference ~{reference} -T gmap.sort -o gmap.~{sample.name}.bam -
+        --nthreads=4 | samtools view -F 4 -F 0x900 -bS - | samtools sort -@ 4 --reference ~{reference} -T gmap.sort -o gmap.~{sample.name}.bam -
     >>>
 }
 
@@ -141,6 +112,8 @@ task Minimap2Long {
     }
 
     command <<<
+        # Replace long_sample.LR with samtools fastq if suffix is bam
+        
         minimap2 \
         -x splice \
         --cs=long \
@@ -150,6 +123,6 @@ task Minimap2Long {
         -a -L --MD \
         --eqx -2 \
         --secondary=no \
-        ~{reference} ~{long_sample.LR} | samtools view -bS - | samtools sort -@ 4 --reference ~{reference} -T minimap2.sort -o minimap2.~{long_sample.name}.bam -
+        ~{reference} ~{long_sample.LR} | samtools view -F 4 -F 0x900 -bS - | samtools sort -@ 4 --reference ~{reference} -T minimap2.sort -o minimap2.~{long_sample.name}.bam -
     >>>
 }

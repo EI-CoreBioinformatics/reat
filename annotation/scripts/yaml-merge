@@ -1,0 +1,40 @@
+#!/usr/bin/env python3
+
+import sys
+import yaml
+
+def merge(fList):
+    '''
+    Takes a list of yaml files and loads them as a single yaml document.
+    Restrictions:
+    1) None of the files may have a yaml document marker (---)
+    2) All of the files must have the same top-level type (dictionary or list)
+    3) If any pointers cross between files, then the file in which they are defined (&) must be 
+    earlier in the list than any uses (*).
+    '''
+
+    if not fList:
+        #if flist is the empty list, return an empty list. This is arbitrary, if it turns out that
+        #an empty dictionary is better, we can do something about that.
+        return []
+
+    sList = []
+    for f in fList:
+        with open(f, 'r') as stream:
+            sList.append(stream.read())
+    fString = ''
+    for s in sList:
+        fString = fString + '\n'+ s
+
+    y = yaml.safe_load(fString)
+
+    return y
+
+def main():
+    y = merge(sys.argv[1:])
+    f = open(sys.argv[1], "w")
+    print(yaml.dump(y,default_flow_style=False), file=f)
+
+if __name__ == "__main__":
+    main()
+
