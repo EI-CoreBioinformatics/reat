@@ -4,6 +4,7 @@ import "workflows/portcullis/wf_portcullis.wdl" as portcullis_s
 import "workflows/assembly_short/wf_assembly_short.wdl" as assm_s
 import "workflows/align_short/wf_align_short.wdl" as aln_s
 import "workflows/align_long/wf_align_long.wdl" as aln_l
+import "workflows/assembly_long/wf_assembly_long.wdl" as assm_l
 import "workflows/sanitize/wf_sanitize.wdl" as san
 import "workflows/index/wf_index.wdl" as idx
 
@@ -61,11 +62,11 @@ workflow wf_align {
 
         # Check what is defined for lq-long and run that
 
-        # call assm_l.wf_assembly_long {
-        #     input:
-        #     reference = wf_sanitize.reference,
-        #     long_alignments = wf_align_long.assemblies
-        # }
+        call assm_l.wf_assembly_long as LQ_assembly {
+            input:
+            reference = wf_sanitize.reference,
+            bams = LQ_align.bams
+        }
     }
 
     if (defined(HQ_long_read_samples)) {
@@ -76,13 +77,13 @@ workflow wf_align {
             long_samples = def_hq_long_sample
         }
 
-        # Check what is defined for lq-long and run that
-
-        # call assm_l.wf_assembly_long {
-        #     input:
-        #     reference = wf_sanitize.reference,
-        #     long_alignments = wf_align_long.assemblies
-        # }
+        # Check what is defined for hq-long and run that
+        
+        call assm_l.wf_assembly_long as HQ_assembly {
+            input:
+            reference = wf_sanitize.reference,
+            bams = HQ_align.bams
+        }
     }
 
     output {
@@ -105,5 +106,8 @@ workflow wf_align {
 
         Array[AlignedSample]? lq_bams = LQ_align.bams
         Array[AlignedSample]? hq_bams = HQ_align.bams
+
+        Array[File]? lq_gff = LQ_assembly.gff
+        Array[File]? hq_gff = HQ_assembly.gff
     }
 }

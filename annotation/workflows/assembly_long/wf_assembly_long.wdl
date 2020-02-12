@@ -9,31 +9,34 @@ workflow wf_assembly_long {
         String assembler = "None"
     }
 
-    if (assembler == "None") {
-        call sam2gff {
-            input:
-            bams = bams
+    scatter (bam in bams) {
+        if (assembler == "None") {
+            call sam2gff {
+                input:
+                bams = [bam]
+            }
         }
-    }
-    if (assembler == "merge") {
-        call gffread_merge {
-            input:
-            bams = bams
+        if (assembler == "merge") {
+            call gffread_merge {
+                input:
+                bams = [bam]
+            }
         }
+
+        if (assembler == "stringtie") {
+            call stringtie_long {
+                input:
+                reference = reference,
+                bams = [bam]
+            }
+        }
+        File def_gff = select_first([sam2gff.gff, gffread_merge.gff, stringtie_long.gff])
     }
 
-    if (assembler == "stringtie") {
-        call stringtie_long {
-            input:
-            reference = reference,
-            bams = bams
-        }
-    }
-
-    File def_gff = select_first([sam2gff.gff, gffread_merge.gff, stringtie_long.gff]) 
     output {
-        File gtf = def_gff
+        Array[File] gff = def_gff
     }
+
 }
 
 task stringtie_long {
