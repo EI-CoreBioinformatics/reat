@@ -5,21 +5,21 @@ import "../common/structs.wdl"
 workflow wf_assembly_long {
     input {
         File reference
-        Array[AlignedSample] bams
+        Array[AlignedSample] aligned_samples
         String assembler = "None"
     }
 
-    scatter (bam in bams) {
+    scatter (sample in aligned_samples) {
         if (assembler == "None") {
             call sam2gff {
                 input:
-                bams = [bam]
+                aligned_sample = sample
             }
         }
         if (assembler == "merge") {
             call gffread_merge {
                 input:
-                bams = [bam]
+                aligned_sample = sample
             }
         }
 
@@ -27,7 +27,7 @@ workflow wf_assembly_long {
             call stringtie_long {
                 input:
                 reference = reference,
-                bams = [bam]
+                aligned_sample = sample
             }
         }
         File def_gff = select_first([sam2gff.gff, gffread_merge.gff, stringtie_long.gff])
@@ -42,7 +42,7 @@ workflow wf_assembly_long {
 task stringtie_long {
     input {
         File reference
-        Array[AlignedSample] bams
+        AlignedSample aligned_sample
     }
 
     output {
@@ -50,13 +50,13 @@ task stringtie_long {
     }
 
     command <<<
-    stringtie ~{"-G " + reference} -L ~{sep=" " bams} -o "result.gff"
+    stringtie ~{"-G " + reference} -L ~{aligned_sample.bam} -o "result.gff"
     >>>
 }
 
 task sam2gff {
     input {
-        Array[AlignedSample] bams
+        AlignedSample aligned_sample
     }
 
     output {
@@ -64,13 +64,13 @@ task sam2gff {
     }
 
     command <<<
-    sam2gff ~{sep=" " bams} > result.gff
+    samtools view -F 4 -F 0x900 ~{aligned_sample.bam} | sam2gff -s ~{aligned_sample.name} > result.gff
     >>>
 }
 
 task gffread_merge {
     input {
-        Array[AlignedSample] bams
+        AlignedSample aligned_sample
     }
 
     output {
@@ -78,6 +78,6 @@ task gffread_merge {
     }
 
     command <<<
-    sam2gff ~{sep=" " bams} | gffread -T -M -K -o result.gff
+    samtools view -F 4 -F 0x900 ~{aligned_sample.bam} | sam2gff -s ~{aligned_sample.name} | gffread -T -M -K -o result.gff
     >>>
 }

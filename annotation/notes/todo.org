@@ -1,0 +1,450 @@
+#+STARTUP: lognotedone
+For functionality:
+ 1 Do it
+ 2 Do it well
+ 3 Do it fast
+
+For speed:
+  1 Get it right.
+  2 Test it's right.
+  3 Profile if slow.
+  4 Optimise.
+  5 Repeat from 2.
+
+For cleanliness:
+  Start refactoring from the right (inner most section)
+
+* Tasks
+** TODO Add collapse/assemble steps for long read samples
+Take the output BAM/SAM and send them right through to the LR_assembly workflow the output of this will be gff3
+   DEADLINE: <2020-02-07 Fri> SCHEDULED: <2020-02-03 Mon>
+   - CLOSING NOTE [2020-02-10 Mon 18:07] \\
+     The output of sam2gff.py matches both gmap and minimap2 output correctly as tested by comparing:
+     
+     vimdiff pinfish_gffread_mm2.gtf mm2_sam2gff_no0N_gffread.gtf
+     vimdiff gene_noCDS_nScore.gtf gmap_samse_n1_sam2gff.gtf
+     
+     This can be used as a great starting point for further development of SAM2GFF output from any of the alignment tools
+*** DONE Checking sam/gene_gff is the same
+    CLOSED: [2020-02-05 Wed 17:20]
+    - CLOSING NOTE [2020-02-05 Wed 17:20] \\
+      They are the same
+**** DONE They are not the same this is due to the quality of some of the read's alignemnts.
+     CLOSED: [2020-02-05 Wed 17:19]
+     - CLOSING NOTE [2020-02-05 Wed 17:19] \\
+       I needed to filter the outputs as the cross comparison of different reads in the same region was skewing the results
+Command line:
+/Users/yanesl/Envs/ei-annotation/bin/mikado compare -r gene.gff3 -p samse_n1.gff3
+634 reference RNAs in 634 genes
+499 predicted RNAs in  499 genes
+--------------------------------- |   Sn |   Pr |   F1 |
+                        Base level: 79.39  94.30  86.21
+            Exon level (stringent): 48.94  56.12  52.28
+              Exon level (lenient): 49.89  56.99  53.21
+                 Splice site level: 51.06  57.10  53.91
+                      Intron level: 53.90  58.75  56.22
+                 Intron level (NR): 47.15  53.11  49.95
+                Intron chain level: 42.00  52.51  46.67
+           Intron chain level (NR): 40.14  50.90  44.89
+      Transcript level (stringent): 37.54  47.70  42.01
+  Transcript level (>=95% base F1): 43.38  54.31  48.23
+  Transcript level (>=80% base F1): 43.69  54.31  48.42
+         Gene level (100% base F1): 37.54  47.70  42.01
+        Gene level (>=95% base F1): 43.38  54.31  48.23
+        Gene level (>=80% base F1): 43.69  54.31  48.42
+
+#   Matching: in prediction; matched: in reference.
+
+            Matching intron chains: 241
+             Matched intron chains: 244
+   Matching monoexonic transcripts: 30
+    Matched monoexonic transcripts: 33
+        Total matching transcripts: 271
+         Total matched transcripts: 277
+
+          Missed exons (stringent): 2737/5360  (51.06%)
+           Novel exons (stringent): 2051/4674  (43.88%)
+            Missed exons (lenient): 2612/5213  (50.11%)
+             Novel exons (lenient): 1963/4564  (43.01%)
+                    Missed introns: 2391/4524  (52.85%)
+                     Novel introns: 1883/4016  (46.89%)
+
+       Missed transcripts (0% nF1): 90/634  (14.20%)
+        Novel transcripts (0% nF1): 22/499  (4.41%)
+             Missed genes (0% nF1): 90/634  (14.20%)
+              Novel genes (0% nF1): 22/499  (4.41%)
+
+**** DONE Filter the alignments and compare again after having collapsed the gff3 output of GMap
+     CLOSED: [2020-02-05 Wed 17:19]
+     - CLOSING NOTE [2020-02-05 Wed 17:19] \\
+       Gff3 filtering
+       
+       
+       Command line:
+       /Users/yanesl/Envs/ei-annotation/bin/mikado compare -r gene_c70.gff3 -p gmap_samse_n1_sam2gff_c70.gff3
+       6 reference RNAs in 6 genes
+       6 predicted RNAs in  6 genes
+       --------------------------------- |   Sn |   Pr |   F1 |
+                               Base level: 100.00  100.00  100.00
+                   Exon level (stringent): 100.00  97.47  98.72
+                     Exon level (lenient): 100.00  97.47  98.72
+                        Splice site level: 100.00  97.18  98.57
+                             Intron level: 97.26  94.67  95.95
+                        Intron level (NR): 97.10  94.37  95.71
+                       Intron chain level: 60.00  60.00  60.00
+                  Intron chain level (NR): 60.00  60.00  60.00
+             Transcript level (stringent): 66.67  66.67  66.67
+         Transcript level (>=95% base F1): 66.67  66.67  66.67
+         Transcript level (>=80% base F1): 66.67  66.67  66.67
+                Gene level (100% base F1): 66.67  66.67  66.67
+               Gene level (>=95% base F1): 66.67  66.67  66.67
+               Gene level (>=80% base F1): 66.67  66.67  66.67
+       
+       #   Matching: in prediction; matched: in reference.
+       
+                   Matching intron chains: 3
+                    Matched intron chains: 3
+          Matching monoexonic transcripts: 1
+           Matched monoexonic transcripts: 1
+               Total matching transcripts: 4
+                Total matched transcripts: 4
+       
+                 Missed exons (stringent): 0/77  (0.00%)
+                  Novel exons (stringent): 2/79  (2.53%)
+                   Missed exons (lenient): 0/77  (0.00%)
+                    Novel exons (lenient): 2/79  (2.53%)
+                           Missed introns: 2/69  (2.90%)
+                            Novel introns: 4/71  (5.63%)
+       
+              Missed transcripts (0% nF1): 0/6  (0.00%)
+               Novel transcripts (0% nF1): 0/6  (0.00%)
+                    Missed genes (0% nF1): 0/6  (0.00%)
+                     Novel genes (0% nF1): 0/6  (0.00%)
+       
+       The results are comparable, can continue development
+Gmap -> gff3 -> filter? -> collapse vs Gmap -> sam -> filter -> gff3 -> collapse
+
+*** DONE Check minimap2 output, filter and generate gff3
+    CLOSED: [2020-02-05 Wed 17:22]
+
+    - CLOSING NOTE [2020-02-05 Wed 17:22] \\
+      Initial output not looking great:
+      
+      Command line:
+      /Users/yanesl/Envs/ei-annotation/bin/mikado compare -r gene_c70.gff3 -p mm2_sam2gff_c70.gff3
+      6 reference RNAs in 6 genes
+      18 predicted RNAs in  18 genes
+      --------------------------------- |   Sn |   Pr |   F1 |
+                              Base level: 41.96  16.20  23.38
+                  Exon level (stringent): 20.78  12.80  15.84
+                    Exon level (lenient): 22.37  13.71  17.00
+                       Splice site level: 31.16  20.09  24.43
+                            Intron level: 27.40  18.69  22.22
+                       Intron level (NR): 28.99  18.69  22.73
+                      Intron chain level: 0.00  0.00  0.00
+                 Intron chain level (NR): 0.00  0.00  0.00
+            Transcript level (stringent): 0.00  0.00  0.00
+        Transcript level (>=95% base F1): 0.00  0.00  0.00
+        Transcript level (>=80% base F1): 0.00  0.00  0.00
+               Gene level (100% base F1): 0.00  0.00  0.00
+              Gene level (>=95% base F1): 0.00  0.00  0.00
+              Gene level (>=80% base F1): 0.00  0.00  0.00
+      
+      #   Matching: in prediction; matched: in reference.
+      
+                  Matching intron chains: 0
+                   Matched intron chains: 0
+         Matching monoexonic transcripts: 0
+          Matched monoexonic transcripts: 0
+              Total matching transcripts: 0
+               Total matched transcripts: 0
+      
+                Missed exons (stringent): 61/77  (79.22%)
+                 Novel exons (stringent): 109/125  (87.20%)
+                  Missed exons (lenient): 59/76  (77.63%)
+                   Novel exons (lenient): 107/124  (86.29%)
+                          Missed introns: 49/69  (71.01%)
+                           Novel introns: 87/107  (81.31%)
+      
+             Missed transcripts (0% nF1): 1/6  (16.67%)
+              Novel transcripts (0% nF1): 12/18  (66.67%)
+                   Missed genes (0% nF1): 1/6  (16.67%)
+                    Novel genes (0% nF1): 12/18  (66.67%)
+*** DONE Check what's going on with minimap2 output
+    CLOSED: [2020-02-05 Wed 17:25]
+    - CLOSING NOTE [2020-02-05 Wed 17:25] \\
+| ref_id                  | ref_gene                | ccode | tid                    | gid               | tid_num_exons | ref_num_exons | n_prec | n_recall |  n_f1 | j_prec | j_recall |  j_f1 | e_prec | e_recall |  e_f1 | distance | location                |
+| -                       | -                       | u     | SRR3655756.5500.mRNA   | SRR3655756.5500   |             2 | -             |    0.0 |      0.0 |   0.0 |    0.0 |      0.0 |   0.0 |    0.0 |      0.0 |   0.0 | -        | Chr4:2133241..2135652   |
+| -                       | -                       | u     | SRR3655756.6001.mRNA   | SRR3655756.6001   |             4 | -             |    0.0 |      0.0 |   0.0 |    0.0 |      0.0 |   0.0 |    0.0 |      0.0 |   0.0 | -        | Chr4:13743708..13745360 |
+| -                       | -                       | u     | SRR3655756.6419.mRNA   | SRR3655756.6419   |             4 | -             |    0.0 |      0.0 |   0.0 |    0.0 |      0.0 |   0.0 |    0.0 |      0.0 |   0.0 | -        | Chr4:14451474..14453802 |
+| -                       | -                       | u     | SRR3655756.14660.mRNA  | SRR3655756.14660  |             5 | -             |    0.0 |      0.0 |   0.0 |    0.0 |      0.0 |   0.0 |    0.0 |      0.0 |   0.0 | -        | Chr4:2489483..2495668   |
+| SRR3655756.24143.mrna1  | SRR3655756.24143.path1  | G     | SRR3655756.24143.mRNA  | SRR3655756.24143  |             2 | 1             |  88.16 |    100.0 | 93.71 |    0.0 |      0.0 |   0.0 |    0.0 |      0.0 |   0.0 | 0        | Chr4:2718189..2719615   |
+| -                       | -                       | u     | SRR3655756.25980.mRNA  | SRR3655756.25980  |            10 | -             |    0.0 |      0.0 |   0.0 |    0.0 |      0.0 |   0.0 |    0.0 |      0.0 |   0.0 | -        | Chr4:274308..278082     |
+| SRR3655756.24143.mrna1  | SRR3655756.24143.path1  | X     | SRR3655756.26633.mRNA  | SRR3655756.26633  |             2 | 1             |  61.68 |    100.0 |  76.3 |    0.0 |      0.0 |   0.0 |    0.0 |      0.0 |   0.0 | 0        | Chr4:2718190..2720098   |
+| SRR3655756.100340.mrna1 | SRR3655756.100340.path1 | I     | SRR3655756.41017.mRNA  | SRR3655756.41017  |             4 | 11            |    0.0 |      0.0 |   0.0 |    0.0 |      0.0 |   0.0 |    0.0 |      0.0 |   0.0 | 0        | Chr4:15072818..16995817 |
+| -                       | -                       | u     | SRR3655756.53262.mRNA  | SRR3655756.53262  |             2 | -             |    0.0 |      0.0 |   0.0 |    0.0 |      0.0 |   0.0 |    0.0 |      0.0 |   0.0 | -        | Chr4:11216971..11219121 |
+| -                       | -                       | u     | SRR3655756.56262.mRNA  | SRR3655756.56262  |             9 | -             |    0.0 |      0.0 |   0.0 |    0.0 |      0.0 |   0.0 |    0.0 |      0.0 |   0.0 | -        | Chr4:222377..225062     |
+| -                       | -                       | u     | SRR3655756.65070.mRNA  | SRR3655756.65070  |             1 | -             |    0.0 |      0.0 |   0.0 |    0.0 |      0.0 |   0.0 |    0.0 |      0.0 |   0.0 | -        | Chr4:161536..163007     |
+| SRR3655756.100340.mrna1 | SRR3655756.100340.path1 | I     | SRR3655756.73036.mRNA  | SRR3655756.73036  |             4 | 11            |    0.0 |      0.0 |   0.0 |    0.0 |      0.0 |   0.0 |    0.0 |      0.0 |   0.0 | 0        | Chr4:15072818..16995817 |
+| SRR3655756.100340.mrna1 | SRR3655756.100340.path1 | X     | SRR3655756.100340.mRNA | SRR3655756.100340 |            10 | 11            |  99.11 |    97.65 | 98.37 |  88.89 |     80.0 | 84.21 |   70.0 |    63.64 | 66.67 | 0        | Chr4:15072818..16995818 |
+| SRR3655756.116361.mrna1 | SRR3655756.116361.path1 | X     | SRR3655756.113509.mRNA | SRR3655756.113509 |            10 | 22            |  92.89 |    43.55 |  59.3 |  66.67 |    29.27 | 40.68 |   40.0 |    18.18 |  25.0 | 0        | Chr4:11496965..11504675 |
+| -                       | -                       | u     | SRR3655756.118271.mRNA | SRR3655756.118271 |            14 | -             |    0.0 |      0.0 |   0.0 |    0.0 |      0.0 |   0.0 |    0.0 |      0.0 |   0.0 | -        | Chr4:11447419..11450608 |
+| SRR3655756.139158.mrna1 | SRR3655756.139158.path1 | j     | SRR3655756.139158.mRNA | SRR3655756.139158 |            19 | 18            |  96.13 |    96.35 | 96.24 |  69.44 |    73.53 | 71.43 |  57.89 |    61.11 | 59.46 | 0        | Chr4:242517..246736     |
+| -                       | -                       | u     | SRR3655756.158074.mRNA | SRR3655756.158074 |             6 | -             |    0.0 |      0.0 |   0.0 |    0.0 |      0.0 |   0.0 |    0.0 |      0.0 |   0.0 | -        | Chr4:17825253..17828176 |
+| SRR3655756.160094.mrna1 | SRR3655756.160094.path1 | j     | SRR3655756.160094.mRNA | SRR3655756.160094 |            17 | 17            |  91.46 |    99.91 |  95.5 |  56.25 |    56.25 | 56.25 |  29.41 |    29.41 | 29.41 | 0        | Chr4:12662879..12667188 |
+Seems like minimap2 lets more transcripts filter through, but the ones that are the same look correct
+
+*** DONE Minimap2 is less prone to small "N" sections than GMAP generating "cleaner" gene models and higher mapping accuracy
+    CLOSED: [2020-02-06 Thu 11:11]
+
+    - CLOSING NOTE [2020-02-06 Thu 11:11]
+[[file:Dropbox/EI/SW-Group/EI-annotation/lr_alignments/SRR3655756.5500_gmap_vs_mm2.png][Example of alignment -> gene model]]
+*** DONE Finish fixing sam2gff for mm2 and gmap output
+    CLOSED: [2020-02-07 Fri 19:05] SCHEDULED: <2020-02-10 Mon>
+    - CLOSING NOTE [2020-02-07 Fri 19:05] \\
+      Done! They all match now for mm2!!!!
+There is hope, the coordinates between spliced_bam2gff and sam2gff match, only the transcript orientations are wrong, correcting them will allow using a single python script for both and all sam output
+** TODO Implement the Genome Threader pipeline
+   DEADLINE: <2020-02-28 Fri> SCHEDULED: <2020-02-17 Mon>
+** TODO Write documentation for the pipeline
+*** TODO Code docs
+*** TODO Diagrams
+*** TODO Usage docs
+*** TODO Document all input variables with meta tags
+*** TODO Write a schema for interactively generating input and input validation
+** TODO Add "extra" options for each command
+** TODO Collect a list of all flavours of gff3 used in the pipeline and simplify it
+** DONE Setup the Myzus_persicae dataset for annotation in n82132
+   CLOSED: [2020-02-11 Tue 15:04] SCHEDULED: <2020-02-11 Tue 11:00>
+   - CLOSING NOTE [2020-02-11 Tue 15:04]
+** DONE <2020-02-10 Mon> Run align_wf on EI HPC using noserver
+   CLOSED: [2020-02-10 Mon 14:43]
+   - CLOSING NOTE [2020-02-10 Mon 14:43]
+*** DONE <2020-02-10 Mon 12:41> Define inputs
+    CLOSED: [2020-02-10 Mon 14:43]
+    - CLOSING NOTE [2020-02-10 Mon 14:43]
+** DONE Create a subset of RNA reads mapping to CHR4 to test the pipeline
+   CLOSED: [2020-01-08 Wed 16:49] SCHEDULED: <2020-01-08 Wed>
+   :LOGBOOK:
+   CLOCK: <2020-01-08 Wed 11:09>--<2020-01-08 Wed 16:52>
+   :END:
+** DONE Investigate why there's a failing query on Portcullis results
+   CLOSED: [2020-01-08 Wed 17:49] SCHEDULED: <2020-01-08 Wed>
+   - CLOSING NOTE [2020-01-08 Wed 17:49] \\
+     Didn't find out why it was failing but could simple transform the in/out steps from Array[Array[File]] to Array[File] and then finally the filtered/merged File for each type of output
+
+[INFO] [01/08/2020 11:53:55.839] [cromwell-system-akka.dispatchers.backend-dispatcher-243] [akka://cromwell-system/user/cromwell-service/WorkflowManagerActor/WorkflowActor-6777c92e-2239-4a27-baf6-09c4931e2a58/WorkflowExecutionActor-6777c92e-2239-4a27-baf6-09c4931e2a58/6777c92e-2239-4a27-baf6-09c4931e2a58-SubWorkflowExecutionActor-SubWorkflow-portcullis:-1:1/66b01287-e0e4-4928-9e5f-864554e506b4-SubWorkflowActor-SubWorkflow-portcullis:-1:1/66b01287-e0e4-4928-9e5f-864554e506b4-EngineJobExecutionActor-portcullis.Filter:3:1/66b01287-e0e4-4928-9e5f-864554e506b4-BackendJobExecutionActor-portcullis.Filter:3:1/BackgroundConfigAsyncJobExecutionActor] BackgroundConfigAsyncJobExecutionActor [UUID(66b01287)portcullis.Filter:3:1]: Status change from WaitingForReturnCode to Done
+[ERROR] [01/08/2020 11:53:57.861] [cromwell-system-akka.actor.default-dispatcher-61] [akka://cromwell-system/user/cromwell-service/ServiceRegistryActor/KeyValue/KvWriteActor] KvWriteActor Failed to properly process data
+cromwell.core.CromwellFatalException: java.sql.BatchUpdateException: Data truncation: Data too long for column 'STORE_VALUE' at row 1
+	at cromwell.core.retry.Retry$$anonfun$withRetry$1.applyOrElse(Retry.scala:47)
+	at cromwell.core.retry.Retry$$anonfun$withRetry$1.applyOrElse(Retry.scala:38)
+	at scala.concurrent.Future.$anonfun$recoverWith$1(Future.scala:417)
+	at scala.concurrent.impl.Promise.$anonfun$transformWith$1(Promise.scala:41)
+	at scala.concurrent.impl.CallbackRunnable.run(Promise.scala:64)
+	at akka.dispatch.BatchingExecutor$AbstractBatch.processBatch(BatchingExecutor.scala:55)
+	at akka.dispatch.BatchingExecutor$BlockableBatch.$anonfun$run$1(BatchingExecutor.scala:92)
+	at scala.runtime.java8.JFunction0$mcV$sp.apply(JFunction0$mcV$sp.java:23)
+	at scala.concurrent.BlockContext$.withBlockContext(BlockContext.scala:85)
+	at akka.dispatch.BatchingExecutor$BlockableBatch.run(BatchingExecutor.scala:92)
+	at akka.dispatch.TaskInvocation.run(AbstractDispatcher.scala:41)
+	at akka.dispatch.ForkJoinExecutorConfigurator$AkkaForkJoinTask.exec(ForkJoinExecutorConfigurator.scala:49)
+	at akka.dispatch.forkjoin.ForkJoinTask.doExec(ForkJoinTask.java:260)
+	at akka.dispatch.forkjoin.ForkJoinPool$WorkQueue.runTask(ForkJoinPool.java:1339)
+	at akka.dispatch.forkjoin.ForkJoinPool.runWorker(ForkJoinPool.java:1979)
+	at akka.dispatch.forkjoin.ForkJoinWorkerThread.run(ForkJoinWorkerThread.java:107)
+Caused by: java.sql.BatchUpdateException: Data truncation: Data too long for column 'STORE_VALUE' at row 1
+	at sun.reflect.GeneratedConstructorAccessor65.newInstance(Unknown Source)
+	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
+	at java.lang.reflect.Constructor.newInstance(Constructor.java:423)
+	at com.mysql.cj.util.Util.handleNewInstance(Util.java:191)
+	at com.mysql.cj.util.Util.getInstance(Util.java:166)
+	at com.mysql.cj.util.Util.getInstance(Util.java:173)
+	at com.mysql.cj.jdbc.exceptions.SQLError.createBatchUpdateException(SQLError.java:224)
+	at com.mysql.cj.jdbc.ClientPreparedStatement.executeBatchedInserts(ClientPreparedStatement.java:772)
+	at com.mysql.cj.jdbc.ClientPreparedStatement.executeBatchInternal(ClientPreparedStatement.java:443)
+	at com.mysql.cj.jdbc.StatementImpl.executeBatch(StatementImpl.java:814)
+	at com.zaxxer.hikari.pool.ProxyStatement.executeBatch(ProxyStatement.java:128)
+	at com.zaxxer.hikari.pool.HikariProxyPreparedStatement.executeBatch(HikariProxyPreparedStatement.java)
+	at cromwell.database.slick.SlickDatabase.$anonfun$createBatchUpsert$2(SlickDatabase.scala:259)
+	at slick.jdbc.JdbcBackend$SessionDef.withPreparedStatement(JdbcBackend.scala:386)
+	at slick.jdbc.JdbcBackend$SessionDef.withPreparedStatement$(JdbcBackend.scala:381)
+	at slick.jdbc.JdbcBackend$BaseSession.withPreparedStatement(JdbcBackend.scala:448)
+	at cromwell.database.slick.SlickDatabase.$anonfun$createBatchUpsert$1(SlickDatabase.scala:253)
+	at slick.jdbc.SimpleJdbcAction.run(StreamingInvokerAction.scala:70)
+	at slick.jdbc.SimpleJdbcAction.run(StreamingInvokerAction.scala:69)
+	at slick.basic.BasicBackend$DatabaseDef$$anon$2.liftedTree1$1(BasicBackend.scala:275)
+	at slick.basic.BasicBackend$DatabaseDef$$anon$2.run(BasicBackend.scala:275)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+	at java.lang.Thread.run(Thread.java:748)
+Caused by: com.mysql.cj.jdbc.exceptions.MysqlDataTruncation: Data truncation: Data too long for column 'STORE_VALUE' at row 1
+	at com.mysql.cj.jdbc.exceptions.SQLExceptionsMapping.translateException(SQLExceptionsMapping.java:104)
+	at com.mysql.cj.jdbc.ClientPreparedStatement.executeInternal(ClientPreparedStatement.java:970)
+	at com.mysql.cj.jdbc.ClientPreparedStatement.executeUpdateInternal(ClientPreparedStatement.java:1109)
+	at com.mysql.cj.jdbc.ClientPreparedStatement.executeUpdateInternal(ClientPreparedStatement.java:1057)
+	at com.mysql.cj.jdbc.ClientPreparedStatement.executeLargeUpdate(ClientPreparedStatement.java:1377)
+	at com.mysql.cj.jdbc.ClientPreparedStatement.executeBatchedInserts(ClientPreparedStatement.java:733)
+	... 16 more
+
+Didn't find out why it was failing but could simple transform the in/out steps from Array[Array[File]] to Array[File] and then finally the filtered/merged File for each type of output
+** DONE Create a struct for the indexed bams with sample names and strandness
+   CLOSED: [2020-01-16 Thu 19:13] SCHEDULED: <2020-01-16 Thu>
+   - CLOSING NOTE [2020-01-16 Thu 19:13] \\
+     Structs created and collating sample information through the pipeline tasks
+     Now I need to update Mikado to take that information and generate the models file correctly
+Pass this struct throughout the workflow to keep track of all the information required by the future steps.
+** DONE Implement first mikado with long reads and make sure it can be reused without long reads
+   CLOSED: [2020-01-23 Thu 11:18] DEADLINE: <2020-01-24 Fri> SCHEDULED: <2020-01-17 Fri>
+   - CLOSING NOTE [2020-01-23 Thu 11:18] \\
+     Implemented mikado with optionally only long read inputs, and a mixed mikado. Should there be a paired read only mikado? Or is this simply the mixed mikado but no long reads present?
+     
+     This has been tested, but some parts like Homology and ORFCalling have not been tested yet. This will need to be done at the TESTING stage
+Taking advantage of the new structs created for carrying forward information regarding the samples, implement a reusable mikado workflow with optionally long reads
+First two big tasks ORFCalling and Homology have been implemented, now working on the next steps Serialise, Pick, Index and Stats <2020-01-21 Tue>
+*** DONE Implement the ORF caller as a dependency to mikado given that it can be shared between short-long/long-only
+    CLOSED: [2020-01-21 Tue 20:07] SCHEDULED: <2020-01-20 Mon>
+    - CLOSING NOTE [2020-01-21 Tue 20:07] \\
+      Done, this needs testing against any protein database at the moment but the skeleton is there.
+      Blast/Diamond and the SanitiseSquence tasks were implemented in a separate file as they are shared with the homology step as suspected
+Started implementation of ORF Caller, seems to have a cleaning step dependency that needs to be checked for multi-use or if is just a single use
+Also, check the blast/diamond step for re-use and simply call the wf within other wfs
+*** DONE Implement the HomologyWrapper again, as a dependency of mikado and pass it in
+    CLOSED: [2020-01-21 Tue 20:09] SCHEDULED: <2020-01-22 Wed>
+    - CLOSING NOTE [2020-01-21 Tue 20:09] \\
+      The homology wrapper is mostly implemented, again needs testing and checking the defaults are correct.
+      This uses the same Blast/Diamond and SanitiseSequence from the ORF calling which was placed in a separate file with only the relevant tasks.
+      Needs to be tested against a protein database to check is properly functioning.
+** DONE Implement RepeatMasker step
+   CLOSED: [2020-01-24 Fri 14:56]
+   - CLOSING NOTE [2020-01-24 Fri 14:56] \\
+     This step has been implemented. It is missing some steps but the main functionality and definition of inputs outputs is there.
+** DONE Use ei's version of repeatmodeler
+   CLOSED: [2020-01-28 Tue 13:24] SCHEDULED: <2020-01-28 Tue>
+   - CLOSING NOTE [2020-01-28 Tue 13:24] \\
+     Had to install a nseg, reconfigure headers of RepeatModeler and check that everything was working ok. Now, that this is working I can continue with the other tasks
+** DONE Update parameters for the input samples according to meeting <2020-01-29 Wed>
+   CLOSED: [2020-01-29 Wed 16:21]
+   - CLOSING NOTE [2020-01-29 Wed 16:21] \\
+     Updated in the workflow
+** DONE Reorganise transcript module workflow into 2 separate parts; mapping and mikado
+   CLOSED: [2020-01-29 Wed 17:49]
+   - CLOSING NOTE [2020-01-29 Wed 17:49] \\
+     Reorganisation done, still need to work on the input cleanup/sanitise and index step to have a complete subdivision of tasks
+** DONE Implement the Exonerate pipeline
+   CLOSED: [2020-01-30 Thu 18:09] DEADLINE: <2020-01-28 Tue> SCHEDULED: <2020-01-27 Mon>
+   - CLOSING NOTE [2020-01-30 Thu 18:09] \\
+     Check https://github.com/ljyanesm/annotation-wdl/commit/1b593f.
+     
+     main workflow currently ending with SucceededState
+   - CLOSING NOTE [2020-01-29 Wed 17:52] \\
+     Keeping the same structure as what Luca had in the previous pipeline, this is currently implemented and working
+This task make take longer than a cople of days, not because of the "chunking" so much as the configuration and checking of the exonerate server.
+*** DONE Test performance for having many workers querying the server. Is it efficient? Check how those efficiency curves look like (servers/worker)/speed.
+    CLOSED: [2020-01-29 Wed 17:51]
+    - CLOSING NOTE [2020-01-29 Wed 17:51] \\
+      Can only use up to the number of CPUs in a single node, won't change for now as there's no simple way of expressing this type of process dependency using Cromwell
+*** DONE Find a way of starting and stopping the exonerate server with the worker's results as dependencies.
+    CLOSED: [2020-01-29 Wed 17:50]
+    - CLOSING NOTE [2020-01-29 Wed 17:50] \\
+      Does not seem like this is going to be possible, so I am going to reuse the exonerate_wrapper.py script wrote by Luca and leave it as many jobs reloading the database just once and subdividing the input fastas instead (This is working)
+This seems difficult to do in practice, requires catching output from the server before starting the workers which does not seem trivial to do in cromwell.
+*** DONE Using the exonerate_wrapper.py in it's current form causes the output to be stored in the python process's memory which makes it unviable for using with cromwell. Find alternative!
+    CLOSED: [2020-01-30 Thu 18:07]
+    - CLOSING NOTE [2020-01-30 Thu 18:07] \\
+      The exonerate wrapper was OK, I was simply not checking the input files were correctly generated for it. Project commint https://github.com/ljyanesm/annotation-wdl/commit/1b593f ends with:
+      [INFO] [01/30/2020 18:05:01.906] [cromwell-system-akka.dispatchers.engine-dispatcher-20] [akka://cromwell-system/user/cromwell-service/WorkflowManagerActor] WorkflowManagerActor WorkflowActor-2234841c-32a6-46da-90b4-fa7e427e5272 is in a terminal state: WorkflowSucceededState
+* Meetings
+** Transcript module meeting <2020-01-29 Wed>
+ Overview of the transcript module pipeline
+
+ #+NAME: fig:figure name
+ #+CAPTION: figure name
+ #+ATTR_ORG: :width 200/250/300/400/500/600
+ #+ATTR_LATEX: :width 2.0in
+ #+ATTR_HTML: :width 200/250/300/400/500/600px
+ [[file:Dropbox/EI/SW-Group/EI-annotation/pipeline_v0.2.JPG]]
+
+ Changes to previous state of the pipeline:
+ - Mikado to take in one "custom" set of parameters for each run_type (short, LQ-long, HQ-long, All) (DONE)
+ - Sample's short read assemblies to be grouped by label
+ - Samples to take extra optional parameters: score, is_ref (DONE)
+ - LQ-long and HQ-long can be either collapsed or assembled 
+ - Output of mikado_prepare could be collapsed using 'gffread' and then filtered before subsequent stages (serialize, pick).
+
+** GMC/Mikado/REAT meeting <2020-02-05 Wed>
+*** GMC
+Preparing publication, not production ready but almost there
+Has been tested found issues
+Find alternative tools to do analysis and then check final output of consolidation of GMC
+E-CASP project paper
+*** Mikado
+Update genes with stop codons
+Strip CDS out
+Run pick forcing original models with high score
+Add UTRs to the original models based on the *new data*
+
+*** REAT
+Using LR for intron chains using correct junctions from Illumina data, mikado can do this or junctools
+
+Benchmark!
+Details!
+
+Fluff (Methylation, deep learning)
+
+*** Portcullis extra development
+
+** Response to reviewers <2020-02-12 Wed>
+The responses are already almost in place, a few comments and additions to make
+https://docs.google.com/document/d/1e925piyMwV___WgEM-PiMmyn31dEVxlI4l2JSe1iiAM/edit
+https://docs.google.com/document/d/10ALZKZa5rgN2CwsB85fBcYwwrXq7s1VLn94ijy9av9A/edit
+https://docs.google.com/document/d/1FivqsGVOab3AWn7c6a3TiT6xQfahlNZHHoQz7ayuDkQ/edit
+
+* Diagrams
+** High quality long read alignment
+#+BEGIN_SRC ditaa :file hq_lr_alignment.png
+
+				      
+		    +-------------------------------------------------+
+		    |          	      				      |
+		    |						      v
+	  +---------+------+	+----------------+	    +-----------------+
+	  | Aligner        |	| Collapse       |	    |                 |
+	  +----------------+	+----------------+	    |                 |
+	  |  GMAP          |    |  Gffread       |	    |                 |
+	  |  Minimap2      |	|                |	    |      DONE	      |
+	  |                +--->|                +--------->|                 |
+	  |                |	|                |	    |                 |
+	  |                |	|                |	    |                 |
+	  +----------------+	+----------------+	    +-----------------+
+
+#+END_SRC
+** Low quality long read alignment
+#+BEGIN_SRC ditaa :file lq_lr_alignment.png
+
+		  +-------------------------------------------------------+
+		  |				                          |
+		  |							  v
+	+---------+-------+	  +------------------+	       +----------------+
+	| Aligner         |       | Assembly         |         |                |
+	+-----------------+	  +------------------+ 	       |                |
+	|  Minimap2       |	  |  Stringtie2      |	       |                |
+	|                 |	  |                  | 	       |      DONE      |      	 
+	|                 +------>|                  +-------->|                |
+	|                 |	  |                  |	       |                |
+	|                 |	  |                  |	       |                |
+	+-----------------+	  +------------------+	       +----------------+
+#+END_SRC
+
+* Notes
+** Scripts in cromwell need to be specified as file paths
+Script handling needs to happen before the pipeline starts at preparation steps, where paths are specfied for the scripts, maybe a small test run on the script to check not only the file exists but also that it is working correctly.
+** <2020-02-11 Tue 17:44> Pipeline submitted to SLURM running as job in cluster
+   - CLOSING NOTE [2020-02-11 Tue 21:53] \\
+     Worked fine, now need to add the assembly stage of the LR pipeline
+All your base belongs to me
+** Cromwell *does not* require a server in order to restart jobs, "cromwell run" *is* enough <2020-02-12 Wed>
+This needs a mechanism to start a server or check if one is already running before launching a job and possibly a mechanism to kill the server if it's the last job running. Not sure how I will implement this at the moment.
+Only run one server per workflow.
+Request a VM and run WDL server + DB server.
+
+This is not true, just tested on the cluster and cromwell seems to remember what it had ran previously correctly <2020-02-12 Wed 18:39>

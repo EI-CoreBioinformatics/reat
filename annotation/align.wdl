@@ -65,7 +65,7 @@ workflow wf_align {
         call assm_l.wf_assembly_long as LQ_assembly {
             input:
             reference = wf_sanitize.reference,
-            bams = LQ_align.bams
+            aligned_samples = LQ_align.bams
         }
     }
 
@@ -82,7 +82,7 @@ workflow wf_align {
         call assm_l.wf_assembly_long as HQ_assembly {
             input:
             reference = wf_sanitize.reference,
-            bams = HQ_align.bams
+            aligned_samples = HQ_align.bams
         }
     }
 
