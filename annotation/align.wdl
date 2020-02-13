@@ -14,13 +14,13 @@ workflow wf_align {
         Array[PRSample]? paired_samples
         Array[LRSample]? LQ_long_read_samples
         Array[LRSample]? HQ_long_read_samples
-        File? annotation
+        File? reference_annotation
     }
 
     call san.wf_sanitize {
         input:
         reference_genome = reference_genome,
-        in_annotation = annotation
+        in_annotation = reference_annotation
     }
 
     call idx.wf_index {
@@ -64,7 +64,7 @@ workflow wf_align {
 
         call assm_l.wf_assembly_long as LQ_assembly {
             input:
-            reference = wf_sanitize.reference,
+            reference_annotation = wf_sanitize.annotation,
             aligned_samples = LQ_align.bams
         }
     }
@@ -81,7 +81,7 @@ workflow wf_align {
         
         call assm_l.wf_assembly_long as HQ_assembly {
             input:
-            reference = wf_sanitize.reference,
+            reference_annotation = wf_sanitize.annotation,
             aligned_samples = HQ_align.bams
         }
     }

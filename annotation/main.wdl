@@ -36,7 +36,7 @@ workflow ei_annotation {
         paired_samples = paired_samples,
         LQ_long_read_samples = LQ_long_read_samples,
         HQ_long_read_samples = HQ_long_read_samples,
-        annotation = wf_sanitize.annotation
+        reference_annotation = wf_sanitize.annotation
     }
 
     call wfm.wf_mikado {

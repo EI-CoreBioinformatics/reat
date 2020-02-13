@@ -6,12 +6,10 @@ workflow wf_align_long {
     input {
         File reference
         Array[LRSample] long_samples
-        File? junctions
+        # File? junctions
         String aligner = "minimap2"
-        String assembler = "None"
-        # File? annotation
     }
-
+    
     # Add aligner option
     if (aligner == "minimap2") {
         scatter (sample in long_samples) {

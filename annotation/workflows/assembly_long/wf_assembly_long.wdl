@@ -4,7 +4,7 @@ import "../common/structs.wdl"
 
 workflow wf_assembly_long {
     input {
-        File reference
+        File? reference_annotation
         Array[AlignedSample] aligned_samples
         String assembler = "None"
     }
@@ -26,7 +26,7 @@ workflow wf_assembly_long {
         if (assembler == "stringtie") {
             call stringtie_long {
                 input:
-                reference = reference,
+                reference_annotation = reference_annotation,
                 aligned_sample = sample
             }
         }
@@ -41,7 +41,7 @@ workflow wf_assembly_long {
 
 task stringtie_long {
     input {
-        File reference
+        File? reference_annotation
         AlignedSample aligned_sample
     }
 
@@ -50,7 +50,7 @@ task stringtie_long {
     }
 
     command <<<
-    stringtie ~{"-G " + reference} -L ~{aligned_sample.bam} -o "result.gff"
+    stringtie -p 4 ~{"-G " + reference_annotation} -L ~{aligned_sample.bam} -o "result.gff"
     >>>
 }
 

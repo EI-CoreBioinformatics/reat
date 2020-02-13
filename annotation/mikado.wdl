@@ -9,7 +9,7 @@ workflow wf_mikado {
         Array[AssembledSample]? LQ_align
         Array[AssembledSample]? HQ_align
         Array[AssembledSample]? SR_align
-        Array[LabeledFasta]? protein_related_species
+        # Array[LabeledFasta]? protein_related_species
         File? annotation_bed
         File? mikado_scoring_file
     }
