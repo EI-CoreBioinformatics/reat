@@ -60,7 +60,23 @@ workflow wf_repeat_masker {
 task BuildModellerDB {
     input {
         File reference_fasta
+        RuntimeAttr? runtime_attr_override
     }
+    
+    RuntimeAttr default_attr = object {
+        cpu_cores: 1,
+        mem_gb: 4,
+        max_retries: 1
+    }
+    
+    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
+
+
+  runtime {
+    cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
+    memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
+    maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+  }
 
     output {
         Array[File] db = glob("genome.*")
@@ -74,7 +90,23 @@ task BuildModellerDB {
 task RepeatModeller {
     input {
         Array[File] db
+        RuntimeAttr? runtime_attr_override
     }
+    
+    RuntimeAttr default_attr = object {
+        cpu_cores: 1,
+        mem_gb: 4,
+        max_retries: 1
+    }
+    
+    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
+
+
+  runtime {
+    cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
+    memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
+    maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+  }
 
     output {
         Array[File] consensi = glob("RM*/consensi.fa.classified")
@@ -90,7 +122,23 @@ task RetrieveLibraries {
     input {
         String? clade
         String? specie
+        RuntimeAttr? runtime_attr_override
     }
+    
+    RuntimeAttr default_attr = object {
+        cpu_cores: 1,
+        mem_gb: 4,
+        max_retries: 1
+    }
+    
+    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
+
+
+  runtime {
+    cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
+    memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
+    maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+  }
 
     output {
         File retrieved = "retrieved.fa"
@@ -106,7 +154,23 @@ task CreateLibrary {
         Array[File]? repeat_modeler_consensi
         File? retrieved_libraries
         File? extra
+        RuntimeAttr? runtime_attr_override
     }
+    
+    RuntimeAttr default_attr = object {
+        cpu_cores: 1,
+        mem_gb: 4,
+        max_retries: 1
+    }
+    
+    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
+
+
+  runtime {
+    cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
+    memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
+    maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+  }
 
     output {
         File repeat_library = "rm_library.fa"
@@ -121,7 +185,23 @@ task RepeatMasker {
     input {
         File rm_library
         File reference_fasta
+        RuntimeAttr? runtime_attr_override
     }
+    
+    RuntimeAttr default_attr = object {
+        cpu_cores: 1,
+        mem_gb: 4,
+        max_retries: 1
+    }
+    
+    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
+
+
+  runtime {
+    cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
+    memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
+    maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+  }
 
     output {
         File masked_genome = basename(reference_fasta) + ".masked"

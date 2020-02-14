@@ -126,7 +126,23 @@ task MikadoPick {
         File mikado_db
         String mode = "permissive"
         Int flank = 200
+        RuntimeAttr? runtime_attr_override
     }
+    
+    RuntimeAttr default_attr = object {
+        cpu_cores: 1,
+        mem_gb: 4,
+        max_retries: 1
+    }
+    
+    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
+
+
+  runtime {
+    cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
+    memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
+    maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+  }
 
     output {
         File metrics = "mikado_pick/mikado-" + mode + ".loci.metrics.tsv"
@@ -158,7 +174,23 @@ task MikadoSerialise {
         File? clean_seqs_db
         File? junctions
         File? orfs
+        RuntimeAttr? runtime_attr_override
     }
+    
+    RuntimeAttr default_attr = object {
+        cpu_cores: 1,
+        mem_gb: 4,
+        max_retries: 1
+    }
+    
+    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
+
+
+  runtime {
+    cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
+    memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
+    maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+  }
 
     output {
         Array[File] out = glob("mikado_serialise/*")
@@ -183,7 +215,23 @@ task GTCDS {
     input {
         File reference
         File gtf
+        RuntimeAttr? runtime_attr_override
     }
+    
+    RuntimeAttr default_attr = object {
+        cpu_cores: 1,
+        mem_gb: 4,
+        max_retries: 1
+    }
+    
+    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
+
+
+  runtime {
+    cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
+    memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
+    maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+  }
 
     output {
         File orfs = "mikado_prepared.gt_cds.trans.bed12"
@@ -203,7 +251,23 @@ task Prodigal {
     input {
         File reference
         String gencode
+        RuntimeAttr? runtime_attr_override
     }
+    
+    RuntimeAttr default_attr = object {
+        cpu_cores: 1,
+        mem_gb: 4,
+        max_retries: 1
+    }
+    
+    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
+
+
+  runtime {
+    cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
+    memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
+    maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+  }
 
     output {
         File orfs = "transcripts.fasta.prodigal.gff3"
@@ -219,7 +283,23 @@ task GenerateModelsList {
     input {
         AssembledSample assembly
         Int long_score_bias = 0
+        RuntimeAttr? runtime_attr_override
     }
+    
+    RuntimeAttr default_attr = object {
+        cpu_cores: 1,
+        mem_gb: 4,
+        max_retries: 1
+    }
+    
+    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
+
+
+  runtime {
+    cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
+    memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
+    maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+  }
 
     output {
         String models = read_string(stdout())
@@ -240,7 +320,23 @@ task MikadoPrepare {
         File reference_fasta
         File? scoring_file
         File? extra_config
+        RuntimeAttr? runtime_attr_override
     }
+    
+    RuntimeAttr default_attr = object {
+        cpu_cores: 1,
+        mem_gb: 4,
+        max_retries: 1
+    }
+    
+    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
+
+
+  runtime {
+    cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
+    memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
+    maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+  }
 
     output {
         File mikado_config = "mikado.yaml"

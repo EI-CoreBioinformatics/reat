@@ -1,6 +1,7 @@
 version 1.0
 
 import "../common/structs.wdl"
+import "../common/rt_struct.wdl"
 
 workflow wf_align_long {
     input {
@@ -47,11 +48,28 @@ workflow wf_align_long {
 task GMapIndex {
     input {
         File reference
+        RuntimeAttr? runtime_attr_override
     }
+    
+    RuntimeAttr default_attr = object {
+        cpu_cores: 1,
+        mem_gb: 4,
+        max_retries: 1
+    }
+    
+    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
+
+
+  runtime {
+    cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
+    memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
+    maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+  }
 
     output {
         Array[File] gmap_index = glob("gmapIndex/test_genome/*")
     }
+
 
     command <<<
         gmap_build --dir=gmapIndex --db=test_genome ~{reference}
@@ -61,7 +79,23 @@ task GMapIndex {
 task GMapExonsIIT {
     input {
         File? annotation
+        RuntimeAttr? runtime_attr_override
     }
+    
+    RuntimeAttr default_attr = object {
+        cpu_cores: 1,
+        mem_gb: 4,
+        max_retries: 1
+    }
+    
+    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
+
+
+  runtime {
+    cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
+    memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
+    maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+  }
 
     output {
         File iit = "gmap_exons.iit"
@@ -81,7 +115,23 @@ task GMapLong {
         Int? min_trimmed_coverage
         Int? min_identity
         String? strand
+        RuntimeAttr? runtime_attr_override
     }
+    
+    RuntimeAttr default_attr = object {
+        cpu_cores: 1,
+        mem_gb: 4,
+        max_retries: 1
+    }
+    
+    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
+
+
+  runtime {
+    cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
+    memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
+    maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+  }
 
     output {
         AlignedSample aligned_sample = {"name": sample.name, "strand": sample.strand, "aligner": "gmap", "bam": "gmap."+sample.name+".sam"}
@@ -103,7 +153,23 @@ task Minimap2Long {
     input {
         LRSample long_sample
         File reference
+        RuntimeAttr? runtime_attr_override
     }
+    
+    RuntimeAttr default_attr = object {
+        cpu_cores: 1,
+        mem_gb: 4,
+        max_retries: 1
+    }
+    
+    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
+
+
+  runtime {
+    cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
+    memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
+    maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+  }
 
     output {
         AlignedSample aligned_sample = {"name": long_sample.name, "strand": long_sample.strand, "aligner": "minimap2", "bam": "minimap2."+long_sample.name+".bam"}

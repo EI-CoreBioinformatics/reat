@@ -64,7 +64,23 @@ task TransdecoderLongOrf {
         Int minprot = 20 # Minimum protein length (TODO make parameter)
         String gencode = "Universal" # Genetic code (TODO Make parameter) 
         # More gencode info https://github.com/TransDecoder/TransDecoder/blob/master/PerlLib/Nuc_translator.pm
+        RuntimeAttr? runtime_attr_override
     }
+    
+    RuntimeAttr default_attr = object {
+        cpu_cores: 1,
+        mem_gb: 4,
+        max_retries: 1
+    }
+    
+    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
+
+
+  runtime {
+    cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
+    memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
+    maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+  }
 
     output {
         File orfs = "longest_orfs.gff3"

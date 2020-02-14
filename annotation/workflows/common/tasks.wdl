@@ -1,6 +1,7 @@
 version 1.0
 
 import "./structs.wdl"
+import "./rt_struct.wdl"
 
 task SplitSequences {
     input {
@@ -21,7 +22,23 @@ task SplitSequences {
 task IndexFasta {
     input {
         File reference_fasta
+        RuntimeAttr? runtime_attr_override
     }
+    
+    RuntimeAttr default_attr = object {
+        cpu_cores: 1,
+        mem_gb: 4,
+        max_retries: 1
+    }
+    
+    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
+
+
+  runtime {
+    cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
+    memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
+    maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+  }
 
     output {
         IndexedReference indexed_fasta = {"fasta": basename(reference_fasta), "fai": basename(reference_fasta)+".fai"}
@@ -36,7 +53,23 @@ task IndexFasta {
 task sanitizeFasta {
     input {
         File reference
+        RuntimeAttr? runtime_attr_override
     }
+    
+    RuntimeAttr default_attr = object {
+        cpu_cores: 1,
+        mem_gb: 4,
+        max_retries: 1
+    }
+    
+    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
+
+
+  runtime {
+    cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
+    memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
+    maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+  }
 
     output {
         File sanitised_reference = "reference.san.fasta"

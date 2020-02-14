@@ -1,6 +1,7 @@
 version 1.0
 
 import "../common/structs.wdl"
+import "../common/rt_struct.wdl"
 
 workflow wf_assembly_short {
     input {
@@ -31,7 +32,23 @@ task Stringtie {
     input {
         IndexedAlignedSample aligned_sample
         File? annotation
+        RuntimeAttr? runtime_attr_override
     }
+    
+    RuntimeAttr default_attr = object {
+        cpu_cores: 1,
+        mem_gb: 4,
+        max_retries: 1
+    }
+    
+    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
+
+
+  runtime {
+    cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
+    memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
+    maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+  }
 
     output {
         File assembled = aligned_sample.name+"."+aligned_sample.aligner+".stringtie.gtf"
@@ -61,7 +78,23 @@ task Stringtie {
 task Scallop {
     input {
         IndexedAlignedSample aligned_sample
+        RuntimeAttr? runtime_attr_override
     }
+    
+    RuntimeAttr default_attr = object {
+        cpu_cores: 1,
+        mem_gb: 4,
+        max_retries: 1
+    }
+    
+    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
+
+
+  runtime {
+    cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
+    memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
+    maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+  }
 
     output {
         File assembled = aligned_sample.name+"."+aligned_sample.aligner+".scallop.gtf"
