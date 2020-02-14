@@ -15,7 +15,19 @@ For cleanliness:
   Start refactoring from the right (inner most section)
 
 * Tasks
-** TODO Add collapse/assemble steps for long read samples
+** TODO Define the compute required for each task and make it customisable
+** TODO Implement the Genome Threader pipeline
+   DEADLINE: <2020-02-28 Fri> SCHEDULED: <2020-02-17 Mon>
+** TODO Write documentation for the pipeline
+*** TODO Code docs
+*** TODO Diagrams
+*** TODO Usage docs
+*** TODO Document all input variables with meta tags
+*** TODO Write a schema for interactively generating input and input validation
+** TODO Add "extra" options for each command
+** TODO Collect a list of all flavours of gff3 used in the pipeline and simplify it
+** DONE Add collapse/assemble steps for long read samples
+   CLOSED: [2020-02-14 Fri 12:10]
 Take the output BAM/SAM and send them right through to the LR_assembly workflow the output of this will be gff3
    DEADLINE: <2020-02-07 Fri> SCHEDULED: <2020-02-03 Mon>
    - CLOSING NOTE [2020-02-10 Mon 18:07] \\
@@ -204,16 +216,6 @@ Seems like minimap2 lets more transcripts filter through, but the ones that are 
     - CLOSING NOTE [2020-02-07 Fri 19:05] \\
       Done! They all match now for mm2!!!!
 There is hope, the coordinates between spliced_bam2gff and sam2gff match, only the transcript orientations are wrong, correcting them will allow using a single python script for both and all sam output
-** TODO Implement the Genome Threader pipeline
-   DEADLINE: <2020-02-28 Fri> SCHEDULED: <2020-02-17 Mon>
-** TODO Write documentation for the pipeline
-*** TODO Code docs
-*** TODO Diagrams
-*** TODO Usage docs
-*** TODO Document all input variables with meta tags
-*** TODO Write a schema for interactively generating input and input validation
-** TODO Add "extra" options for each command
-** TODO Collect a list of all flavours of gff3 used in the pipeline and simplify it
 ** DONE Setup the Myzus_persicae dataset for annotation in n82132
    CLOSED: [2020-02-11 Tue 15:04] SCHEDULED: <2020-02-11 Tue 11:00>
    - CLOSING NOTE [2020-02-11 Tue 15:04]
@@ -368,7 +370,9 @@ This seems difficult to do in practice, requires catching output from the server
  - Mikado to take in one "custom" set of parameters for each run_type (short, LQ-long, HQ-long, All) (DONE)
  - Sample's short read assemblies to be grouped by label
  - Samples to take extra optional parameters: score, is_ref (DONE)
- - LQ-long and HQ-long can be either collapsed or assembled 
+ - LQ-long and HQ-long can be either collapsed or assembled
+   - Does this mean *all* LQ are to be grouped together and *all* HQ grouped together too?
+     I would have expected them to behave similarly to the short reads.
  - Output of mikado_prepare could be collapsed using 'gffread' and then filtered before subsequent stages (serialize, pick).
 
 ** GMC/Mikado/REAT meeting <2020-02-05 Wed>
@@ -388,8 +392,6 @@ Using LR for intron chains using correct junctions from Illumina data, mikado ca
 
 Benchmark!
 Details!
-
-Fluff (Methylation, deep learning)
 
 *** Portcullis extra development
 
