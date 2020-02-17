@@ -137,7 +137,7 @@ task GMapLong {
             in_pipe="samtools fastq ~{sample.LR}"
         fi
 
-        in_pipe | $(determine_gmap.py ~{reference}) --dir="$(dirname ~{gmap_index[0]})" --db=test_genome \
+        $in_pipe | $(determine_gmap.py ~{reference}) --dir="$(dirname ~{gmap_index[0]})" --db=test_genome \
         --min-intronlength=20 --intronlength=2000 \
         ~{"-m " + iit} \
         ~{"--min-trimmed-coverage=" + min_trimmed_coverage} \
@@ -188,7 +188,7 @@ task Minimap2Long {
             in_pipe="samtools fastq ~{long_sample.LR}"
         fi
         
-        in_pipe | \
+        $in_pipe | \
         minimap2 \
         -x splice \
         --cs=long \
