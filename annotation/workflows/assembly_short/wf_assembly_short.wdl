@@ -34,21 +34,8 @@ task Stringtie {
         File? annotation
         RuntimeAttr? runtime_attr_override
     }
-    
-    RuntimeAttr default_attr = object {
-        cpu_cores: 1,
-        mem_gb: 4,
-        max_retries: 1
-    }
-    
-    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
 
-
-  runtime {
-    cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
-    memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
-    maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
-  }
+    Int cpus = 8
 
     output {
         File assembled = aligned_sample.name+"."+aligned_sample.aligner+".stringtie.gtf"
@@ -56,7 +43,7 @@ task Stringtie {
     }
 
     command <<<
-        case "~{aligned_sample.strand}" in
+        case ~{aligned_sample.strand} in
             fr-firststrand)
             strandness="--rf"
             ;;
@@ -66,11 +53,25 @@ task Stringtie {
         esac
 
         stringtie ~{aligned_sample.bam} \
-        -p 4 \
+        -p "~{cpus}" \
         "${strandness}" \
         ~{"-G " + annotation} \
         -o "~{aligned_sample.name+"."+aligned_sample.aligner}.stringtie.gtf"
     >>>
+
+    RuntimeAttr default_attr = object {
+        cpu_cores: "~{cpus}",
+        mem_gb: 8,
+        max_retries: 1
+    }
+    
+    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
+
+    runtime {
+        cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
+        memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
+        maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+    }
 }
 
 
@@ -81,20 +82,7 @@ task Scallop {
         RuntimeAttr? runtime_attr_override
     }
     
-    RuntimeAttr default_attr = object {
-        cpu_cores: 1,
-        mem_gb: 4,
-        max_retries: 1
-    }
-    
-    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
-
-
-  runtime {
-    cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
-    memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
-    maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
-  }
+    Int cpus = 2
 
     output {
         File assembled = aligned_sample.name+"."+aligned_sample.aligner+".scallop.gtf"
@@ -122,4 +110,20 @@ task Scallop {
 
         scallop --verbose 0 -i ~{aligned_sample.bam} -o "~{aligned_sample.name+"."+aligned_sample.aligner}.scallop.gtf" "${strandness}"
     >>>
+
+    RuntimeAttr default_attr = object {
+        cpu_cores: "~{cpus}",
+        mem_gb: 8,
+        max_retries: 1
+    }
+    
+    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
+
+
+    runtime {
+        cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
+        memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
+        maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+    }
+
 }

@@ -85,9 +85,19 @@ task Prepare {
         IndexedAlignedSample sample
         RuntimeAttr? runtime_attr_override
     }
+
+    Int cpus = 8
     
-    RuntimeAttr default_attr = object {
-        cpu_cores: 1,
+    output {
+        Array[File] prep_dir = glob("portcullis_prep/*")
+    }
+
+    command <<<
+        portcullis prep -c -o portcullis_prep -t ~{cpus} ~{reference} ~{sample.bam}
+    >>>
+
+   RuntimeAttr default_attr = object {
+        cpu_cores: "~{cpus}",
         mem_gb: 4,
         max_retries: 1
     }
@@ -95,20 +105,11 @@ task Prepare {
     RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
 
 
-  runtime {
-    cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
-    memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
-    maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
-  }
-
-    output {
-        Array[File] prep_dir = glob("portcullis_prep/*")
+    runtime {
+        cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
+        memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
+        maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
     }
-
-    command <<<
-        portcullis prep -c -o portcullis_prep -t 4 ~{reference} ~{sample.bam}
-    >>>
-
 }
 
 task Junction {
@@ -118,20 +119,7 @@ task Junction {
         RuntimeAttr? runtime_attr_override
     }
     
-    RuntimeAttr default_attr = object {
-        cpu_cores: 1,
-        mem_gb: 4,
-        max_retries: 1
-    }
-    
-    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
-
-
-  runtime {
-    cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
-    memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
-    maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
-  }
+    Int cpus = 8
 
     output {
         Array[File] junc_dir = glob("portcullis_junc/*")
@@ -140,8 +128,22 @@ task Junction {
 
     command <<<
         prep_dir_path="$(dirname ~{prep_dir[0]})"
-        portcullis junc -c ~{"--strandedness="+strand} -t 4  "${prep_dir_path}"
+        portcullis junc -c ~{"--strandedness="+strand} -t ~{cpus}  "${prep_dir_path}"
     >>>
+    RuntimeAttr default_attr = object {
+        cpu_cores: "~{cpus}",
+        mem_gb: 4,
+        max_retries: 1
+    }
+    
+    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
+
+
+    runtime {
+        cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
+        memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
+        maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+    }
 }
 
 task Filter {
@@ -152,22 +154,9 @@ task Filter {
         File tab
         RuntimeAttr? runtime_attr_override
     }
+
+    Int cpus = 8
     
-    RuntimeAttr default_attr = object {
-        cpu_cores: 1,
-        mem_gb: 4,
-        max_retries: 1
-    }
-    
-    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
-
-
-  runtime {
-    cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
-    memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
-    maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
-  }
-
     output {
         File pass = "portcullis_filter.pass.junctions.tab"
     }
@@ -178,8 +167,23 @@ task Filter {
 
         portcullis filter -o portcullis_filter --canonical=OFF \
         --max_length=2000 ~{"--reference " + reference_bed } \
-        --threads=4 "${prep_dir_path}" ~{tab}
+        --threads=~{cpus} "${prep_dir_path}" ~{tab}
     >>>
+
+    RuntimeAttr default_attr = object {
+        cpu_cores: "~{cpus}",
+        mem_gb: 4,
+        max_retries: 1
+    }
+    
+    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
+
+
+    runtime {
+        cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
+        memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
+        maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+    }
 }
 
 task Merge {

@@ -117,36 +117,47 @@ task GMapLong {
         String? strand
         RuntimeAttr? runtime_attr_override
     }
-    
-    RuntimeAttr default_attr = object {
-        cpu_cores: 1,
-        mem_gb: 4,
-        max_retries: 1
-    }
-    
-    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
 
-
-  runtime {
-    cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
-    memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
-    maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
-  }
+    Int cpus = 16
 
     output {
         AlignedSample aligned_sample = {"name": sample.name, "strand": sample.strand, "aligner": "gmap", "bam": "gmap."+sample.name+".sam"}
     }
 
     command <<<
-        gzcat ~{sample.LR} | $(determine_gmap.py ~{reference}) --dir="$(dirname ~{gmap_index[0]})" --db=test_genome \
+        filename=$(basename -- "~{sample.LR}")
+        extension="${filename##*.}"
+
+        in_pipe="gzcat ~{sample.LR}"
+        if [ "$extension" == ".bam" ]
+        then
+            in_pipe="samtools fastq ~{sample.LR}"
+        fi
+
+        in_pipe | $(determine_gmap.py ~{reference}) --dir="$(dirname ~{gmap_index[0]})" --db=test_genome \
         --min-intronlength=20 --intronlength=2000 \
         ~{"-m " + iit} \
         ~{"--min-trimmed-coverage=" + min_trimmed_coverage} \
         ~{"--min-identity" + min_identity} \
         ~{"-z " + strand} \
         --format=samse \
-        --nthreads=4 | samtools view -F 4 -F 0x900 -bS - | samtools sort -@ 4 --reference ~{reference} -T gmap.sort -o gmap.~{sample.name}.bam -
+        --nthreads="~{cpus}" | samtools view -F 4 -F 0x900 -bS - | samtools sort -@ 4 --reference ~{reference} -T gmap.sort -o gmap.~{sample.name}.bam -
     >>>
+
+    RuntimeAttr default_attr = object {
+        cpu_cores: "~{cpus}",
+        mem_gb: 16,
+        max_retries: 1
+    }
+    
+    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
+
+    runtime {
+        cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
+        memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
+        maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+    }
+
 }
 
 task Minimap2Long {
@@ -155,21 +166,8 @@ task Minimap2Long {
         File reference
         RuntimeAttr? runtime_attr_override
     }
-    
-    RuntimeAttr default_attr = object {
-        cpu_cores: 1,
-        mem_gb: 4,
-        max_retries: 1
-    }
-    
-    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
 
-
-  runtime {
-    cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
-    memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
-    maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
-  }
+    Int cpus = 16
 
     output {
         AlignedSample aligned_sample = {"name": long_sample.name, "strand": long_sample.strand, "aligner": "minimap2", "bam": "minimap2."+long_sample.name+".bam"}
@@ -177,16 +175,38 @@ task Minimap2Long {
 
     command <<<
         # Replace long_sample.LR with samtools fastq if suffix is bam
+        filename=$(basename -- "~{long_sample.LR}")
+        extension="${filename##*.}"
+
+        in_pipe="gzcat ~{long_sample.LR}"
+        if [ "$extension" == ".bam" ]
+        then
+            in_pipe="samtools fastq ~{long_sample.LR}"
+        fi
         
+        in_pipe | \
         minimap2 \
         -x splice \
         --cs=long \
         -G 2000 \
         -u b \
-        -t 4 \
+        -t ~{cpus} \
         -a -L --MD \
         --eqx -2 \
         --secondary=no \
-        ~{reference} ~{long_sample.LR} | samtools view -F 4 -F 0x900 -bS - | samtools sort -@ 4 --reference ~{reference} -T minimap2.sort -o minimap2.~{long_sample.name}.bam -
+        ~{reference} - | samtools view -F 4 -F 0x900 -bS - | samtools sort -@ 4 --reference ~{reference} -T minimap2.sort -o minimap2.~{long_sample.name}.bam -
     >>>
+
+    RuntimeAttr default_attr = object {
+        cpu_cores: "~{cpus}",
+        mem_gb: 16,
+        max_retries: 1
+    }
+    
+    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
+    runtime {
+        cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
+        memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
+        maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+    }
 }

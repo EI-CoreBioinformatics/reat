@@ -60,7 +60,7 @@ task sanitizeAnnotation {
 
     command <<<
         filepath=~{annotation}
-        if [ ${filepath##*.} = "gff" ]
+        if [ ${filepath##*.} == "gff" ]
         then
             mikado util convert -of gtf ~{annotation} "reference.san.gtf"
         else

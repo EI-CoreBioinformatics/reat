@@ -225,7 +225,7 @@ task GSnap {
             compression="${compression}--bunzip2"
             ;;
         esac
-        gsnap --nthreads 4 --dir="$(dirname "~{index[0]}")" \
+        gsnap --nthreads ~{runtime_attr.cpu_cores} --dir="$(dirname "~{index[0]}")" \
         --db=ref \
         --novelsplicing=1 \
         ${compression} \

@@ -25,21 +25,6 @@ task IndexFasta {
         RuntimeAttr? runtime_attr_override
     }
     
-    RuntimeAttr default_attr = object {
-        cpu_cores: 1,
-        mem_gb: 4,
-        max_retries: 1
-    }
-    
-    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
-
-
-  runtime {
-    cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
-    memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
-    maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
-  }
-
     output {
         IndexedReference indexed_fasta = {"fasta": basename(reference_fasta), "fai": basename(reference_fasta)+".fai"}
     }
@@ -48,6 +33,21 @@ task IndexFasta {
         ln -s ~{reference_fasta} .
         samtools faidx ~{basename(reference_fasta)}
     >>>
+
+    RuntimeAttr default_attr = object {
+        cpu_cores: 1,
+        mem_gb: 4,
+        max_retries: 1
+    }
+    
+    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
+
+
+    runtime {
+        cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
+        memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
+        maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+    }
 }
 
 task sanitizeFasta {
@@ -55,6 +55,14 @@ task sanitizeFasta {
         File reference
         RuntimeAttr? runtime_attr_override
     }
+    
+    output {
+        File sanitised_reference = "reference.san.fasta"
+    }
+
+    command <<<
+        sanitize_sequence_db.py -o "reference.san.fasta" ~{reference}
+    >>>
     
     RuntimeAttr default_attr = object {
         cpu_cores: 1,
@@ -65,17 +73,9 @@ task sanitizeFasta {
     RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
 
 
-  runtime {
-    cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
-    memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
-    maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
-  }
-
-    output {
-        File sanitised_reference = "reference.san.fasta"
+    runtime {
+        cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
+        memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
+        maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
     }
-
-    command <<<
-        sanitize_sequence_db.py -o "reference.san.fasta" ~{reference}
-    >>>
 }
