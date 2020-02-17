@@ -15,7 +15,6 @@ For cleanliness:
   Start refactoring from the right (inner most section)
 
 * Tasks
-** TODO Define the compute required for each task and make it customisable
 ** TODO Implement the Genome Threader pipeline
    DEADLINE: <2020-02-28 Fri> SCHEDULED: <2020-02-17 Mon>
 ** TODO Write documentation for the pipeline
@@ -26,6 +25,16 @@ For cleanliness:
 *** TODO Write a schema for interactively generating input and input validation
 ** TODO Add "extra" options for each command
 ** TODO Collect a list of all flavours of gff3 used in the pipeline and simplify it
+** DONE Run a first test of the alignment+assembly workflow with all the input types
+   CLOSED: [2020-02-17 Mon 16:18]
+   - CLOSING NOTE [2020-02-17 Mon 16:18] \\
+     Running should be OK. Had some issues but is mostly to do with the environment setup (some indexing tasks failed) rather than something more fundamental to the commands being executed or the resources being requested.
+Has started running <2020-02-17 Mon 15:12>, seems like the HQ will fail due to a typo in the command (gzcat -> zcat).
+Once the currently running wf has completed (possibly failed) rerun with the corrected command (have already done so)
+** DONE Define the compute required for each task and make it customisable
+   CLOSED: [2020-02-17 Mon 15:10]
+   - CLOSING NOTE [2020-02-17 Mon 15:10] \\
+     The compute requirements are now present in the configuration and used for the task's runtime
 ** DONE Add collapse/assemble steps for long read samples
    CLOSED: [2020-02-14 Fri 12:10]
 Take the output BAM/SAM and send them right through to the LR_assembly workflow the output of this will be gff3
