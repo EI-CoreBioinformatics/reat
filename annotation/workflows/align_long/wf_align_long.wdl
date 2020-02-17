@@ -179,7 +179,7 @@ task Minimap2Long {
         extension="${filename##*.}"
 
         in_pipe="gzcat ~{long_sample.LR}"
-        if [ "$extension" == ".bam" ]
+        if [ "$extension" == "bam" ]
         then
             in_pipe="samtools fastq ~{long_sample.LR}"
         fi
