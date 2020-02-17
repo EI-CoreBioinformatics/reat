@@ -73,6 +73,7 @@ task ExonerateDatabase {
     }
 
     command <<<
+        set -euxo pipefail
     fasta2esd --softmask yes "~{target.fasta}" "~{basename(target.fasta)}.esd" && \
     esd2esi --translate yes "~{basename(target.fasta)}.esd" "~{basename(target.fasta)}.esi"
     >>>
@@ -106,6 +107,7 @@ task Exonerate {
     }
 
     command <<<
+        set -euxo pipefail
     ln ~{db_esd} .
     ln ~{db_esi} .
     exonerate_wrapper.py -M 2 -ir 20 2000 -t 4 --geneseed 250 --hspfilter 100 --score 50 --percent 30 \

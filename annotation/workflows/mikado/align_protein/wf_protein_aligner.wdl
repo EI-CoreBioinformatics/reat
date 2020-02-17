@@ -28,6 +28,7 @@ task SanitiseProteinBlastDB {
     }
 
     command <<<
+        set -euxo pipefail
         sanitize_sequence_db.py -cstop ~{db} | gt seqtransform -addstopaminos -width "60" > "output.db"
 
     >>>
@@ -59,6 +60,7 @@ task BlastIndex {
     }
 
     command <<<
+        set -euxo pipefail
     blast index ~{target} > "blast_index.db"
     >>>
 }
@@ -90,6 +92,7 @@ task BlastAlign {
     }
 
     command <<<
+        set -euxo pipefail
         blast ~{index} ~{query} > "output.txt"
     >>>
 }
@@ -120,6 +123,7 @@ task DiamondIndex {
     }
 
     command <<<
+        set -euxo pipefail
     diamond index ~{target} > "diamond_index.db"
     >>>
 }
@@ -151,6 +155,7 @@ task DiamondAlign {
     }
 
     command <<<
+        set -euxo pipefail
         diamond blast ~{index} ~{query} > "output.xml"
     >>>
 }

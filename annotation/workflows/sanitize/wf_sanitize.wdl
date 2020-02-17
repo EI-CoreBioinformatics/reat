@@ -59,6 +59,7 @@ task sanitizeAnnotation {
   }
 
     command <<<
+        set -euxo pipefail
         filepath=~{annotation}
         if [ ${filepath##*.} == "gff" ]
         then

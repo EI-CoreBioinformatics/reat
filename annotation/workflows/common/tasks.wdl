@@ -15,6 +15,7 @@ task SplitSequences {
     }
 
     command <<<
+        set -euxo pipefail
         seqtk split -n ~{num_out_files} ~{prefix} ~{sequences_file}
     >>>
 }
@@ -30,6 +31,7 @@ task IndexFasta {
     }
 
     command <<<
+        set -euxo pipefail
         ln -s ~{reference_fasta} .
         samtools faidx ~{basename(reference_fasta)}
     >>>
@@ -61,6 +63,7 @@ task sanitizeFasta {
     }
 
     command <<<
+        set -euxo pipefail
         sanitize_sequence_db.py -o "reference.san.fasta" ~{reference}
     >>>
     

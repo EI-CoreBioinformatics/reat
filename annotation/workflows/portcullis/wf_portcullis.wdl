@@ -74,6 +74,7 @@ task PrepareRef {
     }
 
     command <<<
+        set -euxo pipefail
         junctools convert -if gtf -of ebed -o "reference.refbed" ~{annotation}
     >>>
 
@@ -93,6 +94,7 @@ task Prepare {
     }
 
     command <<<
+        set -euxo pipefail
         portcullis prep -c -o portcullis_prep -t ~{cpus} ~{reference} ~{sample.bam}
     >>>
 
@@ -127,6 +129,7 @@ task Junction {
     }
 
     command <<<
+        set -euxo pipefail
         prep_dir_path="$(dirname ~{prep_dir[0]})"
         portcullis junc -c ~{"--strandedness="+strand} -t ~{cpus}  "${prep_dir_path}"
     >>>
@@ -162,6 +165,7 @@ task Filter {
     }
 
     command <<<
+        set -euxo pipefail
         # junc_dir_path="$(dirname ~{junc_dir[0]})"
         prep_dir_path="$(dirname ~{prep_dir[0]})"
 
@@ -214,6 +218,7 @@ task Merge {
     }
 
     command <<<
+        set -euxo pipefail
         (junctools set --prefix=portcullis_merged --output=portcullis.merged.tab --operator=mean union ~{sep=" " tabs} || touch portcullis.merged.tab)
         junctools convert -if portcullis -of ebed --output=portcullis.merged.bed portcullis.merged.tab
         junctools convert -if portcullis -of igff --output=portcullis.merged.gff3 portcullis.merged.tab

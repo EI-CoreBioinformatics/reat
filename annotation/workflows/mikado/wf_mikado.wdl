@@ -154,6 +154,7 @@ task MikadoPick {
     }
 
     command <<<
+        set -euxo pipefail
     export TMPDIR=/tmp
     mkdir -p mikado_pick
     mikado pick ~{"--source Mikado_" + mode} ~{"--mode " + mode} --procs=4 \
@@ -200,6 +201,7 @@ task MikadoSerialise {
     String xml_prefix = if defined(homology_alignments) then "--xml=" else ""
 
     command <<<
+        set -euxo pipefail
     fasta=~{indexed_reference.fasta}
     fai=~{indexed_reference.fai}
     
@@ -239,6 +241,7 @@ task GTCDS {
     }
 
     command <<<
+        set -euxo pipefail
         awk '$3!~\"(CDS|UTR)\"' ~{gtf} \
         | mikado util convert -if gtf -of gff3 - \
         | gt gff3 -tidy -retainids -addids | gt cds -seqfile ~{reference} - matchdesc \
@@ -274,6 +277,7 @@ task Prodigal {
     }
 
     command <<<
+        set -euxo pipefail
         code_id=$(python -c "import Bio.Data; print(CodonTable.generic_by_name[~{gencode}].id")
         prodigal -f gff -g "${code_id}" -i "~{reference}" -o "transcripts.fasta.prodigal.gff3"
     >>>
@@ -306,6 +310,7 @@ task GenerateModelsList {
     }
 
     command <<<
+        set -euxo pipefail
         strand="False"
         if [ ~{assembly.strand} != "fr-unstranded" ]; then
             strand="True"
@@ -345,6 +350,7 @@ task MikadoPrepare {
     }
 
     command <<<
+        set -euxo pipefail
         mikado configure \
         ~{"--scoring=" + scoring_file} \
         --list=~{models} \

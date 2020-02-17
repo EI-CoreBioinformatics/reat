@@ -72,6 +72,7 @@ task GMapIndex {
 
 
     command <<<
+        set -euxo pipefail
         gmap_build --dir=gmapIndex --db=test_genome ~{reference}
     >>>
 }
@@ -102,6 +103,7 @@ task GMapExonsIIT {
     }
 
     command <<<
+        set -euxo pipefail
         gtf_genes ~{annotation} | iit_store -o gmap_exons.iit
     >>>
 }
@@ -125,6 +127,7 @@ task GMapLong {
     }
 
     command <<<
+        set -euxo pipefail
         filename=$(basename -- "~{sample.LR}")
         extension="${filename##*.}"
 
@@ -174,6 +177,7 @@ task Minimap2Long {
     }
 
     command <<<
+        set -euxo pipefail
         # Replace long_sample.LR with samtools fastq if suffix is bam
         filename=$(basename -- "~{long_sample.LR}")
         extension="${filename##*.}"

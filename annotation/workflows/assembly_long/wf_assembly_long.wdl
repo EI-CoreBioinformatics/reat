@@ -54,6 +54,7 @@ task stringtie_long {
     }
 
     command <<<
+        set -euxo pipefail
     stringtie -p "~{cpus}" ~{"-G " + reference_annotation} -L ~{aligned_sample.bam} -o "result.gff"
     >>>
 
@@ -99,6 +100,7 @@ task sam2gff {
     }
 
     command <<<
+        set -euxo pipefail
     samtools view -F 4 -F 0x900 ~{aligned_sample.bam} | sam2gff -s ~{aligned_sample.name} > result.gff
     >>>
 }
@@ -129,6 +131,7 @@ task gffread_merge {
     }
 
     command <<<
+        set -euxo pipefail
     samtools view -F 4 -F 0x900 ~{aligned_sample.bam} | sam2gff -s ~{aligned_sample.name} | gffread -T -M -K -o result.gff
     >>>
 }

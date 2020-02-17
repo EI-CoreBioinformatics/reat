@@ -54,6 +54,7 @@ task GSnapIndex {
     }
 
     command <<<
+        set -euxo pipefail
     mkdir gsnapIndex
     gmap_build --dir="gsnapIndex" --db=ref ~{reference}
     >>>
@@ -85,6 +86,7 @@ task hisat2Index {
     }
 
     command <<<
+        set -euxo pipefail
         hisat2-build ~{reference} "ref"
     >>>
 }
@@ -115,6 +117,7 @@ task starIndex {
     }
 
     command <<<
+        set -euxo pipefail
         mkdir starIndex
         STAR --runThreadN 4 --runMode genomeGenerate --genomeDir starIndex \
         --genomeFastaFiles ~{reference}
@@ -147,6 +150,7 @@ task tophatIndex {
     }
 
     command <<<
+        set -euxo pipefail
         bowtie2-build --threads 4 ~{reference} "ref"
     >>>
 }

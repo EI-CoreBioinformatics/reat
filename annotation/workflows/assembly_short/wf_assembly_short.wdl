@@ -43,6 +43,7 @@ task Stringtie {
     }
 
     command <<<
+        set -euxo pipefail
         case ~{aligned_sample.strand} in
             fr-firststrand)
             strandness="--rf"
@@ -90,6 +91,7 @@ task Scallop {
     }
 
     command <<<
+        set -euxo pipefail
             case "~{aligned_sample.strand}" in
             fr-firststrand)
             strandness="--library_type first"

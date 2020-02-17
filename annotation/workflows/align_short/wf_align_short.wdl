@@ -89,6 +89,7 @@ task Sort{
     }
 
     command <<<
+        set -euxo pipefail
         samtools sort ~{sample.bam} > ~{sample.name + "." + sample.aligner + ".sorted.bam"}
         samtools index ~{sample.name + "." + sample.aligner + ".sorted.bam"}
     >>>
@@ -121,6 +122,7 @@ task Stats {
     }
 
     command <<<
+        set -euxo pipefail
         samtools stats ~{sample.bam} > ~{sample.name + "." + sample.aligner + ".stats"} && \
         plot-bamstats -p "plot/~{sample.name + "." + sample.aligner}" ~{sample.name + "." + sample.aligner + ".stats"}
     >>>
@@ -152,6 +154,7 @@ task GSnapSpliceSites {
     }
 
     command <<<
+        set -euxo pipefail
         gtf_splicesites ~{annotation} | iit_store -o gsnapSplicesites.iit
     >>>
 }
@@ -182,6 +185,7 @@ task hisat2SpliceSites {
     }
 
     command <<<
+        set -euxo pipefail
         hisat2_extract_splice_sites.py ~{annotation} > "hisat2Splicesites.txt"
     >>>
 }
@@ -214,6 +218,7 @@ task GSnap {
     }
 
     command <<<
+        set -euxo pipefail
         r1_file=~{sample.R1}
         r1_ext=${r1_file##*.}
         compression=""
@@ -265,6 +270,7 @@ task Hisat {
     }
 
     command <<<
+        set -euxo pipefail
         case "~{sample.strand}" in
             fr-firststrand)
             strandness="--rna-strandness=RF"
@@ -317,6 +323,7 @@ task Star {
     }
 
     command <<<
+        set -euxo pipefail
         r1_file=~{sample.R1}
         r1_ext=${r1_file##*.}
         compression=""
@@ -374,6 +381,7 @@ task Tophat {
     }
 
     command <<<
+        set -euxo pipefail
         tophat2 \
         --num-threads 4 \
         --library-type=~{strand} \
