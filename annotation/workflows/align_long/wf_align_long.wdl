@@ -131,10 +131,13 @@ task GMapLong {
         filename=$(basename -- "~{sample.LR}")
         extension="${filename##*.}"
 
-        in_pipe="gzcat ~{sample.LR}"
-        if [ "$extension" == ".bam" ]
+        in_pipe="cat ~{sample.LR}"
+        if [ "$extension" == "bam" ]
         then
             in_pipe="samtools fastq ~{sample.LR}"
+        elif [ "$extension" == "gz" ]
+        then
+            in_pipe="gunzip -c ~{sample.LR}"
         fi
 
         $in_pipe | $(determine_gmap.py ~{reference}) --dir="$(dirname ~{gmap_index[0]})" --db=test_genome \
@@ -182,10 +185,13 @@ task Minimap2Long {
         filename=$(basename -- "~{long_sample.LR}")
         extension="${filename##*.}"
 
-        in_pipe="gzcat ~{long_sample.LR}"
+        in_pipe="cat ~{long_sample.LR}"
         if [ "$extension" == "bam" ]
         then
             in_pipe="samtools fastq ~{long_sample.LR}"
+        elif [ "$extension" == "gz" ]
+        then
+            in_pipe="gunzip -c ~{long_sample.LR}"
         fi
         
         $in_pipe | \
