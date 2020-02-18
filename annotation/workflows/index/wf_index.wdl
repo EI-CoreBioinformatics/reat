@@ -36,7 +36,7 @@ task GSnapIndex {
     
     RuntimeAttr default_attr = object {
         cpu_cores: 1,
-        mem_gb: 4,
+        mem_gb: 8,
         max_retries: 1
     }
     
@@ -68,7 +68,7 @@ task hisat2Index {
     
     RuntimeAttr default_attr = object {
         cpu_cores: 1,
-        mem_gb: 4,
+        mem_gb: 8,
         max_retries: 1
     }
     
@@ -96,22 +96,9 @@ task starIndex {
         File reference
         RuntimeAttr? runtime_attr_override
     }
+
+    Int cpus = 4
     
-    RuntimeAttr default_attr = object {
-        cpu_cores: 1,
-        mem_gb: 4,
-        max_retries: 1
-    }
-    
-    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
-
-
-  runtime {
-    cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
-    memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
-    maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
-  }
-
     output {
         Array[File] index = glob('starIndex/*')
     }
@@ -119,20 +106,13 @@ task starIndex {
     command <<<
         set -euxo pipefail
         mkdir starIndex
-        STAR --runThreadN 4 --runMode genomeGenerate --genomeDir starIndex \
+        STAR --runThreadN ~{cpus} --runMode genomeGenerate --genomeDir starIndex \
         --genomeFastaFiles ~{reference}
     >>>
-}
 
-task tophatIndex {
-    input {
-        File reference
-        RuntimeAttr? runtime_attr_override
-    }
-    
     RuntimeAttr default_attr = object {
-        cpu_cores: 1,
-        mem_gb: 4,
+        cpu_cores: "~{cpus}",
+        mem_gb: 16,
         max_retries: 1
     }
     
@@ -144,13 +124,37 @@ task tophatIndex {
     memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
     maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
   }
+}
 
+task tophatIndex {
+    input {
+        File reference
+        RuntimeAttr? runtime_attr_override
+    }
+
+    Int cpus = 4
+    
     output {
         Array[File] index = glob('ref*')
     }
 
     command <<<
         set -euxo pipefail
-        bowtie2-build --threads 4 ~{reference} "ref"
+        bowtie2-build --threads ~{cpus} ~{reference} "ref"
     >>>
+
+    RuntimeAttr default_attr = object {
+        cpu_cores: "~{cpus}",
+        mem_gb: 16,
+        max_retries: 1
+    }
+    
+    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
+
+
+    runtime {
+        cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
+        memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
+        maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+    }
 }
