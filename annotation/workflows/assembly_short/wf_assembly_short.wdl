@@ -62,7 +62,7 @@ task Stringtie {
 
     RuntimeAttr default_attr = object {
         cpu_cores: "~{cpus}",
-        mem_gb: 8,
+        mem_gb: 16,
         max_retries: 1
     }
     
@@ -115,7 +115,7 @@ task Scallop {
 
     RuntimeAttr default_attr = object {
         cpu_cores: "~{cpus}",
-        mem_gb: 8,
+        mem_gb: 16,
         max_retries: 1
     }
     

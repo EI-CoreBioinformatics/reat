@@ -62,21 +62,8 @@ task Sort{
         String name = basename(sample.bam, ".bam")
         RuntimeAttr? runtime_attr_override
     }
-    
-    RuntimeAttr default_attr = object {
-        cpu_cores: 1,
-        mem_gb: 4,
-        max_retries: 1
-    }
-    
-    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
 
-
-  runtime {
-    cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
-    memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
-    maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
-  }
+    Int cpus = 8
 
     output {
         Pair[File,File] indexed_bam = (name + ".sorted.bam", name + ".sorted.bam.bai")
@@ -90,9 +77,24 @@ task Sort{
 
     command <<<
         set -euxo pipefail
-        samtools sort ~{sample.bam} > ~{sample.name + "." + sample.aligner + ".sorted.bam"}
+        samtools sort -@~{cpus} ~{sample.bam} > ~{sample.name + "." + sample.aligner + ".sorted.bam"}
         samtools index ~{sample.name + "." + sample.aligner + ".sorted.bam"}
     >>>
+
+    RuntimeAttr default_attr = object {
+        cpu_cores: "~{cpus}",
+        mem_gb: 16,
+        max_retries: 1
+    }
+    
+    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
+
+
+    runtime {
+        cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
+        memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
+        maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+    }
 }
 
 task Stats {
@@ -100,21 +102,6 @@ task Stats {
         AlignedSample sample
         RuntimeAttr? runtime_attr_override
     }
-    
-    RuntimeAttr default_attr = object {
-        cpu_cores: 1,
-        mem_gb: 4,
-        max_retries: 1
-    }
-    
-    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
-
-
-  runtime {
-    cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
-    memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
-    maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
-  }
 
     output {
         File stats = sample.name + "." + sample.aligner + ".stats"
@@ -126,6 +113,20 @@ task Stats {
         samtools stats ~{sample.bam} > ~{sample.name + "." + sample.aligner + ".stats"} && \
         plot-bamstats -p "plot/~{sample.name + "." + sample.aligner}" ~{sample.name + "." + sample.aligner + ".stats"}
     >>>
+    
+    RuntimeAttr default_attr = object {
+        cpu_cores: 1,
+        mem_gb: 4,
+        max_retries: 1
+    }
+    
+    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
+
+    runtime {
+        cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
+        memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
+        maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+    }
 }
 
 task GSnapSpliceSites {
@@ -134,21 +135,6 @@ task GSnapSpliceSites {
         RuntimeAttr? runtime_attr_override
     }
     
-    RuntimeAttr default_attr = object {
-        cpu_cores: 1,
-        mem_gb: 4,
-        max_retries: 1
-    }
-    
-    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
-
-
-  runtime {
-    cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
-    memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
-    maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
-  }
-
     output {
         File sites = "gsnapSplicesites.iit"
     }
@@ -157,14 +143,7 @@ task GSnapSpliceSites {
         set -euxo pipefail
         gtf_splicesites ~{annotation} | iit_store -o gsnapSplicesites.iit
     >>>
-}
 
-task hisat2SpliceSites {
-    input {
-        File? annotation
-        RuntimeAttr? runtime_attr_override
-    }
-    
     RuntimeAttr default_attr = object {
         cpu_cores: 1,
         mem_gb: 4,
@@ -174,12 +153,19 @@ task hisat2SpliceSites {
     RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
 
 
-  runtime {
-    cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
-    memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
-    maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
-  }
+    runtime {
+        cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
+        memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
+        maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+    }    
+}
 
+task hisat2SpliceSites {
+    input {
+        File? annotation
+        RuntimeAttr? runtime_attr_override
+    }
+    
     output {
         File sites = "hisat2Splicesites.txt"
     }
@@ -188,6 +174,21 @@ task hisat2SpliceSites {
         set -euxo pipefail
         hisat2_extract_splice_sites.py ~{annotation} > "hisat2Splicesites.txt"
     >>>
+
+    RuntimeAttr default_attr = object {
+        cpu_cores: 1,
+        mem_gb: 4,
+        max_retries: 1
+    }
+    
+    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
+
+
+    runtime {
+        cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
+        memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
+        maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+    }
 }
 
 task GSnap {
@@ -197,22 +198,9 @@ task GSnap {
         PRSample sample
         RuntimeAttr? runtime_attr_override
     }
+
+    Int cpus = 8
     
-    RuntimeAttr default_attr = object {
-        cpu_cores: 1,
-        mem_gb: 4,
-        max_retries: 1
-    }
-    
-    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
-
-
-  runtime {
-    cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
-    memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
-    maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
-  }
-
     output {
         AlignedSample aligned_sample = {"name": sample.name, "strand": sample.strand, "aligner": "hisat", "bam": sample.name+".gsnap.bam"}
     }
@@ -230,7 +218,7 @@ task GSnap {
             compression="${compression}--bunzip2"
             ;;
         esac
-        gsnap --nthreads ~{runtime_attr.cpu_cores} --dir="$(dirname "~{index[0]}")" \
+        gsnap --nthreads ~{cpus} --dir="$(dirname "~{index[0]}")" \
         --db=ref \
         --novelsplicing=1 \
         ${compression} \
@@ -239,6 +227,21 @@ task GSnap {
         --format=sam --npaths=20 \
         ~{sample.R1} ~{sample.R2} | samtools sort -@ 4 - > "~{sample.name}.gsnap.bam"
     >>>
+
+    RuntimeAttr default_attr = object {
+        cpu_cores: "~{cpus}",
+        mem_gb: 16,
+        max_retries: 1
+    }
+    
+    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
+
+
+    runtime {
+        cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
+        memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
+        maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+    }
 
 }
 
@@ -249,22 +252,9 @@ task Hisat {
         PRSample sample
         RuntimeAttr? runtime_attr_override
     }
+
+    Int cpus = 8
     
-    RuntimeAttr default_attr = object {
-        cpu_cores: 1,
-        mem_gb: 4,
-        max_retries: 1
-    }
-    
-    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
-
-
-  runtime {
-    cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
-    memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
-    maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
-  }
-
     output {
         AlignedSample aligned_sample = {"name": sample.name, "strand": sample.strand, "aligner": "hisat", "bam": sample.name+".hisat.bam"}
     }
@@ -285,13 +275,28 @@ task Hisat {
             strandness="--rna-strandness=R"
             ;;
         esac
-    hisat2 -p 4 -x ~{sub(index[0], "\\.\\d\\.ht2l?", "")} \
+    hisat2 -p ~{cpus} -x ~{sub(index[0], "\\.\\d\\.ht2l?", "")} \
     ${strandness} \
     --min-intronlen=20 \
     --max-intronlen=2000 \
     ~{"--known-splicesite-infile " + sites} \
     -1 ~{sample.R1} ~{"-2 " + sample.R2} | samtools sort -@ 4 - > "~{sample.name}.hisat.bam"
     >>>
+
+    RuntimeAttr default_attr = object {
+        cpu_cores: "~{cpus}",
+        mem_gb: 16,
+        max_retries: 1
+    }
+    
+    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
+
+
+    runtime {
+        cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
+        memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
+        maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+    }
 }
 
 task Star {
@@ -301,22 +306,9 @@ task Star {
         PRSample sample
         RuntimeAttr? runtime_attr_override
     }
+
+    Int cpus = 8
     
-    RuntimeAttr default_attr = object {
-        cpu_cores: 1,
-        mem_gb: 4,
-        max_retries: 1
-    }
-    
-    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
-
-
-  runtime {
-    cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
-    memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
-    maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
-  }
-
     output {
         File bam = "Aligned.out.bam"
         AlignedSample aligned_sample = {"name": sample.name, "strand": sample.strand, "aligner": "star", "bam": sample.name+".star.bam"}
@@ -337,7 +329,7 @@ task Star {
         esac
 
             STAR --genomeDir "$(dirname ~{index[0]})" \
-    --runThreadN 4 \
+    --runThreadN ~{cpus} \
     "${compression}" \
     --runMode alignReads \
     --outSAMtype BAM Unsorted \
@@ -348,6 +340,21 @@ task Star {
     ~{"--sjdbGTFfile " + annotation} \
     --readFilesIn ~{sample.R1} ~{sample.R2} && ln -s Aligned.out.bam "~{sample.name}.star.bam"
     >>>
+
+    RuntimeAttr default_attr = object {
+        cpu_cores: "~{cpus}",
+        mem_gb: 16,
+        max_retries: 1
+    }
+    
+    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
+
+
+    runtime {
+        cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
+        memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
+        maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+    }
 }
 
 task Tophat {
@@ -358,21 +365,8 @@ task Tophat {
         String strand
         RuntimeAttr? runtime_attr_override
     }
-    
-    RuntimeAttr default_attr = object {
-        cpu_cores: 1,
-        mem_gb: 4,
-        max_retries: 1
-    }
-    
-    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
 
-
-  runtime {
-    cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
-    memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
-    maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
-  }
+    Int cpus = 8
 
     output {
         File bam = "tophat2_accepted.bam"
@@ -383,7 +377,7 @@ task Tophat {
     command <<<
         set -euxo pipefail
         tophat2 \
-        --num-threads 4 \
+        --num-threads ~{cpus} \
         --library-type=~{strand} \
         --min-intron-length=20 \
         --max-intron-length=2000 \
@@ -391,4 +385,19 @@ task Tophat {
         ~{sub(index[0], "\\.\\d\\.bt2l?", "")} \
         ~{sample.R1} ~{sample.R2} && ln -s tophat_out/accepted_hits.bam "~{sample.name}.tophat2.bam"
     >>>
+
+    RuntimeAttr default_attr = object {
+        cpu_cores: "~{cpus}",
+        mem_gb: 16,
+        max_retries: 1
+    }
+    
+    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
+
+
+    runtime {
+        cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
+        memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
+        maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+    }
 }
