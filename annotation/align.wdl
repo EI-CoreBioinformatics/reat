@@ -94,20 +94,20 @@ workflow wf_align {
         Array[File] hisat_index = wf_index.hisat_index
         Array[File] star_index = wf_index.star_index
 
-        Array[IndexedAlignedSample]? bams = wf_align_short.indexed_aligned_samples
         Array[File]? stats = wf_align_short.stats
         Array[Array[File]]? plots = wf_align_short.plots
 
-        Array[AssembledSample]? sr_gff = wf_assembly_short.assemblies
 
         File? filtered_tab = portcullis.tab
         File? filtered_bed = portcullis.bed
         File? filtered_gff3 = portcullis.gff3
 
+        Array[IndexedAlignedSample]? sr_bams = wf_align_short.indexed_aligned_samples
         Array[AlignedSample]? lq_bams = LQ_align.bams
         Array[AlignedSample]? hq_bams = HQ_align.bams
 
-        Array[File]? lq_gff = LQ_assembly.gff
-        Array[File]? hq_gff = HQ_assembly.gff
+        Array[AssembledSample]? SR_gff = wf_assembly_short.assemblies
+        Array[File]? LQ_gff = LQ_assembly.gff
+        Array[File]? HQ_gff = HQ_assembly.gff
     }
 }
