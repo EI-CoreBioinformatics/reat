@@ -15,6 +15,47 @@ For cleanliness:
   Start refactoring from the right (inner most section)
 
 * Tasks
+** TODO Add Biological replicate level to the samples
+Currently all the samples are treated as biological given that they can only take a single input file or pair of files.
+Separating biological from technical samples enables the user to assign several input file or pairs of files under the same
+sample name.
+i.e, currently paired_samples input looks like this:
+    "wf_align.paired_samples": [
+        {
+            "name": "Ara1",
+            "strand": "fr-firststrand",
+            "R1": "/hpc-home/yanesl/workarea/Projects/CB-GENANNO-468_REAT-transcriptome_module/Reads/Ara1_R1.fastq.gz",
+            "R2": "/hpc-home/yanesl/workarea/Projects/CB-GENANNO-468_REAT-transcriptome_module/Reads/Ara1_R2.fastq.gz"
+        },
+        {
+            "name": "Ara2",
+            "strand": "fr-firststrand",
+            "R1": "/hpc-home/yanesl/workarea/Projects/CB-GENANNO-468_REAT-transcriptome_module/Reads/Ara2_R1.fastq.gz",
+            "R2": "/hpc-home/yanesl/workarea/Projects/CB-GENANNO-468_REAT-transcriptome_module/Reads/Ara2_R2.fastq.gz"
+        }
+    ]
+In reality these are technical replicates from the same biological sample, so it should look like this:
+    "wf_align.paired_samples": [
+        {
+            "biological_sample_name": "Ara",
+	    "technical_samples": [
+	        {
+		"name": "Ara1",
+		"strand": "fr-firststrand",
+		"R1": "/hpc-home/yanesl/workarea/Projects/CB-GENANNO-468_REAT-transcriptome_module/Reads/Ara1_R1.fastq.gz",
+		"R2": "/hpc-home/yanesl/workarea/Projects/CB-GENANNO-468_REAT-transcriptome_module/Reads/Ara1_R2.fastq.gz"
+		},
+		{
+		"name": "Ara2",
+		"strand": "fr-firststrand",
+		"R1": "/hpc-home/yanesl/workarea/Projects/CB-GENANNO-468_REAT-transcriptome_module/Reads/Ara2_R1.fastq.gz",
+		"R2": "/hpc-home/yanesl/workarea/Projects/CB-GENANNO-468_REAT-transcriptome_module/Reads/Ara2_R2.fastq.gz"
+		},
+	    ]
+	}
+    ]
+
+Finally, all the technical sample alignments can be combined into a single assembly, idem for the long read samples
 ** TODO Implement the Genome Threader pipeline
    DEADLINE: <2020-02-28 Fri> SCHEDULED: <2020-02-17 Mon>
 ** TODO Write documentation for the pipeline
