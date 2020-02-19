@@ -68,6 +68,7 @@ workflow ei_annotation {
         Array[File] hisat_index = wf_index.hisat_index
         Array[File] star_index = wf_index.star_index
 
+        Array[AssembledSample]? sr_asms = wf_align.sr_gff
         File mikado_long_config = wf_mikado.mikado_long_config
         File? mikado_long_orfs = wf_mikado.mikado_long_orfs
 

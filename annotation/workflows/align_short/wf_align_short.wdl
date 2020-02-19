@@ -10,6 +10,7 @@ workflow wf_align_short {
         Array[File] gsnap_index
         Array[File] hisat_index
         Array[File] star_index
+        String aligner = "hisat"
     }
 
     if (defined(annotation)) {
@@ -18,30 +19,38 @@ workflow wf_align_short {
         }
     }
 
-    call Hisat {
-        input:
-        sites = hisat2SpliceSites.sites,
-        sample = samples[0],
-        index = hisat_index
+    if (aligner == "hisat") {
+        scatter (sample in samples) {
+            call Hisat {
+                input:
+                sites = hisat2SpliceSites.sites,
+                sample = sample,
+                index = hisat_index
+            }
+        }
     }
 
-    call Star {
-        input:
-        annotation = annotation,
-        sample = samples[0],
-        index = star_index
+    if (aligner == "star") {
+        scatter (sample in samples) {
+            call Star {
+                input:
+                annotation = annotation,
+                sample = sample,
+                index = star_index
+            }
+        }
     }
 
-    Array[AlignedSample] aligned_samples = [Hisat.aligned_sample, Star.aligned_sample]
+    Array[AlignedSample] def_aligned_samples = select_first([Hisat.aligned_sample, Star.aligned_sample])
 
-    scatter (aligned_sample in aligned_samples) {
+    scatter (aligned_sample in def_aligned_samples) {
         call Sort {
             input:
             sample = aligned_sample
         }
     }
 
-    scatter (aligned_sample in aligned_samples) {
+    scatter (aligned_sample in def_aligned_samples) {
         call Stats {
             input:
             sample = aligned_sample
