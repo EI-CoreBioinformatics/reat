@@ -6,21 +6,22 @@ import "./homology/wf_homology.wdl" as hml
 
 workflow wf_mikado {
     input {
-        Array[AssembledSample]? short_assemblies
-        Array[AssembledSample]? long_assemblies
         IndexedReference indexed_reference
+        Array[AssembledSample]? SR_assemblies
+        Array[AssembledSample]? LQ_assemblies
+        Array[AssembledSample]? HQ_assemblies
+        File scoring_file
+        File? extra_config
+        File? dbs
         File? junctions
         String gencode = "Universal"
         String orf_caller = "None"
         Boolean mikado_do_homology_assessment = false
-        File? extra_config
-        File? scoring_file
-        File? dbs
     }
 
-    if (defined(short_assemblies)) {
-        Array[AssembledSample] def_short_assemblies = select_first([short_assemblies])
-        scatter (sr_assembly in def_short_assemblies) {
+    if (defined(SR_assemblies)) {
+        Array[AssembledSample] def_SR_assemblies = select_first([SR_assemblies])
+        scatter (sr_assembly in def_SR_assemblies) {
             call GenerateModelsList as sr_models {
                 input:
                 assembly = sr_assembly
@@ -28,11 +29,11 @@ workflow wf_mikado {
         }
     }
 
-    if (defined(long_assemblies)) {
-        Array[AssembledSample] def_long_assemblies = select_first([long_assemblies])
+    if (defined(LQ_assemblies)) {
+        Array[AssembledSample] def_LQ_assemblies = select_first([LQ_assemblies])
 
-        scatter (lr_assembly in def_long_assemblies) {
-            call GenerateModelsList as lr_models {
+        scatter (lr_assembly in def_LQ_assemblies) {
+            call GenerateModelsList as LQ_models {
                 input:
                 assembly = lr_assembly,
                 long_score_bias = 1
@@ -40,7 +41,19 @@ workflow wf_mikado {
         }
     }
 
-    File result = write_lines(flatten(select_all([sr_models.models, lr_models.models])))
+    if (defined(HQ_assemblies)) {
+        Array[AssembledSample] def_HQ_assemblies = select_first([HQ_assemblies])
+
+        scatter (lr_assembly in def_HQ_assemblies) {
+            call GenerateModelsList as HQ_models {
+                input:
+                assembly = lr_assembly,
+                long_score_bias = 1
+            }
+        }
+    }
+
+    File result = write_lines(flatten(select_all([sr_models.models, LQ_models.models, HQ_models.models])))
 
     call MikadoPrepare {
         input:
