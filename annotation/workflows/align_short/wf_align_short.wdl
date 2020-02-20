@@ -31,7 +31,7 @@ workflow wf_align_short {
                     index = hisat_index
                 }
             }
-            AlignedSample hisat_aligned_sample = object {"name": sample.name, "strand": sample.strand, "aligner": "hisat", "bam": Hisat.aligned_pair}
+            AlignedSample hisat_aligned_sample = {"bam": Hisat.bam, "strand": sample.strand, "aligner": "hisat", "name": sample.name}
         }
     }
 
@@ -47,7 +47,7 @@ workflow wf_align_short {
                     index = star_index
                 }
             }
-            AlignedSample star_aligned_sample = object {"name": sample.name, "strand": sample.strand, "aligner": "star", "bam": Star.aligned_pair}
+            AlignedSample star_aligned_sample = { "bam": Star.aligned_pair, "name": sample.name, "strand": sample.strand, "aligner": "star" }
         }
     }
 
@@ -60,8 +60,7 @@ workflow wf_align_short {
                 bam = bam
             }
         }
-        # IndexedAlignedSample indexed_aligned_sample = object{"name": aligned_sample.name, "strand": aligned_sample.strand, "aligner": aligned_sample.aligner, "index_bam": Sort.indexed_bam}
-        AlignedSample sorted_aligned_sample = object{"name": aligned_sample.name, "strand": aligned_sample.strand, "aligner": aligned_sample.aligner, "bam": Sort.sorted_bam}
+        AlignedSample sorted_aligned_sample = {"name": aligned_sample.name, "strand": aligned_sample.strand, "aligner": aligned_sample.aligner, "bam": Sort.sorted_bam}
     }
 
     scatter (aligned_sample in def_aligned_samples) {
@@ -226,7 +225,7 @@ task Hisat {
     Int cpus = 8
     
     output {
-        File aligned_pair = rp_name + ".hisat.bam"
+        File bam = rp_name + ".hisat.bam"
     }
 
     command <<<
