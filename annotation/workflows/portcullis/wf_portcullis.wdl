@@ -6,7 +6,7 @@ import "../common/rt_struct.wdl"
 workflow portcullis {
     input {
         File reference
-        Array[IndexedAlignedSample] aligned_samples
+        Array[AlignedSample] aligned_samples
         File? annotation
     }
 
@@ -83,7 +83,7 @@ task PrepareRef {
 task Prepare {
     input {
         File? reference
-        IndexedAlignedSample sample
+        AlignedSample sample
         RuntimeAttr? runtime_attr_override
     }
 
@@ -95,7 +95,7 @@ task Prepare {
 
     command <<<
         set -euxo pipefail
-        portcullis prep -c -o portcullis_prep -t ~{cpus} ~{reference} ~{sample.bam}
+        portcullis prep -c -o portcullis_prep -t ~{cpus} ~{reference} ~{sep=" "sample.bam}
     >>>
 
    RuntimeAttr default_attr = object {

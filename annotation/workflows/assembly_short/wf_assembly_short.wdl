@@ -5,12 +5,12 @@ import "../common/rt_struct.wdl"
 
 workflow wf_assembly_short {
     input {
-        Array[IndexedAlignedSample] aligned_samples
+        Array[AlignedSample] aligned_samples
         File? annotation
     }
 
     scatter (aligned_sample in aligned_samples) {
-        call Stringtie{
+        call Stringtie {
             input:
             aligned_sample = aligned_sample,
             annotation = annotation
@@ -30,7 +30,7 @@ workflow wf_assembly_short {
 
 task Stringtie {
     input {
-        IndexedAlignedSample aligned_sample
+        AlignedSample aligned_sample
         File? annotation
         RuntimeAttr? runtime_attr_override
     }
@@ -53,7 +53,7 @@ task Stringtie {
             ;;
         esac
 
-        stringtie ~{aligned_sample.bam} \
+        stringtie ~{sep=" " aligned_sample.bam} \
         -p "~{cpus}" \
         "${strandness}" \
         ~{"-G " + annotation} \
@@ -79,7 +79,7 @@ task Stringtie {
 # Needs to have the tool available... Not built yet for OSX
 task Scallop {
     input {
-        IndexedAlignedSample aligned_sample
+        AlignedSample aligned_sample
         RuntimeAttr? runtime_attr_override
     }
     
@@ -110,7 +110,7 @@ task Scallop {
             ;;
         esac
 
-        scallop --verbose 0 -i ~{aligned_sample.bam} -o "~{aligned_sample.name+"."+aligned_sample.aligner}.scallop.gtf" "${strandness}"
+        scallop --verbose 0 -i ~{sep=" " aligned_sample.bam} -o "~{aligned_sample.name+"."+aligned_sample.aligner}.scallop.gtf" "${strandness}"
     >>>
 
     RuntimeAttr default_attr = object {

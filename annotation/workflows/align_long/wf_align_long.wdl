@@ -2,7 +2,6 @@ version 1.0
 
 import "../common/structs.wdl"
 import "../common/rt_struct.wdl"
-
 workflow wf_align_long {
     input {
         File reference
@@ -14,11 +13,16 @@ workflow wf_align_long {
     # Add aligner option
     if (aligner == "minimap2") {
         scatter (sample in long_samples) {
-            call Minimap2Long {
-                input:
-                long_sample = sample,
-                reference = reference
+            scatter (LR in sample.LR) {
+                call Minimap2Long {
+                    input:
+                    LR = LR,
+                    strand = sample.strand,
+                    name = sample.name,
+                    reference = reference
+                }
             }
+            AlignedSample mm2_aligned_sample = object{"name": sample.name, "strand":sample.strand, "aligner":"minimap2", "bam": Minimap2Long.bam}
         }
     }
 
@@ -28,16 +32,21 @@ workflow wf_align_long {
                 input:
                 reference = reference
             }
-            call GMapLong {
-                input:
-                gmap_index = GMapIndex.gmap_index,
-                reference = reference,
-                sample = sample
+            scatter (LR in sample.LR) {
+                call GMapLong {
+                    input:
+                    LR = LR,
+                    gmap_index = GMapIndex.gmap_index,
+                    strand = sample.strand,
+                    name = sample.name,
+                    reference = reference
+                }
             }
+            AlignedSample gmap_aligned_sample = object{"name": sample.name, "strand":sample.strand, "aligner":"gmap", "bam": GMapLong.bam}
         }
     }
 
-    Array[AlignedSample] def_alignments = select_first([GMapLong.aligned_sample, Minimap2Long.aligned_sample])
+    Array[AlignedSample] def_alignments = select_first([mm2_aligned_sample, gmap_aligned_sample])
 
     output {
         Array[AlignedSample] bams = def_alignments
@@ -112,32 +121,33 @@ task GMapLong {
     input {
         File reference
         Array[File] gmap_index
-        LRSample sample
+        File LR
+        String name
+        String strand
         File? iit
         Int? min_trimmed_coverage
         Int? min_identity
-        String? strand
         RuntimeAttr? runtime_attr_override
     }
 
     Int cpus = 16
 
     output {
-        AlignedSample aligned_sample = {"name": sample.name, "strand": sample.strand, "aligner": "gmap", "bam": "gmap."+sample.name+".sam"}
+        File bam = "gmap."+name+".bam"
     }
 
     command <<<
         set -euxo pipefail
-        filename=$(basename -- "~{sample.LR}")
+        filename=$(basename -- "~{LR}")
         extension="${filename##*.}"
 
-        in_pipe="cat ~{sample.LR}"
+        in_pipe="cat ~{LR}"
         if [ "$extension" == "bam" ]
         then
-            in_pipe="samtools fastq ~{sample.LR}"
+            in_pipe="samtools fastq ~{LR}"
         elif [ "$extension" == "gz" ]
         then
-            in_pipe="gunzip -c ~{sample.LR}"
+            in_pipe="gunzip -c ~{LR}"
         fi
 
         $in_pipe | $(determine_gmap.py ~{reference}) --dir="$(dirname ~{gmap_index[0]})" --db=test_genome \
@@ -147,7 +157,7 @@ task GMapLong {
         ~{"--min-identity" + min_identity} \
         ~{"-z " + strand} \
         --format=samse \
-        --nthreads="~{cpus}" | samtools view -F 4 -F 0x900 -bS - | samtools sort -@ 4 --reference ~{reference} -T gmap.sort -o gmap.~{sample.name}.bam -
+        --nthreads="~{cpus}" | samtools view -F 4 -F 0x900 -bS - | samtools sort -@ 4 --reference ~{reference} -T gmap.sort -o gmap.~{name}.bam -
     >>>
 
     RuntimeAttr default_attr = object {
@@ -168,7 +178,9 @@ task GMapLong {
 
 task Minimap2Long {
     input {
-        LRSample long_sample
+        File LR
+        String name
+        String strand
         File reference
         RuntimeAttr? runtime_attr_override
     }
@@ -176,22 +188,22 @@ task Minimap2Long {
     Int cpus = 16
 
     output {
-        AlignedSample aligned_sample = {"name": long_sample.name, "strand": long_sample.strand, "aligner": "minimap2", "bam": "minimap2."+long_sample.name+".bam"}
+        File bam = "minimap2."+name+".bam"
     }
 
     command <<<
         set -euxo pipefail
         # Replace long_sample.LR with samtools fastq if suffix is bam
-        filename=$(basename -- "~{long_sample.LR}")
+        filename=$(basename -- "~{LR}")
         extension="${filename##*.}"
 
-        in_pipe="cat ~{long_sample.LR}"
+        in_pipe="cat ~{LR}"
         if [ "$extension" == "bam" ]
         then
-            in_pipe="samtools fastq ~{long_sample.LR}"
+            in_pipe="samtools fastq ~{LR}"
         elif [ "$extension" == "gz" ]
         then
-            in_pipe="gunzip -c ~{long_sample.LR}"
+            in_pipe="gunzip -c ~{LR}"
         fi
         
         $in_pipe | \
@@ -204,7 +216,7 @@ task Minimap2Long {
         -a -L --MD \
         --eqx -2 \
         --secondary=no \
-        ~{reference} - | samtools view -F 4 -F 0x900 -bS - | samtools sort -@ 4 --reference ~{reference} -T minimap2.sort -o minimap2.~{long_sample.name}.bam -
+        ~{reference} - | samtools view -F 4 -F 0x900 -bS - | samtools sort -@ 4 --reference ~{reference} -T minimap2.sort -o minimap2.~{name}.bam -
     >>>
 
     RuntimeAttr default_attr = object {

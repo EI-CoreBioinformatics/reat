@@ -3,16 +3,20 @@ version 1.0
 struct LRSample {
     String name
     String strand
-    File LR
+    Array[File]+ LR
     Int? score
     Boolean? is_ref
+}
+
+struct ReadPair {
+    File R1
+    File R2
 }
 
 struct PRSample {
     String name
     String strand
-    File R1
-    File R2
+    Array[ReadPair]+ read_pair
     Int? score
     Boolean? is_ref
 }
@@ -20,7 +24,7 @@ struct PRSample {
 struct SESample {
     String name
     String strand
-    File SR
+    Array[File]+ SR
     Int? score
     Boolean? is_ref
 }
@@ -29,15 +33,19 @@ struct AlignedSample {
     String name
     String strand
     String aligner
+    Array[File] bam
+}
+
+struct IndexedBam{
     File bam
+    File index
 }
 
 struct IndexedAlignedSample {
     String name
     String strand
     String aligner
-    File bam
-    File index
+    Array[IndexedBam] index_bam
 }
 
 struct AlignedSampleStats {
