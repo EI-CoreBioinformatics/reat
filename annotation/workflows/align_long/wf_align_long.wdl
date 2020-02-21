@@ -22,7 +22,7 @@ workflow wf_align_long {
                     reference = reference
                 }
             }
-            AlignedSample mm2_aligned_sample = {"name": sample.name, "strand":sample.strand, "aligner":"minimap2", "bam": Minimap2Long.bam}
+            AlignedSample mm2_aligned_sample = object {name: sample.name, strand:sample.strand, aligner:"minimap2", bam: Minimap2Long.bam}
         }
     }
 
@@ -42,7 +42,7 @@ workflow wf_align_long {
                     reference = reference
                 }
             }
-            AlignedSample gmap_aligned_sample = {"name": sample.name, "strand":sample.strand, "aligner":"gmap", "bam": GMapLong.bam}
+            AlignedSample gmap_aligned_sample = object {name: sample.name, strand:sample.strand, aligner:"gmap", bam: GMapLong.bam}
         }
     }
 

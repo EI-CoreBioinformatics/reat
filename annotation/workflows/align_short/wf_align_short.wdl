@@ -31,7 +31,7 @@ workflow wf_align_short {
                     index = hisat_index
                 }
             }
-            AlignedSample hisat_aligned_sample = {"bam": Hisat.bam, "strand": sample.strand, "aligner": "hisat", "name": sample.name}
+            AlignedSample hisat_aligned_sample = object {bam: Hisat.bam, strand: sample.strand, aligner: "hisat", name: sample.name}
         }
     }
 
@@ -47,7 +47,7 @@ workflow wf_align_short {
                     index = star_index
                 }
             }
-            AlignedSample star_aligned_sample = { "bam": Star.aligned_pair, "name": sample.name, "strand": sample.strand, "aligner": "star" }
+            AlignedSample star_aligned_sample = object { bam: Star.aligned_pair, name: sample.name, strand: sample.strand, aligner: "star" }
         }
     }
 
@@ -60,7 +60,7 @@ workflow wf_align_short {
                 bam = bam
             }
         }
-        AlignedSample sorted_aligned_sample = {"name": aligned_sample.name, "strand": aligned_sample.strand, "aligner": aligned_sample.aligner, "bam": Sort.sorted_bam}
+        AlignedSample sorted_aligned_sample = object {name: aligned_sample.name, strand: aligned_sample.strand, aligner: aligned_sample.aligner, bam: Sort.sorted_bam}
     }
 
     scatter (aligned_sample in def_aligned_samples) {
@@ -90,7 +90,7 @@ task Sort{
     Int cpus = 8
 
     output {
-        IndexedBam indexed_bam = { "bam": name + ".sorted.bam", "index": name + ".sorted.bam.bai" }
+        IndexedBam indexed_bam = object { bam: name + ".sorted.bam", index: name + ".sorted.bam.bai" }
         File sorted_bam = name + ".sorted.bam"
     }
 

@@ -39,7 +39,7 @@ task Stringtie {
 
     output {
         File assembled = aligned_sample.name+"."+aligned_sample.aligner+".stringtie.gtf"
-        AssembledSample assembly = {"name": aligned_sample.name+"."+aligned_sample.aligner+".stringtie", "strand": aligned_sample.strand, "assembly": aligned_sample.name+"."+aligned_sample.aligner+".stringtie.gtf"}
+        AssembledSample assembly = object { name: aligned_sample.name+"."+aligned_sample.aligner+".stringtie", strand: aligned_sample.strand, assembly: aligned_sample.name+"."+aligned_sample.aligner+".stringtie.gtf"}
     }
 
     command <<<
