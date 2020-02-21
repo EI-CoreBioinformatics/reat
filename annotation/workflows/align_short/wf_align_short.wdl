@@ -20,19 +20,37 @@ workflow wf_align_short {
     }
 
     if (aligner == "hisat") {
-        scatter (sample in samples) {
-            scatter(PR in sample.read_pair) {
-                call Hisat {
-                    input:
-                    sites = hisat2SpliceSites.sites,
-                    strand = sample.strand,
-                    name = sample.name,
-                    sample = PR,
-                    index = hisat_index
+        if (defined(hisat2SpliceSites.sites)) {
+            scatter (sample in samples) {
+                scatter(PR in sample.read_pair) {
+                    call Hisat as nopt{
+                        input:
+                        sites = hisat2SpliceSites.sites,
+                        strand = sample.strand,
+                        name = sample.name,
+                        sample = PR,
+                        index = hisat_index
+                    }
                 }
+                AlignedSample hisat_aligned_sample = object {bam: nopt.bam, strand: sample.strand, aligner: "hisat", name: sample.name}
             }
-            AlignedSample hisat_aligned_sample = object {bam: Hisat.bam, strand: sample.strand, aligner: "hisat", name: sample.name}
         }
+        if (!defined(hisat2SpliceSites.sites)) {
+            scatter (sample in samples) {
+               scatter(PR in sample.read_pair) {
+                   call Hisat as wopt {
+                       input:
+                       strand = sample.strand,
+                       name = sample.name,
+                       sample = PR,
+                       index = hisat_index
+                   }
+               }
+               AlignedSample hisat_aligned_sample_no_sites = object {bam: wopt.bam, strand: sample.strand, aligner: "hisat", name: sample.name}
+            }
+        }
+        Array[AlignedSample] def_hisat_aligned = select_first([hisat_aligned_sample, hisat_aligned_sample_no_sites])
+
     }
 
     if (aligner == "star") {
@@ -51,7 +69,7 @@ workflow wf_align_short {
         }
     }
 
-    Array[AlignedSample] def_aligned_samples = select_first([hisat_aligned_sample, star_aligned_sample])
+    Array[AlignedSample] def_aligned_samples = select_first([def_hisat_aligned, star_aligned_sample])
 
     scatter (aligned_sample in def_aligned_samples) {
         scatter (bam in aligned_sample.bam) {
