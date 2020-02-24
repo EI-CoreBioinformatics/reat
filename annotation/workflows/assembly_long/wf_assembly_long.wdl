@@ -50,12 +50,12 @@ task stringtie_long {
     Int cpus = 8
 
     output {
-        File gff = "result.gff"
+        File gff = aligned_sample.name+"."+aligned_sample.aligner+".stringtie.gff"
     }
 
     command <<<
         set -euxo pipefail
-    stringtie -p "~{cpus}" ~{"-G " + reference_annotation} -L ~{sep=" " aligned_sample.bam} -o "result.gff"
+    stringtie -p "~{cpus}" ~{"-G " + reference_annotation} -L ~{sep=" " aligned_sample.bam} -o "~{aligned_sample.name}.~{aligned_sample.aligner}.stringtie.gff"
     >>>
 
     RuntimeAttr default_attr = object {
@@ -81,13 +81,13 @@ task sam2gff {
     }
     
     output {
-        File gff = "result.gff"
+        File gff = aligned_sample.name+"."+aligned_sample.aligner+".sam2gff.gff"
     }
 
     command <<<
         set -euxo pipefail
         for bam in ~{sep=" " aligned_sample.bam}; do
-        samtools view -F 4 -F 0x900 $bam; done | sam2gff -s ~{aligned_sample.name} > result.gff
+        samtools view -F 4 -F 0x900 $bam; done | sam2gff -s ~{aligned_sample.name} > ~{aligned_sample.name}.~{aligned_sample.aligner}.sam2gff.gff
     >>>
 
     RuntimeAttr default_attr = object {
@@ -113,13 +113,13 @@ task gffread_merge {
     }
 
     output {
-        File gff = "result.gff"
+        File gff = aligned_sample.name+"."+aligned_sample.aligner+".gffread_merge.gff"
     }
 
     command <<<
         set -euxo pipefail
         for bam in ~{sep=" " aligned_sample.bam}; do
-        samtools view -F 4 -F 0x900 $bam; done | sam2gff -s ~{aligned_sample.name} | gffread -T -M -K -o result.gff
+        samtools view -F 4 -F 0x900 $bam; done | sam2gff -s ~{aligned_sample.name} | gffread -T -M -K -o ~{aligned_sample.name}.~{aligned_sample.aligner}.gffread_merge.gff
     >>>
 
     RuntimeAttr default_attr = object {

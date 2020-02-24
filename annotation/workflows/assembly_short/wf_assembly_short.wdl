@@ -6,8 +6,7 @@ import "../common/rt_struct.wdl"
 workflow wf_assembly_short {
     input {
         Array[AlignedSample] aligned_samples
-        String assembler = "scallop"
-        File? annotation
+#        File? annotation
     }
 
     scatter (aligned_sample in aligned_samples) {
@@ -15,8 +14,8 @@ workflow wf_assembly_short {
             call Stringtie {
                 input:
                 aligned_sample = bam,
-                strand = aligned_sample.strand,
-                annotation = annotation
+                strand = aligned_sample.strand
+#                annotation = annotation
             }
         }
         call Merge {
@@ -44,6 +43,7 @@ workflow wf_assembly_short {
 task Stringtie {
     input {
         File aligned_sample
+        String prefix = basename(aligned_sample, ".bam")
         String strand
         File? annotation
         RuntimeAttr? runtime_attr_override
@@ -52,11 +52,12 @@ task Stringtie {
     Int cpus = 8
 
     output {
-        File assembled = aligned_sample+".stringtie.gtf"
+        File assembled = prefix+".stringtie.gtf"
     }
 
     command <<<
         set -euxo pipefail
+        strandness=""
         case ~{strand} in
             fr-firststrand)
             strandness="--rf"
@@ -70,7 +71,7 @@ task Stringtie {
         -p "~{cpus}" \
         "${strandness}" \
         ~{"-G " + annotation} \
-        -o "~{aligned_sample}.stringtie.gtf"
+        -o "~{prefix}.stringtie.gtf"
     >>>
 
     RuntimeAttr default_attr = object {
@@ -105,11 +106,10 @@ task Merge {
 
     command <<<
         set -euxo pipefail
-        stringtie ~{sep=" " assemblies} \
-        -p "~{cpus}" \
-        "${strandness}" \
+        stringtie --merge \
         ~{"-G " + annotation} \
-        -o "~{name+"."+aligner_name}.stringtie.gtf"
+        -o "~{name+"."+aligner_name}.stringtie.gtf" \
+        ~{sep=" " assemblies}
     >>>
 
     RuntimeAttr default_attr = object {
@@ -128,8 +128,6 @@ task Merge {
 
 }
 
-
-# Needs to have the tool available... Not built yet for OSX
 task Scallop {
     input {
         AlignedSample aligned_sample

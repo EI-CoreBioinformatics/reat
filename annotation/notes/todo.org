@@ -15,6 +15,9 @@ For cleanliness:
   Start refactoring from the right (inner most section)
 
 * Tasks
+** TODO Collapse output of mikado prepare before serialize and pick
+This could be implemented within mikado or using gffread and then filtering mikado's input
+Check if this could be done by rerunning prepare after using gffread?
 ** TODO Write documentation for the pipeline
 *** TODO Code docs
 *** TODO Diagrams
@@ -421,9 +424,9 @@ This seems difficult to do in practice, requires catching output from the server
 
  Changes to previous state of the pipeline:
  - Mikado to take in one "custom" set of parameters for each run_type (short, LQ-long, HQ-long, All) (DONE)
- - Sample's short read assemblies to be grouped by label
+ - Sample's short read assemblies to be grouped by label (DONE)
  - Samples to take extra optional parameters: score, is_ref (DONE)
- - LQ-long and HQ-long can be either collapsed or assembled
+ - LQ-long and HQ-long can be either collapsed or assembled (DONE)
    - Does this mean *all* LQ are to be grouped together and *all* HQ grouped together too?
      I would have expected them to behave similarly to the short reads.
  - Output of mikado_prepare could be collapsed using 'gffread' and then filtered before subsequent stages (serialize, pick).

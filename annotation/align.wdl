@@ -50,7 +50,7 @@ workflow wf_align {
         call assm_s.wf_assembly_short {
             input:
             aligned_samples = wf_align_short.aligned_samples,
-            annotation = wf_sanitize.annotation
+            #annotation = wf_sanitize.annotation
         }
 
         call portcullis_s.portcullis {

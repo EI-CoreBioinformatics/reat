@@ -7,9 +7,9 @@ workflow wf_mikado {
     input {
         IndexedReference reference_genome
         File mikado_scoring_file
-        Array[AssembledSample]? LQ_align
-        Array[AssembledSample]? HQ_align
-        Array[AssembledSample]? SR_align
+        Array[AssembledSample]? LQ_assemblies
+        Array[AssembledSample]? HQ_assemblies
+        Array[AssembledSample]? SR_assemblies
         File? annotation_bed
         # Array[LabeledFasta]? protein_related_species
     }
@@ -23,12 +23,12 @@ workflow wf_mikado {
         mikado_scoring_file: ""
     }
 
-    Array[AssembledSample] long_assemblies_valid = flatten(select_all([LQ_align, HQ_align]))
+    Array[AssembledSample] long_assemblies_valid = flatten(select_all([LQ_assemblies, HQ_assemblies]))
     call mikado.wf_mikado as Mikado_long {
         input:
         scoring_file = mikado_scoring_file,
         indexed_reference =  reference_genome,
-        short_assemblies = SR_align,
+        short_assemblies = SR_assemblies,
         long_assemblies = long_assemblies_valid,
         junctions = annotation_bed
     }
@@ -37,7 +37,7 @@ workflow wf_mikado {
         input:
         scoring_file = mikado_scoring_file,
         indexed_reference =  reference_genome,
-        short_assemblies = SR_align,
+        short_assemblies = SR_assemblies,
         junctions = annotation_bed
     }
 
