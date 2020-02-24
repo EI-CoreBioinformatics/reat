@@ -15,7 +15,20 @@ For cleanliness:
   Start refactoring from the right (inner most section)
 
 * Tasks
-** TODO Add Biological replicate level to the samples
+** TODO Write documentation for the pipeline
+*** TODO Code docs
+*** TODO Diagrams
+*** TODO Usage docs
+*** TODO Document all input variables with meta tags
+*** TODO Write a schema for interactively generating input and input validation
+** TODO Add "extra" options for each command
+** TODO Collect a list of all flavours of gff3 used in the pipeline and simplify it
+** TODO Implement the Genome Threader pipeline
+   DEADLINE: <2020-02-28 Fri> SCHEDULED: <2020-02-17 Mon>
+** DONE Add Biological replicate level to the samples
+   CLOSED: [2020-02-24 Mon 11:21]
+   - CLOSING NOTE [2020-02-24 Mon 11:21] \\
+     This is done and tests are currently executing.
 Currently all the samples are treated as biological given that they can only take a single input file or pair of files.
 Separating biological from technical samples enables the user to assign several input file or pairs of files under the same
 sample name.
@@ -56,16 +69,6 @@ In reality these are technical replicates from the same biological sample, so it
     ]
 
 Finally, all the technical sample alignments can be combined into a single assembly, idem for the long read samples
-** TODO Implement the Genome Threader pipeline
-   DEADLINE: <2020-02-28 Fri> SCHEDULED: <2020-02-17 Mon>
-** TODO Write documentation for the pipeline
-*** TODO Code docs
-*** TODO Diagrams
-*** TODO Usage docs
-*** TODO Document all input variables with meta tags
-*** TODO Write a schema for interactively generating input and input validation
-** TODO Add "extra" options for each command
-** TODO Collect a list of all flavours of gff3 used in the pipeline and simplify it
 ** DONE Run a first test of the alignment+assembly workflow with all the input types
    CLOSED: [2020-02-17 Mon 16:18]
    - CLOSING NOTE [2020-02-17 Mon 16:18] \\

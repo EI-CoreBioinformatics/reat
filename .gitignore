@@ -3,3 +3,5 @@ cromwell-executions/
 cromwell-workflow-logs/
 workflows.zip
 dependencies.zip
+.idea
+ei-cautious-broccoli.iml
