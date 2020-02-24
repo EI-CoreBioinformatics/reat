@@ -19,48 +19,10 @@ workflow wf_align {
 
     parameter_meta {
         reference_genome: "Reference genome to align against"
-        paired_samples:
-        "
-        Paired short read samples, each item is defined by a biological replicate name with one or more technical
-        replicates. Technical replicates are defined by a name, R1, R2 and strand.
-        Example:
-        [
-            {
-                \"biological_sample_name\": \"Ara\",
-        	    \"technical_samples\":
-        	    [
-        	        {
-        		        \"name\": \"Ara1\",
-        		        \"strand\": \"fr-firststrand\",
-        		        \"R1\": \"Ara1_R1.fastq.gz\",
-        		        \"R2\": \"Ara1_R2.fastq.gz\"
-        		    },
-        		    {
-        		        \"name\": \"Ara2\",
-        		        \"strand\": \"fr-firststrand\",
-        		        \"R1\": \"Ara2_R1.fastq.gz\",
-        		        \"R2\": \"Ara2_R2.fastq.gz\"
-        		    },
-        	    ]
-        	}
-        ]
-        "
-        LQ_long_read_samples:
-        "
-        Low quality long read samples, each item is defined by a name, it's strand and one or more long read files.
-        They optionally contain a is_ref flag which will carry through any transcripts present in the files all the way
-        to the final outputs and an optional score flag which will apply a weight to the transcripts score in mikado.
-        "
-        HQ_long_read_samples:
-        "
-        High quality long read samples, each item is defined by a name, it's strand and one or more long read files.
-        They optionally contain a is_ref flag which will carry through any transcripts present in the files all the way
-        to the final outputs and an optional score flag which will apply a weight to the transcripts score in mikado.
-        "
-        reference_annotation:
-        "
-        Pre-existing annotation that will used during the alignment process and to cleanup the splicing sites.
-        "
+        paired_samples: "Paired short read samples, each item is defined by a biological replicate name with one or more technical"
+        LQ_long_read_samples: "Low quality long read samples, each item is defined by a name, it's strand and one or more long read files."
+        HQ_long_read_samples: "High quality long read samples, each item is defined by a name, it's strand and one or more long read files."
+        reference_annotation: "Pre-existing annotation that will used during the alignment process and to cleanup the splicing sites."
     }
 
     call san.wf_sanitize {
@@ -125,7 +87,7 @@ workflow wf_align {
         }
 
         # Check what is defined for hq-long and run that
-        
+
         call assm_l.wf_assembly_long as HQ_assembly {
             input:
             reference_annotation = wf_sanitize.annotation,

@@ -4,14 +4,23 @@ import "workflows/common/structs.wdl"
 import "workflows/mikado/wf_mikado.wdl" as mikado
 
 workflow wf_mikado {
-    input{
+    input {
         IndexedReference reference_genome
+        File mikado_scoring_file
         Array[AssembledSample]? LQ_align
         Array[AssembledSample]? HQ_align
         Array[AssembledSample]? SR_align
-        # Array[LabeledFasta]? protein_related_species
         File? annotation_bed
-        File? mikado_scoring_file
+        # Array[LabeledFasta]? protein_related_species
+    }
+
+    parameter_meta {
+        reference_genome: ""
+        LQ_align: ""
+        HQ_align: ""
+        SR_align: ""
+        annotation_bed: ""
+        mikado_scoring_file: ""
     }
 
     Array[AssembledSample] long_assemblies_valid = flatten(select_all([LQ_align, HQ_align]))
