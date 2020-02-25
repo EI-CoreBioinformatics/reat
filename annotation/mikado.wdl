@@ -16,9 +16,9 @@ workflow wf_mikado {
 
     parameter_meta {
         reference_genome: ""
-        LQ_align: ""
-        HQ_align: ""
-        SR_align: ""
+        LQ_assemblies: ""
+        HQ_assemblies: ""
+        SR_assemblies: ""
         annotation_bed: ""
         mikado_scoring_file: ""
     }
@@ -28,8 +28,9 @@ workflow wf_mikado {
         input:
         scoring_file = mikado_scoring_file,
         indexed_reference =  reference_genome,
-        short_assemblies = SR_assemblies,
-        long_assemblies = long_assemblies_valid,
+        SR_assemblies = SR_assemblies,
+        LQ_assemblies = LQ_assemblies,
+        HQ_assemblies = HQ_assemblies,
         junctions = annotation_bed
     }
 
@@ -37,7 +38,7 @@ workflow wf_mikado {
         input:
         scoring_file = mikado_scoring_file,
         indexed_reference =  reference_genome,
-        short_assemblies = SR_assemblies,
+        SR_assemblies = SR_assemblies,
         junctions = annotation_bed
     }
 

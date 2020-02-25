@@ -1,6 +1,6 @@
 version 1.0
 
-import "../common/rt_struct.wdl"
+import "../../common/rt_struct.wdl"
 
 task SanitiseProteinBlastDB {
     input {

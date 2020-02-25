@@ -53,12 +53,15 @@ workflow wf_mikado {
         }
     }
 
-    File result = write_lines(flatten(select_all([sr_models.models, LQ_models.models, HQ_models.models])))
+    call WriteModelsFile {
+        input:
+        models = flatten(select_all([sr_models.models, LQ_models.models, HQ_models.models]))
+    }
 
     call MikadoPrepare {
         input:
         reference_fasta = indexed_reference.fasta,
-        models = result,
+        models = WriteModelsFile.result,
         scoring_file = scoring_file,
         extra_config = extra_config
     }
@@ -129,6 +132,37 @@ workflow wf_mikado {
         File pick_scores = MikadoPick.scores
         File pick_stats = MikadoPick.stats
     }
+}
+
+task WriteModelsFile {
+    input {
+        Array[String] models
+        RuntimeAttr? runtime_attr_override
+    }
+
+    RuntimeAttr default_attr = object {
+        cpu_cores: 1,
+        mem_gb: 4,
+        max_retries: 1
+    }
+
+    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
+
+    runtime {
+        cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
+        memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
+        maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+    }
+
+    output {
+        File result = "models.txt"
+    }
+
+    command <<<
+        set -euxo pipefail
+        for i in ~{sep="\" \"" models}; do
+        echo $i; done | awk 'BEGIN{OFS="\t"} {$1=$1} 1' > models.txt;
+    >>>
 }
 
 task MikadoPick {
