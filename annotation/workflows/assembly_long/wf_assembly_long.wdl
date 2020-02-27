@@ -25,13 +25,22 @@ workflow wf_assembly_long {
         }
 
         if (assembler == "stringtie") {
-            call stringtie_long {
+            call stringtie_long as stringtie_assemble {
                 input:
                 reference_annotation = reference_annotation,
                 aligned_sample = sample
             }
         }
-        File def_gff = select_first([sam2gff.gff, gffread_merge.gff, stringtie_long.gff])
+
+        if (assembler == "stringtie_collapse") {
+            call stringtie_long as stringtie_collapse {
+                input:
+                reference_annotation = reference_annotation,
+                collapse = true,
+                aligned_sample = sample
+            }
+        }
+        File def_gff = select_first([sam2gff.gff, gffread_merge.gff, stringtie_assemble.gff, stringtie_collapse.gff])
     }
 
     output {
@@ -43,6 +52,7 @@ workflow wf_assembly_long {
 task stringtie_long {
     input {
         File? reference_annotation
+        Boolean collapse = false
         AlignedSample aligned_sample
         RuntimeAttr? runtime_attr_override
     }
@@ -55,7 +65,7 @@ task stringtie_long {
 
     command <<<
         set -euxo pipefail
-    stringtie -p "~{cpus}" ~{"-G " + reference_annotation} -L ~{sep=" " aligned_sample.bam} -o "~{aligned_sample.name}.~{aligned_sample.aligner}.stringtie.gff"
+        stringtie -p "~{cpus}" ~{"-G " + reference_annotation} ~{if(collapse==true) then "-R " else "-L "} ~{sep=" " aligned_sample.bam} -o "~{aligned_sample.name}.~{aligned_sample.aligner}.stringtie.gtf"
     >>>
 
     RuntimeAttr default_attr = object {
