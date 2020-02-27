@@ -166,7 +166,6 @@ task Filter {
 
     command <<<
         set -euxo pipefail
-        # junc_dir_path="$(dirname ~{junc_dir[0]})"
         prep_dir_path="$(dirname ~{prep_dir[0]})"
 
         portcullis filter -o portcullis_filter --canonical=OFF \
