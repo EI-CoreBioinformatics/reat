@@ -1,6 +1,6 @@
 version 1.0
 
-import "mikado.wdl" as wfm
+import "workflows/mikado/wf_mikado.wdl" as wfm
 import "align.wdl" as waln
 import "workflows/common/structs.wdl"
 import "workflows/exonerate/wf_exonerate.wdl" as exonerate
@@ -16,7 +16,7 @@ workflow ei_annotation {
         Array[LRSample]? HQ_long_read_samples
         Array[LabeledFasta]? protein_related_species
         File? annotation
-        File? mikado_scoring_file
+        File mikado_scoring_file
     }
 
     parameter_meta {
@@ -50,24 +50,24 @@ workflow ei_annotation {
 
     call wfm.wf_mikado {
         input:
-        mikado_scoring_file = mikado_scoring_file,
+        scoring_file = mikado_scoring_file,
         reference_genome = wf_sanitize.indexed_reference,
         SR_align = wf_align.sr_gff
     }
 
-    call repeatmasker.wf_repeat_masker as RepeatMasker {
-        input:
-        reference_fasta = wf_sanitize.indexed_reference.fasta
-    }
-
-    if (defined(protein_related_species)) {
-        Array[LabeledFasta] def_protein_related_species = select_first([protein_related_species])
-        call exonerate.wf_exonerate as Exonerate {
-            input:
-            related_species_protein = def_protein_related_species,
-            masked_reference_genome = RepeatMasker.masked_genome
-        }
-    }
+#    call repeatmasker.wf_repeat_masker as RepeatMasker {
+#        input:
+#        reference_fasta = wf_sanitize.indexed_reference.fasta
+#    }
+#
+#    if (defined(protein_related_species)) {
+#        Array[LabeledFasta] def_protein_related_species = select_first([protein_related_species])
+#        call exonerate.wf_exonerate as Exonerate {
+#            input:
+#            related_species_protein = def_protein_related_species,
+#            masked_reference_genome = RepeatMasker.masked_genome
+#        }
+#    }
 
     output {
         File clean_reference = wf_sanitize.reference
@@ -84,8 +84,7 @@ workflow ei_annotation {
         File mikado_short_config = wf_mikado.mikado_short_config
         File? mikado_short_orfs = wf_mikado.mikado_short_orfs
 
-        IndexedReference masked_genome = RepeatMasker.masked_genome
-
-        Array[Array[File]]? maybe_exonerate_hits = Exonerate.exonerate_results
+#        IndexedReference masked_genome = RepeatMasker.masked_genome
+#        Array[Array[File]]? maybe_exonerate_hits = Exonerate.exonerate_results
     }
 }

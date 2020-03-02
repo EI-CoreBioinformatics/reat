@@ -53,6 +53,7 @@ task stringtie_long {
     input {
         File? reference_annotation
         Boolean collapse = false
+        String collapse_string = if (collapse==true) then "-R " else "-L "
         AlignedSample aligned_sample
         RuntimeAttr? runtime_attr_override
     }
@@ -65,7 +66,7 @@ task stringtie_long {
 
     command <<<
         set -euxo pipefail
-        stringtie -p "~{cpus}" ~{"-G " + reference_annotation} ~{if(collapse==true) then "-R " else "-L "} ~{sep=" " aligned_sample.bam} -o "~{aligned_sample.name}.~{aligned_sample.aligner}.stringtie.gtf"
+        stringtie -p "~{cpus}" ~{"-G " + reference_annotation} ~{collapse_string} ~{sep=" " aligned_sample.bam} -o "~{aligned_sample.name}.~{aligned_sample.aligner}.stringtie.gtf"
     >>>
 
     RuntimeAttr default_attr = object {

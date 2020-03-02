@@ -84,7 +84,7 @@ task BuildModellerDB {
 
     command <<<
         set -euxo pipefail
-    BuildDatabase -name genome -engine ncbi ~{reference_fasta}
+        BuildDatabase -name genome -engine ncbi ~{reference_fasta}
     >>>
 }
 
@@ -115,8 +115,8 @@ task RepeatModeller {
 
     command <<<
         set -euxo pipefail
-    ln -s ~{sep=" " db} -t .
-    RepeatModeler -engine ncbi -pa 4 -database genome
+        ln -s ~{sep=" " db} -t .
+        RepeatModeler -engine ncbi -pa 4 -database genome
     >>>
 }
 
@@ -148,7 +148,7 @@ task RetrieveLibraries {
 
     command <<<
         set -euxo pipefail
-    queryRepeatDatabase.pl ~{"-species " + specie} ~{"-clade " + clade} > "retrieved.fa"
+        queryRepeatDatabase.pl ~{"-species " + specie} ~{"-clade " + clade} > "retrieved.fa"
     >>>
 }
 
@@ -181,7 +181,7 @@ task CreateLibrary {
 
     command <<<
         set -euxo pipefail
-    cat ~{sep=" " repeat_modeler_consensi} ~{retrieved_libraries} ~{extra} > rm_library.fa
+        cat ~{sep=" " repeat_modeler_consensi} ~{retrieved_libraries} ~{extra} > rm_library.fa
     >>>
 }
 
@@ -215,6 +215,6 @@ task RepeatMasker {
 
     command <<<
         set -euxo pipefail
-    RepeatMasker -nolow -xsmall -dir . -gff -lib ~{rm_library} -pa 4 ~{reference_fasta}
+        RepeatMasker -nolow -xsmall -dir . -gff -lib ~{rm_library} -pa 4 ~{reference_fasta}
     >>>
 }
