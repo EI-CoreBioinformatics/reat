@@ -3,7 +3,7 @@ version 1.0
 import "workflows/common/structs.wdl"
 import "workflows/mikado/wf_mikado.wdl" as mikado
 
-workflow wf_mikado {
+workflow wf_main_mikado {
     input {
         IndexedReference reference_genome
         File mikado_scoring_file

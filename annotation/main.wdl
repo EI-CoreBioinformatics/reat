@@ -1,6 +1,6 @@
 version 1.0
 
-import "workflows/mikado/wf_mikado.wdl" as wfm
+import "mikado.wdl" as wfm
 import "align.wdl" as waln
 import "workflows/common/structs.wdl"
 import "workflows/exonerate/wf_exonerate.wdl" as exonerate
@@ -48,7 +48,7 @@ workflow ei_annotation {
         reference_annotation = wf_sanitize.annotation
     }
 
-    call wfm.wf_mikado {
+    call wfm.wf_main_mikado {
         input:
         scoring_file = mikado_scoring_file,
         reference_genome = wf_sanitize.indexed_reference,
@@ -78,11 +78,11 @@ workflow ei_annotation {
         Array[File] star_index = wf_index.star_index
 
         Array[AssembledSample]? sr_asms = wf_align.sr_gff
-        File mikado_long_config = wf_mikado.mikado_long_config
-        File? mikado_long_orfs = wf_mikado.mikado_long_orfs
+        File mikado_long_config = wf_main_mikado.mikado_long_config
+        File? mikado_long_orfs = wf_main_mikado.mikado_long_orfs
 
-        File mikado_short_config = wf_mikado.mikado_short_config
-        File? mikado_short_orfs = wf_mikado.mikado_short_orfs
+        File mikado_short_config = wf_main_mikado.mikado_short_config
+        File? mikado_short_orfs = wf_main_mikado.mikado_short_orfs
 
 #        IndexedReference masked_genome = RepeatMasker.masked_genome
 #        Array[Array[File]]? maybe_exonerate_hits = Exonerate.exonerate_results
