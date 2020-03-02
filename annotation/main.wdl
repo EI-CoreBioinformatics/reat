@@ -50,9 +50,11 @@ workflow ei_annotation {
 
     call wfm.wf_main_mikado {
         input:
-        scoring_file = mikado_scoring_file,
+        mikado_scoring_file = mikado_scoring_file,
         reference_genome = wf_sanitize.indexed_reference,
-        SR_align = wf_align.sr_gff
+        SR_assemblies = wf_align.SR_gff,
+        LQ_assemblies = wf_align.LQ_gff,
+        HQ_assemblies = wf_align.HQ_gff
     }
 
 #    call repeatmasker.wf_repeat_masker as RepeatMasker {
@@ -77,7 +79,7 @@ workflow ei_annotation {
         Array[File] hisat_index = wf_index.hisat_index
         Array[File] star_index = wf_index.star_index
 
-        Array[AssembledSample]? sr_asms = wf_align.sr_gff
+        Array[AssembledSample]? sr_asms = wf_align.SR_gff
         File mikado_long_config = wf_main_mikado.mikado_long_config
         File? mikado_long_orfs = wf_main_mikado.mikado_long_orfs
 

@@ -41,10 +41,11 @@ workflow wf_assembly_long {
             }
         }
         File def_gff = select_first([sam2gff.gff, gffread_merge.gff, stringtie_assemble.gff, stringtie_collapse.gff])
+        AssembledSample assembled_long = object { name: sample.name+"."+sample.aligner+assembler, strand: sample.strand, assembly: def_gff}
     }
 
     output {
-        Array[File] gff = def_gff
+        Array[AssembledSample] gff = assembled_long
     }
 
 }

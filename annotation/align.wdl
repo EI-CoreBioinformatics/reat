@@ -116,7 +116,7 @@ workflow wf_align {
         Array[AlignedSample]? hq_bams = HQ_align.bams
 
         Array[AssembledSample]? SR_gff = wf_assembly_short.assemblies
-        Array[File]? LQ_gff = LQ_assembly.gff
-        Array[File]? HQ_gff = HQ_assembly.gff
+        Array[AssembledSample]? LQ_gff = LQ_assembly.gff
+        Array[AssembledSample]? HQ_gff = HQ_assembly.gff
     }
 }
