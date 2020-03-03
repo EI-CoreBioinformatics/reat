@@ -160,7 +160,7 @@ task WriteModelsFile {
 
     command <<<
         set -euxo pipefail
-        for i in ~{sep="\" \"" models}; do
+        for i in "~{sep="\" \"" models}"; do
         echo $i; done | awk 'BEGIN{OFS="\t"} {$1=$1} 1' > models.txt;
     >>>
 }
