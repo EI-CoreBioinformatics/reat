@@ -15,6 +15,8 @@ workflow wf_align {
         Array[LRSample]? LQ_long_read_samples
         Array[LRSample]? HQ_long_read_samples
         File? reference_annotation
+        String HQ_assembler = "merge"
+        String LQ_assembler = "stringtie"
     }
 
     parameter_meta {
@@ -74,7 +76,8 @@ workflow wf_align {
         call assm_l.wf_assembly_long as LQ_assembly {
             input:
             reference_annotation = wf_sanitize.annotation,
-            aligned_samples = LQ_align.bams
+            aligned_samples = LQ_align.bams,
+            assembler = LQ_assembler
         }
     }
 
@@ -91,7 +94,8 @@ workflow wf_align {
         call assm_l.wf_assembly_long as HQ_assembly {
             input:
             reference_annotation = wf_sanitize.annotation,
-            aligned_samples = HQ_align.bams
+            aligned_samples = HQ_align.bams,
+            assembler = HQ_assembler
         }
     }
 
