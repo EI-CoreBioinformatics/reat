@@ -4,6 +4,7 @@ From: ubuntu
 %environment
 export PATH=$PATH:/opt/software/hisat2-2.1.0
 export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
+export PYTHONPATH=$PYTHONPATH:/usr/local/lib/python3.6/dist-packages/
 
 %post
 mkdir /jic

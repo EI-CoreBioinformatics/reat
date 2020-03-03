@@ -1,3 +1,4 @@
+
 #+STARTUP: lognotedone
 For functionality:
  1 Do it
@@ -15,6 +16,8 @@ For cleanliness:
   Start refactoring from the right (inner most section)
 
 * Tasks
+** TODO Add "extra" options for each command
+** TODO Collect a list of all flavours of gff3 used in the pipeline and simplify it
 ** TODO Collapse output of mikado prepare before serialize and pick
 This could be implemented within mikado or using gffread and then filtering mikado's input
 Check if this could be done by rerunning prepare after using gffread?
@@ -24,10 +27,76 @@ Check if this could be done by rerunning prepare after using gffread?
 *** TODO Usage docs
 *** TODO Document all input variables with meta tags
 *** TODO Write a schema for interactively generating input and input validation
-** TODO Add "extra" options for each command
-** TODO Collect a list of all flavours of gff3 used in the pipeline and simplify it
 ** TODO Implement the Genome Threader pipeline
    DEADLINE: <2020-02-28 Fri> SCHEDULED: <2020-02-17 Mon>
+** DONE Install gnuplot on singularity container
+   CLOSED: [2020-03-03 Tue 17:04] SCHEDULED: <2020-03-03 Tue>
+   - CLOSING NOTE [2020-03-03 Tue 17:04] \\
+     Installed and deployed... Tests running on HPC. ei_annotation-0.0.3 contains all binaries required for the main.wdl workflow
+** DONE Fix the main workflow for the first integrated run
+   CLOSED: [2020-03-03 Tue 10:17]
+   - CLOSING NOTE [2020-03-03 Tue 10:17] \\
+     All workflows output finished products (AlignedSample, AssembledSample) which are used by higher level workflows
+The main workflow needs to pass assembled samples to mikado, the long assembler workflow does not produce these
+** DONE Setup mikado run
+   CLOSED: [2020-03-02 Mon 19:41]
+
+   - CLOSING NOTE [2020-03-02 Mon 19:41] \\
+     Done, mikado run finished correctly. Had to generate a singularity definition file and create a container with all binaries required for the WF for this to work. Changes are commited in the repo
+    "wf_align.LQ_gff":
+    
+[
+{"name": "A01_1",
+"assembly": "/ei/workarea/users/yanesl/Projects/CB-GENANNO-468_REAT-transcriptome_module/Analysis/run_align/cromwell-executions/wf_align/fa7d6c9d-7a99-4dad-bee3-13a267cb7128/call-LQ_assembly/wf_assembly_long/1f5c371e-5762-40a9-9321-b0586ad534c0/call-stringtie_long/shard-0/execution/r54053_20170914_095520_1_A01-m54053_170914_101735.minimap2.stringtie.gff",
+"strand": "fr-firststrand"
+},
+{"name": "A01_2",
+"assembly":
+"/ei/workarea/users/yanesl/Projects/CB-GENANNO-468_REAT-transcriptome_module/Analysis/run_align/cromwell-executions/wf_align/fa7d6c9d-7a99-4dad-bee3-13a267cb7128/call-LQ_assembly/wf_assembly_long/1f5c371e-5762-40a9-9321-b0586ad534c0/call-stringtie_long/shard-1/execution/r54053_20170915_105219_1_A01-m54053_170915_110119.minimap2.stringtie.gff",
+"strand": "fr-firststrand"
+},
+{"name": "B01",
+"assembly":
+"/ei/workarea/users/yanesl/Projects/CB-GENANNO-468_REAT-transcriptome_module/Analysis/run_align/cromwell-executions/wf_align/fa7d6c9d-7a99-4dad-bee3-13a267cb7128/call-LQ_assembly/wf_assembly_long/1f5c371e-5762-40a9-9321-b0586ad534c0/call-stringtie_long/shard-2/execution/r54053_20170915_105219_2_B01-m54053_170915_210825.minimap2.stringtie.gff",
+"strand": "fr-firststrand"
+},
+{"name": "C01",
+"assembly":
+"/ei/workarea/users/yanesl/Projects/CB-GENANNO-468_REAT-transcriptome_module/Analysis/run_align/cromwell-executions/wf_align/fa7d6c9d-7a99-4dad-bee3-13a267cb7128/call-LQ_assembly/wf_assembly_long/1f5c371e-5762-40a9-9321-b0586ad534c0/call-stringtie_long/shard-3/execution/r54053_20170915_105219_3_C01-m54053_170916_072810.minimap2.stringtie.gff",
+"strand": "fr-firststrand"
+}
+],
+
+    "wf_align.HQ_gff": 
+[
+{"name": "CCS",
+"assembly": "/ei/workarea/users/yanesl/Projects/CB-GENANNO-468_REAT-transcriptome_module/Analysis/run_align/cromwell-executions/wf_align/fa7d6c9d-7a99-4dad-bee3-13a267cb7128/call-HQ_assembly/wf_assembly_long/58ddcfcc-c27a-4c66-8229-9ad62a812511/call-gffread_merge/shard-0/execution/CCS.minimap2.gffread_merge.gff",
+"strand": "fr-firststrand"
+},
+{"name": "Polished",
+"assembly": "/ei/workarea/users/yanesl/Projects/CB-GENANNO-468_REAT-transcriptome_module/Analysis/run_align/cromwell-executions/wf_align/fa7d6c9d-7a99-4dad-bee3-13a267cb7128/call-HQ_assembly/wf_assembly_long/58ddcfcc-c27a-4c66-8229-9ad62a812511/call-gffread_merge/shard-1/execution/polished.minimap2.gffread_merge.gff",
+"strand": "fr-firststrand"
+}
+],
+
+    "wf_align.SR_gff":
+[{
+      "strand": "fr-firststrand",
+      "assembly": "/ei/workarea/users/yanesl/Projects/CB-GENANNO-468_REAT-transcriptome_module/Analysis/run_align/cromwell-executions/wf_align/fa7d6c9d-7a99-4dad-bee3-13a267cb7128/call-wf_assembly_short/wf_assembly_short/ced605d7-d4f4-474f-8a0d-58cd07f0767f/call-Merge/shard-0/execution/Ara.hisat.stringtie.gtf",
+      "name": "Ara.hisat.stringtie"
+    }, {
+      "strand": "fr-firststrand",
+      "assembly": "/ei/workarea/users/yanesl/Projects/CB-GENANNO-468_REAT-transcriptome_module/Analysis/run_align/cromwell-executions/wf_align/fa7d6c9d-7a99-4dad-bee3-13a267cb7128/call-wf_assembly_short/wf_assembly_short/ced605d7-d4f4-474f-8a0d-58cd07f0767f/call-Scallop/shard-0/execution/Ara.hisat.scallop.gtf",
+      "name": "Ara.hisat.scallop"
+    }],
+
+  "wf_align.clean_reference_index": {
+    "fasta": "/ei/workarea/users/yanesl/Projects/CB-GENANNO-468_REAT-transcriptome_module/Analysis/run_align/cromwell-executions/wf_align/fa7d6c9d-7a99-4dad-bee3-13a267cb7128/call-wf_sanitize/wf_sanitize/1b1badcc-a12e-4798-8d47-aeaa94f00f04/call-IndexFasta/execution/reference.san.fasta",
+    "fai": "/ei/workarea/users/yanesl/Projects/CB-GENANNO-468_REAT-transcriptome_module/Analysis/run_align/cromwell-executions/wf_align/fa7d6c9d-7a99-4dad-bee3-13a267cb7128/call-wf_sanitize/wf_sanitize/1b1badcc-a12e-4798-8d47-aeaa94f00f04/call-IndexFasta/execution/reference.san.fasta.fai"
+  },
+
+  "scoring_file": /hpc-home/yanesl/workarea/Projects/CB-GENANNO-468_REAT-transcriptome_module/Analysis/run_mikado/plant.yml
+
 ** DONE Add Biological replicate level to the samples
    CLOSED: [2020-02-24 Mon 11:21]
    - CLOSING NOTE [2020-02-24 Mon 11:21] \\
