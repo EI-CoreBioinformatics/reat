@@ -178,7 +178,7 @@ task MikadoPick {
     
     RuntimeAttr default_attr = object {
         cpu_cores: 1,
-        mem_gb: 4,
+        mem_gb: 8,
         max_retries: 1
     }
     
@@ -227,7 +227,7 @@ task MikadoSerialise {
     
     RuntimeAttr default_attr = object {
         cpu_cores: 1,
-        mem_gb: 4,
+        mem_gb: 8,
         max_retries: 1
     }
     
@@ -377,7 +377,7 @@ task MikadoPrepare {
     
     RuntimeAttr default_attr = object {
         cpu_cores: 1,
-        mem_gb: 4,
+        mem_gb: 8,
         max_retries: 1
     }
     
