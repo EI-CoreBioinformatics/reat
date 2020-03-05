@@ -61,7 +61,7 @@ task BlastIndex {
 
     command <<<
         set -euxo pipefail
-    blast index ~{target} > "blast_index.db"
+        makeblastdb -in ~{target} > "blast_index.db"
     >>>
 }
 
@@ -124,7 +124,7 @@ task DiamondIndex {
 
     command <<<
         set -euxo pipefail
-    diamond index ~{target} > "diamond_index.db"
+        diamond index ~{target} > "diamond_index.db"
     >>>
 }
 

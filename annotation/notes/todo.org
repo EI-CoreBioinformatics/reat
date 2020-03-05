@@ -1,4 +1,3 @@
-
 #+STARTUP: lognotedone
 For functionality:
  1 Do it
@@ -575,3 +574,104 @@ Only run one server per workflow.
 Request a VM and run WDL server + DB server.
 
 This is not true, just tested on the cluster and cromwell seems to remember what it had ran previously correctly <2020-02-12 Wed 18:39>
+** Why are we not focusing on pangenome annotations, how does this extend to that?
+** Issues:  ETIMEDOUT errors on strace, no output 
+Had to kill the job directly sending a SIGTERM so that cromwell would close properly, strace of the failing PID attached below:
+
+1583280950.001974 futex(0x7efe24002054, FUTEX_WAIT_BITSET_PRIVATE, 2403767, {1174178, 483726270}, ffffffff) = -1 ETIMEDOUT (Connection timed out)
+1583280950.011393 futex(0x7efe24002028, FUTEX_WAKE_PRIVATE, 1) = 0
+1583280950.011917 futex(0x7efe24002054, FUTEX_WAIT_BITSET_PRIVATE, 2403769, {1174178, 493670771}, ffffffff) = -1 ETIMEDOUT (Connection timed out)
+1583280950.021585 futex(0x7efe24002028, FUTEX_WAKE_PRIVATE, 1) = 0
+1583280950.022140 futex(0x7efe24002054, FUTEX_WAIT_BITSET_PRIVATE, 2403771, {1174178, 503867565}, ffffffff) = -1 ETIMEDOUT (Connection timed out)
+1583280950.031786 futex(0x7efe24002028, FUTEX_WAKE_PRIVATE, 1) = 0
+1583280950.032166 futex(0x7efe24002054, FUTEX_WAIT_BITSET_PRIVATE, 2403773, {1174178, 514087564}, ffffffff) = -1 ETIMEDOUT (Connection timed out)
+1583280950.042173 futex(0x7efe24002028, FUTEX_WAKE_PRIVATE, 1) = 0
+1583280950.042714 futex(0x7efe24002054, FUTEX_WAIT_BITSET_PRIVATE, 2403775, {1174178, 523466984}, ffffffff) = -1 ETIMEDOUT (Connection timed out)
+1583280950.051377 futex(0x7efe24002028, FUTEX_WAKE_PRIVATE, 1) = 0
+1583280950.052079 futex(0x7efdfc03b2e4, FUTEX_WAKE_OP_PRIVATE, 1, 1, 0x7efdfc03b2e0, {FUTEX_OP_SET, 0, FUTEX_OP_CMP_GT, 1}) = 1
+1583280950.053110 futex(0x7efe24002054, FUTEX_WAIT_BITSET_PRIVATE, 2403777, {1174178, 533857822}, ffffffff) = -1 ETIMEDOUT (Connection timed out)
+1583280950.061850 futex(0x7efe24002028, FUTEX_WAKE_PRIVATE, 1) = 0
+1583280950.062389 futex(0x7efe24002054, FUTEX_WAIT_BITSET_PRIVATE, 2403779, {1174178, 544141885}, ffffffff) = -1 ETIMEDOUT (Connection timed out)
+1583280950.072034 futex(0x7efe24002028, FUTEX_WAKE_PRIVATE, 1) = 0
+1583280950.072595 futex(0x7efe24002054, FUTEX_WAIT_BITSET_PRIVATE, 2403781, {1174178, 553348637}, ffffffff) = -1 ETIMEDOUT (Connection timed out)
+1583280950.081277 futex(0x7efe24002028, FUTEX_WAKE_PRIVATE, 1) = 0
+1583280950.081797 futex(0x7efe24002054, FUTEX_WAIT_BITSET_PRIVATE, 2403783, {1174178, 563549463}, ffffffff) = -1 ETIMEDOUT (Connection timed out)
+1583280950.091454 futex(0x7efe24002028, FUTEX_WAKE_PRIVATE, 1) = 0
+1583280950.091974 futex(0x7efe24002054, FUTEX_WAIT_BITSET_PRIVATE, 2403785, {1174178, 573727604}, ffffffff) = -1 ETIMEDOUT (Connection timed out)
+1583280950.101649 futex(0x7efe24002028, FUTEX_WAKE_PRIVATE, 1) = 0
+1583280950.102188 futex(0x7efe24002054, FUTEX_WAIT_BITSET_PRIVATE, 2403787, {1174178, 583927454}, ffffffff) = -1 ETIMEDOUT (Connection timed out)
+1583280950.111670 futex(0x7efe24002028, FUTEX_WAKE_PRIVATE, 1) = 0
+1583280950.111831 futex(0x7efe24002054, FUTEX_WAIT_BITSET_PRIVATE, 2403789, {1174178, 593754701}, ffffffff) = -1 ETIMEDOUT (Connection timed out)
+1583280950.121844 futex(0x7efe24002028, FUTEX_WAKE_PRIVATE, 1) = 0
+1583280950.122376 futex(0x7efe24002054, FUTEX_WAIT_BITSET_PRIVATE, 2403791, {1174178, 604127699}, ffffffff) = -1 ETIMEDOUT (Connection timed out)
+1583280950.132036 futex(0x7efe24002028, FUTEX_WAKE_PRIVATE, 1) = 0
+1583280950.132604 futex(0x7efe24002054, FUTEX_WAIT_BITSET_PRIVATE, 2403793, {1174178, 613356743}, ffffffff) = -1 ETIMEDOUT (Connection timed out)
+1583280950.141293 futex(0x7efe24002028, FUTEX_WAKE_PRIVATE, 1) = 0
+1583280950.141826 futex(0x7efe10123e54, FUTEX_WAKE_OP_PRIVATE, 1, 1, 0x7efe10123e50, {FUTEX_OP_SET, 0, FUTEX_OP_CMP_GT, 1}) = 1
+1583280950.142785 futex(0x7efe10123e54, FUTEX_WAKE_OP_PRIVATE, 1, 1, 0x7efe10123e50, {FUTEX_OP_SET, 0, FUTEX_OP_CMP_GT, 1}) = 1
+1583280950.143597 futex(0x7efe24002054, FUTEX_WAIT_BITSET_PRIVATE, 2403795, {1174178, 623346881}, ffffffff) = -1 ETIMEDOUT (Connection timed out)
+1583280950.151466 futex(0x7efe24002028, FUTEX_WAKE_PRIVATE, 1) = 0
+1583280950.151983 futex(0x7efe24002054, FUTEX_WAIT_BITSET_PRIVATE, 2403797, {1174178, 633736141}, ffffffff) = -1 ETIMEDOUT (Connection timed out)
+1583280950.161647 futex(0x7efe24002028, FUTEX_WAKE_PRIVATE, 1) = 0
+1583280950.161802 futex(0x7efe24002054, FUTEX_WAIT_BITSET_PRIVATE, 2403799, {1174178, 643725477}, ffffffff) = -1 ETIMEDOUT (Connection timed out)
+1583280950.171817 futex(0x7efe24002028, FUTEX_WAKE_PRIVATE, 1) = 0
+1583280950.172374 futex(0x7efe24002054, FUTEX_WAIT_BITSET_PRIVATE, 2403801, {1174178, 654113947}, ffffffff) = -1 ETIMEDOUT (Connection timed out)
+1583280950.182017 futex(0x7efe24002028, FUTEX_WAKE_PRIVATE, 1) = 0
+1583280950.182572 futex(0x7efe24002054, FUTEX_WAIT_BITSET_PRIVATE, 2403803, {1174178, 663310678}, ffffffff) = -1 ETIMEDOUT (Connection timed out)
+1583280950.191246 futex(0x7efe24002028, FUTEX_WAKE_PRIVATE, 1) = 0
+1583280950.191763 futex(0x7efe24002054, FUTEX_WAIT_BITSET_PRIVATE, 2403805, {1174178, 673515608}, ffffffff) = -1 ETIMEDOUT (Connection timed out)
+1583280950.201425 futex(0x7efe24002028, FUTEX_WAKE_PRIVATE, 1) = 0
+1583280950.201952 futex(0x7efe24002054, FUTEX_WAIT_BITSET_PRIVATE, 2403807, {1174178, 683698295}, ffffffff) = -1 ETIMEDOUT (Connection timed out)
+1583280950.211828 futex(0x7efe24002028, FUTEX_WAKE_PRIVATE, 1) = 0
+1583280950.212394 futex(0x7efe24002054, FUTEX_WAIT_BITSET_PRIVATE, 2403809, {1174178, 694143227}, ffffffff) = -1 ETIMEDOUT (Connection timed out)
+1583280950.222039 futex(0x7efe24002028, FUTEX_WAKE_PRIVATE, 1) = 0
+1583280950.222579 futex(0x7efe24002054, FUTEX_WAIT_BITSET_PRIVATE, 2403811, {1174178, 703331740}, ffffffff) = -1 ETIMEDOUT (Connection timed out)
+1583280950.231256 futex(0x7efe24002028, FUTEX_WAKE_PRIVATE, 1) = 0
+1583280950.231785 futex(0x7efe10130f34, FUTEX_WAKE_OP_PRIVATE, 1, 1, 0x7efe10130f30, {FUTEX_OP_SET, 0, FUTEX_OP_CMP_GT, 1}) = 1
+1583280950.232876 futex(0x7efe24002054, FUTEX_WAIT_BITSET_PRIVATE, 2403813, {1174178, 714156320}, ffffffff^Cstrace: Process 2738 detached
+ <detached ...>
+[00:15:50 yanesl@t128n40:~]$ kill -h
+-bash: kill: h: invalid signal specification
+[00:16:09 yanesl@t128n40:~]$ kill
+kill: usage: kill [-s sigspec | -n signum | -sigspec] pid | jobspec ... or kill -l [sigspec]
+[00:16:13 yanesl@t128n40:~]$ kill -s SIGTERM 2645
+[00:17:05 yanesl@t128n40:~]$ Connection to t128n40 closed by remote host.
+Connection to t128n40 closed.
+[00:17:07 yanesl@v0558:~/workarea/Projects/CB-GENANNO-468_REAT-transcriptome_module/Analysis/run_integrated]$ ls -larth
+total 229M
+drwxrwx--- 8 yanesl TGAC_ga007  201 Mar  2 17:51 ..
+-rwxrwx--- 1 yanesl TGAC_ga007 190M Mar  2 17:58 cromwell.jar
+drwxrwx--- 2 yanesl TGAC_ga007   28 Mar  2 18:31 inputs
+-rwxrwx--- 1 yanesl TGAC_ga007  196 Mar  2 18:43 submit.command
+-rwxrwx--- 1 yanesl TGAC_ga007 3.3K Mar  3 10:27 reat_align_all.0.2.json
+-rwxrwx--- 1 yanesl TGAC_ga007 2.3K Mar  3 10:45 cromwell_noserver_slurm.conf
+drwxrwx--- 4 yanesl TGAC_ga007   60 Mar  3 10:48 cromwell-executions
+drwxrwxrwx 2 yanesl TGAC_ga007   67 Mar  3 20:55 cromwell-workflow-logs
+drwxrwx--- 2 yanesl TGAC_ga007  576 Mar  4 00:01 attempt_logs
+-rwxrwx--- 1 yanesl TGAC_ga007   60 Mar  4 00:01 options.json
+drwxrwx--- 6 yanesl TGAC_ga007  346 Mar  4 00:01 .
+-rwxrwx--- 1 yanesl TGAC_ga007 260K Mar  4 00:17 slurm-25943655.out
+[00:17:09 yanesl@v0558:~/workarea/Projects/CB-GENANNO-468_REAT-transcriptome_module/Analysis/run_integrated]$ cat slurm-25943655.out 
+
+File descriptors:
+[00:04:55 yanesl@t128n40:~]$ ls -larth /proc/2645/fd
+total 0
+dr-xr-xr-x 9 yanesl TGAC_ga007  0 Mar  3 20:54 ..
+dr-x------ 2 yanesl TGAC_ga007  0 Mar  4 00:04 .
+l-wx------ 1 yanesl TGAC_ga007 64 Mar  4 00:04 9 -> /ei/workarea/users/yanesl/Projects/CB-GENANNO-468_REAT-transcriptome_module/Analysis/run_integrated/cromwell-executions/cromwell-db/cromwell-db.app.log
+l-wx------ 1 yanesl TGAC_ga007 64 Mar  4 00:04 8 -> /ei/workarea/users/yanesl/Projects/CB-GENANNO-468_REAT-transcriptome_module/Analysis/run_integrated/cromwell-executions/cromwell-db/cromwell-db.log
+lrwx------ 1 yanesl TGAC_ga007 64 Mar  4 00:04 7 -> socket:[15929690]
+lrwx------ 1 yanesl TGAC_ga007 64 Mar  4 00:04 6 -> /ei/workarea/users/yanesl/Projects/CB-GENANNO-468_REAT-transcriptome_module/Analysis/run_integrated/cromwell-executions/cromwell-db/cromwell-db.lck
+lr-x------ 1 yanesl TGAC_ga007 64 Mar  4 00:04 5 -> /ei/workarea/users/yanesl/Projects/CB-GENANNO-468_REAT-transcriptome_module/Analysis/run_integrated/cromwell.jar
+lr-x------ 1 yanesl TGAC_ga007 64 Mar  4 00:04 4 -> /ei/software/testing/jdk/9.0.4/src/jdk-9.0.4/lib/modules
+lr-x------ 1 yanesl TGAC_ga007 64 Mar  4 00:04 3 -> /var/lib/sss/mc/passwd
+l-wx------ 1 yanesl TGAC_ga007 64 Mar  4 00:04 2 -> /ei/workarea/users/yanesl/Projects/CB-GENANNO-468_REAT-transcriptome_module/Analysis/run_integrated/slurm-25943655.out
+l-wx------ 1 yanesl TGAC_ga007 64 Mar  4 00:04 14 -> /ei/workarea/users/yanesl/Projects/CB-GENANNO-468_REAT-transcriptome_module/Analysis/run_integrated/cromwell-workflow-logs/workflow.a32daa14-b614-4963-a6ed-04ed038a58ab.log
+lr-x------ 1 yanesl TGAC_ga007 64 Mar  4 00:04 13 -> /dev/urandom
+lr-x------ 1 yanesl TGAC_ga007 64 Mar  4 00:04 12 -> /dev/random
+lrwx------ 1 yanesl TGAC_ga007 64 Mar  4 00:04 11 -> /ei/workarea/users/yanesl/Projects/CB-GENANNO-468_REAT-transcriptome_module/Analysis/run_integrated/cromwell-executions/cromwell-db/cromwell-db.lobs
+lrwx------ 1 yanesl TGAC_ga007 64 Mar  4 00:04 10 -> /ei/workarea/users/yanesl/Projects/CB-GENANNO-468_REAT-transcriptome_module/Analysis/run_integrated/cromwell-executions/cromwell-db/cromwell-db.data
+l-wx------ 1 yanesl TGAC_ga007 64 Mar  4 00:04 1 -> /ei/workarea/users/yanesl/Projects/CB-GENANNO-468_REAT-transcriptome_module/Analysis/run_integrated/slurm-25943655.out
+lr-x------ 1 yanesl TGAC_ga007 64 Mar  4 00:04 0 -> /dev/null
+
+Not sure where the ETIMEDOUT is coming from yet... Will need to keep this in check.
