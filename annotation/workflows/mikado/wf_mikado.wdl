@@ -157,7 +157,9 @@ task WriteModelsFile {
     output {
         File result = "models.txt"
     }
-
+# awk 'BEGIN{OFS="\t"} {$1=$1} 1' > models.txt transforms inputs looking like:
+# "Ara.hisat.stringtie.gtf	Ara.hisat.stringtie	True	0" "Ara.hisat.scallop.gtf	Ara.hisat.scallop	True	0"
+# into a proper models file, this is a task because using write_lines(flatten([])) did not work properly in the HPC
     command <<<
         set -euxo pipefail
         for i in "~{sep="\" \"" models}"; do
@@ -175,21 +177,8 @@ task MikadoPick {
         Int flank = 200
         RuntimeAttr? runtime_attr_override
     }
-    
-    RuntimeAttr default_attr = object {
-        cpu_cores: 1,
-        mem_gb: 8,
-        max_retries: 1
-    }
-    
-    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
 
-
-  runtime {
-    cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
-    memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
-    maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
-  }
+    Int cpus = 8
 
     output {
         File metrics = "mikado_pick/mikado-" + mode + ".loci.metrics.tsv"
@@ -204,13 +193,28 @@ task MikadoPick {
         set -euxo pipefail
     export TMPDIR=/tmp
     mkdir -p mikado_pick
-    mikado pick ~{"--source Mikado_" + mode} ~{"--mode " + mode} --procs=4 \
+    mikado pick ~{"--source Mikado_" + mode} ~{"--mode " + mode} --procs=~{cpus} \
     ~{"--flank " + flank} --start-method=spawn ~{"--json-conf=" + config_file} \
     -od mikado_pick --loci-out mikado-~{mode}.loci.gff3 -lv INFO ~{"-db " + mikado_db} \
     ~{transcripts}
     mikado compare -r mikado_pick/mikado-~{mode}.loci.gff3 -l mikado_pick/index_loci.log --index
     mikado util stats  mikado_pick/mikado-~{mode}.loci.gff3 mikado_pick/mikado-~{mode}.loci.gff3.stats
     >>>
+
+    RuntimeAttr default_attr = object {
+        cpu_cores: "~{cpus}",
+        mem_gb: 16,
+        max_retries: 1
+    }
+
+    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
+
+
+    runtime {
+        cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
+        memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
+        maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+    }
 }
 
 task MikadoSerialise {
@@ -224,27 +228,15 @@ task MikadoSerialise {
         File? orfs
         RuntimeAttr? runtime_attr_override
     }
-    
-    RuntimeAttr default_attr = object {
-        cpu_cores: 1,
-        mem_gb: 8,
-        max_retries: 1
-    }
-    
-    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
-
-
-  runtime {
-    cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
-    memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
-    maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
-  }
+    Int cpus = 8
 
     output {
         Array[File] out = glob("mikado_serialise/*")
         File mikado_db = "mikado_serialise/mikado.db"
     }
 
+# The following line is a workaround for having no mechanism to output a "prefix" for an optional array expansion, i.e
+# See the usages of xml_prefix
     String xml_prefix = if defined(homology_alignments) then "--xml=" else ""
 
     command <<<
@@ -256,8 +248,23 @@ task MikadoSerialise {
     ln -s ${fai} .
     mikado serialise ~{xml_prefix}~{sep="," homology_alignments} ~{"--blast_targets="+clean_seqs_db} ~{"--junctions="+junctions} ~{"--orfs="+orfs} \
     ~{"--transcripts=" + transcripts} --genome_fai=${fai} \
-    ~{"--json-conf=" + config} --force --start-method=spawn -od mikado_serialise --procs=4
+    ~{"--json-conf=" + config} --force --start-method=spawn -od mikado_serialise --procs=~{cpus}
     >>>
+
+    RuntimeAttr default_attr = object {
+        cpu_cores: "~{cpus}",
+        mem_gb: 8,
+        max_retries: 1
+    }
+
+    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
+
+
+    runtime {
+        cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
+        memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
+        maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+    }
 }
 
 task GTCDS {
@@ -266,21 +273,6 @@ task GTCDS {
         File gtf
         RuntimeAttr? runtime_attr_override
     }
-    
-    RuntimeAttr default_attr = object {
-        cpu_cores: 1,
-        mem_gb: 4,
-        max_retries: 1
-    }
-    
-    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
-
-
-  runtime {
-    cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
-    memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
-    maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
-  }
 
     output {
         File orfs = "mikado_prepared.gt_cds.trans.bed12"
@@ -295,6 +287,21 @@ task GTCDS {
         | gff3_name_to_id.py - mikado_prepared.gt_cds.gff3 && \
         mikado util convert -t -of bed12 "mikado_prepared.gt_cds.gff3" "mikado_prepared.gt_cds.trans.bed12"
     >>>
+
+    RuntimeAttr default_attr = object {
+        cpu_cores: 1,
+        mem_gb: 4,
+        max_retries: 1
+    }
+
+    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
+
+    runtime {
+        cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
+        memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
+        maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+    }
+
 }
 
 task Prodigal {
@@ -303,21 +310,6 @@ task Prodigal {
         String gencode
         RuntimeAttr? runtime_attr_override
     }
-    
-    RuntimeAttr default_attr = object {
-        cpu_cores: 1,
-        mem_gb: 4,
-        max_retries: 1
-    }
-    
-    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
-
-
-  runtime {
-    cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
-    memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
-    maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
-  }
 
     output {
         File orfs = "transcripts.fasta.prodigal.gff3"
@@ -328,6 +320,20 @@ task Prodigal {
         code_id=$(python -c "import Bio.Data; print(CodonTable.generic_by_name[~{gencode}].id")
         prodigal -f gff -g "${code_id}" -i "~{reference}" -o "transcripts.fasta.prodigal.gff3"
     >>>
+
+    RuntimeAttr default_attr = object {
+        cpu_cores: 1,
+        mem_gb: 4,
+        max_retries: 1
+    }
+
+    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
+
+    runtime {
+        cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
+        memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
+        maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+    }
 }
 
 task GenerateModelsList {
@@ -374,21 +380,8 @@ task MikadoPrepare {
         File? extra_config
         RuntimeAttr? runtime_attr_override
     }
-    
-    RuntimeAttr default_attr = object {
-        cpu_cores: 1,
-        mem_gb: 8,
-        max_retries: 1
-    }
-    
-    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
 
-
-  runtime {
-    cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
-    memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
-    maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
-  }
+    Int cpus = 8
 
     output {
         File mikado_config = "mikado.yaml"
@@ -407,6 +400,21 @@ task MikadoPrepare {
         # Merge special configuration file for this run here
         yaml-merge mikado.yaml ~{extra_config}
 
-        mikado prepare --procs=4 --json-conf=mikado.yaml -od mikado_prepare --strip_cds
+        mikado prepare --procs=~{cpus} --json-conf=mikado.yaml -od mikado_prepare --strip_cds
     >>>
+
+    RuntimeAttr default_attr = object {
+        cpu_cores: "~{cpus}",
+        mem_gb: 8,
+        max_retries: 1
+    }
+
+    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
+
+
+    runtime {
+        cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
+        memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
+        maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+    }
 }

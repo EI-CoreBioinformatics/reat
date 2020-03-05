@@ -104,7 +104,7 @@ task sam2gff {
 
     RuntimeAttr default_attr = object {
         cpu_cores: 1,
-        mem_gb: 4,
+        mem_gb: 8,
         max_retries: 1
     }
     

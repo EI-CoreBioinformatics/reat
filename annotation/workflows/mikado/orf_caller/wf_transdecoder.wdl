@@ -89,6 +89,6 @@ task TransdecoderLongOrf {
 
     command <<<
         set -euxo pipefail
-    Transdecoder.LongOrfs -m "~{minprot}" -t "~{reference}" -G "~{gencode}"
+        Transdecoder.LongOrfs -m "~{minprot}" -t "~{reference}" -G "~{gencode}"
     >>>
 }
