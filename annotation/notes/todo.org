@@ -15,7 +15,7 @@ For cleanliness:
   Start refactoring from the right (inner most section)
 
 * Tasks
-** TODO Add "extra" options for each command
+** TODO Consider EDTA for repeat modelling and masking instead of the slow and restrictive RepeatMasker and Modeller: https://genomebiology.biomedcentral.com/articles/10.1186/s13059-019-1905-y** TODO Add "extra" options for each command
 ** TODO Collect a list of all flavours of gff3 used in the pipeline and simplify it
 ** TODO Collapse output of mikado prepare before serialize and pick
 This could be implemented within mikado or using gffread and then filtering mikado's input
