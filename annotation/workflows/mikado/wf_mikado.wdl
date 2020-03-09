@@ -15,8 +15,8 @@ workflow wf_mikado {
         File homology_proteins
         File? extra_config
         File? junctions
-        String gencode_name = "Standard"
-        String orf_caller = "Prodigal"
+        String gencode = "Universal"
+        String orf_caller = "Transdecoder"
         Boolean mikado_do_homology_assessment = false
     }
 
@@ -72,7 +72,7 @@ workflow wf_mikado {
         if (orf_caller == "Prodigal") {
             call Prodigal {
                 input:
-                gencode_name = gencode_name,
+                gencode = gencode,
                 prepared_transcripts = MikadoPrepare.prepared_fasta
             }
         }
@@ -309,35 +309,7 @@ task GTCDS {
 task Prodigal {
     input {
         File prepared_transcripts
-        String gencode_name
-# gencode_name list (id, names):
-#    1 ['Standard', 'SGC0']
-#    2 ['Vertebrate Mitochondrial', 'SGC1']
-#    3 ['Yeast Mitochondrial', 'SGC2']
-#    4 ['Mold Mitochondrial', 'Protozoan Mitochondrial', 'Coelenterate Mitochondrial', 'Mycoplasma', 'Spiroplasma', 'SGC3']
-#    5 ['Invertebrate Mitochondrial', 'SGC4']
-#    6 ['Ciliate Nuclear', 'Dasycladacean Nuclear', 'Hexamita Nuclear', 'SGC5']
-#    9 ['Echinoderm Mitochondrial', 'Flatworm Mitochondrial', 'SGC8']
-#    10 ['Euplotid Nuclear', 'SGC9']
-#    11 ['Bacterial', 'Archaeal', 'Plant Plastid']
-#    12 ['Alternative Yeast Nuclear']
-#    13 ['Ascidian Mitochondrial']
-#    14 ['Alternative Flatworm Mitochondrial']
-#    15 ['Blepharisma Macronuclear']
-#    16 ['Chlorophycean Mitochondrial']
-#    21 ['Trematode Mitochondrial']
-#    22 ['Scenedesmus obliquus Mitochondrial']
-#    23 ['Thraustochytrium Mitochondrial']
-#    24 ['Pterobranchia Mitochondrial']
-#    25 ['Candidate Division SR1', 'Gracilibacteria']
-#    26 ['Pachysolen tannophilus Nuclear']
-#    27 ['Karyorelict Nuclear']
-#    28 ['Condylostoma Nuclear']
-#    29 ['Mesodinium Nuclear']
-#    30 ['Peritrich Nuclear']
-#    31 ['Blastocrithidia Nuclear']
-#    32 ['Balanophoraceae Plastid']
-
+        String gencode
         RuntimeAttr? runtime_attr_override
     }
 
@@ -347,7 +319,7 @@ task Prodigal {
 
     command <<<
         set -euxo pipefail
-        code_id=$(python -c "from Bio.Data import CodonTable; print(CodonTable.generic_by_name[~{gencode_name}].id")
+        code_id=$(python -c "import Bio.Data; print(CodonTable.generic_by_name[~{gencode}].id")
         prodigal -f gff -g "${code_id}" -i "~{prepared_transcripts}" -o "transcripts.fasta.prodigal.gff3"
     >>>
 

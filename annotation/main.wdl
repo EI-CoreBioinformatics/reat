@@ -3,8 +3,8 @@ version 1.0
 import "mikado.wdl" as wfm
 import "align.wdl" as waln
 import "workflows/common/structs.wdl"
-import "workflows/exonerate/wf_exonerate.wdl" as exonerate
-import "workflows/repeat_masker/wf_repeat_masker.wdl" as repeatmasker
+# import "workflows/exonerate/wf_exonerate.wdl" as exonerate
+# import "workflows/repeat_masker/wf_repeat_masker.wdl" as repeatmasker
 import "workflows/sanitize/wf_sanitize.wdl" as san
 import "workflows/index/wf_index.wdl" as idx
 
@@ -14,9 +14,10 @@ workflow ei_annotation {
         Array[PRSample]? paired_samples
         Array[LRSample]? LQ_long_read_samples
         Array[LRSample]? HQ_long_read_samples
-        Array[LabeledFasta]? protein_related_species
         File? annotation
         File mikado_scoring_file
+        File orf_calling_proteins
+        File homology_proteins
     }
 
     parameter_meta {
@@ -54,7 +55,9 @@ workflow ei_annotation {
         reference_genome = wf_sanitize.indexed_reference,
         SR_assemblies = wf_align.SR_gff,
         LQ_assemblies = wf_align.LQ_gff,
-        HQ_assemblies = wf_align.HQ_gff
+        HQ_assemblies = wf_align.HQ_gff,
+        orf_calling_proteins = orf_calling_proteins,
+        homology_proteins = homology_proteins
     }
 
 #    call repeatmasker.wf_repeat_masker as RepeatMasker {

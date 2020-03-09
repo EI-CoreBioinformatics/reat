@@ -15,8 +15,6 @@ For cleanliness:
   Start refactoring from the right (inner most section)
 
 * Tasks
-** TODO Test prodigal orf_calling
-   SCHEDULED: <2020-03-10 Tue>
 ** TODO Add "extra" options for each command
 Will need to consider how to do this properly, seems like sub workflows might hide some of the optional parameters if they are not mapped properly from the calling wf
 ** TODO Simplify BLAST+ output formats

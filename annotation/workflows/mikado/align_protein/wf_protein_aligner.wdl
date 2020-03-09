@@ -7,7 +7,7 @@ task SanitiseProteinBlastDB {
         File db
         RuntimeAttr? runtime_attr_override
     }
-    
+
     RuntimeAttr default_attr = object {
         cpu_cores: 1,
         mem_gb: 4,
@@ -56,19 +56,21 @@ task BlastIndex {
   }
 
     output {
-        File index = "blast_index.db"
+        Array[File] index = glob("blast_index.db.*")
     }
 
     command <<<
         set -euxo pipefail
-        makeblastdb -in ~{target} > "blast_index.db"
+        makeblastdb -dbtype prot -in ~{target} -out blast_index.db
     >>>
 }
 
 task BlastAlign {
     input {
-        File index
+        Array[File] index
         File query
+        String outfmt
+        String output_filename
         RuntimeAttr? runtime_attr_override
     }
     
@@ -88,12 +90,12 @@ task BlastAlign {
   }
 
     output {
-        File out = "output.xml"
+        File out = output_filename
     }
 
     command <<<
         set -euxo pipefail
-        blast ~{index} ~{query} > "output.txt"
+        blastx -db ~{sub(index[0], "\\.pdb$", "")} -query ~{query} -outfmt ~{outfmt} > ~{output_filename}
     >>>
 }
 
@@ -151,7 +153,7 @@ task DiamondAlign {
   }
 
     output {
-        File out = "output.txt"
+        File out = "output.xml"
     }
 
     command <<<
