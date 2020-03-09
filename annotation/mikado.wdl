@@ -25,7 +25,6 @@ workflow wf_main_mikado {
         mikado_scoring_file: ""
     }
 
-
     # The user can choose to run the LQ-LR datasets separately
     if (separate_LQ)
     {
@@ -87,10 +86,10 @@ workflow wf_main_mikado {
     }
 
     output {
-        File mikado_long_config = Mikado_long.mikado_config
+        File? mikado_long_config = Mikado_long.mikado_config
         File? mikado_long_orfs = Mikado_long.orfs
 
-        File mikado_short_config = Mikado_short_and_long.mikado_config
+        File? mikado_short_config = Mikado_short_and_long.mikado_config
         File? mikado_short_orfs = Mikado_short_and_long.orfs
 
         # Map all mikado outputs!

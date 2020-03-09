@@ -83,10 +83,10 @@ workflow ei_annotation {
         Array[File] star_index = wf_index.star_index
 
         Array[AssembledSample]? sr_asms = wf_align.SR_gff
-        File mikado_long_config = wf_main_mikado.mikado_long_config
+        File? mikado_long_config = wf_main_mikado.mikado_long_config
         File? mikado_long_orfs = wf_main_mikado.mikado_long_orfs
 
-        File mikado_short_config = wf_main_mikado.mikado_short_config
+        File? mikado_short_config = wf_main_mikado.mikado_short_config
         File? mikado_short_orfs = wf_main_mikado.mikado_short_orfs
 
 #        IndexedReference masked_genome = RepeatMasker.masked_genome
