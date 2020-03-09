@@ -11,7 +11,8 @@ workflow wf_main_mikado {
         Array[AssembledSample]? HQ_assemblies
         Array[AssembledSample]? SR_assemblies
         File? annotation_bed
-        # Array[LabeledFasta]? protein_related_species
+        File homology_proteins
+        File orf_calling_proteins
     }
 
     parameter_meta {
@@ -23,7 +24,6 @@ workflow wf_main_mikado {
         mikado_scoring_file: ""
     }
 
-    Array[AssembledSample] long_assemblies_valid = flatten(select_all([LQ_assemblies, HQ_assemblies]))
     call mikado.wf_mikado as Mikado_long {
         input:
         scoring_file = mikado_scoring_file,
@@ -31,7 +31,9 @@ workflow wf_main_mikado {
         SR_assemblies = SR_assemblies,
         LQ_assemblies = LQ_assemblies,
         HQ_assemblies = HQ_assemblies,
-        junctions = annotation_bed
+        junctions = annotation_bed,
+        orf_calling_proteins = orf_calling_proteins,
+        homology_proteins = homology_proteins
     }
 
     call mikado.wf_mikado as Mikado_short {
@@ -39,7 +41,9 @@ workflow wf_main_mikado {
         scoring_file = mikado_scoring_file,
         indexed_reference =  reference_genome,
         SR_assemblies = SR_assemblies,
-        junctions = annotation_bed
+        junctions = annotation_bed,
+        orf_calling_proteins = orf_calling_proteins,
+        homology_proteins = homology_proteins
     }
 
     output {

@@ -33,6 +33,8 @@ workflow wf_homology {
                 call prt_aln.BlastAlign {
                     input:
                     index = BlastIndex.index,
+                    outfmt = "5",
+                    output_filename = "mikado_blast_homology.xml",
                     query = seq_file
                 }
             }

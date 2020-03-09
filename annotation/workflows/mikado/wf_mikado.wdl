@@ -11,11 +11,12 @@ workflow wf_mikado {
         Array[AssembledSample]? LQ_assemblies
         Array[AssembledSample]? HQ_assemblies
         File scoring_file
+        File orf_calling_proteins
+        File homology_proteins
         File? extra_config
-        File? dbs
         File? junctions
         String gencode = "Universal"
-        String orf_caller = "None"
+        String orf_caller = "Transdecoder"
         Boolean mikado_do_homology_assessment = false
     }
 
@@ -72,14 +73,14 @@ workflow wf_mikado {
             call Prodigal {
                 input:
                 gencode = gencode,
-                reference = MikadoPrepare.prepared_fasta
+                prepared_transcripts = MikadoPrepare.prepared_fasta
             }
         }
 
         if (orf_caller == "GTCDS") {
             call GTCDS {
                 input:
-                reference = MikadoPrepare.prepared_fasta,
+                prepared_transcripts = MikadoPrepare.prepared_fasta,
                 gtf = MikadoPrepare.prepared_gtf
             }
         }
@@ -87,11 +88,12 @@ workflow wf_mikado {
         if (orf_caller == "Transdecoder") {
             call tdc.wf_transdecoder as Transdecoder {
                 input:
-                prepared_fa = MikadoPrepare.prepared_fasta
+                prepared_transcripts = MikadoPrepare.prepared_fasta,
+                orf_proteins = orf_calling_proteins
             }
         }
 
-        File maybe_orfs = select_first([Prodigal.orfs, GTCDS.orfs, Transdecoder.orfs])
+        File maybe_orfs = select_first([Prodigal.orfs, GTCDS.orfs, Transdecoder.final_orfs])
     }
 
     # Mikado Homology
@@ -100,7 +102,7 @@ workflow wf_mikado {
             input:
             program = "blastx",
             reference = MikadoPrepare.prepared_fasta,
-            protein_db = dbs
+            protein_db = homology_proteins
         }
     }
 
@@ -269,7 +271,7 @@ task MikadoSerialise {
 
 task GTCDS {
     input {
-        File reference
+        File prepared_transcripts
         File gtf
         RuntimeAttr? runtime_attr_override
     }
@@ -283,7 +285,7 @@ task GTCDS {
         set -euxo pipefail
         awk '$3!~\"(CDS|UTR)\"' ~{gtf} \
         | mikado util convert -if gtf -of gff3 - \
-        | gt gff3 -tidy -retainids -addids | gt cds -seqfile ~{reference} - matchdesc \
+        | gt gff3 -tidy -retainids -addids | gt cds -seqfile ~{prepared_transcripts} - matchdesc \
         | gff3_name_to_id.py - mikado_prepared.gt_cds.gff3 && \
         mikado util convert -t -of bed12 "mikado_prepared.gt_cds.gff3" "mikado_prepared.gt_cds.trans.bed12"
     >>>
@@ -306,7 +308,7 @@ task GTCDS {
 
 task Prodigal {
     input {
-        File reference
+        File prepared_transcripts
         String gencode
         RuntimeAttr? runtime_attr_override
     }
@@ -318,7 +320,7 @@ task Prodigal {
     command <<<
         set -euxo pipefail
         code_id=$(python -c "import Bio.Data; print(CodonTable.generic_by_name[~{gencode}].id")
-        prodigal -f gff -g "${code_id}" -i "~{reference}" -o "transcripts.fasta.prodigal.gff3"
+        prodigal -f gff -g "${code_id}" -i "~{prepared_transcripts}" -o "transcripts.fasta.prodigal.gff3"
     >>>
 
     RuntimeAttr default_attr = object {
