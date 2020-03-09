@@ -11,11 +11,12 @@ workflow wf_mikado {
         Array[AssembledSample]? LQ_assemblies
         Array[AssembledSample]? HQ_assemblies
         File scoring_file
+        File orf_calling_proteins
+        File homology_proteins
         File? extra_config
-        File? dbs
         File? junctions
-        String gencode = "Universal"
-        String orf_caller = "None"
+        String gencode_name = "Standard"
+        String orf_caller = "Prodigal"
         Boolean mikado_do_homology_assessment = false
     }
 
@@ -71,15 +72,15 @@ workflow wf_mikado {
         if (orf_caller == "Prodigal") {
             call Prodigal {
                 input:
-                gencode = gencode,
-                reference = MikadoPrepare.prepared_fasta
+                gencode_name = gencode_name,
+                prepared_transcripts = MikadoPrepare.prepared_fasta
             }
         }
 
         if (orf_caller == "GTCDS") {
             call GTCDS {
                 input:
-                reference = MikadoPrepare.prepared_fasta,
+                prepared_transcripts = MikadoPrepare.prepared_fasta,
                 gtf = MikadoPrepare.prepared_gtf
             }
         }
@@ -87,11 +88,12 @@ workflow wf_mikado {
         if (orf_caller == "Transdecoder") {
             call tdc.wf_transdecoder as Transdecoder {
                 input:
-                prepared_fa = MikadoPrepare.prepared_fasta
+                prepared_transcripts = MikadoPrepare.prepared_fasta,
+                orf_proteins = orf_calling_proteins
             }
         }
 
-        File maybe_orfs = select_first([Prodigal.orfs, GTCDS.orfs, Transdecoder.orfs])
+        File maybe_orfs = select_first([Prodigal.orfs, GTCDS.orfs, Transdecoder.final_orfs])
     }
 
     # Mikado Homology
@@ -100,7 +102,7 @@ workflow wf_mikado {
             input:
             program = "blastx",
             reference = MikadoPrepare.prepared_fasta,
-            protein_db = dbs
+            protein_db = homology_proteins
         }
     }
 
@@ -269,7 +271,7 @@ task MikadoSerialise {
 
 task GTCDS {
     input {
-        File reference
+        File prepared_transcripts
         File gtf
         RuntimeAttr? runtime_attr_override
     }
@@ -283,7 +285,7 @@ task GTCDS {
         set -euxo pipefail
         awk '$3!~\"(CDS|UTR)\"' ~{gtf} \
         | mikado util convert -if gtf -of gff3 - \
-        | gt gff3 -tidy -retainids -addids | gt cds -seqfile ~{reference} - matchdesc \
+        | gt gff3 -tidy -retainids -addids | gt cds -seqfile ~{prepared_transcripts} - matchdesc \
         | gff3_name_to_id.py - mikado_prepared.gt_cds.gff3 && \
         mikado util convert -t -of bed12 "mikado_prepared.gt_cds.gff3" "mikado_prepared.gt_cds.trans.bed12"
     >>>
@@ -306,8 +308,36 @@ task GTCDS {
 
 task Prodigal {
     input {
-        File reference
-        String gencode
+        File prepared_transcripts
+        String gencode_name
+# gencode_name list (id, names):
+#    1 ['Standard', 'SGC0']
+#    2 ['Vertebrate Mitochondrial', 'SGC1']
+#    3 ['Yeast Mitochondrial', 'SGC2']
+#    4 ['Mold Mitochondrial', 'Protozoan Mitochondrial', 'Coelenterate Mitochondrial', 'Mycoplasma', 'Spiroplasma', 'SGC3']
+#    5 ['Invertebrate Mitochondrial', 'SGC4']
+#    6 ['Ciliate Nuclear', 'Dasycladacean Nuclear', 'Hexamita Nuclear', 'SGC5']
+#    9 ['Echinoderm Mitochondrial', 'Flatworm Mitochondrial', 'SGC8']
+#    10 ['Euplotid Nuclear', 'SGC9']
+#    11 ['Bacterial', 'Archaeal', 'Plant Plastid']
+#    12 ['Alternative Yeast Nuclear']
+#    13 ['Ascidian Mitochondrial']
+#    14 ['Alternative Flatworm Mitochondrial']
+#    15 ['Blepharisma Macronuclear']
+#    16 ['Chlorophycean Mitochondrial']
+#    21 ['Trematode Mitochondrial']
+#    22 ['Scenedesmus obliquus Mitochondrial']
+#    23 ['Thraustochytrium Mitochondrial']
+#    24 ['Pterobranchia Mitochondrial']
+#    25 ['Candidate Division SR1', 'Gracilibacteria']
+#    26 ['Pachysolen tannophilus Nuclear']
+#    27 ['Karyorelict Nuclear']
+#    28 ['Condylostoma Nuclear']
+#    29 ['Mesodinium Nuclear']
+#    30 ['Peritrich Nuclear']
+#    31 ['Blastocrithidia Nuclear']
+#    32 ['Balanophoraceae Plastid']
+
         RuntimeAttr? runtime_attr_override
     }
 
@@ -317,8 +347,8 @@ task Prodigal {
 
     command <<<
         set -euxo pipefail
-        code_id=$(python -c "import Bio.Data; print(CodonTable.generic_by_name[~{gencode}].id")
-        prodigal -f gff -g "${code_id}" -i "~{reference}" -o "transcripts.fasta.prodigal.gff3"
+        code_id=$(python -c "from Bio.Data import CodonTable; print(CodonTable.generic_by_name[~{gencode_name}].id")
+        prodigal -f gff -g "${code_id}" -i "~{prepared_transcripts}" -o "transcripts.fasta.prodigal.gff3"
     >>>
 
     RuntimeAttr default_attr = object {
