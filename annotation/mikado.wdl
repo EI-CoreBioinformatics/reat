@@ -13,6 +13,7 @@ workflow wf_main_mikado {
         File? annotation_bed
         File homology_proteins
         File orf_calling_proteins
+        Boolean separate_LQ = false
     }
 
     parameter_meta {
@@ -24,33 +25,74 @@ workflow wf_main_mikado {
         mikado_scoring_file: ""
     }
 
-    call mikado.wf_mikado as Mikado_long {
-        input:
-        scoring_file = mikado_scoring_file,
-        indexed_reference =  reference_genome,
-        SR_assemblies = SR_assemblies,
-        LQ_assemblies = LQ_assemblies,
-        HQ_assemblies = HQ_assemblies,
-        junctions = annotation_bed,
-        orf_calling_proteins = orf_calling_proteins,
-        homology_proteins = homology_proteins
-    }
 
-    call mikado.wf_mikado as Mikado_short {
-        input:
-        scoring_file = mikado_scoring_file,
-        indexed_reference =  reference_genome,
-        SR_assemblies = SR_assemblies,
-        junctions = annotation_bed,
-        orf_calling_proteins = orf_calling_proteins,
-        homology_proteins = homology_proteins
+    # The user can choose to run the LQ-LR datasets separately
+    if (separate_LQ)
+    {
+        call mikado.wf_mikado as Mikado_short_and_long_noLQ {
+            input:
+            scoring_file = mikado_scoring_file,
+            indexed_reference =  reference_genome,
+            SR_assemblies = SR_assemblies,
+            HQ_assemblies = HQ_assemblies,
+            junctions = annotation_bed,
+            orf_calling_proteins = orf_calling_proteins,
+            homology_proteins = homology_proteins
+        }
+
+        call mikado.wf_mikado as Mikado_longHQ {
+            input:
+            scoring_file = mikado_scoring_file,
+            indexed_reference =  reference_genome,
+            HQ_assemblies = HQ_assemblies,
+            junctions = annotation_bed,
+            orf_calling_proteins = orf_calling_proteins,
+            homology_proteins = homology_proteins
+        }
+
+        call mikado.wf_mikado as Mikado_longLQ {
+            input:
+            scoring_file = mikado_scoring_file,
+            indexed_reference =  reference_genome,
+            LQ_assemblies = LQ_assemblies,
+            junctions = annotation_bed,
+            orf_calling_proteins = orf_calling_proteins,
+            homology_proteins = homology_proteins
+        }
+    }
+    if (!separate_LQ)
+    {
+        call mikado.wf_mikado as Mikado_short_and_long {
+            input:
+            scoring_file = mikado_scoring_file,
+            indexed_reference =  reference_genome,
+            SR_assemblies = SR_assemblies,
+            LQ_assemblies = LQ_assemblies,
+            HQ_assemblies = HQ_assemblies,
+            junctions = annotation_bed,
+            orf_calling_proteins = orf_calling_proteins,
+            homology_proteins = homology_proteins
+        }
+
+        call mikado.wf_mikado as Mikado_long {
+            input:
+            scoring_file = mikado_scoring_file,
+            indexed_reference =  reference_genome,
+            LQ_assemblies = LQ_assemblies,
+            HQ_assemblies = HQ_assemblies,
+            junctions = annotation_bed,
+            orf_calling_proteins = orf_calling_proteins,
+            homology_proteins = homology_proteins
+        }
     }
 
     output {
         File mikado_long_config = Mikado_long.mikado_config
         File? mikado_long_orfs = Mikado_long.orfs
 
-        File mikado_short_config = Mikado_short.mikado_config
-        File? mikado_short_orfs = Mikado_short.orfs
+        File mikado_short_config = Mikado_short_and_long.mikado_config
+        File? mikado_short_orfs = Mikado_short_and_long.orfs
+
+        # Map all mikado outputs!
     }
 }
