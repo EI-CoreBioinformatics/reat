@@ -15,6 +15,25 @@ For cleanliness:
   Start refactoring from the right (inner most section)
 
 * Tasks
+** TODO Generate "chunks" for transdecoder and prodigal
+The input to both transdecoder and prodigal could be "chunked" to increase parallelism... Check if this can be natively supported
+or if the final results need to be merged somehow.
+
+Chat w DS <2020-03-10 Tue 16:52> a single step for both Transdecoder + Prodigal to select a training set.
+Transdecoder will need to be reimplemented within the WF to acommodate for chunking of the prediction and long_orf calling
+Prodigal will be ran in two steps once for training using a preselection from mikado_prepare output and once for classifying all transcripts
+Transdecoder will be reworked within WF to run on different steps
+
+Collect training information
+Generate all longest_orfs
+Predict best orf using training information
+*** TODO Write down how TransDecoder works for translating into the WF
+*** TODO Subdivide Prodigal in the WF
+*** DONE Check if output of mikado prepare is biased (sorted according to fasta or similar)
+    CLOSED: [2020-03-10 Tue 14:42]
+    - CLOSING NOTE [2020-03-10 Tue 14:42] \\
+      The transcripts come out sorted from the preparation process... Ideally this would be sampled for training and chunked for prediction
+** TODO Should the portcullis junctions be used for LR mapping if available?
 ** TODO Check if it's best to run all the homology and orf_calling stages separetely to the Mikado WF
 It seems like some of the tasks will have repeated inputs, maybe it's worth running separately and then merging everything to avoid
 repeating work... This is a bit related to how the Homology input is defined Mikado issue 280 becomes even more critical.
@@ -595,7 +614,6 @@ Only run one server per workflow.
 Request a VM and run WDL server + DB server.
 
 This is not true, just tested on the cluster and cromwell seems to remember what it had ran previously correctly <2020-02-12 Wed 18:39>
-** Why are we not focusing on pangenome annotations, how does this extend to that?
 ** Issues:  ETIMEDOUT errors on strace, no output 
 Had to kill the job directly sending a SIGTERM so that cromwell would close properly, strace of the failing PID attached below:
 
@@ -696,3 +714,29 @@ l-wx------ 1 yanesl TGAC_ga007 64 Mar  4 00:04 1 -> /ei/workarea/users/yanesl/Pr
 lr-x------ 1 yanesl TGAC_ga007 64 Mar  4 00:04 0 -> /dev/null
 
 Not sure where the ETIMEDOUT is coming from yet... Will need to keep this in check.
+** Why are we not focusing on pangenome annotations, how does this extend to that?
+Meeting with DS, there is a plan to get to PG annotation, first being able to liftover annotations. Based on pangenome representation
+** TransDecoder observations
+Only trains predict on 5000 longest transcripts
+** Prodigal
+Requires at least IDEAL_SINGLE_GENOME = 100000 bases 
+
+* Write up
+** Evaluation categories for WF managers:
+Subworkflow support
+Cloud support
+Retry, Retry w/ augmented resources
+Scatter/Gather
+Conditional tasks
+Optional inputs
+Expressiveness? (Terseness?)
+Documentation
+Development (Active, sustainable, inactive)
+Usage (How many?, who?, where?)
+Execution engines ( What can run it? ) 
+Support ( User support )
+
+Measurable metrics:
+Time taken to start
+Time per X jobs
+Memory required per X jobs
