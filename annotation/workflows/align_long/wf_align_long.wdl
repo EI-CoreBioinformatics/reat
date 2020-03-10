@@ -6,6 +6,7 @@ workflow wf_align_long {
     input {
         File reference
         Array[LRSample] long_samples
+        Boolean is_hq
         # File? junctions
         String aligner = "minimap2"
     }
@@ -17,6 +18,7 @@ workflow wf_align_long {
                 call Minimap2Long {
                     input:
                     LR = LR,
+                    is_hq = is_hq,
                     strand = sample.strand,
                     name = sample.name,
                     reference = reference
@@ -179,6 +181,7 @@ task GMapLong {
 task Minimap2Long {
     input {
         File LR
+        Boolean is_hq
         String name
         String strand
         File reference
@@ -208,12 +211,12 @@ task Minimap2Long {
         
         $in_pipe | \
         minimap2 \
-        -x splice \
+        -ax ~{if (is_hq) then "splice:hq" else "splice"} \
         --cs=long \
         -G 2000 \
         -u b \
         -t ~{cpus} \
-        -a -L --MD \
+        -L --MD \
         --eqx -2 \
         --secondary=no \
         ~{reference} - | samtools view -F 4 -F 0x900 -bS - | samtools sort -@ 4 --reference ~{reference} -T minimap2.sort -o minimap2.~{name}.bam -

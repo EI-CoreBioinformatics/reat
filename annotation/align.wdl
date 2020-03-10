@@ -68,6 +68,7 @@ workflow wf_align {
         call aln_l.wf_align_long as LQ_align {
             input:
             reference = wf_sanitize.reference,
+            is_hq = false,
             long_samples = def_lq_long_sample
         }
 
@@ -86,6 +87,7 @@ workflow wf_align {
         call aln_l.wf_align_long as HQ_align {
             input:
             reference = wf_sanitize.reference,
+            is_hq = true,
             long_samples = def_hq_long_sample
         }
 
