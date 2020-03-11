@@ -69,6 +69,7 @@ task BlastAlign {
     input {
         Array[File] index
         File query
+        String blast_type
         String outfmt
         String output_filename
         RuntimeAttr? runtime_attr_override
@@ -95,7 +96,7 @@ task BlastAlign {
 
     command <<<
         set -euxo pipefail
-        blastx -db ~{sub(index[0], "\\.pdb$", "")} -query ~{query} -outfmt ~{outfmt} > ~{output_filename}
+        ~{blast_type} -db ~{sub(index[0], "\\.pdb$", "")} -query ~{query} -outfmt ~{outfmt} > ~{output_filename}
     >>>
 }
 
@@ -126,7 +127,7 @@ task DiamondIndex {
 
     command <<<
         set -euxo pipefail
-        diamond index ~{target} > "diamond_index.db"
+        diamond makedb ~{target} > "diamond_index.db"
     >>>
 }
 
@@ -134,6 +135,8 @@ task DiamondAlign {
     input {
         File index
         File query
+        String blast_type
+        String output_filename
         RuntimeAttr? runtime_attr_override
     }
     
@@ -153,11 +156,11 @@ task DiamondAlign {
   }
 
     output {
-        File out = "output.xml"
+        File out = output_filename
     }
 
     command <<<
         set -euxo pipefail
-        diamond blast ~{index} ~{query} > "output.xml"
+        diamond ~{blast_type} "~{index}" "~{query}" > "~{output_filename}"
     >>>
 }

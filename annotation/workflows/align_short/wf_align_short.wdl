@@ -6,16 +6,16 @@ import "../common/rt_struct.wdl"
 workflow wf_align_short {
     input {
         Array[PRSample] samples
-        File? annotation
+        File? reference_annotation
         Array[File] gsnap_index
         Array[File] hisat_index
         Array[File] star_index
         String aligner = "hisat"
     }
     
-    if (defined(annotation)) {
+    if (defined(reference_annotation)) {
         call hisat2SpliceSites {
-            input: annotation = annotation
+            input: annotation = reference_annotation
         }
     }
 
@@ -58,7 +58,7 @@ workflow wf_align_short {
             scatter(PR in sample.read_pair) {
                 call Star {
                     input:
-                    annotation = annotation,
+                    reference_annotation = reference_annotation,
                     strand = sample.strand,
                     name = sample.name,
                     sample = PR,
@@ -289,7 +289,7 @@ task Hisat {
 task Star {
     input {
         Array[File] index
-        File? annotation
+        File? reference_annotation
         ReadPair sample
         String strand
         String name
@@ -326,7 +326,7 @@ task Star {
     --alignIntronMin 20 \
     --alignIntronMax 2000 \
     --alignMatesGapMax 2000 \
-    ~{"--sjdbGTFfile " + annotation} \
+    ~{"--sjdbGTFfile " + reference_annotation} \
     --readFilesIn ~{sample.R1} ~{sample.R2} && ln -s Aligned.out.bam "~{rp_name}.star.bam"
     >>>
 

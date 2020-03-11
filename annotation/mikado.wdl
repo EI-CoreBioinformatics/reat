@@ -86,12 +86,20 @@ workflow wf_main_mikado {
     }
 
     output {
-        File? mikado_long_config = Mikado_long.mikado_config
-        File? mikado_long_orfs = Mikado_long.orfs
+        File? long_config = Mikado_long.mikado_config
+        File? long_orfs = Mikado_long.orfs
 
-        File? mikado_short_config = Mikado_short_and_long.mikado_config
-        File? mikado_short_orfs = Mikado_short_and_long.orfs
+        File? short_config = Mikado_short_and_long.mikado_config
+        File? short_orfs = Mikado_short_and_long.orfs
 
-        # Map all mikado outputs!
+        File? short_and_long_noLQ_config = Mikado_short_and_long_noLQ.mikado_config
+        File? short_and_long_noLQ_orfs = Mikado_short_and_long_noLQ.orfs
+
+        File? longHQ_config = Mikado_longHQ.mikado_config
+        File? longHQ_orfs = Mikado_longHQ.orfs
+
+        File? longLQ_config = Mikado_longLQ.mikado_config
+        File? longLQ_orfs = Mikado_longLQ.orfs
+
     }
 }

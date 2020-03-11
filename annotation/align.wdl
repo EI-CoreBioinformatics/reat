@@ -43,7 +43,7 @@ workflow wf_align {
         call aln_s.wf_align_short {
             input:
             samples = def_paired_samples,
-            annotation = wf_sanitize.annotation,
+            reference_annotation = wf_sanitize.annotation,
             gsnap_index = wf_index.gsnap_index,
             hisat_index = wf_index.hisat_index,
             star_index = wf_index.star_index
@@ -52,7 +52,7 @@ workflow wf_align {
         call assm_s.wf_assembly_short {
             input:
             aligned_samples = wf_align_short.aligned_samples,
-            #annotation = wf_sanitize.annotation
+            reference_annotation = wf_sanitize.annotation
         }
 
         call portcullis_s.portcullis {

@@ -6,7 +6,7 @@ import "../common/rt_struct.wdl"
 workflow wf_assembly_short {
     input {
         Array[AlignedSample] aligned_samples
-#        File? annotation
+        File? reference_annotation
     }
 
     scatter (aligned_sample in aligned_samples) {
@@ -14,8 +14,8 @@ workflow wf_assembly_short {
             call Stringtie {
                 input:
                 aligned_sample = bam,
-                strand = aligned_sample.strand
-#                annotation = annotation
+                strand = aligned_sample.strand,
+                reference_annotation = reference_annotation
             }
         }
         call Merge {
@@ -45,7 +45,7 @@ task Stringtie {
         File aligned_sample
         String prefix = basename(aligned_sample, ".bam")
         String strand
-        File? annotation
+        File? reference_annotation
         RuntimeAttr? runtime_attr_override
     }
 
@@ -70,7 +70,7 @@ task Stringtie {
         stringtie ~{aligned_sample} \
         -p "~{cpus}" \
         "${strandness}" \
-        ~{"-G " + annotation} \
+        ~{"-G " + reference_annotation} \
         -o "~{prefix}.stringtie.gtf"
     >>>
 

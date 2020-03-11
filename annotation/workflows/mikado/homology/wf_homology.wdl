@@ -24,7 +24,7 @@ workflow wf_homology {
             db = def_db
         }
 
-        if (program == "blastx") {
+        if (program == "blast") {
             call prt_aln.BlastIndex {
                 input:
                 target = SanitiseProteinBlastDB.clean_db
@@ -33,6 +33,7 @@ workflow wf_homology {
                 call prt_aln.BlastAlign {
                     input:
                     index = BlastIndex.index,
+                    blast_type = "blastx",
                     outfmt = "5",
                     output_filename = "mikado_blast_homology.xml",
                     query = seq_file
@@ -49,6 +50,8 @@ workflow wf_homology {
                 call prt_aln.DiamondAlign {
                     input:
                     index = DiamondIndex.index,
+                    blast_type = "blastx",
+                    output_filename = "mikado_diamond_homology.xml",
                     query = seq_file
                 }
             }

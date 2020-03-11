@@ -100,12 +100,12 @@ workflow wf_mikado {
     if (defined(mikado_do_homology_assessment)) {
         call hml.wf_homology as Homology {
             input:
-            program = "blastx",
+            program = "blast",
             reference = MikadoPrepare.prepared_fasta,
             protein_db = homology_proteins
         }
     }
-
+    
     call MikadoSerialise {
         input:
         homology_alignments = Homology.homology,
