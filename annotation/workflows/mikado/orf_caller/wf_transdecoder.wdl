@@ -6,24 +6,63 @@ import "../align_protein/wf_protein_aligner.wdl" as prt_aln
 workflow wf_transdecoder {
     input {
         File prepared_transcripts
-        String program = "blastp"
-        File orf_proteins
+        String program = "blast"
+        File? orf_proteins
+        Boolean refine_start_codons = true
     }
+
+# Step 1 Subdivide the prepared_transcripts
+    # call seqtk{}
+# Step 2 Generate the longest_orfs and nucleotide frequency table (just call LongOrf in a scatter)
+    # scatter (chunk in chunks) {
+        # call LongOrf {}
+    # }
+# Step 3 Select top longest CDS entries from the scatter, filter similar proteins (can use TDC exclude_similar), select top longest for the final set (can use TDC get_top_longest)
+    # call selectLongest {}
+
+# Step 4 Train the markov model
+    # call trainModel {}
+
+# Step 5 Get hexamer scores
+    # call collectHexamerScores {}
+
+# Step 7 preparation
+    # if(refine_start_codons) {
+    #     call trainStartPWM {}
+    # }
+
+# Step 6.1 Scatter again to score all cds entries using "hexamer_scores_file"
+    # scatter (chunk in processed_chunk) {
+        # call calculateScores {}
+
+# Step 6.2 (optional) Run blastp on the chunks to filter
+        # if (defined(orf_proteins)) {
+            # call blastAlign {}
+        # }
+
+# Step 6.3 In the same scatter generate "best_candidates.gff3" per chunk
+        # call selectBestORFs {}
+# Step 7 (optional) Refine start codons
+        # call startCodonRefinement {}
+    # }
+
+
+
+
 
     call TransdecoderLongOrf {
         input:
             prepared_transcripts = prepared_transcripts
     }
 
-#    if (defined(db)) {
-#        File def_db = select_first([db])
+   if (defined(orf_proteins)) {
+       File def_db = select_first([orf_proteins])
         call prt_aln.SanitiseProteinBlastDB { # Check if this is an input for both homology + orf_calling or just the same task
             input:
-                db = orf_proteins
-#                db = def_db
+                db = def_db
         }
 
-        if (program == "blastp") {
+        if (program == "blast") {
             call prt_aln.BlastIndex as BlastIndex {
                 input:
                 target = SanitiseProteinBlastDB.clean_db
@@ -32,6 +71,7 @@ workflow wf_transdecoder {
             call prt_aln.BlastAlign {
                 input:
                 query = TransdecoderLongOrf.pep,
+                blast_type = "blastp",
                 outfmt = "6",
                 output_filename = "mikado_blast_orfcalling.txt",
                 index = BlastIndex.index
@@ -47,12 +87,14 @@ workflow wf_transdecoder {
             call prt_aln.DiamondAlign {
                 input:
                 query = TransdecoderLongOrf.pep,
+                output_filename = "mikado_diamond_orfcalling.txt",
+                blast_type = "blastp",
                 index = DiamondIndex.index
             }
         }
 
         File maybe_blast_aligned_proteins = select_first([BlastAlign.out, DiamondAlign.out])
-#    }
+   }
 
     call TransdecoderPredict {
         input:
@@ -63,7 +105,7 @@ workflow wf_transdecoder {
 
     output {
         File long_orfs = TransdecoderLongOrf.orfs
-        File clean_db = SanitiseProteinBlastDB.clean_db
+        File? clean_db = SanitiseProteinBlastDB.clean_db
         File final_orfs = TransdecoderPredict.bed
     }
 }
@@ -72,8 +114,33 @@ task TransdecoderLongOrf {
     input {
         File prepared_transcripts
         Int minprot = 20 # Minimum protein length (TODO make parameter)
-        String gencode = "Universal" # Genetic code (TODO Make parameter) 
-        # More gencode info https://github.com/TransDecoder/TransDecoder/blob/master/PerlLib/Nuc_translator.pm
+        String gencode = "Universal" # Genetic code (TODO Make parameter)
+# Options for gencode: 
+    # Universal
+    # Tetrahymena
+    # Acetabularia
+    # Ciliate
+    # Dasycladacean
+    # Hexamita
+    # Candida
+    # Euplotid
+    # SR1_Gracilibacteria
+    # Pachysolen_tannophilus
+    # Mesodinium
+    # Peritrich
+    # Mitochondrial-Vertebrates
+    # Mitochondrial-Yeast
+    # Mitochondrial-Invertebrates
+    # Mitochondrial-Protozoan
+    # Mitochondrial-Echinoderm
+    # Mitochondrial-Ascidian
+    # Mitochondrial-Flatworm
+    # Mitochondrial-Chlorophycean
+    # Mitochondrial-Trematode
+    # Mitochondrial-Scenedesmus_obliquus
+    # Mitochondrial-Thraustochytrium
+    # Mitochondrial-Pterobranchia
+# For more gencode info https://github.com/TransDecoder/TransDecoder/blob/master/PerlLib/Nuc_translator.pm
         RuntimeAttr? runtime_attr_override
     }
     
