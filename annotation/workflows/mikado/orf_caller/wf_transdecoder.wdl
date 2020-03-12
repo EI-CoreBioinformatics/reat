@@ -1,6 +1,7 @@
 version 1.0
 
 import "../../common/structs.wdl"
+import "../../common/tasks.wdl"
 import "../align_protein/wf_protein_aligner.wdl" as prt_aln
 
 workflow wf_transdecoder {
@@ -11,34 +12,91 @@ workflow wf_transdecoder {
         Boolean refine_start_codons = true
     }
 
+# Prepare the protein alignment database
+    if (defined(orf_proteins)) {
+        File def_db = select_first([orf_proteins])
+        call prt_aln.SanitiseProteinBlastDB {
+            input:
+                db = def_db
+        }
+        if (program == "blast") {
+            call prt_aln.BlastIndex as BlastIndex {
+                input:
+                target = SanitiseProteinBlastDB.clean_db
+            }
+        if (program == "diamond") {
+            call prt_aln.DiamondIndex as DiamondIndex {
+                input:
+                target = SanitiseProteinBlastDB.clean_db
+            }
+    }
+
+
 # Step 1 Subdivide the prepared_transcripts
-    # call seqtk{}
+    call tasks.SplitSequences {
+        input:
+        sequences_file = prepared_transcripts,
+        prefix = "transdecoder_split"
+    }
+
 # Step 2 Generate the longest_orfs and nucleotide frequency table (just call LongOrf in a scatter)
-    # scatter (chunk in chunks) {
-        # call LongOrf {}
-    # }
+    scatter (chunk in SplitSequences.seq_files) {
+        call TransdecoderLongOrf {
+            input:
+            prepared_transcripts = chunk
+        }
+    }
+
 # Step 3 Select top longest CDS entries from the scatter, filter similar proteins (can use TDC exclude_similar), select top longest for the final set (can use TDC get_top_longest)
-    # call selectLongest {}
-
 # Step 4 Train the markov model
-    # call trainModel {}
-
-# Step 5 Get hexamer scores
-    # call collectHexamerScores {}
+    call Select_TrainMM_Score {
+        input:
+        cds_files = TransdecoderLongOrf.cds
+    }
 
 # Step 7 preparation
-    # if(refine_start_codons) {
-    #     call trainStartPWM {}
-    # }
+    if(refine_start_codons) {
+        call Train_PWM {
+            input:
+            prepared_transcripts = prepared_transcripts,
+            top_cds = Select_TrainMM_Score.top_cds
+        }
+    }
 
 # Step 6.1 Scatter again to score all cds entries using "hexamer_scores_file"
-    # scatter (chunk in processed_chunk) {
-        # call calculateScores {}
+    scatter (chunk in processed_chunk) {
+        call Calculate_Scores {
+            input:
+            cds = chunk,
+            scores = Select_TrainMM_Score.hexamer_scores_file
+        }
+    }
 
 # Step 6.2 (optional) Run blastp on the chunks to filter
-        # if (defined(orf_proteins)) {
-            # call blastAlign {}
-        # }
+    if (orf_proteins) {
+        scatter (pep_chunk in pep_chunks) {
+            if (defined(orf_proteins)) {
+                if (program == "blast") {
+                    call prt_aln.BlastAlign {
+                        input:
+                        index = BlastIndex.db,
+                        query = chunk,
+                        blast_type = "blastp",
+                        output_filename = "mikado_blast_orfcalling.txt",
+                    }
+                }
+                if (program == "diamond") {
+                    call prt_aln.DiamondAlign {
+                        input:
+                        query = TransdecoderLongOrf.pep,
+                        output_filename = "mikado_diamond_orfcalling.txt",
+                        blast_type = "blastp",
+                        index = DiamondIndex.index
+                    }
+                }
+            }
+        }
+    }
 
 # Step 6.3 In the same scatter generate "best_candidates.gff3" per chunk
         # call selectBestORFs {}
@@ -50,10 +108,10 @@ workflow wf_transdecoder {
 
 
 
-    call TransdecoderLongOrf {
-        input:
-            prepared_transcripts = prepared_transcripts
-    }
+    # call TransdecoderLongOrf {
+    #     input:
+    #         prepared_transcripts = prepared_transcripts
+    # }
 
    if (defined(orf_proteins)) {
        File def_db = select_first([orf_proteins])
@@ -160,7 +218,8 @@ task TransdecoderLongOrf {
     }
 
     output {
-        File orfs = "transdecoder/longest_orfs.gff3"
+        File cds = "transdecoder/longest_orfs.cds"
+        File gff3 = "transdecoder/longest_orfs.gff3"
         File pep = "transdecoder/longest_orfs.pep"
         Array[File] transdecoder_wd = glob("transdecoder/*")
     }
@@ -200,8 +259,64 @@ task TransdecoderPredict {
     }
 
     command <<<
-        set -euxo pipefail
-        Transdecoder.Predict -t ~{prepared_transcripts} -O ~{workdir} ~{"--retain_blastp_hits " + blast_aligned_proteins}
+    set -euxo pipefail
+    Transdecoder.Predict -t ~{prepared_transcripts} -O ~{workdir} ~{"--retain_blastp_hits " + blast_aligned_proteins}
     >>>
 
+}
+
+task Select_TrainMM_Score {
+    input {
+        Array[File] cds_files
+        File base_freqs
+        Int topORFs_train = 50
+        Int red_num = topORFs_train * 10
+    }
+
+    command <<<
+    set -euxo pipefail
+    # TODO Write some code to get the longest from an array of files
+    get_top_longest_from_multiple_files.py ~{sep=" " cds_files} ~{red_num} > "cds.longest_~{red_num}"
+    exclude_similar_proteins.pl "cds.longest_~{red_num}" > "cds.longest_~{red_num}.nr"
+    get_top_longest_fasta_entries.pl "cds.longest_~{red_num}.nr" ~{topORFs_train} > "top_~{topORFs_train}_longest"
+
+    seq_n_baseprobs_to_loglikelihood_vals.pl "top_~{topORFs_train}_longest" "~{base_freqs}" > "hexamer.scores"
+    >>>
+
+    output {
+        File top_cds = "top_"+topORFs_train+"_longest"
+        File hexamer_scores_file = "hexamer.scores"
+    }
+}
+
+task Train_PWM {
+    input {
+        File prepared_transcripts
+        File top_cds
+    }
+
+    output {
+        Array[File] refinement_model = glob("refinement*")
+    }
+
+    command <<<
+    set -euxo pipefail
+    train_start_PWM.pl --transcripts ~{prepared_transcripts} --selected_orfs ~{top_cds} --out_prefix refinement
+    >>>
+}
+
+task Calculate_Scores {
+    input {
+        File cds
+        File scores
+    }
+
+    output {
+        File scored_cds = cds+".scores"
+    }
+
+    command <<<
+    set -euxo pipefail
+    score_CDS_likelihood_all_6_frames.pl "~{cds}" "~{scores}" > "~{cds}.scores"
+    >>>
 }
