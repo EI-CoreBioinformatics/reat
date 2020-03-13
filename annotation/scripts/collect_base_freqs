@@ -1,0 +1,38 @@
+#!/usr/bin/env python3
+from collections import Counter
+import argparse
+import sys
+
+def collect_base_freqs_from_files(file_names):
+    nt_counts = Counter()
+    total_nts = 0
+    for base_freq_file in file_names:
+        with open(base_freq_file) as file:
+            line = file.readline().strip().split()
+            while line:
+                nt_counts[line[0]] += int(line[1])
+                total_nts += int(line[1])
+                line = file.readline().strip().split()
+
+    return nt_counts, total_nts
+
+def list_str(values):
+    return values.split(',')
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--base_freqs', type=list_str, required=True)
+    parser.add_argument('-o', type=str)
+    args = parser.parse_args()
+
+    file_names = args.base_freqs
+    
+    if args.o != None:
+        outputh = open(args.o, "w")
+    else:
+        outputh = sys.stdout
+
+    nt_counts, total_nts = collect_base_freqs_from_files(file_names)
+
+    for k in ['A', 'C', 'G', 'T']:
+        print(k, nt_counts[k], round(1.0*nt_counts[k]/total_nts,3), file=outputh, sep='\t')

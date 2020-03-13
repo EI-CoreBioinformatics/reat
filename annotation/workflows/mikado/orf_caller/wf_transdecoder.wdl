@@ -4,6 +4,12 @@ import "../../common/structs.wdl"
 import "../../common/tasks.wdl"
 import "../align_protein/wf_protein_aligner.wdl" as prt_aln
 
+struct TransdecoderChunk {
+    File pep
+    File cds
+    File gff
+}
+
 workflow wf_transdecoder {
     input {
         File prepared_transcripts
@@ -13,7 +19,7 @@ workflow wf_transdecoder {
     }
 
 # Prepare the protein alignment database
-    if (defined(orf_proteins)) {
+    if (refine_start_codons && defined(orf_proteins)) {
         File def_db = select_first([orf_proteins])
         call prt_aln.SanitiseProteinBlastDB {
             input:
@@ -24,11 +30,13 @@ workflow wf_transdecoder {
                 input:
                 target = SanitiseProteinBlastDB.clean_db
             }
+        }
         if (program == "diamond") {
             call prt_aln.DiamondIndex as DiamondIndex {
                 input:
                 target = SanitiseProteinBlastDB.clean_db
             }
+        }
     }
 
 
@@ -47,15 +55,18 @@ workflow wf_transdecoder {
         }
     }
 
-# Step 3 Select top longest CDS entries from the scatter, filter similar proteins (can use TDC exclude_similar), select top longest for the final set (can use TDC get_top_longest)
-# Step 4 Train the markov model
+# Step 3 Select top longest CDS entries from the scatter and merge all NT freqs table
+# Step 3 Filter similar proteins (can use TDC exclude_similar)
+# Step 3 Select top longest for the final set (can use TDC get_top_longest)
+# Step 3 Train the markov model
     call Select_TrainMM_Score {
         input:
-        cds_files = TransdecoderLongOrf.cds
+        cds_files = TransdecoderLongOrf.cds,
+        base_freqs = TransdecoderLongOrf.base_freqs
     }
 
 # Step 7 preparation
-    if(refine_start_codons) {
+    if(refine_start_codons && defined(orf_proteins)) {
         call Train_PWM {
             input:
             prepared_transcripts = prepared_transcripts,
@@ -64,107 +75,66 @@ workflow wf_transdecoder {
     }
 
 # Step 6.1 Scatter again to score all cds entries using "hexamer_scores_file"
-    scatter (chunk in processed_chunk) {
-        call Calculate_Scores {
-            input:
-            cds = chunk,
-            scores = Select_TrainMM_Score.hexamer_scores_file
-        }
-    }
 
 # Step 6.2 (optional) Run blastp on the chunks to filter
-    if (orf_proteins) {
-        scatter (pep_chunk in pep_chunks) {
-            if (defined(orf_proteins)) {
-                if (program == "blast") {
-                    call prt_aln.BlastAlign {
-                        input:
-                        index = BlastIndex.db,
-                        query = chunk,
-                        blast_type = "blastp",
-                        output_filename = "mikado_blast_orfcalling.txt",
-                    }
-                }
-                if (program == "diamond") {
-                    call prt_aln.DiamondAlign {
-                        input:
-                        query = TransdecoderLongOrf.pep,
-                        output_filename = "mikado_diamond_orfcalling.txt",
-                        blast_type = "blastp",
-                        index = DiamondIndex.index
-                    }
+    scatter (chunk in TransdecoderLongOrf.chunks) {
+        call Calculate_Scores {
+            input:
+            cds = chunk.cds,
+            scores = Select_TrainMM_Score.hexamer_scores_file
+        }
+
+        if (defined(orf_proteins)) {
+            if (program == "blast") {
+                call prt_aln.BlastAlign {
+                    input:
+                    index = select_first([BlastIndex.index]),
+                    query = chunk.pep,
+                    outfmt = "6",
+                    blast_type = "blastp",
+                    output_filename = "mikado_blast_orfcalling.txt",
                 }
             }
+            if (program == "diamond") {
+                call prt_aln.DiamondAlign {
+                    input:
+                    index = select_first([DiamondIndex.index]),
+                    query = chunk.pep,
+                    output_filename = "mikado_diamond_orfcalling.txt",
+                    blast_type = "blastp"
+                }
+            }
+            File alignments = select_first([BlastAlign.out, DiamondAlign.out])
         }
-    }
 
 # Step 6.3 In the same scatter generate "best_candidates.gff3" per chunk
-        # call selectBestORFs {}
-# Step 7 (optional) Refine start codons
-        # call startCodonRefinement {}
-    # }
-
-
-
-
-
-    # call TransdecoderLongOrf {
-    #     input:
-    #         prepared_transcripts = prepared_transcripts
-    # }
-
-   if (defined(orf_proteins)) {
-       File def_db = select_first([orf_proteins])
-        call prt_aln.SanitiseProteinBlastDB { # Check if this is an input for both homology + orf_calling or just the same task
+        call SelectBestOrfs {
             input:
-                db = def_db
+            gff3 = chunk.gff,
+            cds_scores = Calculate_Scores.scored_cds,
+            RETAIN_LONG_ORFS_MIN_LENGTH = 10,
+            blastp_hits_file = alignments,
+            single_best_only = false
         }
 
-        if (program == "blast") {
-            call prt_aln.BlastIndex as BlastIndex {
+# Step 7 (optional) Refine start codons
+        if(refine_start_codons && defined(orf_proteins)) {
+            call RefineStartCodons {
                 input:
-                target = SanitiseProteinBlastDB.clean_db
-            }
-
-            call prt_aln.BlastAlign {
-                input:
-                query = TransdecoderLongOrf.pep,
-                blast_type = "blastp",
-                outfmt = "6",
-                output_filename = "mikado_blast_orfcalling.txt",
-                index = BlastIndex.index
+                transcripts = prepared_transcripts,
+                refinement_model = select_first([Train_PWM.refinement_model]),
+                gff = chunk.gff,
             }
         }
-        
-        if (program == "diamond") {
-            call prt_aln.DiamondIndex as DiamondIndex {
-                input:
-                target = SanitiseProteinBlastDB.clean_db
-            }
-
-            call prt_aln.DiamondAlign {
-                input:
-                query = TransdecoderLongOrf.pep,
-                output_filename = "mikado_diamond_orfcalling.txt",
-                blast_type = "blastp",
-                index = DiamondIndex.index
-            }
-        }
-
-        File maybe_blast_aligned_proteins = select_first([BlastAlign.out, DiamondAlign.out])
-   }
-
-    call TransdecoderPredict {
-        input:
-        prepared_transcripts = prepared_transcripts,
-        transdecoder_wd = TransdecoderLongOrf.transdecoder_wd,
-        blast_aligned_proteins = maybe_blast_aligned_proteins
+        File chunk_final_models = select_first([RefineStartCodons.refined_models, SelectBestOrfs.best_candidates])
     }
 
+# Step 8 concatenate all outputs into a final output file
+
     output {
-        File long_orfs = TransdecoderLongOrf.orfs
+        Array[File] final_models = chunk_final_models
         File? clean_db = SanitiseProteinBlastDB.clean_db
-        File final_orfs = TransdecoderPredict.bed
+        # File final_orfs = TransdecoderPredict.bed
     }
 }
 
@@ -218,10 +188,11 @@ task TransdecoderLongOrf {
     }
 
     output {
+        TransdecoderChunk chunks = object { cds: "transdecoder/longest_orfs.cds", pep: "transdecoder/longest_orfs.pep", gff: "transdecoder/longest_orfs.gff3" }
         File cds = "transdecoder/longest_orfs.cds"
         File gff3 = "transdecoder/longest_orfs.gff3"
         File pep = "transdecoder/longest_orfs.pep"
-        Array[File] transdecoder_wd = glob("transdecoder/*")
+        File base_freqs = "transdecoder/base_freqs.dat"
     }
 
     command <<<
@@ -268,19 +239,20 @@ task TransdecoderPredict {
 task Select_TrainMM_Score {
     input {
         Array[File] cds_files
-        File base_freqs
+        Array[File] base_freqs
         Int topORFs_train = 50
         Int red_num = topORFs_train * 10
     }
 
     command <<<
     set -euxo pipefail
-    # TODO Write some code to get the longest from an array of files
-    get_top_longest_from_multiple_files.py ~{sep=" " cds_files} ~{red_num} > "cds.longest_~{red_num}"
+    # TODO Write some code to get the longest from an array of files and merge base_freqs
+    get_top_longest_from_multiple_files --cds=~{sep="," cds_files} -n ~{red_num} > "cds.longest_~{red_num}"
+    collect_base_freqs --base_freqs=~{sep="," base_freqs} > "merged_base_freqs"
     exclude_similar_proteins.pl "cds.longest_~{red_num}" > "cds.longest_~{red_num}.nr"
     get_top_longest_fasta_entries.pl "cds.longest_~{red_num}.nr" ~{topORFs_train} > "top_~{topORFs_train}_longest"
 
-    seq_n_baseprobs_to_loglikelihood_vals.pl "top_~{topORFs_train}_longest" "~{base_freqs}" > "hexamer.scores"
+    seq_n_baseprobs_to_loglikelihood_vals.pl "top_~{topORFs_train}_longest" "merged_base_freqs" > "hexamer.scores"
     >>>
 
     output {
@@ -312,11 +284,51 @@ task Calculate_Scores {
     }
 
     output {
-        File scored_cds = cds+".scores"
+        File scored_cds = "longest_orfs.cds.scores"
     }
 
     command <<<
     set -euxo pipefail
-    score_CDS_likelihood_all_6_frames.pl "~{cds}" "~{scores}" > "~{cds}.scores"
+    score_CDS_likelihood_all_6_frames.pl "~{cds}" "~{scores}" > "longest_orfs.cds.scores"
+    >>>
+}
+
+task SelectBestOrfs {
+    input {
+        File gff3
+        File cds_scores
+        Int RETAIN_LONG_ORFS_MIN_LENGTH
+        File? blastp_hits_file
+        Boolean single_best_only
+    }
+
+    output {
+        File best_candidates = "best_candidates.gff3"
+    }
+
+    command <<<
+    select_best_ORFs_per_transcript.pl \
+    --gff3_file ~{gff3} \
+    --cds_scores ~{cds_scores} \
+    --min_length_auto_accept ~{RETAIN_LONG_ORFS_MIN_LENGTH} \
+    ~{"--blast_hits" + blastp_hits_file} \
+    ~{if (single_best_only) then "--single_best_orf" else ""} > "best_candidates.gff3"
+    >>>
+}
+
+task RefineStartCodons {
+    input {
+        File gff
+        File transcripts
+        Array[File] refinement_model
+    }
+
+    output {
+        File refined_models = "revised_starts.gff3"
+    }
+
+    command <<<
+    # TODO Recreate the directory required by TDC from refinement_model
+    start_codon_refinement.pl --transcripts ~{transcripts} --gff3_file ~{gff} > revised_starts.gff3
     >>>
 }

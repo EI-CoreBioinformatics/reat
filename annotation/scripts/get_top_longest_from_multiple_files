@@ -1,0 +1,64 @@
+#!/usr/bin/env python3
+
+from contextlib import ExitStack
+import argparse
+import sys
+
+def collect_sequence_length_by_file(file_names):
+    # Open all the transcript files
+    file_sequences = []
+    with ExitStack() as stack:
+        files = [(fname,stack.enter_context(open(fname, "r"))) for fname in file_names]
+        for filep, fileh in enumerate(files):
+            line = fileh[1].readline()
+            file_offset = fileh[1].tell() - len(line)
+            line = fileh[1].readline()
+            seq_length = len(line)
+            while line:
+                while line and line[0]!='>':
+                    line = fileh[1].readline()
+                    seq_length += len(line)
+                file_sequences.append( (filep, file_offset, seq_length) )
+                file_offset = fileh[1].tell() - len(line)
+                line = fileh[1].readline().strip()
+                seq_length = len(line)
+
+
+    # Sort sequences in all files by length
+    file_sequences.sort(key=lambda t: t[2], reverse=True)
+    return file_sequences
+
+def print_sequences(file_names, file_sequences, total_to_extract, outh):
+    # Collect total_to_extract sequences
+    file_sequences = file_sequences[:total_to_extract]
+    # Print them to stdout
+    with ExitStack() as stack:
+        files = [(fname,stack.enter_context(open(fname, "r"))) for fname in file_names]
+        for longest_record in file_sequences:
+            file = files[longest_record[0]][1]
+            file.seek(longest_record[1])
+            line = file.readline().strip()
+            print(line, file=outh)
+            line = file.readline().strip()
+            while line[0]!='>':
+                print(line, file=outh)
+                line = file.readline().strip()
+
+def list_str(values):
+    return values.split(',')
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--cds', type=list_str, required=True)
+    parser.add_argument('-o', type=str)
+    parser.add_argument('-n', type=int, default=5000)
+    args = parser.parse_args()
+    
+    file_names = args.cds
+    
+    if args.o != None:
+        outputh = open(args.o, "w")
+    else:
+        outputh = sys.stdout
+    sequences = collect_sequence_length_by_file(file_names)
+    print_sequences(file_names, sequences, args.n, sys.stdout)
