@@ -28,19 +28,21 @@ def collect_sequence_length_by_file(file_names):
     file_sequences.sort(key=lambda t: t[2], reverse=True)
     return file_sequences
 
-def print_sequences(file_names, file_sequences, total_to_extract, outh):
+def print_sequences(file_names, file_sequences, total_to_extract, max_protein_length, outh):
     # Collect total_to_extract sequences
     file_sequences = file_sequences[:total_to_extract]
     # Print them to stdout
     with ExitStack() as stack:
         files = [(fname,stack.enter_context(open(fname, "r"))) for fname in file_names]
         for longest_record in file_sequences:
+            if max_protein_length > 0 and longest_record[2] > max_protein_length:
+                continue
             file = files[longest_record[0]][1]
             file.seek(longest_record[1])
             line = file.readline().strip()
             print(line, file=outh)
             line = file.readline().strip()
-            while line[0]!='>':
+            while line and line[0]!='>':
                 print(line, file=outh)
                 line = file.readline().strip()
 
@@ -50,6 +52,7 @@ def list_str(values):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--cds', type=list_str, required=True)
+    parser.add_argument('--max_size', type=int, default=0)
     parser.add_argument('-o', type=str)
     parser.add_argument('-n', type=int, default=5000)
     args = parser.parse_args()
@@ -61,4 +64,4 @@ if __name__ == "__main__":
     else:
         outputh = sys.stdout
     sequences = collect_sequence_length_by_file(file_names)
-    print_sequences(file_names, sequences, args.n, sys.stdout)
+    print_sequences(file_names, sequences, args.n, args.max_size, outputh)

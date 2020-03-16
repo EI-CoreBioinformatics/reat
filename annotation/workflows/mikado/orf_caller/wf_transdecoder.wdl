@@ -84,12 +84,13 @@ workflow wf_transdecoder {
             scores = Select_TrainMM_Score.hexamer_scores_file
         }
 
-        if (defined(orf_proteins)) {
+        if (refine_start_codons && defined(orf_proteins)) {
             if (program == "blast") {
                 call prt_aln.BlastAlign {
                     input:
                     index = select_first([BlastIndex.index]),
                     query = chunk.pep,
+                    extra = "-evalue 1e-5 -max_target_seqs 1",
                     outfmt = "6",
                     blast_type = "blastp",
                     output_filename = "mikado_blast_orfcalling.txt",
@@ -100,6 +101,7 @@ workflow wf_transdecoder {
                     input:
                     index = select_first([DiamondIndex.index]),
                     query = chunk.pep,
+                    extra = "--evalue 1e-5 --max-target-seqs 1",
                     output_filename = "mikado_diamond_orfcalling.txt",
                     blast_type = "blastp"
                 }
@@ -123,7 +125,7 @@ workflow wf_transdecoder {
                 input:
                 transcripts = prepared_transcripts,
                 refinement_model = select_first([Train_PWM.refinement_model]),
-                gff = chunk.gff,
+                gff = SelectBestOrfs.best_candidates,
             }
         }
         File chunk_final_models = select_first([RefineStartCodons.refined_models, SelectBestOrfs.best_candidates])
@@ -131,8 +133,15 @@ workflow wf_transdecoder {
 
 # Step 8 concatenate all outputs into a final output file
 
+    call tasks.MergeFiles {
+        input:
+            files_to_merge = chunk_final_models,
+            output_filename = "best_candidates.gff3"
+    }
+
+
     output {
-        Array[File] final_models = chunk_final_models
+        File final_models = MergeFiles.out
         File? clean_db = SanitiseProteinBlastDB.clean_db
         # File final_orfs = TransdecoderPredict.bed
     }
@@ -141,8 +150,8 @@ workflow wf_transdecoder {
 task TransdecoderLongOrf {
     input {
         File prepared_transcripts
-        Int minprot = 20 # Minimum protein length (TODO make parameter)
-        String gencode = "Universal" # Genetic code (TODO Make parameter)
+        Int minprot = 100 # Minimum protein length
+        String gencode = "universal" # Genetic code
 # Options for gencode: 
     # Universal
     # Tetrahymena
@@ -240,14 +249,15 @@ task Select_TrainMM_Score {
     input {
         Array[File] cds_files
         Array[File] base_freqs
-        Int topORFs_train = 50
+        Int topORFs_train = 500
         Int red_num = topORFs_train * 10
+        Int max_protein_size = 5000
     }
 
     command <<<
     set -euxo pipefail
     # TODO Write some code to get the longest from an array of files and merge base_freqs
-    get_top_longest_from_multiple_files --cds=~{sep="," cds_files} -n ~{red_num} > "cds.longest_~{red_num}"
+    get_top_longest_from_multiple_files --cds=~{sep="," cds_files} -n ~{red_num} --max_size ~{max_protein_size} > "cds.longest_~{red_num}"
     collect_base_freqs --base_freqs=~{sep="," base_freqs} > "merged_base_freqs"
     exclude_similar_proteins.pl "cds.longest_~{red_num}" > "cds.longest_~{red_num}.nr"
     get_top_longest_fasta_entries.pl "cds.longest_~{red_num}.nr" ~{topORFs_train} > "top_~{topORFs_train}_longest"
@@ -268,12 +278,12 @@ task Train_PWM {
     }
 
     output {
-        Array[File] refinement_model = glob("refinement*")
+        Array[File] refinement_model = glob("start_refinement*")
     }
 
     command <<<
     set -euxo pipefail
-    train_start_PWM.pl --transcripts ~{prepared_transcripts} --selected_orfs ~{top_cds} --out_prefix refinement
+    train_start_PWM.pl --transcripts ~{prepared_transcripts} --selected_orfs ~{top_cds} --out_prefix start_refinement
     >>>
 }
 
@@ -311,7 +321,7 @@ task SelectBestOrfs {
     --gff3_file ~{gff3} \
     --cds_scores ~{cds_scores} \
     --min_length_auto_accept ~{RETAIN_LONG_ORFS_MIN_LENGTH} \
-    ~{"--blast_hits" + blastp_hits_file} \
+    ~{"--blast_hits " + blastp_hits_file} \
     ~{if (single_best_only) then "--single_best_orf" else ""} > "best_candidates.gff3"
     >>>
 }
@@ -324,11 +334,13 @@ task RefineStartCodons {
     }
 
     output {
-        File refined_models = "revised_starts.gff3"
+        File refined_models = "best_candidates.gff3"
     }
 
     command <<<
     # TODO Recreate the directory required by TDC from refinement_model
-    start_codon_refinement.pl --transcripts ~{transcripts} --gff3_file ~{gff} > revised_starts.gff3
+    mkdir tmp_workdir
+    ln -s ~{sep=" " refinement_model} tmp_workdir/
+    start_codon_refinement.pl --transcripts ~{transcripts} --workdir tmp_workdir --gff3_file ~{gff} > best_candidates.gff3
     >>>
 }

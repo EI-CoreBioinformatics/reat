@@ -20,6 +20,22 @@ task SplitSequences {
     >>>
 }
 
+task MergeFiles {
+    input {
+        Array[File] files_to_merge
+        String output_filename
+    }
+
+    output {
+        File out = output_filename
+    }
+
+    command <<<
+    set -euxo pipefail
+    cat ~{sep=" " files_to_merge} > ~{output_filename}
+    >>>
+}
+
 task IndexFasta {
     input {
         File reference_fasta
