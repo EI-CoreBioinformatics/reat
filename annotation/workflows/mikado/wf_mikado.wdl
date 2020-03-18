@@ -93,7 +93,7 @@ workflow wf_mikado {
             }
         }
 
-        File maybe_orfs = select_first([Prodigal.orfs, GTCDS.orfs, Transdecoder.final_orfs])
+        File maybe_orfs = select_first([Prodigal.orfs, GTCDS.orfs, Transdecoder.gff])
     }
 
     # Mikado Homology

@@ -16,6 +16,8 @@ workflow wf_transdecoder {
         String program = "blast"
         File? orf_proteins
         Boolean refine_start_codons = true
+        Int minprot = 100
+        String genetic_code = "universal"
     }
 
 # Prepare the protein alignment database
@@ -51,7 +53,9 @@ workflow wf_transdecoder {
     scatter (chunk in SplitSequences.seq_files) {
         call TransdecoderLongOrf {
             input:
-            prepared_transcripts = chunk
+            prepared_transcripts = chunk,
+            minprot = minprot,
+            gencode = genetic_code
         }
     }
 
@@ -133,15 +137,19 @@ workflow wf_transdecoder {
 
 # Step 8 concatenate all outputs into a final output file
 
-    call tasks.MergeFiles {
+    call GenerateFinalOutput {
         input:
-            files_to_merge = chunk_final_models,
-            output_filename = "best_candidates.gff3"
+            transcripts = prepared_transcripts,
+            final_models = chunk_final_models,
+            genetic_code = genetic_code,
     }
 
 
     output {
-        File final_models = MergeFiles.out
+        File bed = GenerateFinalOutput.bed
+        File pep = GenerateFinalOutput.pep
+        File cds = GenerateFinalOutput.cds
+        File gff = GenerateFinalOutput.gff
         File? clean_db = SanitiseProteinBlastDB.clean_db
         # File final_orfs = TransdecoderPredict.bed
     }
@@ -150,8 +158,8 @@ workflow wf_transdecoder {
 task TransdecoderLongOrf {
     input {
         File prepared_transcripts
-        Int minprot = 100 # Minimum protein length
-        String gencode = "universal" # Genetic code
+        Int minprot
+        String gencode
 # Options for gencode: 
     # Universal
     # Tetrahymena
@@ -257,7 +265,7 @@ task Select_TrainMM_Score {
     command <<<
     set -euxo pipefail
     # TODO Write some code to get the longest from an array of files and merge base_freqs
-    get_top_longest_from_multiple_files --cds=~{sep="," cds_files} -n ~{red_num} --max_size ~{max_protein_size} > "cds.longest_~{red_num}"
+    get_top_longest_fasta_entries.pl <(cat ~{sep=" " cds_files}) ~{red_num} ~{max_protein_size} > "cds.longest_~{red_num}"
     collect_base_freqs --base_freqs=~{sep="," base_freqs} > "merged_base_freqs"
     exclude_similar_proteins.pl "cds.longest_~{red_num}" > "cds.longest_~{red_num}.nr"
     get_top_longest_fasta_entries.pl "cds.longest_~{red_num}.nr" ~{topORFs_train} > "top_~{topORFs_train}_longest"
@@ -342,5 +350,28 @@ task RefineStartCodons {
     mkdir tmp_workdir
     ln -s ~{sep=" " refinement_model} tmp_workdir/
     start_codon_refinement.pl --transcripts ~{transcripts} --workdir tmp_workdir --gff3_file ~{gff} > best_candidates.gff3
+    >>>
+}
+
+task GenerateFinalOutput {
+    input {
+        File transcripts
+        String prefix = basename(transcripts)
+        String genetic_code
+        Array[File] final_models
+    }
+
+    output {
+        File bed = prefix+".transdecoder.bed"
+        File cds = prefix+".transdecoder.cds"
+        File pep = prefix+".transdecoder.pep"
+        File gff = prefix+".transdecoder.gff3"
+    }
+
+    command <<<
+    cat ~{sep=" " final_models} > "~{prefix}.transdecoder.gff3"
+    gff3_file_to_bed.pl "~{prefix}.transdecoder.gff3" > "~{prefix}.transdecoder.bed"
+    gff3_file_to_proteins.pl --gff3 "~{prefix}.transdecoder.gff3" --fasta ~{transcripts} ~{genetic_code} > "~{prefix}.transdecoder.pep"
+    gff3_file_to_proteins.pl --gff3 "~{prefix}.transdecoder.gff3" --fasta ~{transcripts} --seqType CDS ~{genetic_code} > "~{prefix}.transdecoder.cds"
     >>>
 }
