@@ -17,6 +17,13 @@ workflow wf_align {
         File? reference_annotation
         String HQ_assembler = "merge"
         String LQ_assembler = "stringtie"
+        RuntimeAttr short_read_alignment_resources
+        RuntimeAttr short_read_alignment_sort_resources
+        RuntimeAttr short_read_stats_resources
+        RuntimeAttr short_read_assembly_resources
+        RuntimeAttr long_read_indexing_resources
+        RuntimeAttr long_read_alignment_resources
+        RuntimeAttr long_read_assembly_resources
     }
 
     parameter_meta {
@@ -46,13 +53,17 @@ workflow wf_align {
             reference_annotation = wf_sanitize.annotation,
             gsnap_index = wf_index.gsnap_index,
             hisat_index = wf_index.hisat_index,
-            star_index = wf_index.star_index
+            star_index = wf_index.star_index,
+            alignment_resources = short_read_alignment_resources,
+            sort_resources = short_read_alignment_sort_resources,
+            stats_resources = short_read_stats_resources
         }
 
         call assm_s.wf_assembly_short {
             input:
             aligned_samples = wf_align_short.aligned_samples,
-            reference_annotation = wf_sanitize.annotation
+            reference_annotation = wf_sanitize.annotation,
+            assembly_resources = short_read_assembly_resources
         }
 
         call portcullis_s.portcullis {
@@ -69,7 +80,9 @@ workflow wf_align {
             input:
             reference = wf_sanitize.reference,
             is_hq = false,
-            long_samples = def_lq_long_sample
+            long_samples = def_lq_long_sample,
+            indexing_resources = long_read_indexing_resources,
+            alignment_resources = long_read_alignment_resources
         }
 
         # Check what is defined for lq-long and run that
@@ -78,7 +91,8 @@ workflow wf_align {
             input:
             reference_annotation = wf_sanitize.annotation,
             aligned_samples = LQ_align.bams,
-            assembler = LQ_assembler
+            assembler = LQ_assembler,
+            assembly_resources = long_read_assembly_resources
         }
     }
 
@@ -88,7 +102,9 @@ workflow wf_align {
             input:
             reference = wf_sanitize.reference,
             is_hq = true,
-            long_samples = def_hq_long_sample
+            long_samples = def_hq_long_sample,
+            indexing_resources = long_read_indexing_resources,
+            alignment_resources = long_read_alignment_resources
         }
 
         # Check what is defined for hq-long and run that
@@ -97,7 +113,8 @@ workflow wf_align {
             input:
             reference_annotation = wf_sanitize.annotation,
             aligned_samples = HQ_align.bams,
-            assembler = HQ_assembler
+            assembler = HQ_assembler,
+            assembly_resources = long_read_assembly_resources
         }
     }
 

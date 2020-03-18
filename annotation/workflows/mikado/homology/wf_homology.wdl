@@ -9,6 +9,8 @@ workflow wf_homology {
         File reference
         String program
         File? protein_db
+        RuntimeAttr index_resources
+        RuntimeAttr alignment_resources
     }
 
     # Split sequence file
@@ -27,7 +29,8 @@ workflow wf_homology {
         if (program == "blast") {
             call prt_aln.BlastIndex {
                 input:
-                target = SanitiseProteinBlastDB.clean_db
+                target = SanitiseProteinBlastDB.clean_db,
+                runtime_attr_override = index_resources
             }
             scatter (seq_file in SplitSequences.seq_files) {
                 call prt_aln.BlastAlign {
@@ -36,7 +39,8 @@ workflow wf_homology {
                     blast_type = "blastx",
                     outfmt = "5",
                     output_filename = "mikado_blast_homology.xml",
-                    query = seq_file
+                    query = seq_file,
+                    runtime_attr_override = alignment_resources
                 }
             }
         }
@@ -44,7 +48,8 @@ workflow wf_homology {
         if (program == "diamond") {
             call prt_aln.DiamondIndex {
                 input:
-                target = def_db
+                target = def_db,
+                runtime_attr_override = index_resources
             }
             scatter (seq_file in SplitSequences.seq_files) {
                 call prt_aln.DiamondAlign {
@@ -52,7 +57,8 @@ workflow wf_homology {
                     index = DiamondIndex.index,
                     blast_type = "blastx",
                     output_filename = "mikado_diamond_homology.xml",
-                    query = seq_file
+                    query = seq_file,
+                    runtime_attr_override = alignment_resources
                 }
             }
         }

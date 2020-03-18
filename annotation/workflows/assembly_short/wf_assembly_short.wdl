@@ -7,6 +7,7 @@ workflow wf_assembly_short {
     input {
         Array[AlignedSample] aligned_samples
         File? reference_annotation
+        RuntimeAttr assembly_resources
     }
 
     scatter (aligned_sample in aligned_samples) {
@@ -15,14 +16,16 @@ workflow wf_assembly_short {
                 input:
                 aligned_sample = bam,
                 strand = aligned_sample.strand,
-                reference_annotation = reference_annotation
+                reference_annotation = reference_annotation,
+                runtime_attr_override = assembly_resources
             }
         }
         call Merge {
             input:
             name = aligned_sample.name,
             aligner_name = aligned_sample.aligner,
-            assemblies = Stringtie.assembled
+            assemblies = Stringtie.assembled,
+            runtime_attr_override = assembly_resources
         }
         AssembledSample stringtie_assembly = object { name: aligned_sample.name+"."+aligned_sample.aligner+".stringtie", strand: aligned_sample.strand, assembly: Merge.assembly}
     }
@@ -30,7 +33,8 @@ workflow wf_assembly_short {
     scatter (aligned_sample in aligned_samples) {
         call Scallop {
             input:
-            aligned_sample = aligned_sample
+            aligned_sample = aligned_sample,
+            runtime_attr_override = assembly_resources
         }
     }
 

@@ -13,6 +13,11 @@ workflow wf_mikado {
         File scoring_file
         File orf_calling_proteins
         File homology_proteins
+        RuntimeAttr orf_calling_resources
+        RuntimeAttr orf_protein_index_resources
+        RuntimeAttr orf_protein_alignment_resources
+        RuntimeAttr homology_alignment_resources
+        RuntimeAttr homology_index_resources
         File? extra_config
         File? junctions
         Int prodigal_gencode = 1
@@ -73,7 +78,8 @@ workflow wf_mikado {
             call Prodigal {
                 input:
                 gencode_id = prodigal_gencode,
-                prepared_transcripts = MikadoPrepare.prepared_fasta
+                prepared_transcripts = MikadoPrepare.prepared_fasta,
+                runtime_attr_override = orf_calling_resources
             }
         }
 
@@ -81,7 +87,8 @@ workflow wf_mikado {
             call GTCDS {
                 input:
                 prepared_transcripts = MikadoPrepare.prepared_fasta,
-                gtf = MikadoPrepare.prepared_gtf
+                gtf = MikadoPrepare.prepared_gtf,
+                runtime_attr_override = orf_calling_resources
             }
         }
 
@@ -89,7 +96,10 @@ workflow wf_mikado {
             call tdc.wf_transdecoder as Transdecoder {
                 input:
                 prepared_transcripts = MikadoPrepare.prepared_fasta,
-                orf_proteins = orf_calling_proteins
+                orf_proteins = orf_calling_proteins,
+                orf_calling_resources = orf_calling_resources,
+                index_resources = orf_protein_index_resources,
+                alignment_resources = orf_protein_alignment_resources
             }
         }
 
@@ -102,7 +112,9 @@ workflow wf_mikado {
             input:
             program = "blast",
             reference = MikadoPrepare.prepared_fasta,
-            protein_db = homology_proteins
+            protein_db = homology_proteins,
+            index_resources = homology_index_resources,
+            alignment_resources = homology_alignment_resources
         }
     }
     

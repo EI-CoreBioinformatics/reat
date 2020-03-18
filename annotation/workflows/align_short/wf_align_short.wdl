@@ -11,6 +11,9 @@ workflow wf_align_short {
         Array[File] hisat_index
         Array[File] star_index
         String aligner = "hisat"
+        RuntimeAttr alignment_resources
+        RuntimeAttr sort_resources
+        RuntimeAttr stats_resources
     }
     
     if (defined(reference_annotation)) {
@@ -29,7 +32,8 @@ workflow wf_align_short {
                         strand = sample.strand,
                         name = sample.name,
                         sample = PR,
-                        index = hisat_index
+                        index = hisat_index,
+                        runtime_attr_override = alignment_resources
                     }
                 }
                 AlignedSample hisat_aligned_sample = object {bam: nopt.bam, strand: sample.strand, aligner: "hisat", name: sample.name}
@@ -43,7 +47,8 @@ workflow wf_align_short {
                        strand = sample.strand,
                        name = sample.name,
                        sample = PR,
-                       index = hisat_index
+                       index = hisat_index,
+                       runtime_attr_override = alignment_resources
                    }
                }
                AlignedSample hisat_aligned_sample_no_sites = object {bam: wopt.bam, strand: sample.strand, aligner: "hisat", name: sample.name}
@@ -62,7 +67,8 @@ workflow wf_align_short {
                     strand = sample.strand,
                     name = sample.name,
                     sample = PR,
-                    index = star_index
+                    index = star_index,
+                    runtime_attr_override = alignment_resources
                 }
             }
             AlignedSample star_aligned_sample = object { bam: Star.aligned_pair, name: sample.name, strand: sample.strand, aligner: "star" }
@@ -75,7 +81,8 @@ workflow wf_align_short {
         scatter (bam in aligned_sample.bam) {
             call Sort {
                 input:
-                bam = bam
+                bam = bam,
+                runtime_attr_override = sort_resources
             }
         }
         AlignedSample sorted_aligned_sample = object {name: aligned_sample.name, strand: aligned_sample.strand, aligner: aligned_sample.aligner, bam: Sort.sorted_bam}
@@ -85,7 +92,8 @@ workflow wf_align_short {
         scatter (bam in aligned_sample.bam) {
             call Stats {
                 input:
-                bam = bam
+                bam = bam,
+                runtime_attr_override = stats_resources
             }
         }
     }

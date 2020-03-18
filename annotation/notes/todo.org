@@ -15,6 +15,10 @@ For cleanliness:
   Start refactoring from the right (inner most section)
 
 * Tasks
+** TODO Bubble up all the parameters for the different tasks and workflows
+This is required for the main workflow to allow user overriding
+*** TODO Unify genetic codes for mikado workflow
+*** TODO Pass indices through if they have already been computed
 ** TODO Should the portcullis junctions be used for LR mapping if available?
 ** TODO Add "extra" options for each command
 Will need to consider how to do this properly, seems like sub workflows might hide some of the optional parameters if they are not mapped properly from the calling wf

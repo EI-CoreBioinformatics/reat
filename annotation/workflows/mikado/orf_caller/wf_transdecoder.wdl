@@ -14,6 +14,9 @@ workflow wf_transdecoder {
     input {
         File prepared_transcripts
         String program = "blast"
+        RuntimeAttr orf_calling_resources
+        RuntimeAttr index_resources
+        RuntimeAttr alignment_resources
         File? orf_proteins
         Boolean refine_start_codons = true
         Int minprot = 100
@@ -30,13 +33,15 @@ workflow wf_transdecoder {
         if (program == "blast") {
             call prt_aln.BlastIndex as BlastIndex {
                 input:
-                target = SanitiseProteinBlastDB.clean_db
+                target = SanitiseProteinBlastDB.clean_db,
+                runtime_attr_override = index_resources
             }
         }
         if (program == "diamond") {
             call prt_aln.DiamondIndex as DiamondIndex {
                 input:
-                target = SanitiseProteinBlastDB.clean_db
+                target = SanitiseProteinBlastDB.clean_db,
+                runtime_attr_override = index_resources
             }
         }
     }
@@ -98,6 +103,7 @@ workflow wf_transdecoder {
                     outfmt = "6",
                     blast_type = "blastp",
                     output_filename = "mikado_blast_orfcalling.txt",
+                    runtime_attr_override = alignment_resources
                 }
             }
             if (program == "diamond") {
@@ -107,7 +113,8 @@ workflow wf_transdecoder {
                     query = chunk.pep,
                     extra = "--evalue 1e-5 --max-target-seqs 1",
                     output_filename = "mikado_diamond_orfcalling.txt",
-                    blast_type = "blastp"
+                    blast_type = "blastp",
+                    runtime_attr_override = alignment_resources
                 }
             }
             File alignments = select_first([BlastAlign.out, DiamondAlign.out])
@@ -120,7 +127,7 @@ workflow wf_transdecoder {
             cds_scores = Calculate_Scores.scored_cds,
             RETAIN_LONG_ORFS_MIN_LENGTH = 10,
             blastp_hits_file = alignments,
-            single_best_only = false
+            single_best_only = false,
         }
 
 # Step 7 (optional) Refine start codons

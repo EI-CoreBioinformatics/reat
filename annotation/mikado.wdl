@@ -14,6 +14,11 @@ workflow wf_main_mikado {
         File homology_proteins
         File orf_calling_proteins
         Boolean separate_LQ = false
+        RuntimeAttr orf_calling_resources
+        RuntimeAttr protein_index_resources
+        RuntimeAttr protein_alignment_resources
+        RuntimeAttr homology_index_resources
+        RuntimeAttr homology_alignment_resources
     }
 
     parameter_meta {
@@ -30,23 +35,33 @@ workflow wf_main_mikado {
     {
         call mikado.wf_mikado as Mikado_short_and_long_noLQ {
             input:
-            scoring_file = mikado_scoring_file,
             indexed_reference =  reference_genome,
             SR_assemblies = SR_assemblies,
             HQ_assemblies = HQ_assemblies,
-            junctions = annotation_bed,
+            scoring_file = mikado_scoring_file,
             orf_calling_proteins = orf_calling_proteins,
-            homology_proteins = homology_proteins
+            homology_proteins = homology_proteins,
+            junctions = annotation_bed,
+            orf_calling_resources = orf_calling_resources,
+            orf_protein_index_resources = protein_index_resources,
+            orf_protein_alignment_resources = protein_alignment_resources,
+            homology_index_resources = homology_index_resources,
+            homology_alignment_resources = homology_alignment_resources
         }
 
         call mikado.wf_mikado as Mikado_longHQ {
             input:
-            scoring_file = mikado_scoring_file,
             indexed_reference =  reference_genome,
             HQ_assemblies = HQ_assemblies,
-            junctions = annotation_bed,
+            scoring_file = mikado_scoring_file,
             orf_calling_proteins = orf_calling_proteins,
-            homology_proteins = homology_proteins
+            homology_proteins = homology_proteins,
+            junctions = annotation_bed,
+            orf_calling_resources = orf_calling_resources,
+            orf_protein_index_resources = protein_index_resources,
+            orf_protein_alignment_resources = protein_alignment_resources,
+            homology_index_resources = homology_index_resources,
+            homology_alignment_resources = homology_alignment_resources
         }
 
         call mikado.wf_mikado as Mikado_longLQ {
@@ -56,7 +71,12 @@ workflow wf_main_mikado {
             LQ_assemblies = LQ_assemblies,
             junctions = annotation_bed,
             orf_calling_proteins = orf_calling_proteins,
-            homology_proteins = homology_proteins
+            homology_proteins = homology_proteins,
+            orf_calling_resources = orf_calling_resources,
+            orf_protein_index_resources = protein_index_resources,
+            orf_protein_alignment_resources = protein_alignment_resources,
+            homology_index_resources = homology_index_resources,
+            homology_alignment_resources = homology_alignment_resources
         }
     }
     if (!separate_LQ)
@@ -70,7 +90,12 @@ workflow wf_main_mikado {
             HQ_assemblies = HQ_assemblies,
             junctions = annotation_bed,
             orf_calling_proteins = orf_calling_proteins,
-            homology_proteins = homology_proteins
+            homology_proteins = homology_proteins,
+            orf_calling_resources = orf_calling_resources,
+            orf_protein_index_resources = protein_index_resources,
+            orf_protein_alignment_resources = protein_alignment_resources,
+            homology_index_resources = homology_index_resources,
+            homology_alignment_resources = homology_alignment_resources
         }
 
         call mikado.wf_mikado as Mikado_long {
@@ -81,7 +106,12 @@ workflow wf_main_mikado {
             HQ_assemblies = HQ_assemblies,
             junctions = annotation_bed,
             orf_calling_proteins = orf_calling_proteins,
-            homology_proteins = homology_proteins
+            homology_proteins = homology_proteins,
+            orf_calling_resources = orf_calling_resources,
+            orf_protein_index_resources = protein_index_resources,
+            orf_protein_alignment_resources = protein_alignment_resources,
+            homology_index_resources = homology_index_resources,
+            homology_alignment_resources = homology_alignment_resources
         }
     }
 

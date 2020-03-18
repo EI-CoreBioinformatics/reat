@@ -8,19 +8,23 @@ workflow wf_assembly_long {
         File? reference_annotation
         Array[AlignedSample] aligned_samples
         String assembler = "None"
+        RuntimeAttr assembly_resources
     }
 
     scatter (sample in aligned_samples) {
         if (assembler == "None") {
             call sam2gff {
                 input:
-                aligned_sample = sample
+                aligned_sample = sample,
+                runtime_attr_override = assembly_resources
             }
         }
         if (assembler == "merge") {
             call gffread_merge {
                 input:
-                aligned_sample = sample
+                aligned_sample = sample,
+                runtime_attr_override = assembly_resources
+
             }
         }
 
@@ -28,7 +32,8 @@ workflow wf_assembly_long {
             call stringtie_long as stringtie_assemble {
                 input:
                 reference_annotation = reference_annotation,
-                aligned_sample = sample
+                aligned_sample = sample,
+                runtime_attr_override = assembly_resources
             }
         }
 
@@ -37,7 +42,8 @@ workflow wf_assembly_long {
                 input:
                 reference_annotation = reference_annotation,
                 collapse = true,
-                aligned_sample = sample
+                aligned_sample = sample,
+                runtime_attr_override = assembly_resources
             }
         }
         File def_gff = select_first([sam2gff.gff, gffread_merge.gff, stringtie_assemble.gff, stringtie_collapse.gff])

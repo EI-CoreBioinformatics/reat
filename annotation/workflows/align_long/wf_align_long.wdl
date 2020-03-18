@@ -9,6 +9,8 @@ workflow wf_align_long {
         Boolean is_hq
         # File? junctions
         String aligner = "minimap2"
+        RuntimeAttr alignment_resources
+        RuntimeAttr indexing_resources
     }
     
     # Add aligner option
@@ -21,7 +23,8 @@ workflow wf_align_long {
                     is_hq = is_hq,
                     strand = sample.strand,
                     name = sample.name,
-                    reference = reference
+                    reference = reference,
+                    runtime_attr_override = alignment_resources
                 }
             }
             AlignedSample mm2_aligned_sample = object {name: sample.name, strand:sample.strand, aligner:"minimap2", bam: Minimap2Long.bam}
@@ -32,7 +35,8 @@ workflow wf_align_long {
         scatter (sample in long_samples) {
             call GMapIndex {
                 input:
-                reference = reference
+                reference = reference,
+                runtime_attr_override = indexing_resources
             }
             scatter (LR in sample.LR) {
                 call GMapLong {
@@ -41,7 +45,8 @@ workflow wf_align_long {
                     gmap_index = GMapIndex.gmap_index,
                     strand = sample.strand,
                     name = sample.name,
-                    reference = reference
+                    reference = reference,
+                    runtime_attr_override = alignment_resources
                 }
             }
             AlignedSample gmap_aligned_sample = object {name: sample.name, strand:sample.strand, aligner:"gmap", bam: GMapLong.bam}
