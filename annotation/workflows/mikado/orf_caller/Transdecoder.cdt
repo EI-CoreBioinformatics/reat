@@ -1,0 +1,47 @@
+Transdecoder
+    # 1 Universal
+    # 2 Mitochondrial-Vertebrates
+    # 3 Mitochondrial-Yeast
+    # 4 Mitochondrial-Protozoan
+    # 5 Mitochondrial-Invertebrates
+    # 6 Tetrahymena, Acetabularia, Ciliate, Dasycladacean, Hexamita
+    # 9 Mitochondrial-Echinoderm
+    # 10 Euplotid
+    # 11 Universal
+    # 12 Candida
+    # 13 Mitochondrial-Ascidian
+    # 14 Mitochondrial-Flatworm
+
+    # 16 Mitochondrial-Chlorophycean
+    # 21 Mitochondrial-Trematode
+    # 22 Mitochondrial-Scenedesmus_obliquus
+    # 23 Mitochondrial-Thraustochytrium
+    # 24 Mitochondrial-Pterobranchia
+    # 25 SR1_Gracilibacteria
+    # 26 Pachysolen_tannophilus
+
+
+    # 29 Mesodinium
+    # 30 Peritrich
+
+
+
+        'Universal' => "FFLLSSSSYY**CC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG",
+        'Mitochondrial-Vertebrates' => "FFLLSSSSYY**CCWWLLLLPPPPHHQQRRRRIIMMTTTTNNKKSS**VVVVAAAADDEEGGGG",
+        'Mitochondrial-Yeast' => "FFLLSSSSYY**CCWWTTTTPPPPHHQQRRRRIIMMTTTTNNKKSSRRVVVVAAAADDEEGGGG",
+        'Mitochondrial-Protozoan' => "FFLLSSSSYY**CCWWLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG",
+        'Mitochondrial-Invertebrates' => "FFLLSSSSYY**CCWWLLLLPPPPHHQQRRRRIIMMTTTTNNKKSSSSVVVVAAAADDEEGGGG",
+        'Ciliate' => 'FFLLSSSSYYQQCC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG',
+        'Mitochondrial-Echinoderm' => "FFLLSSSSYY**CCWWLLLLPPPPHHQQRRRRIIIMTTTTNNNKSSSSVVVVAAAADDEEGGGG",
+        'Euplotid' => "FFLLSSSSYY**CCCWLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG",
+        'Candida' => "FFLLSSSSYY**CC*WLLLSPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG",
+        'Mitochondrial-Ascidian' => "FFLLSSSSYY**CCWWLLLLPPPPHHQQRRRRIIMMTTTTNNKKSSGGVVVVAAAADDEEGGGG",
+        'Mitochondrial-Chlorophycean' => "FFLLSSSSYY*LCC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG",
+        'Mitochondrial-Trematode' => "FFLLSSSSYY**CCWWLLLLPPPPHHQQRRRRIIMMTTTTNNNKSSSSVVVVAAAADDEEGGGG",
+        'Mitochondrial-Scenedesmus_obliquus' => "FFLLSS*SYY*LCC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG",
+        'Mitochondrial-Thraustochytrium' => "FF*LSSSSYY**CC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG",
+        'Mitochondrial-Pterobranchia' => "FFLLSSSSYY**CCWWLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSSKVVVVAAAADDEEGGGG",
+        'SR1_Gracilibacteria' => "FFLLSSSSYY**CCGWLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG",
+        'Pachysolen_tannophilus' => "FFLLSSSSYY**CC*WLLLAPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG",
+        'Mesodinium' => "FFLLSSSSYYYYCC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG",
+        'Peritrich' => "FFLLSSSSYYEECC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG",
