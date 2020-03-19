@@ -7,7 +7,7 @@ workflow wf_assembly_short {
     input {
         Array[AlignedSample] aligned_samples
         File? reference_annotation
-        RuntimeAttr assembly_resources
+        RuntimeAttr? assembly_resources
     }
 
     scatter (aligned_sample in aligned_samples) {

@@ -14,11 +14,11 @@ workflow wf_main_mikado {
         File homology_proteins
         File orf_calling_proteins
         Boolean separate_LQ = false
-        RuntimeAttr orf_calling_resources
-        RuntimeAttr protein_index_resources
-        RuntimeAttr protein_alignment_resources
-        RuntimeAttr homology_index_resources
-        RuntimeAttr homology_alignment_resources
+        RuntimeAttr? orf_calling_resources
+        RuntimeAttr? protein_index_resources
+        RuntimeAttr? protein_alignment_resources
+        RuntimeAttr? homology_index_resources
+        RuntimeAttr? homology_alignment_resources
     }
 
     parameter_meta {

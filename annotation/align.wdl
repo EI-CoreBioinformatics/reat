@@ -17,13 +17,13 @@ workflow wf_align {
         File? reference_annotation
         String HQ_assembler = "merge"
         String LQ_assembler = "stringtie"
-        RuntimeAttr short_read_alignment_resources
-        RuntimeAttr short_read_alignment_sort_resources
-        RuntimeAttr short_read_stats_resources
-        RuntimeAttr short_read_assembly_resources
-        RuntimeAttr long_read_indexing_resources
-        RuntimeAttr long_read_alignment_resources
-        RuntimeAttr long_read_assembly_resources
+        RuntimeAttr? short_read_alignment_resources
+        RuntimeAttr? short_read_alignment_sort_resources
+        RuntimeAttr? short_read_stats_resources
+        RuntimeAttr? short_read_assembly_resources
+        RuntimeAttr? long_read_indexing_resources
+        RuntimeAttr? long_read_alignment_resources
+        RuntimeAttr? long_read_assembly_resources
     }
 
     parameter_meta {
@@ -81,6 +81,7 @@ workflow wf_align {
             reference = wf_sanitize.reference,
             is_hq = false,
             long_samples = def_lq_long_sample,
+            bed_junctions = portcullis.bed,
             indexing_resources = long_read_indexing_resources,
             alignment_resources = long_read_alignment_resources
         }
@@ -103,6 +104,7 @@ workflow wf_align {
             reference = wf_sanitize.reference,
             is_hq = true,
             long_samples = def_hq_long_sample,
+            bed_junctions = portcullis.bed,
             indexing_resources = long_read_indexing_resources,
             alignment_resources = long_read_alignment_resources
         }

@@ -14,9 +14,9 @@ workflow wf_transdecoder {
     input {
         File prepared_transcripts
         String program = "blast"
-        RuntimeAttr orf_calling_resources
-        RuntimeAttr index_resources
-        RuntimeAttr alignment_resources
+        RuntimeAttr? orf_calling_resources
+        RuntimeAttr? index_resources
+        RuntimeAttr? alignment_resources
         File? orf_proteins
         Boolean refine_start_codons = true
         Int minprot = 100

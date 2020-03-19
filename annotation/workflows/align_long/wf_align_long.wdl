@@ -7,10 +7,10 @@ workflow wf_align_long {
         File reference
         Array[LRSample] long_samples
         Boolean is_hq
-        # File? junctions
+        File? bed_junctions
         String aligner = "minimap2"
-        RuntimeAttr alignment_resources
-        RuntimeAttr indexing_resources
+        RuntimeAttr? alignment_resources
+        RuntimeAttr? indexing_resources
     }
     
     # Add aligner option
@@ -24,6 +24,7 @@ workflow wf_align_long {
                     strand = sample.strand,
                     name = sample.name,
                     reference = reference,
+                    bed_junctions = bed_junctions,
                     runtime_attr_override = alignment_resources
                 }
             }
@@ -190,6 +191,7 @@ task Minimap2Long {
         String name
         String strand
         File reference
+        File? bed_junctions
         RuntimeAttr? runtime_attr_override
     }
 
@@ -217,6 +219,7 @@ task Minimap2Long {
         $in_pipe | \
         minimap2 \
         -ax ~{if (is_hq) then "splice:hq" else "splice"} \
+        ~{"--junc-bed " + bed_junctions} \
         --cs=long \
         -G 2000 \
         -u b \

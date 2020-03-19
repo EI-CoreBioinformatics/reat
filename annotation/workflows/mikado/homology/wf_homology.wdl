@@ -9,8 +9,8 @@ workflow wf_homology {
         File reference
         String program
         File? protein_db
-        RuntimeAttr index_resources
-        RuntimeAttr alignment_resources
+        RuntimeAttr? index_resources
+        RuntimeAttr? alignment_resources
     }
 
     # Split sequence file

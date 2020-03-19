@@ -8,7 +8,7 @@ workflow wf_assembly_long {
         File? reference_annotation
         Array[AlignedSample] aligned_samples
         String assembler = "None"
-        RuntimeAttr assembly_resources
+        RuntimeAttr? assembly_resources
     }
 
     scatter (sample in aligned_samples) {

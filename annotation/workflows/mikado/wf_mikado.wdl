@@ -13,14 +13,15 @@ workflow wf_mikado {
         File scoring_file
         File orf_calling_proteins
         File homology_proteins
-        RuntimeAttr orf_calling_resources
-        RuntimeAttr orf_protein_index_resources
-        RuntimeAttr orf_protein_alignment_resources
-        RuntimeAttr homology_alignment_resources
-        RuntimeAttr homology_index_resources
+        RuntimeAttr? orf_calling_resources
+        RuntimeAttr? orf_protein_index_resources
+        RuntimeAttr? orf_protein_alignment_resources
+        RuntimeAttr? homology_alignment_resources
+        RuntimeAttr? homology_index_resources
         File? extra_config
         File? junctions
         Int prodigal_gencode = 1
+        String transdecoder_genetic_code = "universal"
         String orf_caller = "Prodigal"
         Boolean mikado_do_homology_assessment = false
     }
@@ -98,6 +99,7 @@ workflow wf_mikado {
                 prepared_transcripts = MikadoPrepare.prepared_fasta,
                 orf_proteins = orf_calling_proteins,
                 orf_calling_resources = orf_calling_resources,
+                genetic_code = transdecoder_genetic_code,
                 index_resources = orf_protein_index_resources,
                 alignment_resources = orf_protein_alignment_resources
             }

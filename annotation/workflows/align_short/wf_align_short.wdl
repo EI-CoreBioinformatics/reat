@@ -11,9 +11,9 @@ workflow wf_align_short {
         Array[File] hisat_index
         Array[File] star_index
         String aligner = "hisat"
-        RuntimeAttr alignment_resources
-        RuntimeAttr sort_resources
-        RuntimeAttr stats_resources
+        RuntimeAttr? alignment_resources
+        RuntimeAttr? sort_resources
+        RuntimeAttr? stats_resources
     }
     
     if (defined(reference_annotation)) {
