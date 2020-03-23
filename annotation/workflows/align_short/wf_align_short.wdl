@@ -17,18 +17,18 @@ workflow wf_align_short {
     }
     
     if (defined(reference_annotation)) {
-        call hisat2SpliceSites {
+        call Hisat2SpliceSites {
             input: annotation = reference_annotation
         }
     }
 
     if (aligner == "hisat") {
-        if (defined(hisat2SpliceSites.sites)) {
+        if (defined(Hisat2SpliceSites.sites)) {
             scatter (sample in samples) {
                 scatter(PR in sample.read_pair) {
                     call Hisat as nopt{
                         input:
-                        sites = hisat2SpliceSites.sites,
+                        sites = Hisat2SpliceSites.sites,
                         strand = sample.strand,
                         name = sample.name,
                         sample = PR,
@@ -39,7 +39,7 @@ workflow wf_align_short {
                 AlignedSample hisat_aligned_sample = object {bam: nopt.bam, strand: sample.strand, aligner: "hisat", name: sample.name}
             }
         }
-        if (!defined(hisat2SpliceSites.sites)) {
+        if (!defined(Hisat2SpliceSites.sites)) {
             scatter (sample in samples) {
                scatter(PR in sample.read_pair) {
                    call Hisat as wopt {
@@ -206,7 +206,7 @@ task GSnapSpliceSites {
     }    
 }
 
-task hisat2SpliceSites {
+task Hisat2SpliceSites {
     input {
         File? annotation
         RuntimeAttr? runtime_attr_override

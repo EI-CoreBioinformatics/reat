@@ -14,6 +14,7 @@ workflow wf_main_mikado {
         File homology_proteins
         File orf_calling_proteins
         Boolean separate_LQ = false
+        String orf_calling_program
         RuntimeAttr? orf_calling_resources
         RuntimeAttr? protein_index_resources
         RuntimeAttr? protein_alignment_resources
@@ -40,6 +41,7 @@ workflow wf_main_mikado {
             HQ_assemblies = HQ_assemblies,
             scoring_file = mikado_scoring_file,
             orf_calling_proteins = orf_calling_proteins,
+            orf_caller = orf_calling_program,
             homology_proteins = homology_proteins,
             junctions = annotation_bed,
             orf_calling_resources = orf_calling_resources,
@@ -55,6 +57,7 @@ workflow wf_main_mikado {
             HQ_assemblies = HQ_assemblies,
             scoring_file = mikado_scoring_file,
             orf_calling_proteins = orf_calling_proteins,
+            orf_caller = orf_calling_program,
             homology_proteins = homology_proteins,
             junctions = annotation_bed,
             orf_calling_resources = orf_calling_resources,
@@ -71,6 +74,7 @@ workflow wf_main_mikado {
             LQ_assemblies = LQ_assemblies,
             junctions = annotation_bed,
             orf_calling_proteins = orf_calling_proteins,
+            orf_caller = orf_calling_program,
             homology_proteins = homology_proteins,
             orf_calling_resources = orf_calling_resources,
             orf_protein_index_resources = protein_index_resources,
@@ -90,6 +94,7 @@ workflow wf_main_mikado {
             HQ_assemblies = HQ_assemblies,
             junctions = annotation_bed,
             orf_calling_proteins = orf_calling_proteins,
+            orf_caller = orf_calling_program,
             homology_proteins = homology_proteins,
             orf_calling_resources = orf_calling_resources,
             orf_protein_index_resources = protein_index_resources,
@@ -106,6 +111,7 @@ workflow wf_main_mikado {
             HQ_assemblies = HQ_assemblies,
             junctions = annotation_bed,
             orf_calling_proteins = orf_calling_proteins,
+            orf_caller = orf_calling_program,
             homology_proteins = homology_proteins,
             orf_calling_resources = orf_calling_resources,
             orf_protein_index_resources = protein_index_resources,

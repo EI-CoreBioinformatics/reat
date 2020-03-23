@@ -13,14 +13,14 @@ workflow wf_assembly_long {
 
     scatter (sample in aligned_samples) {
         if (assembler == "None") {
-            call sam2gff {
+            call Sam2gff {
                 input:
                 aligned_sample = sample,
                 runtime_attr_override = assembly_resources
             }
         }
         if (assembler == "merge") {
-            call gffread_merge {
+            call GffreadMerge {
                 input:
                 aligned_sample = sample,
                 runtime_attr_override = assembly_resources
@@ -29,7 +29,7 @@ workflow wf_assembly_long {
         }
 
         if (assembler == "stringtie") {
-            call stringtie_long as stringtie_assemble {
+            call StringtieLong as stringtie_assemble {
                 input:
                 reference_annotation = reference_annotation,
                 aligned_sample = sample,
@@ -38,7 +38,7 @@ workflow wf_assembly_long {
         }
 
         if (assembler == "stringtie_collapse") {
-            call stringtie_long as stringtie_collapse {
+            call StringtieLong as stringtie_collapse {
                 input:
                 reference_annotation = reference_annotation,
                 collapse = true,
@@ -46,7 +46,7 @@ workflow wf_assembly_long {
                 runtime_attr_override = assembly_resources
             }
         }
-        File def_gff = select_first([sam2gff.gff, gffread_merge.gff, stringtie_assemble.gff, stringtie_collapse.gff])
+        File def_gff = select_first([Sam2gff.gff, GffreadMerge.gff, stringtie_assemble.gff, stringtie_collapse.gff])
         AssembledSample assembled_long = object { name: sample.name+"."+sample.aligner+assembler, strand: sample.strand, assembly: def_gff}
     }
 
@@ -56,7 +56,7 @@ workflow wf_assembly_long {
 
 }
 
-task stringtie_long {
+task StringtieLong {
     input {
         File? reference_annotation
         Boolean collapse = false
@@ -92,7 +92,7 @@ task stringtie_long {
     }
 }
 
-task sam2gff {
+task Sam2gff {
     input {
         AlignedSample aligned_sample
         RuntimeAttr? runtime_attr_override
@@ -124,7 +124,7 @@ task sam2gff {
     }
 }
 
-task gffread_merge {
+task GffreadMerge {
     input {
         AlignedSample aligned_sample
         RuntimeAttr? runtime_attr_override

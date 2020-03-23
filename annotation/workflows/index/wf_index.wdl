@@ -11,20 +11,20 @@ workflow wf_index {
         input: reference = reference
     }
 
-    call hisat2Index {
+    call Hisat2Index {
         input: reference = reference
     }
 
-    call starIndex {
+    call StarIndex {
         input: reference = reference
     }
 
     output {
         Array[File] gsnap_index = GSnapIndex.index
 
-        Array[File] hisat_index = hisat2Index.index
+        Array[File] hisat_index = Hisat2Index.index
 
-        Array[File] star_index = starIndex.index
+        Array[File] star_index = StarIndex.index
     }
 }
 
@@ -60,7 +60,7 @@ task GSnapIndex {
     >>>
 }
 
-task hisat2Index {
+task Hisat2Index {
     input {
         File reference
         RuntimeAttr? runtime_attr_override
@@ -91,7 +91,7 @@ task hisat2Index {
     >>>
 }
 
-task starIndex {
+task StarIndex {
     input {
         File reference
         RuntimeAttr? runtime_attr_override
@@ -105,7 +105,7 @@ task starIndex {
 
     command <<<
         set -euxo pipefail
-        mkdir starIndex
+        mkdir StarIndex
         STAR --runThreadN ~{cpus} --runMode genomeGenerate --genomeDir starIndex \
         --genomeFastaFiles ~{reference}
     >>>

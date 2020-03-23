@@ -9,7 +9,7 @@ workflow wf_sanitize {
         File? in_annotation
     }
 
-    call tsk.sanitizeFasta {
+    call tsk.SanitizeFasta {
         input:
             reference = reference_genome
     }
@@ -24,12 +24,12 @@ workflow wf_sanitize {
 
     call tsk.IndexFasta {
         input:
-        reference_fasta = sanitizeFasta.sanitised_reference
+        reference_fasta = SanitizeFasta.sanitised_reference
     }
     
     output {
         File? annotation = wf_maybe_clean_annotation
-        File reference = sanitizeFasta.sanitised_reference
+        File reference = SanitizeFasta.sanitised_reference
         IndexedReference indexed_reference = IndexFasta.indexed_fasta
     }
 }

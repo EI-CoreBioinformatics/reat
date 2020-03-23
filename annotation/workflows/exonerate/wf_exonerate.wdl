@@ -15,7 +15,7 @@ workflow wf_exonerate {
     }
 
     scatter (specie_proteins in related_species_protein) {
-        call tasks.sanitizeFasta {
+        call tasks.SanitizeFasta {
             input:
             reference = specie_proteins.fasta
         }
@@ -23,7 +23,7 @@ workflow wf_exonerate {
         call tasks.SplitSequences {
             input:
             prefix = specie_proteins.label,
-            sequences_file = sanitizeFasta.sanitised_reference,
+            sequences_file = SanitizeFasta.sanitised_reference,
             num_out_files = 2
         }
         scatter (seq_file in SplitSequences.seq_files) {

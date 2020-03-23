@@ -68,7 +68,7 @@ task IndexFasta {
     }
 }
 
-task sanitizeFasta {
+task SanitizeFasta {
     input {
         File reference
         RuntimeAttr? runtime_attr_override
