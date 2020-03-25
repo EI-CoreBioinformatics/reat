@@ -1,7 +1,7 @@
 version 1.0
 
-import "workflows/common/structs.wdl"
-import "workflows/mikado/wf_mikado.wdl" as mikado
+import "subworkflows/common/structs.wdl"
+import "subworkflows/mikado/wf_mikado.wdl" as mikado
 
 workflow wf_main_mikado {
     input {

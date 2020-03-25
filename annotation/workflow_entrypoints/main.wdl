@@ -2,11 +2,11 @@ version 1.0
 
 import "mikado.wdl" as wfm
 import "align.wdl" as waln
-import "workflows/common/structs.wdl"
-# import "workflows/exonerate/wf_exonerate.wdl" as exonerate
-# import "workflows/repeat_masker/wf_repeat_masker.wdl" as repeatmasker
-import "workflows/sanitize/wf_sanitize.wdl" as san
-import "workflows/index/wf_index.wdl" as idx
+import "subworkflows/common/structs.wdl"
+# import "subworkflows/exonerate/wf_exonerate.wdl" as exonerate
+# import "subworkflows/repeat_masker/wf_repeat_masker.wdl" as repeatmasker
+import "subworkflows/sanitize/wf_sanitize.wdl" as san
+import "subworkflows/index/wf_index.wdl" as idx
 
 workflow ei_annotation {
     input {

@@ -1,12 +1,12 @@
 version 1.0
-import "workflows/sanitize/wf_sanitize.wdl" as san
-import "workflows/index/wf_index.wdl" as idx
-import "workflows/common/structs.wdl"
-import "workflows/align_short/wf_align_short.wdl" as aln_s
-import "workflows/assembly_short/wf_assembly_short.wdl" as assm_s
-import "workflows/portcullis/wf_portcullis.wdl" as portcullis_s
-import "workflows/align_long/wf_align_long.wdl" as aln_l
-import "workflows/assembly_long/wf_assembly_long.wdl" as assm_l
+import "subworkflows/sanitize/wf_sanitize.wdl" as san
+import "subworkflows/index/wf_index.wdl" as idx
+import "subworkflows/common/structs.wdl"
+import "subworkflows/align_short/wf_align_short.wdl" as aln_s
+import "subworkflows/assembly_short/wf_assembly_short.wdl" as assm_s
+import "subworkflows/portcullis/wf_portcullis.wdl" as portcullis_s
+import "subworkflows/align_long/wf_align_long.wdl" as aln_l
+import "subworkflows/assembly_long/wf_assembly_long.wdl" as assm_l
 
 workflow wf_align {
     input {

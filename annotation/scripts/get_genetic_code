@@ -1,0 +1,44 @@
+#!/usr/bin/env python3
+
+prodigal_name_to_genetic_code = {
+    "Standard": 1, "SGC0": 1,
+    "Vertebrate Mitochondrial": 2, "SGC1": 2,
+    "Yeast Mitochondrial": 3, "SGC2": 3,
+    "Mold Mitochondrial": 4, "Protozoan Mitochondrial": 4, "Coelenterate Mitochondrial": 4, "Mycoplasma": 4, "Spiroplasma": 4, "SGC3": 4,
+    "Invertebrate Mitochondrial": 5, "SGC4": 5,
+    "Ciliate Nuclear": 6, "Dasycladacean Nuclear": 6, "Hexamita Nuclear": 6, "SGC5": 6,
+    "Echinoderm Mitochondrial": 9, "Flatworm Mitochondrial": 9, "SGC8": 9,
+    "Euplotid Nuclear": 10, "SGC9": 10,
+    "Bacterial": 11, "Archaeal": 11, "Plant Plastid": 11,
+    "Alternative Yeast Nuclear": 12,
+    "Ascidian Mitochondrial": 13,
+    "Alternative Flatworm Mitochondrial": 14,
+    "Blepharisma Macronuclear": 15,
+    "Chlorophycean Mitochondrial": 16,
+    "Trematode Mitochondrial": 21,
+    "Scenedesmus obliquus Mitochondrial": 22,
+    "Thraustochytrium Mitochondrial": 23,
+    "Pterobranchia Mitochondrial": 24,
+    "Candidate Division SR1": 25, "Gracilibacteria": 25,
+    "Pachysolen tannophilus Nuclear": 26,
+    "Karyorelict Nuclear": 27,
+    "Condylostoma Nuclear": 28,
+    "Mesodinium Nuclear": 29,
+    "Peritrich Nuclear": 30,
+    "Blastocrithidia Nuclear": 31,
+    "Balanophoraceae Plastid": 32
+}
+
+def main(program, genetic_code):
+    pass
+
+if __name__ == "__main__":
+    from argparse import ArgumentParser
+
+    parser = ArgumentParser("Get genetic code for Prodigal/TransDecoder")
+    parser.add_argument("-p", "--program")
+    parser.add_argument("-g", "--genetic_code")
+
+    args = parser.parse_args()
+
+    main(args.program, args.genetic_code)
