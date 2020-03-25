@@ -7,16 +7,20 @@ workflow wf_assembly_long {
     input {
         File? reference_annotation
         Array[AlignedSample] aligned_samples
-        String assembler = "None"
+        String assembler = "filter"
         RuntimeAttr? assembly_resources
     }
 
     scatter (sample in aligned_samples) {
-        if (assembler == "None") {
+        if (assembler == "filter") {
             call Sam2gff {
                 input:
                 aligned_sample = sample,
                 runtime_attr_override = assembly_resources
+            }
+            call FilterGFF {
+                input:
+                gff = Sam2gff.gff
             }
         }
         if (assembler == "merge") {
@@ -24,10 +28,8 @@ workflow wf_assembly_long {
                 input:
                 aligned_sample = sample,
                 runtime_attr_override = assembly_resources
-
             }
         }
-
         if (assembler == "stringtie") {
             call StringtieLong as stringtie_assemble {
                 input:
@@ -36,7 +38,6 @@ workflow wf_assembly_long {
                 runtime_attr_override = assembly_resources
             }
         }
-
         if (assembler == "stringtie_collapse") {
             call StringtieLong as stringtie_collapse {
                 input:
@@ -46,7 +47,8 @@ workflow wf_assembly_long {
                 runtime_attr_override = assembly_resources
             }
         }
-        File def_gff = select_first([Sam2gff.gff, GffreadMerge.gff, stringtie_assemble.gff, stringtie_collapse.gff])
+
+        File def_gff = select_first([FilterGFF.filtered_gff, GffreadMerge.gff, stringtie_assemble.gff, stringtie_collapse.gff])
         AssembledSample assembled_long = object { name: sample.name+"."+sample.aligner+assembler, strand: sample.strand, assembly: def_gff}
     }
 
@@ -54,6 +56,22 @@ workflow wf_assembly_long {
         Array[AssembledSample] gff = assembled_long
     }
 
+}
+
+task FilterGFF {
+    input {
+        File gff
+        String min_coverage = "80"
+        String min_identity = "95"
+    }
+
+    output {
+        File filtered_gff = basename(gff)+"."+min_identity+"id"+min_coverage+"cov.gff"
+    }
+
+    command <<<
+    filter_gmap_hardFilter_v0.1.pl --gff ~{gff} --identity ~{min_identity} --coverage ~{min_coverage} > ~{basename(gff)}+"."+~{min_identity}+"id"+~{min_coverage}+"cov.gff"
+    >>>
 }
 
 task StringtieLong {
