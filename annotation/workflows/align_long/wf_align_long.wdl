@@ -12,6 +12,16 @@ workflow wf_align_long {
         RuntimeAttr? alignment_resources
         RuntimeAttr? indexing_resources
     }
+
+    parameter_meta {
+        reference: "Genome target to align the reads"
+        long_samples: "Long read samples, each item is defined by a name, it's strand and one or more long read files."
+        is_hq: "Selects high quality parameters for the alignment program."
+        bed_junctions: "Where possible uses a user provided set of junctions to guide the alignments."
+        aligner: "Selects the aligner program, the options are: minimap2 and gmap."
+        alignment_resources: "Computational resources to override the defaults for running the alignments."
+        indexing_resources: "Computational resources to generate the genome target index previous to alignment, overrides defaults."
+    }
     
     # Add aligner option
     if (aligner == "minimap2") {

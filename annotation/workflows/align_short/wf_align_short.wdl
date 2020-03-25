@@ -16,6 +16,18 @@ workflow wf_align_short {
         RuntimeAttr? stats_resources
     }
     
+    parameter_meta {
+        gsnap_index: "GSnap compatible index generated for the reference target to align to."
+        hisat_index: "Hisat2 compatible index generated for the reference target to align to."
+        star_index: "STAR compatible index generated for the reference target to align to."
+        samples: "Paired short read samples, each item is defined by a biological replicate name with one or more technical replicates. Technical replicates are defined by a name, R1, R2 and strand."
+        reference_annotation: "Use a reference annotation to guide the short read alignments."
+        aligner: "Program used for alignment, current options are: hisat and star."
+        alignment_resources: "Computational resources for alignment, overrides defaults."
+        sort_resources: "Computational resources for sorting aligned BAMs, overrides defaults."
+        stats_resources: "Computational resources for stats, overrides defaults."
+    }
+
     if (defined(reference_annotation)) {
         call Hisat2SpliceSites {
             input: annotation = reference_annotation

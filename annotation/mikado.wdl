@@ -23,12 +23,12 @@ workflow wf_main_mikado {
     }
 
     parameter_meta {
-        reference_genome: ""
-        LQ_assemblies: ""
-        HQ_assemblies: ""
-        SR_assemblies: ""
-        annotation_bed: ""
-        mikado_scoring_file: ""
+        reference_genome: "Reference genome to align against"
+        paired_samples: "Paired short read samples, each item is defined by a biological replicate name with one or more technical replicates. Technical replicates are defined by a name, R1, R2 and strand."
+        LQ_long_read_samples: "Low quality long read samples, each item is defined by a name, it's strand and one or more long read files."
+        HQ_long_read_samples: "High quality long read samples, each item is defined by a name, it's strand and one or more long read files."
+        reference_annotation: "Pre-existing annotation that will used during the alignment process and to cleanup the splicing sites."
+        mikado_scoring_file: "Mikado scoring file"
     }
 
     # The user can choose to run the LQ-LR datasets separately
