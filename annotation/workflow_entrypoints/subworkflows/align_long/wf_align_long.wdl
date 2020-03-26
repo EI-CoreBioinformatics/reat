@@ -144,7 +144,10 @@ task GMapLong {
         String strand
         File? iit
         Int? min_trimmed_coverage
-        Int? min_identity
+        Float min_identity = 0.9
+        Int max_intronlength_middle = 50000
+        Int max_intronlength_ends = 10000
+        Int min_intronlength = 20
         RuntimeAttr? runtime_attr_override
     }
 
@@ -169,11 +172,10 @@ task GMapLong {
         fi
 
         $in_pipe | $(determine_gmap.py ~{reference}) --dir="$(dirname ~{gmap_index[0]})" --db=test_genome \
-        --min-intronlength=20 --intronlength=2000 \
+        ~{"--min-intronlength=" + min_intronlength} ~{"--max-intronlength-middle=" + max_intronlength_middle} ~{"--max-intronlength-ends=" + max_intronlength_ends} --npaths=1 \
         ~{"-m " + iit} \
         ~{"--min-trimmed-coverage=" + min_trimmed_coverage} \
-        ~{"--min-identity" + min_identity} \
-        ~{"-z " + strand} \
+        ~{"--min-identity=" + min_identity} \ # ~{"-z " + strand} \
         --format=samse \
         --nthreads="~{cpus}" | samtools view -F 4 -F 0x900 -bS - | samtools sort -@ 4 --reference ~{reference} -T gmap.sort -o gmap.~{name}.bam -
     >>>
