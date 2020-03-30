@@ -3,6 +3,42 @@ version 1.0
 import "./structs.wdl"
 import "./rt_struct.wdl"
 
+task SanitiseAnnotation {
+    input {
+        File? annotation
+        RuntimeAttr? runtime_attr_override
+    }
+    
+    RuntimeAttr default_attr = object {
+        cpu_cores: 1,
+        mem_gb: 4,
+        max_retries: 1
+    }
+    
+    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
+
+    output {
+        File sanitised_annotation = "reference.san.gtf"
+    }
+
+  runtime {
+    cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
+    memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
+    maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+  }
+
+    command <<<
+        set -euxo pipefail
+        filepath=~{annotation}
+        if [ ${filepath##*.} == "gff" ]
+        then
+            mikado util convert -of gtf ~{annotation} "reference.san.gtf"
+        else
+            ln ~{annotation} "reference.san.gtf"
+        fi
+    >>>
+}
+
 task SplitSequences {
     input {
         File sequences_file
@@ -68,7 +104,7 @@ task IndexFasta {
     }
 }
 
-task SanitizeFasta {
+task SanitiseFasta {
     input {
         File reference
         RuntimeAttr? runtime_attr_override

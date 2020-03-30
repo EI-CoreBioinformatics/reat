@@ -3,38 +3,38 @@ version 1.0
 import "../common/structs.wdl"
 import "../common/tasks.wdl" as tsk
 
-workflow wf_sanitize {
+workflow wf_sanitise {
     input {
         File reference_genome
         File? in_annotation
     }
 
-    call tsk.SanitizeFasta {
+    call tsk.SanitiseFasta {
         input:
             reference = reference_genome
     }
 
     if (defined(in_annotation)) {
-        call sanitizeAnnotation {
+        call SanitizeAnnotation {
             input:
             annotation = in_annotation
         }
-        File wf_maybe_clean_annotation = sanitizeAnnotation.sanitised_annotation
+        File wf_maybe_clean_annotation = SanitizeAnnotation.sanitised_annotation
     }
 
     call tsk.IndexFasta {
         input:
-        reference_fasta = SanitizeFasta.sanitised_reference
+        reference_fasta = SanitiseFasta.sanitised_reference
     }
     
     output {
         File? annotation = wf_maybe_clean_annotation
-        File reference = SanitizeFasta.sanitised_reference
+        File reference = SanitiseFasta.sanitised_reference
         IndexedReference indexed_reference = IndexFasta.indexed_fasta
     }
 }
 
-task sanitizeAnnotation {
+task SanitizeAnnotation {
     input {
         File? annotation
         RuntimeAttr? runtime_attr_override

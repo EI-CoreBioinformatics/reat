@@ -1,12 +1,14 @@
 version 1.0
-import "subworkflows/sanitize/wf_sanitize.wdl" as san
+import "subworkflows/sanitise/wf_sanitise.wdl" as san
 import "subworkflows/index/wf_index.wdl" as idx
+import "subworkflows/common/tasks.wdl"
 import "subworkflows/common/structs.wdl"
 import "subworkflows/align_short/wf_align_short.wdl" as aln_s
 import "subworkflows/assembly_short/wf_assembly_short.wdl" as assm_s
 import "subworkflows/portcullis/wf_portcullis.wdl" as portcullis_s
 import "subworkflows/align_long/wf_align_long.wdl" as aln_l
 import "subworkflows/assembly_long/wf_assembly_long.wdl" as assm_l
+
 
 workflow wf_align {
     input {
@@ -26,6 +28,12 @@ workflow wf_align {
         RuntimeAttr? long_read_assembly_resources
     }
 
+    RuntimeAttr default_runtime_attr = object {
+        cpu_cores: 1,
+        mem_gb: 4,
+        max_retries: 1
+    }
+    
     parameter_meta {
         reference_genome: "Reference genome to align against"
         paired_samples: "Paired short read samples, each item is defined by a biological replicate name with one or more technical"
@@ -34,7 +42,7 @@ workflow wf_align {
         reference_annotation: "Pre-existing annotation that will used during the alignment process and to cleanup the splicing sites."
     }
 
-    call san.wf_sanitize {
+    call san.wf_sanitise {
         input:
         reference_genome = reference_genome,
         in_annotation = reference_annotation
@@ -42,7 +50,7 @@ workflow wf_align {
 
     call idx.wf_index {
         input:
-        reference = wf_sanitize.reference
+        reference = wf_sanitise.reference
     }
 
     if (defined(paired_samples)) {
@@ -50,26 +58,26 @@ workflow wf_align {
         call aln_s.wf_align_short {
             input:
             samples = def_paired_samples,
-            reference_annotation = wf_sanitize.annotation,
+            reference_annotation = wf_sanitise.annotation,
             gsnap_index = wf_index.gsnap_index,
             hisat_index = wf_index.hisat_index,
             star_index = wf_index.star_index,
-            alignment_resources = short_read_alignment_resources,
-            sort_resources = short_read_alignment_sort_resources,
-            stats_resources = short_read_stats_resources
+            alignment_resources = select_first([short_read_alignment_resources, default_runtime_attr]),
+            sort_resources = select_first([short_read_alignment_sort_resources, default_runtime_attr]),
+            stats_resources = select_first([short_read_stats_resources, default_runtime_attr])
         }
 
         call assm_s.wf_assembly_short {
             input:
             aligned_samples = wf_align_short.aligned_samples,
-            reference_annotation = wf_sanitize.annotation,
-            assembly_resources = short_read_assembly_resources
+            reference_annotation = wf_sanitise.annotation,
+            assembly_resources = select_first([default_runtime_attr, short_read_assembly_resources])
         }
 
         call portcullis_s.portcullis {
             input:
-            reference = wf_sanitize.reference,
-            annotation = wf_sanitize.annotation,
+            reference = wf_sanitise.reference,
+            annotation = wf_sanitise.annotation,
             aligned_samples = wf_align_short.aligned_samples
         }
     }
@@ -78,22 +86,22 @@ workflow wf_align {
         Array[LRSample] def_lq_long_sample = select_first([LQ_long_read_samples])
         call aln_l.wf_align_long as LQ_align {
             input:
-            reference = wf_sanitize.reference,
+            reference = wf_sanitise.reference,
             is_hq = false,
             long_samples = def_lq_long_sample,
             bed_junctions = portcullis.bed,
-            indexing_resources = long_read_indexing_resources,
-            alignment_resources = long_read_alignment_resources
+            indexing_resources = select_first([long_read_indexing_resources,default_runtime_attr]),
+            alignment_resources = select_first([long_read_alignment_resources,default_runtime_attr])
         }
 
         # Check what is defined for lq-long and run that
 
         call assm_l.wf_assembly_long as LQ_assembly {
             input:
-            reference_annotation = wf_sanitize.annotation,
+            reference_annotation = wf_sanitise.annotation,
             aligned_samples = LQ_align.bams,
             assembler = LQ_assembler,
-            assembly_resources = long_read_assembly_resources
+            assembly_resources = select_first([long_read_assembly_resources, default_runtime_attr])
         }
     }
 
@@ -101,29 +109,29 @@ workflow wf_align {
         Array[LRSample] def_hq_long_sample = select_first([HQ_long_read_samples])
         call aln_l.wf_align_long as HQ_align {
             input:
-            reference = wf_sanitize.reference,
+            reference = wf_sanitise.reference,
             is_hq = true,
             long_samples = def_hq_long_sample,
             bed_junctions = portcullis.bed,
-            indexing_resources = long_read_indexing_resources,
-            alignment_resources = long_read_alignment_resources
+            indexing_resources = select_first([long_read_indexing_resources, default_runtime_attr]),
+            alignment_resources = select_first([long_read_alignment_resources, default_runtime_attr])
         }
 
         # Check what is defined for hq-long and run that
 
         call assm_l.wf_assembly_long as HQ_assembly {
             input:
-            reference_annotation = wf_sanitize.annotation,
+            reference_annotation = wf_sanitise.annotation,
             aligned_samples = HQ_align.bams,
             assembler = HQ_assembler,
-            assembly_resources = long_read_assembly_resources
+            assembly_resources = select_first([long_read_assembly_resources, default_runtime_attr])
         }
     }
 
     output {
-        File clean_reference = wf_sanitize.reference
-        IndexedReference clean_reference_index = wf_sanitize.indexed_reference
-        File? clean_annotation = wf_sanitize.annotation
+        File clean_reference = wf_sanitise.reference
+        IndexedReference clean_reference_index = wf_sanitise.indexed_reference
+        File? clean_annotation = wf_sanitise.annotation
         Array[File] gsnap_index = wf_index.gsnap_index
         Array[File] hisat_index = wf_index.hisat_index
         Array[File] star_index = wf_index.star_index

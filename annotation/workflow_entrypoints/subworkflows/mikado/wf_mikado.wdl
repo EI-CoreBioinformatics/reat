@@ -68,6 +68,7 @@ workflow wf_mikado {
     call MikadoPrepare {
         input:
         reference_fasta = indexed_reference.fasta,
+        blast_targets = homology_proteins,
         models = WriteModelsFile.result,
         scoring_file = scoring_file,
         extra_config = extra_config
@@ -420,6 +421,7 @@ task MikadoPrepare {
     input {
         File models
         File reference_fasta
+        File? blast_targets
         File? scoring_file
         File? extra_config
         RuntimeAttr? runtime_attr_override
@@ -437,6 +439,7 @@ task MikadoPrepare {
         set -euxo pipefail
         mikado configure \
         ~{"--scoring=" + scoring_file} \
+        ~{"-bt " + blast_targets} \
         --list=~{models} \
         ~{"--reference=" + reference_fasta} \
         mikado.yaml

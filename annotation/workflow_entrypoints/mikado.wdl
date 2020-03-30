@@ -27,8 +27,13 @@ workflow wf_main_mikado {
         paired_samples: "Paired short read samples, each item is defined by a biological replicate name with one or more technical replicates. Technical replicates are defined by a name, R1, R2 and strand."
         LQ_long_read_samples: "Low quality long read samples, each item is defined by a name, it's strand and one or more long read files."
         HQ_long_read_samples: "High quality long read samples, each item is defined by a name, it's strand and one or more long read files."
-        reference_annotation: "Pre-existing annotation that will used during the alignment process and to cleanup the splicing sites."
         mikado_scoring_file: "Mikado scoring file"
+    }
+
+    RuntimeAttr default_runtime_attr = object {
+        cpu_cores: 1,
+        mem_gb: 4,
+        max_retries: 1
     }
 
     # The user can choose to run the LQ-LR datasets separately
@@ -44,11 +49,11 @@ workflow wf_main_mikado {
             orf_caller = orf_calling_program,
             homology_proteins = homology_proteins,
             junctions = annotation_bed,
-            orf_calling_resources = orf_calling_resources,
-            orf_protein_index_resources = protein_index_resources,
-            orf_protein_alignment_resources = protein_alignment_resources,
-            homology_index_resources = homology_index_resources,
-            homology_alignment_resources = homology_alignment_resources
+            orf_calling_resources = select_first([orf_calling_resources,default_runtime_attr]),
+            orf_protein_index_resources = select_first([protein_index_resources,default_runtime_attr]),
+            orf_protein_alignment_resources = select_first([protein_alignment_resources,default_runtime_attr]),
+            homology_index_resources = select_first([homology_index_resources,default_runtime_attr]),
+            homology_alignment_resources = select_first([homology_alignment_resources,default_runtime_attr])
         }
 
         call mikado.wf_mikado as Mikado_longHQ {
@@ -60,11 +65,11 @@ workflow wf_main_mikado {
             orf_caller = orf_calling_program,
             homology_proteins = homology_proteins,
             junctions = annotation_bed,
-            orf_calling_resources = orf_calling_resources,
-            orf_protein_index_resources = protein_index_resources,
-            orf_protein_alignment_resources = protein_alignment_resources,
-            homology_index_resources = homology_index_resources,
-            homology_alignment_resources = homology_alignment_resources
+            orf_calling_resources = select_first([orf_calling_resources,default_runtime_attr]),
+            orf_protein_index_resources = select_first([protein_index_resources,default_runtime_attr]),
+            orf_protein_alignment_resources = select_first([protein_alignment_resources,default_runtime_attr]),
+            homology_index_resources = select_first([homology_index_resources,default_runtime_attr]),
+            homology_alignment_resources = select_first([homology_alignment_resources,default_runtime_attr])
         }
 
         call mikado.wf_mikado as Mikado_longLQ {
@@ -76,11 +81,11 @@ workflow wf_main_mikado {
             orf_calling_proteins = orf_calling_proteins,
             orf_caller = orf_calling_program,
             homology_proteins = homology_proteins,
-            orf_calling_resources = orf_calling_resources,
-            orf_protein_index_resources = protein_index_resources,
-            orf_protein_alignment_resources = protein_alignment_resources,
-            homology_index_resources = homology_index_resources,
-            homology_alignment_resources = homology_alignment_resources
+            orf_calling_resources = select_first([orf_calling_resources,default_runtime_attr]),
+            orf_protein_index_resources = select_first([protein_index_resources,default_runtime_attr]),
+            orf_protein_alignment_resources = select_first([protein_alignment_resources,default_runtime_attr]),
+            homology_index_resources = select_first([homology_index_resources,default_runtime_attr]),
+            homology_alignment_resources = select_first([homology_alignment_resources,default_runtime_attr])
         }
     }
     if (!separate_LQ)
@@ -96,11 +101,11 @@ workflow wf_main_mikado {
             orf_calling_proteins = orf_calling_proteins,
             orf_caller = orf_calling_program,
             homology_proteins = homology_proteins,
-            orf_calling_resources = orf_calling_resources,
-            orf_protein_index_resources = protein_index_resources,
-            orf_protein_alignment_resources = protein_alignment_resources,
-            homology_index_resources = homology_index_resources,
-            homology_alignment_resources = homology_alignment_resources
+            orf_calling_resources = select_first([orf_calling_resources, default_runtime_attr]),
+            orf_protein_index_resources = select_first([protein_index_resources, default_runtime_attr]),
+            orf_protein_alignment_resources = select_first([protein_alignment_resources, default_runtime_attr]),
+            homology_index_resources = select_first([homology_index_resources, default_runtime_attr]),
+            homology_alignment_resources = select_first([homology_alignment_resources, default_runtime_attr])
         }
 
         call mikado.wf_mikado as Mikado_long {
@@ -113,11 +118,11 @@ workflow wf_main_mikado {
             orf_calling_proteins = orf_calling_proteins,
             orf_caller = orf_calling_program,
             homology_proteins = homology_proteins,
-            orf_calling_resources = orf_calling_resources,
-            orf_protein_index_resources = protein_index_resources,
-            orf_protein_alignment_resources = protein_alignment_resources,
-            homology_index_resources = homology_index_resources,
-            homology_alignment_resources = homology_alignment_resources
+            orf_calling_resources = select_first([orf_calling_resources, default_runtime_attr]),
+            orf_protein_index_resources = select_first([protein_index_resources, default_runtime_attr]),
+            orf_protein_alignment_resources = select_first([protein_alignment_resources, default_runtime_attr]),
+            homology_index_resources = select_first([homology_index_resources, default_runtime_attr]),
+            homology_alignment_resources = select_first([homology_alignment_resources, default_runtime_attr])
         }
     }
 
