@@ -11,20 +11,38 @@ workflow wf_assembly_short {
     }
 
     scatter (aligned_sample in aligned_samples) {
-        scatter (bam in aligned_sample.bam) {
-            call Stringtie {
-                input:
-                aligned_sample = bam,
-                strand = aligned_sample.strand,
-                reference_annotation = reference_annotation,
-                runtime_attr_override = assembly_resources
+        # There's some issue with scatter of scatter and optional parameters, 
+        # the following if construct is to eliminate the parameter from the WF if it is not present
+        # working around this issue
+        # TODO: Check if this is still the case
+        if (defined(reference_annotation)) {
+            scatter (bam in aligned_sample.bam) {
+                call Stringtie as annot{
+                    input:
+                    aligned_sample = bam,
+                    strand = aligned_sample.strand,
+                    reference_annotation = reference_annotation,
+                    runtime_attr_override = assembly_resources
+                }
             }
         }
+
+        if (!defined(reference_annotation)) {
+            scatter (bam in aligned_sample.bam) {
+                call Stringtie as no_annot {
+                    input:
+                    aligned_sample = bam,
+                    strand = aligned_sample.strand,
+                    runtime_attr_override = assembly_resources
+                }
+            }
+        }
+
         call Merge {
             input:
             name = aligned_sample.name,
             aligner_name = aligned_sample.aligner,
-            assemblies = Stringtie.assembled,
+            assemblies = select_first([no_annot.assembled, annot.assembled]),
             runtime_attr_override = assembly_resources
         }
         AssembledSample stringtie_assembly = object { name: aligned_sample.name+"."+aligned_sample.aligner+".stringtie", strand: aligned_sample.strand, assembly: Merge.assembly}
