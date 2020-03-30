@@ -90,18 +90,38 @@ workflow ei_annotation {
 
     output {
         File clean_reference = wf_align.clean_reference
-        IndexedReference clean_reference_index = wf_align.clean_reference_index
         File? clean_annotation = wf_align.clean_annotation
-        Array[File] gsnap_index = wf_align.gsnap_index
-        Array[File] hisat_index = wf_align.hisat_index
-        Array[File] star_index = wf_align.star_index
+        IndexedReference clean_reference_index = wf_align.clean_reference_index
 
         Array[AssembledSample]? sr_asms = wf_align.SR_gff
+        Array[AssembledSample]? lq_asms = wf_align.LQ_gff
+        Array[AssembledSample]? hq_asms = wf_align.HQ_gff
+
+        Array[AlignedSample]? sr_bams = wf_align.sr_bams
+        Array[AlignedSample]? lq_bams = wf_align.lq_bams
+        Array[AlignedSample]? hq_bams = wf_align.hq_bams
+
+        File? portcullis_tab = wf_align.filtered_tab
+        File? portcullis_bed = wf_align.filtered_bed
+        File? portcullis_gff3 = wf_align.filtered_gff3
+
+        Array[Array[File]]? stats = wf_align.stats
+        Array[Array[Array[File]]]? plots = wf_align.plots
 
         File? mikado_long_config = wf_main_mikado.long_config
         File? mikado_long_orfs = wf_main_mikado.long_orfs
+
         File? mikado_short_config = wf_main_mikado.short_config
         File? mikado_short_orfs = wf_main_mikado.short_orfs
+
+        File? mikado_short_noLQ_config = wf_main_mikado.short_and_long_noLQ_config
+        File? mikado_short_noLQ_orfs = wf_main_mikado.short_and_long_noLQ_orfs
+
+        File? mikado_longHQ_config = wf_main_mikado.longHQ_config
+        File? mikado_longHQ_orfs = wf_main_mikado.longHQ_orfs
+
+        File? mikado_longLQ_config = wf_main_mikado.longLQ_config
+        File? mikado_longLQ_orfs = wf_main_mikado.longLQ_orfs
 
 #        IndexedReference masked_genome = RepeatMasker.masked_genome
 #        Array[Array[File]]? maybe_exonerate_hits = Exonerate.exonerate_results
