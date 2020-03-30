@@ -6,8 +6,16 @@ import "../common/rt_struct.wdl"
 workflow portcullis {
     input {
         File reference
+        Map[String,Array[String]]? group_to_samples # Consider applying "localization_optional" to the preparation task
         Array[AlignedSample] aligned_samples
         File? annotation
+    }
+
+    parameter_meta {
+        reference: "Genome reference file."
+        annotation: "Reference annotation of junctions in BED format."
+        sample_groups: "Pre-defined groupings for the aligned_samples, these need to match the sample names. Each portcullis run groups one or more samples."
+        aligned_samples: "List of aligned samples."
     }
 
     if (defined(annotation)) {
@@ -17,28 +25,41 @@ workflow portcullis {
             annotation = def_annotation
         }
     }
-    scatter (aligned_sample in aligned_samples) {
-        call Prepare {
+
+    if (defined(group_to_samples)) {
+        call PrepareGroups {
             input:
-            reference = reference,
-            sample = aligned_sample
+            group_to_samples = select_first([group_to_samples]),
+            aligned_samples = aligned_samples
         }
-        call Junction {
-            input:
-            prep_dir = Prepare.prep_dir
+        scatter (sample in PrepareGroups.portcullis_grouped_sample) {
+            call Full as groupedFull{
+                input:
+                reference = reference,
+                sample = sample,
+                reference_bed = PrepareRef.refbed
+            }
         }
-        call Filter {
-            input:
-            reference_bed = PrepareRef.refbed,
-            prep_dir = Prepare.prep_dir,
-            junc_dir = Junction.junc_dir,
-            tab = Junction.tab
-        }
+        Array[File] def_grouped = groupedFull.pass
     }
-    
+
+    if (!defined(group_to_samples)) {
+        scatter (aligned_sample in aligned_samples) {
+            call Full {
+                input:
+                reference = reference,
+                sample = aligned_sample,
+                reference_bed = PrepareRef.refbed
+            }
+        }
+        Array[File] def_ungrouped = Full.pass
+    }
+
+    Array[File] to_merge = select_first([def_grouped, def_ungrouped])
+
     call Merge {
         input:
-        tabs = Filter.pass
+        tabs = to_merge
     }
 
     output {
@@ -46,6 +67,54 @@ workflow portcullis {
         File bed = Merge.bed
         File gff3 = Merge.gff3
     }
+}
+
+task PrepareGroups {
+    input {
+        Map[String,Array[String]] group_to_samples
+        Array[AlignedSample] aligned_samples
+    }
+
+    output {
+        Array[AlignedSample] portcullis_grouped_sample = read_json(stdout())
+    }
+
+    command <<<
+        portcullis_sample_grouping ~{write_objects(aligned_samples)} ~{write_map(group_to_samples)}
+    >>>
+}
+
+task Full {
+    input {
+        File reference
+        File? reference_bed
+        AlignedSample sample
+        Int min_coverage = 2
+        RuntimeAttr? runtime_attr_override
+    }
+
+    output {
+        File pass = "portcullis_out/3-filt/portcullis_filtered.pass.junctions.tab"
+    }
+
+    command <<<
+    set -euxo pipefail
+    strandedness="UNKNOWN"
+    case "~{sample.strand}" in
+        fr-firststrand)
+        strandedness="firststrand"
+        ;;
+        fr-secondstrand)
+        strandedness="secondstrand"
+        ;;
+        fr-unstranded)
+        strandedness="unstranded"
+        ;;
+    esac
+    portcullis full --save_bad --exon_gff --intron_gff --strandedness=$strandedness \
+    ~{"-r " + reference_bed} --canonical=C,S --min_cov=~{min_coverage} \
+    ~{reference} ~{sep=" " sample.bam}
+    >>>
 }
 
 task PrepareRef {
@@ -130,8 +199,20 @@ task Junction {
 
     command <<<
         set -euxo pipefail
+        strandness="UNKNOWN"
+        case "~{strand}" in
+            fr-firststrand)
+            strandness="firststrand"
+            ;;
+            fr-secondstrand)
+            strandness="secondstrand"
+            ;;
+            fr-unstranded)
+            strandness="unstranded"
+            ;;
+        esac
         prep_dir_path="$(dirname ~{prep_dir[0]})"
-        portcullis junc -c ~{"--strandedness="+strand} -t ~{cpus}  "${prep_dir_path}"
+        portcullis junc -c --strandedness="${strandness}" -t ~{cpus}  "${prep_dir_path}"
     >>>
     RuntimeAttr default_attr = object {
         cpu_cores: "~{cpus}",
