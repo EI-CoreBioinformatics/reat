@@ -1,5 +1,5 @@
 version 1.0
-import "subworkflows/sanitise/wf_sanitise.wdl" as san
+
 import "subworkflows/index/wf_index.wdl" as idx
 import "subworkflows/common/tasks.wdl"
 import "subworkflows/common/structs.wdl"
@@ -8,7 +8,7 @@ import "subworkflows/assembly_short/wf_assembly_short.wdl" as assm_s
 import "subworkflows/portcullis/wf_portcullis.wdl" as portcullis_s
 import "subworkflows/align_long/wf_align_long.wdl" as aln_l
 import "subworkflows/assembly_long/wf_assembly_long.wdl" as assm_l
-
+import "subworkflows/sanitise/wf_sanitise.wdl" as san
 
 workflow wf_align {
     input {
@@ -17,6 +17,8 @@ workflow wf_align {
         Array[LRSample]? LQ_long_read_samples
         Array[LRSample]? HQ_long_read_samples
         File? reference_annotation
+        String LQ_aligner = "minimap2"
+        String HQ_aligner = "gmap"
         String HQ_assembler = "merge"
         String LQ_assembler = "stringtie"
         RuntimeAttr? short_read_alignment_resources
@@ -88,6 +90,7 @@ workflow wf_align {
             input:
             reference = wf_sanitise.reference,
             is_hq = false,
+            aligner = LQ_aligner,
             long_samples = def_lq_long_sample,
             bed_junctions = portcullis.bed,
             indexing_resources = select_first([long_read_indexing_resources,default_runtime_attr]),
@@ -111,6 +114,7 @@ workflow wf_align {
             input:
             reference = wf_sanitise.reference,
             is_hq = true,
+            aligner = HQ_aligner,
             long_samples = def_hq_long_sample,
             bed_junctions = portcullis.bed,
             indexing_resources = select_first([long_read_indexing_resources, default_runtime_attr]),
