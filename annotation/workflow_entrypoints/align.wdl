@@ -1,6 +1,5 @@
 version 1.0
 
-import "subworkflows/index/wf_index.wdl" as idx
 import "subworkflows/common/tasks.wdl"
 import "subworkflows/common/structs.wdl"
 import "subworkflows/align_short/wf_align_short.wdl" as aln_s
@@ -50,20 +49,13 @@ workflow wf_align {
         in_annotation = reference_annotation
     }
 
-    call idx.wf_index {
-        input:
-        reference = wf_sanitise.reference
-    }
-
     if (defined(paired_samples)) {
         Array[PRSample] def_paired_samples = select_first([paired_samples])
         call aln_s.wf_align_short {
             input:
             samples = def_paired_samples,
+            reference_genome = wf_sanitise.reference,
             reference_annotation = wf_sanitise.annotation,
-            gsnap_index = wf_index.gsnap_index,
-            hisat_index = wf_index.hisat_index,
-            star_index = wf_index.star_index,
             alignment_resources = select_first([short_read_alignment_resources, default_runtime_attr]),
             sort_resources = select_first([short_read_alignment_sort_resources, default_runtime_attr]),
             stats_resources = select_first([short_read_stats_resources, default_runtime_attr])
@@ -136,9 +128,6 @@ workflow wf_align {
         File clean_reference = wf_sanitise.reference
         IndexedReference clean_reference_index = wf_sanitise.indexed_reference
         File? clean_annotation = wf_sanitise.annotation
-        Array[File] gsnap_index = wf_index.gsnap_index
-        Array[File] hisat_index = wf_index.hisat_index
-        Array[File] star_index = wf_index.star_index
 
         Array[Array[File]]? stats = wf_align_short.stats
         Array[Array[Array[File]]]? plots = wf_align_short.plots

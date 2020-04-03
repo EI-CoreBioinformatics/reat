@@ -6,7 +6,6 @@ import "subworkflows/common/structs.wdl"
 # import "subworkflows/exonerate/wf_exonerate.wdl" as exonerate
 # import "subworkflows/repeat_masker/wf_repeat_masker.wdl" as repeatmasker
 import "subworkflows/sanitise/wf_sanitise.wdl" as san
-import "subworkflows/index/wf_index.wdl" as idx
 
 workflow ei_annotation {
     input {
@@ -40,11 +39,6 @@ workflow ei_annotation {
         input:
         reference_genome = reference_genome,
         in_annotation = annotation
-    }
-
-    call idx.wf_index {
-        input:
-        reference = wf_sanitise.reference
     }
 
     call waln.wf_align {

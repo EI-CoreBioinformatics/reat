@@ -2,14 +2,13 @@ version 1.0
 
 import "../common/structs.wdl"
 import "../common/rt_struct.wdl"
+import "../common/tasks.wdl"
 
 workflow wf_align_short {
     input {
         Array[PRSample] samples
+        File reference_genome
         File? reference_annotation
-        Array[File] gsnap_index
-        Array[File] hisat_index
-        Array[File] star_index
         String aligner = "hisat"
         RuntimeAttr? alignment_resources
         RuntimeAttr? sort_resources
@@ -17,10 +16,8 @@ workflow wf_align_short {
     }
     
     parameter_meta {
-        gsnap_index: "GSnap compatible index generated for the reference target to align to."
-        hisat_index: "Hisat2 compatible index generated for the reference target to align to."
-        star_index: "STAR compatible index generated for the reference target to align to."
         samples: "Paired short read samples, each item is defined by a biological replicate name with one or more technical replicates. Technical replicates are defined by a name, R1, R2 and strand."
+        reference_genome: "Genomic reference for read alignment."
         reference_annotation: "Use a reference annotation to guide the short read alignments."
         aligner: "Program used for alignment, current options are: hisat and star."
         alignment_resources: "Computational resources for alignment, overrides defaults."
@@ -35,6 +32,10 @@ workflow wf_align_short {
     }
 
     if (aligner == "hisat") {
+        call tasks.Hisat2Index {
+            input: reference = reference_genome
+        }
+
         if (defined(Hisat2SpliceSites.sites)) {
             scatter (sample in samples) {
                 scatter(PR in sample.read_pair) {
@@ -44,7 +45,7 @@ workflow wf_align_short {
                         strand = sample.strand,
                         name = sample.name,
                         sample = PR,
-                        index = hisat_index,
+                        index = Hisat2Index.index,
                         runtime_attr_override = alignment_resources
                     }
                 }
@@ -59,7 +60,7 @@ workflow wf_align_short {
                        strand = sample.strand,
                        name = sample.name,
                        sample = PR,
-                       index = hisat_index,
+                       index = Hisat2Index.index,
                        runtime_attr_override = alignment_resources
                    }
                }
@@ -71,6 +72,10 @@ workflow wf_align_short {
     }
 
     if (aligner == "star") {
+        call tasks.StarIndex {
+            input:
+            reference = reference_genome
+        }
         scatter (sample in samples) {
             scatter(PR in sample.read_pair) {
                 call Star {
@@ -79,7 +84,7 @@ workflow wf_align_short {
                     strand = sample.strand,
                     name = sample.name,
                     sample = PR,
-                    index = star_index,
+                    index = StarIndex.index,
                     runtime_attr_override = alignment_resources
                 }
             }
