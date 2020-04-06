@@ -68,7 +68,6 @@ workflow wf_align_short {
             }
         }
         Array[AlignedSample] def_hisat_aligned = select_first([hisat_aligned_sample, hisat_aligned_sample_no_sites])
-
     }
 
     if (aligner == "star") {
@@ -273,6 +272,7 @@ task Hisat {
 
     command <<<
         set -euxo pipefail
+        strandness=""
         case "~{strand}" in
             fr-firststrand)
             strandness="--rna-strandness=RF"

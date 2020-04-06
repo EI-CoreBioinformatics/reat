@@ -17,13 +17,6 @@ workflow ei_annotation {
         File mikado_scoring_file
         File orf_calling_proteins
         File homology_proteins
-        RuntimeAttr? short_read_alignment_resources
-        RuntimeAttr? short_read_alignment_sort_resources
-        RuntimeAttr? short_read_stats_resources
-        RuntimeAttr? short_read_assembly_resources
-        RuntimeAttr? long_read_indexing_resources
-        RuntimeAttr? long_read_alignment_resources
-        RuntimeAttr? long_read_assembly_resources
     }
 
     parameter_meta {
@@ -47,14 +40,7 @@ workflow ei_annotation {
         paired_samples = paired_samples,
         LQ_long_read_samples = LQ_long_read_samples,
         HQ_long_read_samples = HQ_long_read_samples,
-        reference_annotation = wf_sanitise.annotation,
-        short_read_alignment_resources = short_read_alignment_resources,
-        short_read_alignment_sort_resources = short_read_alignment_sort_resources,
-        short_read_stats_resources = short_read_stats_resources,
-        short_read_assembly_resources = short_read_assembly_resources,
-        long_read_indexing_resources = long_read_indexing_resources,
-        long_read_alignment_resources = long_read_alignment_resources,
-        long_read_assembly_resources = long_read_assembly_resources
+        reference_annotation = wf_sanitise.annotation
     }
 
     call wfm.wf_main_mikado {

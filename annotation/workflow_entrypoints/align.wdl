@@ -28,12 +28,6 @@ workflow wf_align {
         RuntimeAttr? long_read_alignment_resources
         RuntimeAttr? long_read_assembly_resources
     }
-
-    RuntimeAttr default_runtime_attr = object {
-        cpu_cores: 1,
-        mem_gb: 4,
-        max_retries: 1
-    }
     
     parameter_meta {
         reference_genome: "Reference genome to align against"
@@ -56,16 +50,16 @@ workflow wf_align {
             samples = def_paired_samples,
             reference_genome = wf_sanitise.reference,
             reference_annotation = wf_sanitise.annotation,
-            alignment_resources = select_first([short_read_alignment_resources, default_runtime_attr]),
-            sort_resources = select_first([short_read_alignment_sort_resources, default_runtime_attr]),
-            stats_resources = select_first([short_read_stats_resources, default_runtime_attr])
+            alignment_resources = short_read_alignment_resources,
+            sort_resources = short_read_alignment_sort_resources,
+            stats_resources = short_read_stats_resources
         }
 
         call assm_s.wf_assembly_short {
             input:
             aligned_samples = wf_align_short.aligned_samples,
             reference_annotation = wf_sanitise.annotation,
-            assembly_resources = select_first([default_runtime_attr, short_read_assembly_resources])
+            assembly_resources = short_read_assembly_resources
         }
 
         call portcullis_s.portcullis {
@@ -85,8 +79,8 @@ workflow wf_align {
             aligner = LQ_aligner,
             long_samples = def_lq_long_sample,
             bed_junctions = portcullis.bed,
-            indexing_resources = select_first([long_read_indexing_resources,default_runtime_attr]),
-            alignment_resources = select_first([long_read_alignment_resources,default_runtime_attr])
+            indexing_resources = long_read_indexing_resources,
+            alignment_resources = long_read_alignment_resources
         }
 
         # Check what is defined for lq-long and run that
@@ -96,7 +90,7 @@ workflow wf_align {
             reference_annotation = wf_sanitise.annotation,
             aligned_samples = LQ_align.bams,
             assembler = LQ_assembler,
-            assembly_resources = select_first([long_read_assembly_resources, default_runtime_attr])
+            assembly_resources = long_read_assembly_resources
         }
     }
 
@@ -109,8 +103,8 @@ workflow wf_align {
             aligner = HQ_aligner,
             long_samples = def_hq_long_sample,
             bed_junctions = portcullis.bed,
-            indexing_resources = select_first([long_read_indexing_resources, default_runtime_attr]),
-            alignment_resources = select_first([long_read_alignment_resources, default_runtime_attr])
+            indexing_resources = long_read_indexing_resources,
+            alignment_resources = long_read_alignment_resources
         }
 
         # Check what is defined for hq-long and run that
@@ -120,7 +114,7 @@ workflow wf_align {
             reference_annotation = wf_sanitise.annotation,
             aligned_samples = HQ_align.bams,
             assembler = HQ_assembler,
-            assembly_resources = select_first([long_read_assembly_resources, default_runtime_attr])
+            assembly_resources = long_read_assembly_resources
         }
     }
 
