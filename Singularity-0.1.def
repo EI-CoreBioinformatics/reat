@@ -1,8 +1,8 @@
 Bootstrap: docker
-From: ubuntu
+From: ubuntu:18.04
 
 %environment
-export PATH=$PATH:/opt/software/hisat2-2.1.0:/opt/software/TransDecoder-TransDecoder-v5.5.0
+export PATH=$PATH:/opt/software/hisat2-2.1.0:/opt/software/TransDecoder-TransDecoder-v5.5.0:/opt/software/TransDecoder-TransDecoder-v5.5.0/util
 export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
 export PYTHONPATH=$PYTHONPATH:/usr/local/lib/python3.6/dist-packages/
 
@@ -17,15 +17,18 @@ mkdir /opt/software
 ### Install your packages ###
 cd /opt/software/
 apt -y update
-apt -y install software-properties-common
-apt -y install build-essential zlib1g-dev libbz2-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev \
+apt -y install software-properties-common build-essential zlib1g-dev libbz2-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev \
 libreadline-dev libffi-dev wget lzma lzma-dev liblzma-dev tk-dev libsqlite3-dev python3 ruby-full libidn11-dev libidn11 \
 default-jdk git libcurl4-openssl-dev curl cmake libcairo2-dev libcogl-pango-dev unzip python python3-pip python-pip \
-libboost-all-dev
+libboost-all-dev make libssl-dev libghc-zlib-dev libexpat1-dev gettext unzip gnuplot cpanminus
 
 java -version
 python3 --version
 python --version
+
+# BioPerl
+cpanm -i XML::DOM::XPath --force
+cpanm -i Parallel::ForkManager File::Which Scalar::Util::Numeric URI::Escape Data::Dumper URI::Escape Bio::SeqIO
 
 # FullLengtherNext
 gem install -q -f full_lengther_next  -v 1.0.1 -N
