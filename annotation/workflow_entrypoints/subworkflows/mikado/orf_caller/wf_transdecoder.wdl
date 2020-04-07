@@ -221,7 +221,7 @@ task TransdecoderLongOrf {
 
     command <<<
         set -euxo pipefail
-        Transdecoder.LongOrfs -m "~{minprot}" -t "~{prepared_transcripts}" -G "~{gencode}" -O transdecoder
+        TransDecoder.LongOrfs -m "~{minprot}" -t "~{prepared_transcripts}" -G "~{gencode}" -O transdecoder
     >>>
 }
 
@@ -255,7 +255,7 @@ task TransdecoderPredict {
 
     command <<<
     set -euxo pipefail
-    Transdecoder.Predict -t ~{prepared_transcripts} -O ~{workdir} ~{"--retain_blastp_hits " + blast_aligned_proteins}
+    TransDecoder.Predict -t ~{prepared_transcripts} -O ~{workdir} ~{"--retain_blastp_hits " + blast_aligned_proteins}
     >>>
 
 }
