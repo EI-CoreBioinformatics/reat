@@ -70,7 +70,7 @@ task FilterGFF {
     }
 
     command <<<
-    filter_gmap_hardFilter_v0.1.pl --gff ~{gff} --identity ~{min_identity} --coverage ~{min_coverage} > ~{basename(gff)}+"."+~{min_identity}+"id"+~{min_coverage}+"cov.gff"
+    filter_gmap_hardFilter_v0.1.pl --gff ~{gff} --identity ~{min_identity} --coverage ~{min_coverage} > ~{basename(gff)}.~{min_identity}id~{min_coverage}cov.gff
     >>>
 }
 
