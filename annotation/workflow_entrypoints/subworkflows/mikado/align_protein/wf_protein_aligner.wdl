@@ -84,12 +84,13 @@ task BlastAlign {
     
     RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
 
+    Int cpus = select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
 
-  runtime {
-    cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
-    memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
-    maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
-  }
+    runtime {
+        cpu: cpus
+        memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
+        maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+    }
 
     output {
         File out = output_filename
@@ -97,7 +98,7 @@ task BlastAlign {
 
     command <<<
         set -euxo pipefail
-        ~{blast_type} ~{extra} -db ~{sub(index[0], "\\.pdb$", "")} -query ~{query} -outfmt ~{outfmt} > ~{output_filename}
+        ~{blast_type} ~{extra} -db ~{sub(index[0], "\.[^.]+$", "")} -num_threads ~{cpus} -query ~{query} -outfmt ~{outfmt} > ~{output_filename}
     >>>
 }
 
@@ -116,11 +117,11 @@ task DiamondIndex {
     RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
 
 
-  runtime {
-    cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
-    memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
-    maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
-  }
+    runtime {
+        cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
+        memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
+        maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+    }
 
     output {
         File index = "diamond_index.dmnd"
@@ -150,12 +151,13 @@ task DiamondAlign {
     
     RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
 
+    Int cpus = select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
 
-  runtime {
-    cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
-    memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
-    maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
-  }
+    runtime {
+        cpu: cpus
+        memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
+        maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+    }
 
     output {
         File out = output_filename
@@ -163,6 +165,6 @@ task DiamondAlign {
 
     command <<<
         set -euxo pipefail
-        diamond ~{blast_type} ~{extra} -d "~{index}" -q "~{query}" > "~{output_filename}"
+        diamond ~{blast_type} ~{extra} -p "~{cpus}" -d "~{index}" -q "~{query}" > "~{output_filename}"
     >>>
 }
