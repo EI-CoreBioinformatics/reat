@@ -175,7 +175,7 @@ task GMapLong {
         ~{"--min-intronlength=" + min_intronlength} ~{"--max-intronlength-middle=" + max_intronlength_middle} ~{"--max-intronlength-ends=" + max_intronlength_ends} --npaths=1 \
         ~{"-m " + iit} \
         ~{"--min-trimmed-coverage=" + min_trimmed_coverage} \
-        ~{"--min-identity=" + min_identity} \ # ~{"-z " + strand} \
+        ~{"--min-identity=" + min_identity} \
         --format=samse \
         --nthreads="~{cpus}" | samtools view -F 4 -F 0x900 -bS - | samtools sort -@ 4 --reference ~{reference} -T gmap.sort -o gmap.~{name}.bam -
     >>>
