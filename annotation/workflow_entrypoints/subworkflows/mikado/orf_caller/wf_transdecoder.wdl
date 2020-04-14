@@ -13,7 +13,7 @@ struct TransdecoderChunk {
 workflow wf_transdecoder {
     input {
         File prepared_transcripts
-        String program = "blast"
+        String program
         RuntimeAttr? orf_calling_resources
         RuntimeAttr? index_resources
         RuntimeAttr? alignment_resources

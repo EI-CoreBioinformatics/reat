@@ -23,7 +23,8 @@ workflow wf_mikado {
         Int prodigal_gencode = 1
         String transdecoder_genetic_code = "universal"
         String orf_caller = "Prodigal"
-        Boolean mikado_do_homology_assessment = false
+        String transdecoder_alignment_program = "diamond"
+        Boolean mikado_do_homology_assessment
     }
 
     if (defined(SR_assemblies)) {
@@ -102,7 +103,8 @@ workflow wf_mikado {
                 orf_calling_resources = orf_calling_resources,
                 genetic_code = transdecoder_genetic_code,
                 index_resources = orf_protein_index_resources,
-                alignment_resources = orf_protein_alignment_resources
+                alignment_resources = orf_protein_alignment_resources,
+                program = transdecoder_alignment_program
             }
         }
 
@@ -110,10 +112,10 @@ workflow wf_mikado {
     }
 
     # Mikado Homology
-    if (defined(mikado_do_homology_assessment)) {
+    if (mikado_do_homology_assessment) {
         call hml.wf_homology as Homology {
             input:
-            program = "blast",
+            program = transdecoder_alignment_program,
             reference = MikadoPrepare.prepared_fasta,
             protein_db = homology_proteins,
             index_resources = homology_index_resources,
@@ -123,7 +125,10 @@ workflow wf_mikado {
     
     call MikadoSerialise {
         input:
-        homology_alignments = Homology.homology,
+        homology_alignments = 
+        if (mikado_do_homology_assessment) then 
+            select_first([Homology.homology]) else 
+            Homology.homology, # These lines ensure the Homology task completed correctly if it was requested
         clean_seqs_db = Homology.homology_clean_db,
         junctions = junctions,
         orfs = maybe_orfs,
