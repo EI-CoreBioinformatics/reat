@@ -138,6 +138,7 @@ task DiamondAlign {
         File index
         File query
         String? extra
+        String outfmt
         String blast_type
         String output_filename
         RuntimeAttr? runtime_attr_override
@@ -165,6 +166,6 @@ task DiamondAlign {
 
     command <<<
         set -euxo pipefail
-        diamond ~{blast_type} ~{extra} -p "~{cpus}" -d "~{index}" -q "~{query}" > "~{output_filename}"
+        diamond ~{blast_type} ~{extra} -f "~{outfmt}" -p "~{cpus}" -d "~{index}" -q "~{query}" > "~{output_filename}"
     >>>
 }
