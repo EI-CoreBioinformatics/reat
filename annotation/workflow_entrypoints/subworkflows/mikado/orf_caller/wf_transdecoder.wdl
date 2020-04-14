@@ -111,6 +111,7 @@ workflow wf_transdecoder {
                     input:
                     index = select_first([DiamondIndex.index]),
                     query = chunk.pep,
+                    outfmt = "6",
                     extra = "--evalue 1e-5 --max-target-seqs 1",
                     output_filename = "mikado_diamond_orfcalling.txt",
                     blast_type = "blastp",
