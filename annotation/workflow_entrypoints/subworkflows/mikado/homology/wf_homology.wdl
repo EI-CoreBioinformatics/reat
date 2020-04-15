@@ -7,7 +7,7 @@ import "../align_protein/wf_protein_aligner.wdl" as prt_aln
 workflow wf_homology {
     input {
         File reference
-        String program
+        String homology_alignment_program
         File? protein_db
         RuntimeAttr? index_resources
         RuntimeAttr? alignment_resources
@@ -26,7 +26,7 @@ workflow wf_homology {
             db = def_db
         }
 
-        if (program == "blast") {
+        if (homology_alignment_program == "blast") {
             call prt_aln.BlastIndex {
                 input:
                 target = SanitiseProteinBlastDB.clean_db,
@@ -37,15 +37,15 @@ workflow wf_homology {
                     input:
                     index = BlastIndex.index,
                     blast_type = "blastx",
-                    outfmt = "6  qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore ppos btop",
-                    output_filename = "mikado_blast_homology.xml",
+                    outfmt = "6 qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore ppos btop",
+                    output_filename = "mikado_blast_homology.tsv",
                     query = seq_file,
                     runtime_attr_override = alignment_resources
                 }
             }
         }
 
-        if (program == "diamond") {
+        if (homology_alignment_program == "diamond") {
             call prt_aln.DiamondIndex {
                 input:
                 target = def_db,
@@ -56,8 +56,8 @@ workflow wf_homology {
                     input:
                     index = DiamondIndex.index,
                     blast_type = "blastx",
-                    outfmt = "6  qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore ppos btop",
-                    output_filename = "mikado_diamond_homology.xml",
+                    outfmt = "6 qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore ppos btop",
+                    output_filename = "mikado_diamond_homology.tsv",
                     query = seq_file,
                     runtime_attr_override = alignment_resources
                 }

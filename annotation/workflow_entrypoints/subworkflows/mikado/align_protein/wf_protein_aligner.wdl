@@ -98,7 +98,7 @@ task BlastAlign {
 
     command <<<
         set -euxo pipefail
-        ~{blast_type} ~{extra} -db ~{sub(index[0], "\.[^.]+$", "")} -num_threads ~{cpus} -query ~{query} -outfmt ~{outfmt} > ~{output_filename}
+        ~{blast_type} ~{extra} -db ~{sub(index[0], "\.[^.]+$", "")} -num_threads ~{cpus} -query ~{query} -outfmt "~{outfmt}" > ~{output_filename}
     >>>
 }
 
@@ -166,6 +166,6 @@ task DiamondAlign {
 
     command <<<
         set -euxo pipefail
-        diamond ~{blast_type} ~{extra} -f "~{outfmt}" -p "~{cpus}" -d "~{index}" -q "~{query}" > "~{output_filename}"
+        diamond ~{blast_type} ~{extra} -f ~{outfmt} -p "~{cpus}" -d "~{index}" -q "~{query}" > "~{output_filename}"
     >>>
 }

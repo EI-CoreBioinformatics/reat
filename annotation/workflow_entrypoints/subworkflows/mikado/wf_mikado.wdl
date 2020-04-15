@@ -23,7 +23,8 @@ workflow wf_mikado {
         Int prodigal_gencode = 1
         String transdecoder_genetic_code = "universal"
         String orf_caller = "Prodigal"
-        String transdecoder_alignment_program = "diamond"
+        String transdecoder_alignment_program = "blast"
+        String homology_alignment_program = "diamond"
         Boolean mikado_do_homology_assessment
     }
 
@@ -115,7 +116,7 @@ workflow wf_mikado {
     if (mikado_do_homology_assessment) {
         call hml.wf_homology as Homology {
             input:
-            program = transdecoder_alignment_program,
+            homology_alignment_program = homology_alignment_program,
             reference = MikadoPrepare.prepared_fasta,
             protein_db = homology_proteins,
             index_resources = homology_index_resources,
