@@ -16,7 +16,7 @@ reat_schema = {
 
     "definitions": {
         "Boolean": {
-            "enum": ["True", "False"]
+            "enum": ["true", "false"]
         },
 
         "strand": {
