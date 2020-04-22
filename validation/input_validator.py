@@ -131,7 +131,7 @@ reat_schema = {
             "type": "string"
         },
         "ei_annotation.wf_main_mikado.orf_calling_program": {
-            "enum": ["Prodigal", "Transdecoder"]
+            "enum": ["Prodigal", "Transdecoder", "None"]
         },
         "ei_annotation.wf_main_mikado.run_mikado_homology": {
             "$ref": "#/defitions/Boolean"
