@@ -157,6 +157,7 @@ task DiamondAlign {
     runtime {
         cpu: cpus
         memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
+        constraints: "sse4,avx,avx2"
         maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
     }
 
