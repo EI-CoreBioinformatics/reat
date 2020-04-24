@@ -6,7 +6,7 @@ import "../common/rt_struct.wdl"
 workflow portcullis {
     input {
         File reference
-        Map[String,Array[String]]? group_to_samples # Consider applying "localization_optional" to the preparation task
+        Object? group_to_samples # Consider applying "localization_optional" to the preparation task
         Array[AlignedSample] aligned_samples
         File? annotation
     }
@@ -32,11 +32,11 @@ workflow portcullis {
             group_to_samples = select_first([group_to_samples]),
             aligned_samples = aligned_samples
         }
-        scatter (sample in PrepareGroups.portcullis_grouped_sample) {
+        scatter (sample_files in PrepareGroups.groupfile_to_bams) {
             call Full as groupedFull{
                 input:
                 reference = reference,
-                sample = sample,
+                sample = object { name: basename(sample_files,'.sample'), strand: sub(basename(sample_files,'.sample'),'.+\_',''), aligner: "*", bam: read_lines(sample_files)},
                 reference_bed = PrepareRef.refbed
             }
         }
@@ -71,16 +71,16 @@ workflow portcullis {
 
 task PrepareGroups {
     input {
-        Map[String,Array[String]] group_to_samples
+        Object group_to_samples
         Array[AlignedSample] aligned_samples
     }
 
     output {
-        Array[AlignedSample] portcullis_grouped_sample = read_json(stdout())
+        Array[File] groupfile_to_bams = glob('*.sample')
     }
 
     command <<<
-        portcullis_sample_grouping ~{write_objects(aligned_samples)} ~{write_map(group_to_samples)}
+        portcullis_sample_grouping ~{write_objects(aligned_samples)} ~{write_json(group_to_samples)}
     >>>
 }
 

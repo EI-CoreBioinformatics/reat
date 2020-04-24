@@ -4,20 +4,20 @@ import csv
 import json
 import sys
 
-aligned_samples={}
+aligned_samples = {}
 with open(sys.argv[1]) as tsvfile:
     reader = csv.DictReader(tsvfile, dialect='excel-tab')
     for sample in reader:
-        aligned_samples[sample['name']] = {"strand": sample['strand'], "aligner": sample['aligner'], "bam": sample['bam'].strip(']["').split(',')}
+        aligned_samples[sample['name']] = {"strand": sample['strand'], "aligner": sample['aligner'],
+                                           "bam": sample['bam'].strip(']["').split(',')}
 
-
-group_to_sample=json.load(open(sys.argv[2]))
-portcullis_groups=[]
-group_to_index={}
-group_count=0
-for group,samples in group_to_sample.items():
+group_to_sample = json.load(open(sys.argv[2]))
+portcullis_groups = []
+group_to_index = {}
+group_count = 0
+for group, samples in group_to_sample.items():
     group_to_index[group] = group_count
-    group_count+=1
+    group_count += 1
     portcullis_groups.append({
         "name": group,
         "aligner": "*",
@@ -26,9 +26,9 @@ for group,samples in group_to_sample.items():
     })
     for sample in samples[0].strip("] [,").split(','):
         portcullis_groups[group_to_index[group]]["strand"] = aligned_samples[sample.strip(' ')]['strand']
-        portcullis_groups[group_to_index[group]]["bam"].append(aligned_samples[sample.strip(' ')]['bam'])    
+        portcullis_groups[group_to_index[group]]["bam"].extend(aligned_samples[sample.strip(' ')]['bam'])
 
 for group in portcullis_groups:
-    outfile = open(group['name']+"_"+group["strand"]+'.sample', "w")
+    outfile = open(group['name'] + "_" + group["strand"] + '.sample', "w")
     for bam in group["bam"]:
-        print(bam,file=outfile)
+        print(bam, file=outfile)
