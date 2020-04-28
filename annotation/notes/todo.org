@@ -16,7 +16,8 @@ For cleanliness:
   Start refactoring from the right (inner most section)
 
 * Tasks
-** TODO Generate a main "running" script that will tie everything together with CLI + input file validation and sanity checks
+** TODO Propagate the "constraints" runtime variable value to other tasks in the pipeline
+** TODO Generate a main "running" script that will tie everything together with CLI + input file validation
 ** TODO Start thinking about a good installation procedure for all the non-dependency requirements
 *** TODO Create a dockerfile with all the dependencies and it's installation
 *** TODO Create a singularity definition file with all the dependencies and it's installation

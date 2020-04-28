@@ -16,7 +16,7 @@ workflow wf_transdecoder {
         String program
         RuntimeAttr? orf_calling_resources
         RuntimeAttr? index_resources
-        RuntimeAttr? alignment_resources
+        RuntimeAttr? orf_alignment_resources
         File? orf_proteins
         Boolean refine_start_codons = true
         Int minprot = 100
@@ -103,7 +103,7 @@ workflow wf_transdecoder {
                     outfmt = "6",
                     blast_type = "blastp",
                     output_filename = "mikado_blast_orfcalling.txt",
-                    runtime_attr_override = alignment_resources
+                    runtime_attr_override = orf_alignment_resources
                 }
             }
             if (program == "diamond") {
@@ -115,7 +115,7 @@ workflow wf_transdecoder {
                     extra = "--evalue 1e-5 --max-target-seqs 1",
                     output_filename = "mikado_diamond_orfcalling.txt",
                     blast_type = "blastp",
-                    runtime_attr_override = alignment_resources
+                    runtime_attr_override = orf_alignment_resources
                 }
             }
             File alignments = select_first([BlastAlign.out, DiamondAlign.out])

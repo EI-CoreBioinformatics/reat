@@ -105,7 +105,7 @@ workflow wf_mikado {
                 orf_calling_resources = orf_calling_resources,
                 genetic_code = transdecoder_genetic_code,
                 index_resources = orf_protein_index_resources,
-                alignment_resources = orf_protein_alignment_resources,
+                orf_alignment_resources = orf_protein_alignment_resources,
                 program = transdecoder_alignment_program
             }
         }
@@ -121,7 +121,7 @@ workflow wf_mikado {
             reference = MikadoPrepare.prepared_fasta,
             protein_db = homology_proteins,
             index_resources = homology_index_resources,
-            alignment_resources = homology_alignment_resources
+            protein_alignment_resources = homology_alignment_resources
         }
     }
     

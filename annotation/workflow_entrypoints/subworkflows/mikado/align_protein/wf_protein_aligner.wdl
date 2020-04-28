@@ -145,6 +145,7 @@ task DiamondAlign {
     }
     
     RuntimeAttr default_attr = object {
+        constraints: "",
         cpu_cores: 1,
         mem_gb: 4,
         max_retries: 1
@@ -157,7 +158,7 @@ task DiamondAlign {
     runtime {
         cpu: cpus
         memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
-        constraints: "sse4,avx,avx2"
+        constraints: select_first([runtime_attr.constraints, default_attr.constraints])
         maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
     }
 

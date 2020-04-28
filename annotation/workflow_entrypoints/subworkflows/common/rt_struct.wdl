@@ -1,6 +1,7 @@
 version 1.0
 
 struct RuntimeAttr {
+    String? constraints
     Float? mem_gb
     Int? cpu_cores
     Int? disk_gb

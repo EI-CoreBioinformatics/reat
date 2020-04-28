@@ -10,7 +10,7 @@ workflow wf_homology {
         String homology_alignment_program
         File? protein_db
         RuntimeAttr? index_resources
-        RuntimeAttr? alignment_resources
+        RuntimeAttr? protein_alignment_resources
     }
 
     # Split sequence file
@@ -40,7 +40,7 @@ workflow wf_homology {
                     outfmt = "6 qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore ppos btop",
                     output_filename = "mikado_blast_homology.tsv",
                     query = seq_file,
-                    runtime_attr_override = alignment_resources
+                    runtime_attr_override = protein_alignment_resources
                 }
             }
         }
@@ -59,7 +59,7 @@ workflow wf_homology {
                     outfmt = "6 qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore ppos btop",
                     output_filename = "mikado_diamond_homology.tsv",
                     query = seq_file,
-                    runtime_attr_override = alignment_resources
+                    runtime_attr_override = protein_alignment_resources
                 }
             }
         }
