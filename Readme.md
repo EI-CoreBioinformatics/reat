@@ -12,9 +12,9 @@ To configure a development environment for REAT you need:
 
 * the REAT source code
 * Software dependencies
-* A WDL compatible workflow engine (REAT development is mainly geared towards using Cromwell) [**here cromwell is with capital C, elsewhere it is lowercase **]
+* A WDL compatible workflow engine (REAT development is mainly geared towards using Cromwell)
 
-To obtain the REAT source code, please: [**this is kind of duplicated below**]
+To obtain the REAT source code, please:
 
 ```
 git clone https://github.com/ei-corebioinformatics/reat
@@ -30,7 +30,7 @@ Cromwell can be obtained from the original repository at https://github.com/broa
 
 ### Prerequisites
 
-For ease of development, Singularity is recommended. In case this is not available (you are working on MacOS **[note: I forgot the name of the company, but it should be available for MacOS]**), please follow the instructions in the REAT-Singularity.def for building and installing the binary dependencies.
+For ease of development, Singularity is recommended. In case this is not available (you are working on MacOS and haven't got https://sylabs.io/guides/3.5/admin-guide/installation.html#mac available), please follow the instructions in the `REAT-REAT-Singularity.def` for building and installing the binary dependencies.
 
 #### Java 8
 #### Singularity (optional)
@@ -45,7 +45,7 @@ git clone https://github.com/ei-corebioinformatics/reat
 cd reat
 ```
 
-You should now have the latest development version, in which you will find the `REAT-Singularity.def`. This allows you to build a Singularity container as previously shown in Getting Started(**TODO Add a link to the section, and if possible command**). Alternatively, install the following software dependencies on your system, so that the executables are available  in your `$PATH` environment variable.
+You should now have the latest development version, in which you will find the `REAT-Singularity.def`. This allows you to build a Singularity container as previously shown in Getting Started (**TODO: Link the section**). Alternatively, install the following software dependencies on your system, so that the executables are available  in your `$PATH` environment variable.
 
 * DIAMOND - 0.9.31
 * BioPerl
@@ -73,7 +73,7 @@ You should now have the latest development version, in which you will find the `
 * Portcullis - 1.2.2
 * Mikado - 2.0
 
-Instructions for building each of the tools can be found in the `REAT-Singularity.def`.  [**redundant?**]
+Instructions for building each of the tools can be found in the `REAT-Singularity.def`.
 
 It is recommended to make use of `virtualenv` when installing python packages. Another alternative to manual compilation of all tools listed is using python anaconda within a conda environment.
 
@@ -218,7 +218,7 @@ Example input file `inputs.json`
 {
     "ei_annotation.paired_samples": [
       {
-        "name": "Sex_morph_M", // amazing combination of "Sex" and "fr-unstranded", which reads like "frustrated" >:D
+        "name": "Sex_morph_M",
         "strand": "fr-unstranded", 
         "read_pair": [
           {
