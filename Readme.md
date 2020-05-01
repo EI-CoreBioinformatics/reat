@@ -1,34 +1,36 @@
 # REAT - Robust and Extendable eukaryotic Annotation Toolkit
 
-REAT is a robust easy-to-use genome annotation toolkit for turning high-quality genome assemblies into usable and informative resources. Provides state-of-the-art annotation tools, robust to varying quality and sources of molecular evidence.
+REAT is a robust easy-to-use genome annotation toolkit for turning high-quality genome assemblies into usable and informative resources. REAT makes use of state-of-the-art annotation tools and is robust to varying quality and sources of molecular evidence.
 
-REAT provides an integrated environment that comprises both a set of workflows geared towards integrating multiple sources of evidence into a genome annotation, and an execution environment (Docker, Singularity) for these workflows.
+REAT provides an integrated environment that comprises both 
+ * a set of workflows geared towards integrating multiple sources of evidence into a genome annotation, and 
+ * an execution environment (Docker, Singularity) for these workflows.
 
 ## Getting Started
 
 To configure a development environment for REAT you need:
 
-* REAT source code
+* the REAT source code
 * Software dependencies
-* A WDL compatible workflow engine (development is mainly geared towards using Cromwell)
+* A WDL compatible workflow engine (REAT development is mainly geared towards using Cromwell)
 
-To obtain REAT source code, please:
+To obtain the REAT source code, please:
 
 ```
 git clone https://github.com/ei-corebioinformatics/reat
 ```
 
-An exhaustive list of software dependencies is available in the appendix (TOOD add a link), a simpler way of obtaining all the required binaries for REAT is to build the Singularity container definition file included in the repository
+While an exhaustive list of software dependencies is available in the appendix (*TODO add a link*), a simpler way of obtaining all the required binaries for REAT is to build a Singularity container based on the definition file (`REAT-Singularity.def`) included in the repository.
 
 ```
 singularity build REAT.img REAT-Singularity.def
 ```
 
-Cromwell can be downloaded from the original repository at https://github.com/broadinstitute/cromwell/releases.
+Cromwell can be obtained from the original repository at https://github.com/broadinstitute/cromwell/releases.
 
 ### Prerequisites
 
-For ease of development Singularity is recommended, in case this is not available (you are working on MacOS), please follow REAT-Singularity.def for building and installing the binary dependencies.
+For ease of development, Singularity is recommended. In case this is not available (you are working on MacOS and haven't got https://sylabs.io/guides/3.5/admin-guide/installation.html#mac available), please follow the instructions in the `REAT-REAT-Singularity.def` for building and installing the binary dependencies.
 
 #### Java 8
 #### Singularity (optional)
@@ -43,7 +45,7 @@ git clone https://github.com/ei-corebioinformatics/reat
 cd reat
 ```
 
-You should now have the latest development version, in which you will find the `REAT-Singularity.def` which you can build as previously shown in Getting Started(TODO Add a link to the section, and if possible command). Alternatively, install the following software somewhere available in your $PATH environment variable.
+You should now have the latest development version, in which you will find the `REAT-Singularity.def`. This allows you to build a Singularity container as previously shown in Getting Started (**TODO: Link the section**). Alternatively, install the following software dependencies on your system, so that the executables are available  in your `$PATH` environment variable.
 
 * DIAMOND - 0.9.31
 * BioPerl
@@ -71,9 +73,9 @@ You should now have the latest development version, in which you will find the `
 * Portcullis - 1.2.2
 * Mikado - 2.0
 
-An example compilation for each of the tools can be followed from `REAT-Singularity.def`.
+Instructions for building each of the tools can be found in the `REAT-Singularity.def`.
 
-It is recommended to make use of `virtualenv` when installing python packages, another alternative to manual compilation of all tools listed is using python anaconda within a conda environment.
+It is recommended to make use of `virtualenv` when installing python packages. Another alternative to manual compilation of all tools listed is using python anaconda within a conda environment.
 
 When preparing to run REAT, make sure the `reat/annotation/scripts` directory is present in the `$PATH` variable on the shell that executes the cromwell run command.
 
@@ -95,17 +97,17 @@ nohup java -Dconfig.file=./cromwell_server_options.conf -jar ~/.cromwell/cromwel
 
 `java` is a local version of the Java 8 jre command which will run the cromwell-X.jar (in this case its present in the `~/.cromwell/` directory)
 
-`-Dconfig.file=./cromwell_server_options.conf` sets up the configuration for the cromwell instance which will run the workflow, this file contains configurations pertaining to: the backend (i.e. SLURM, Local, Cloud), the database for maintaining call caching (without this, restarting a failed cromwell workflow will not be possible), limits on concurrent workflows and number of jobs, and behaviour of the call cache, among others. For a full description of the options available, please refer to the cromwell documentation at (TODO add link)
+`-Dconfig.file=./cromwell_server_options.conf` sets up the configuration for the cromwell instance which will run the workflow, this file contains configurations pertaining to: the backend (i.e. SLURM, local, cloud), the database for maintaining call caching (required for restarting failed cromwell runs), limits on concurrent workflows and number of jobs, and behaviour of the call cache, among others. For a full description of the options available, please refer to the cromwell documentation at (TODO add link)
 
 `run` this is the mode of execution of the Cromwell engine, it supports a server mode and the run mode. The `server` mode acts as a form of headnode for submitting jobs to the backends and serving requests on the running workflows such as queries on progress among other things. The `run` mode provides an immediate option for running the Cromwell instance on a shell with minimal configuration.
 
-`-i reat_inputs.json` Defines the inputs for the WDL workflow definition, in this case such file is the `main.wdl`, the inputs are defined in a format similar to JSON, an example of this file can be found in the SLURM backend section.
+`-i reat_inputs.json` Defines the inputs for the WDL workflow definition (here: `main.wdl`). The inputs are defined in a JSON-like format. An example of this file can be found in the SLURM backend section.
 
-`-o workflow_options.json` Includes configuration specific to the execution of a particular workflow run, defines configuration for reading/writing from caches and output options.s
+`-o workflow_options.json` Contains configuration specific to the execution of a particular workflow run, including  configuration for reading/writing from caches and output options.
 
 ### SLURM
 
-To run REAT in a SLURM backend the cromwell instance needs to be configured using the `-Dconfig.file=` parameter as in the example below. This file contains the configuration required by Cromwell to execute jobs using a SLURM backend, it includes details such as how to submit, check and kill a job running on a SLURM backend.
+To run REAT in a SLURM backend the cromwell instance needs to be configured using the `-Dconfig.file=` parameter as in the example below. This file contains the configuration required by Cromwell to execute jobs using a SLURM backend. It includes details such as how to submit, check and kill a job running on a SLURM backend.
 
 ```
 #!/bin/bash
@@ -217,7 +219,7 @@ Example input file `inputs.json`
     "ei_annotation.paired_samples": [
       {
         "name": "Sex_morph_M",
-        "strand": "fr-unstranded",
+        "strand": "fr-unstranded", 
         "read_pair": [
           {
             "R1": "inputs/sex_morph_M.sort_scaffold_6.R1.fastq",
