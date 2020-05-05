@@ -145,7 +145,7 @@ task DiamondAlign {
     }
     
     RuntimeAttr default_attr = object {
-        constraints: "",
+        constraints: "avx,avx2,sse4",
         cpu_cores: 1,
         mem_gb: 4,
         max_retries: 1
