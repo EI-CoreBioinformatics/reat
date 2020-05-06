@@ -69,7 +69,6 @@ workflow ei_annotation {
 #    }
 
     output {
-        File clean_reference = wf_align.clean_reference
         File? clean_annotation = wf_align.clean_annotation
         IndexedReference clean_reference_index = wf_align.clean_reference_index
 
@@ -88,20 +87,35 @@ workflow ei_annotation {
         Array[Array[File]]? stats = wf_align.stats
         Array[Array[Array[File]]]? plots = wf_align.plots
 
-        File? mikado_long_config = wf_main_mikado.long_config
         File? mikado_long_orfs = wf_main_mikado.long_orfs
+        File? mikado_long_loci = wf_main_mikado.long_loci
+        File? mikado_long_scores = wf_main_mikado.long_scores
+        File? mikado_long_metrics = wf_main_mikado.long_metrics
+        File? mikado_long_stats = wf_main_mikado.long_stats
 
-        File? mikado_short_config = wf_main_mikado.short_config
         File? mikado_short_orfs = wf_main_mikado.short_orfs
+        File? mikado_short_loci = wf_main_mikado.short_loci
+        File? mikado_short_scores = wf_main_mikado.short_scores
+        File? mikado_short_metrics = wf_main_mikado.short_metrics
+        File? mikado_short_stats = wf_main_mikado.short_stats
 
-        File? mikado_short_noLQ_config = wf_main_mikado.short_and_long_noLQ_config
-        File? mikado_short_noLQ_orfs = wf_main_mikado.short_and_long_noLQ_orfs
+        File? mikado_short_and_long_noLQ_orfs = wf_main_mikado.short_and_long_noLQ_orfs
+        File? mikado_short_and_long_noLQ_loci = wf_main_mikado.short_and_long_noLQ_loci
+        File? mikado_short_and_long_noLQ_scores = wf_main_mikado.short_and_long_noLQ_scores
+        File? mikado_short_and_long_noLQ_metrics = wf_main_mikado.short_and_long_noLQ_metrics
+        File? mikado_short_and_long_noLQ_stats = wf_main_mikado.short_and_long_noLQ_stats
 
-        File? mikado_longHQ_config = wf_main_mikado.longHQ_config
         File? mikado_longHQ_orfs = wf_main_mikado.longHQ_orfs
+        File? mikado_longHQ_loci = wf_main_mikado.longHQ_loci
+        File? mikado_longHQ_scores = wf_main_mikado.longHQ_scores
+        File? mikado_longHQ_metrics = wf_main_mikado.longHQ_metrics
+        File? mikado_longHQ_stats = wf_main_mikado.longHQ_stats
 
-        File? mikado_longLQ_config = wf_main_mikado.longLQ_config
         File? mikado_longLQ_orfs = wf_main_mikado.longLQ_orfs
+        File? mikado_longLQ_loci = wf_main_mikado.longLQ_loci
+        File? mikado_longLQ_scores = wf_main_mikado.longLQ_scores
+        File? mikado_longLQ_metrics = wf_main_mikado.longLQ_metrics
+        File? mikado_longLQ_stats = wf_main_mikado.longLQ_stats
 
 #        IndexedReference masked_genome = RepeatMasker.masked_genome
 #        Array[Array[File]]? maybe_exonerate_hits = Exonerate.exonerate_results

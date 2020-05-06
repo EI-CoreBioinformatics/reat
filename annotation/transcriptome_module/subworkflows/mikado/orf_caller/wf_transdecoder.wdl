@@ -14,6 +14,7 @@ workflow wf_transdecoder {
     input {
         File prepared_transcripts
         String program
+        String output_prefix
         RuntimeAttr? orf_calling_resources
         RuntimeAttr? index_resources
         RuntimeAttr? orf_alignment_resources
@@ -150,6 +151,7 @@ workflow wf_transdecoder {
             transcripts = prepared_transcripts,
             final_models = chunk_final_models,
             genetic_code = genetic_code,
+            output_prefix = output_prefix
     }
 
 
@@ -272,7 +274,6 @@ task Select_TrainMM_Score {
 
     command <<<
     set -euxo pipefail
-    # TODO Write some code to get the longest from an array of files and merge base_freqs
     get_top_longest_fasta_entries.pl <(cat ~{sep=" " cds_files}) ~{red_num} ~{max_protein_size} > "cds.longest_~{red_num}"
     collect_base_freqs --base_freqs=~{sep="," base_freqs} > "merged_base_freqs"
     exclude_similar_proteins.pl "cds.longest_~{red_num}" > "cds.longest_~{red_num}.nr"
@@ -354,7 +355,6 @@ task RefineStartCodons {
     }
 
     command <<<
-    # TODO Recreate the directory required by TDC from refinement_model
     mkdir tmp_workdir
     ln -s ~{sep=" " refinement_model} tmp_workdir/
     start_codon_refinement.pl --transcripts ~{transcripts} --workdir tmp_workdir --gff3_file ~{gff} > best_candidates.gff3
@@ -367,19 +367,20 @@ task GenerateFinalOutput {
         String prefix = basename(transcripts)
         String genetic_code
         Array[File] final_models
+        String output_prefix
     }
 
     output {
-        File bed = prefix+".transdecoder.bed"
-        File cds = prefix+".transdecoder.cds"
-        File pep = prefix+".transdecoder.pep"
-        File gff = prefix+".transdecoder.gff3"
+        File bed = output_prefix+"-"+prefix+".transdecoder.bed"
+        File cds = output_prefix+"-"+prefix+".transdecoder.cds"
+        File pep = output_prefix+"-"+prefix+".transdecoder.pep"
+        File gff = output_prefix+"-"+prefix+".transdecoder.gff3"
     }
 
     command <<<
-    cat ~{sep=" " final_models} > "~{prefix}.transdecoder.gff3"
-    gff3_file_to_bed.pl "~{prefix}.transdecoder.gff3" > "~{prefix}.transdecoder.bed"
-    gff3_file_to_proteins.pl --gff3 "~{prefix}.transdecoder.gff3" --fasta ~{transcripts} ~{genetic_code} > "~{prefix}.transdecoder.pep"
-    gff3_file_to_proteins.pl --gff3 "~{prefix}.transdecoder.gff3" --fasta ~{transcripts} --seqType CDS ~{genetic_code} > "~{prefix}.transdecoder.cds"
+    cat ~{sep=" " final_models} > "~{output_prefix}-~{prefix}.transdecoder.gff3"
+    gff3_file_to_bed.pl "~{output_prefix}-~{output_prefix}-~{prefix}.transdecoder.gff3" > "~{output_prefix}-~{prefix}.transdecoder.bed"
+    gff3_file_to_proteins.pl --gff3 "~{output_prefix}-~{prefix}.transdecoder.gff3" --fasta ~{transcripts} ~{genetic_code} > "~{output_prefix}-~{prefix}.transdecoder.pep"
+    gff3_file_to_proteins.pl --gff3 "~{output_prefix}-~{prefix}.transdecoder.gff3" --fasta ~{transcripts} --seqType CDS ~{genetic_code} > "~{output_prefix}-~{prefix}.transdecoder.cds"
     >>>
 }

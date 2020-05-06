@@ -5,6 +5,7 @@ workflow wf_prodigal {
     input {
         File prepared_transcripts
         Int gencode
+        String output_directory
         RuntimeAttr? prodigal_runtime_attr
     }
 
@@ -12,6 +13,7 @@ workflow wf_prodigal {
         input:
         prepared_transcripts = prepared_transcripts,
         gencode_id = gencode,
+        output_directory = output_directory,
         runtime_attr_override = prodigal_runtime_attr
     }
 
@@ -52,15 +54,18 @@ task Prodigal {
 #    31 ['Blastocrithidia Nuclear']
 #    32 ['Balanophoraceae Plastid']
 
+        String output_directory
         RuntimeAttr? runtime_attr_override
     }
 
     output {
-        File orfs = "transcripts.fasta.prodigal.gff3"
+        File orfs = output_directory+"/transcripts.fasta.prodigal.gff3"
     }
 
     command <<<
         set -euxo pipefail
+        mkdir ~{output_directory}
+        cd ~{output_directory}
         prodigal -f gff -g "~{gencode_id}" -i "~{prepared_transcripts}" -o "transcripts.fasta.prodigal.gff3"
     >>>
 

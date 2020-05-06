@@ -14,6 +14,7 @@ workflow wf_mikado {
         File scoring_file
         File orf_calling_proteins
         File homology_proteins
+        String output_prefix
         RuntimeAttr? orf_calling_resources
         RuntimeAttr? orf_protein_index_resources
         RuntimeAttr? orf_protein_alignment_resources
@@ -74,7 +75,8 @@ workflow wf_mikado {
         blast_targets = homology_proteins,
         models = WriteModelsFile.result,
         scoring_file = scoring_file,
-        extra_config = extra_config
+        extra_config = extra_config,
+        output_prefix = output_prefix
     }
 
     # ORF Calling
@@ -84,6 +86,7 @@ workflow wf_mikado {
                 input:
                 gencode = prodigal_gencode,
                 prepared_transcripts = MikadoPrepare.prepared_fasta,
+                output_directory = output_prefix,
                 prodigal_runtime_attr = orf_calling_resources
             }
         }
@@ -105,6 +108,7 @@ workflow wf_mikado {
                 orf_calling_resources = orf_calling_resources,
                 genetic_code = transdecoder_genetic_code,
                 index_resources = orf_protein_index_resources,
+                output_prefix = output_prefix,
                 orf_alignment_resources = orf_protein_alignment_resources,
                 program = transdecoder_alignment_program
             }
@@ -143,7 +147,8 @@ workflow wf_mikado {
         input:
         config_file = MikadoPrepare.mikado_config,
         mikado_db = MikadoSerialise.mikado_db,
-        transcripts = MikadoPrepare.prepared_gtf
+        transcripts = MikadoPrepare.prepared_gtf,
+        output_prefix = output_prefix
     }
 
     output {
@@ -151,10 +156,10 @@ workflow wf_mikado {
         File? orfs = maybe_orfs
         Array[File]? homologies = Homology.homology
         Array[File] serialise_out = MikadoSerialise.out
-        File pick_metrics = MikadoPick.metrics
-        File pick_loci = MikadoPick.loci
-        File pick_scores = MikadoPick.scores
-        File pick_stats = MikadoPick.stats
+        File loci = MikadoPick.loci
+        File scores = MikadoPick.scores
+        File metrics = MikadoPick.metrics
+        File stats = MikadoPick.stats
     }
 }
 
@@ -190,41 +195,45 @@ task WriteModelsFile {
         echo $i; done | awk 'BEGIN{OFS="\t"} {$1=$1} 1' > models.txt;
     >>>
 }
+
 ### # \"" Fix the parser
 
 task MikadoPick {
-#modes = ("permissive", "stringent", "nosplit", "split", "lenient")
     input {
         File config_file
         File transcripts
         File mikado_db
+#mode options = ("permissive", "stringent", "nosplit", "split", "lenient")
         String mode = "permissive"
         Int flank = 200
+        String output_prefix
         RuntimeAttr? runtime_attr_override
     }
 
     Int cpus = 8
 
     output {
-        File metrics = "mikado_pick/mikado-" + mode + ".loci.metrics.tsv"
-        File loci = "mikado_pick/mikado-" + mode + ".loci.gff3"
-        File scores = "mikado_pick/mikado-" + mode + ".loci.scores.tsv"
-        File loci_index = "mikado_pick/mikado-"+mode+".loci.gff3.midx"
-        File index_log = "mikado_pick/index_loci.log"
-        File stats = "mikado_pick/mikado-" + mode + ".loci.gff3.stats"
+        File index_log = "mikado_pick/" + output_prefix + "-index_loci.log"
+        File loci_index = "mikado_pick/" + output_prefix + "-mikado-"+mode+".loci.gff3.midx"
+        File loci = "mikado_pick/" + output_prefix + "-mikado-" + mode + ".loci.gff3"
+        File scores = "mikado_pick/" + output_prefix + "-mikado-" + mode + ".loci.scores.tsv"
+        File metrics = "mikado_pick/" + output_prefix + "-mikado-" + mode + ".loci.metrics.tsv"
+        File stats = "mikado_pick/" + output_prefix + "-mikado-" + mode + ".loci.gff3.stats"
+        File subloci = "mikado_pick/" + output_prefix + "-mikado-" + mode + ".subloci.gff3"
+        File monoloci = "mikado_pick/" + output_prefix + "-mikado-" + mode + ".monoloci.gff3"
     }
 
     command <<<
-        set -euxo pipefail
+    set -euxo pipefail
     export TMPDIR=/tmp
     mkdir -p mikado_pick
     mikado pick ~{"--source Mikado_" + mode} ~{"--mode " + mode} --procs=~{cpus} \
     ~{"--flank " + flank} --start-method=spawn ~{"--json-conf=" + config_file} \
-    -od mikado_pick --loci-out mikado-~{mode}.loci.gff3 -lv INFO ~{"-db " + mikado_db} \
-    --subloci-out mikado-~{mode}.subloci.gff3 --monosubloci-out mikado-~{mode}.monosubloci.gff3
+    -od mikado_pick --loci-out ~{output_prefix}-mikado-~{mode}.loci.gff3 -lv INFO ~{"-db " + mikado_db} \
+    --subloci-out ~{output_prefix}-mikado-~{mode}.subloci.gff3 --monoloci-out ~{output_prefix}-mikado-~{mode}.monoloci.gff3 \
     ~{transcripts}
-    mikado compare -r mikado_pick/mikado-~{mode}.loci.gff3 -l mikado_pick/index_loci.log --index
-    mikado util stats  mikado_pick/mikado-~{mode}.loci.gff3 mikado_pick/mikado-~{mode}.loci.gff3.stats
+    mikado compare -r mikado_pick/~{output_prefix}-mikado-~{mode}.loci.gff3 -l mikado_pick/~{output_prefix}-index_loci.log --index
+    mikado util stats  mikado_pick/~{output_prefix}-mikado-~{mode}.loci.gff3 mikado_pick/~{output_prefix}-mikado-~{mode}.loci.gff3.stats
     >>>
 
     RuntimeAttr default_attr = object {
@@ -373,15 +382,16 @@ task MikadoPrepare {
         File? blast_targets
         File? scoring_file
         File? extra_config
+        String output_prefix
         RuntimeAttr? runtime_attr_override
     }
 
     Int cpus = 8
 
     output {
-        File mikado_config = "mikado.yaml"
-        File prepared_fasta = "mikado_prepare/mikado_prepared.fasta"
-        File prepared_gtf = "mikado_prepare/mikado_prepared.gtf"
+        File mikado_config = output_prefix+"-mikado.yaml"
+        File prepared_fasta = output_prefix+"-mikado_prepare/mikado_prepared.fasta"
+        File prepared_gtf = output_prefix+"-mikado_prepare/mikado_prepared.gtf"
     }
 
     command <<<
@@ -391,12 +401,11 @@ task MikadoPrepare {
         ~{"-bt " + blast_targets} \
         --list=~{models} \
         ~{"--reference=" + reference_fasta} \
-        mikado.yaml
+        ~{output_prefix}-mikado.yaml
 
         # Merge special configuration file for this run here
-        yaml-merge mikado.yaml ~{extra_config}
-
-        mikado prepare --procs=~{cpus} --json-conf=mikado.yaml -od mikado_prepare --strip_cds
+        yaml-merge ~{output_prefix}-mikado.yaml ~{extra_config}
+        mikado prepare --procs=~{cpus} --json-conf=~{output_prefix}-mikado.yaml -od ~{output_prefix}-mikado_prepare --strip_cds
     >>>
 
     RuntimeAttr default_attr = object {
