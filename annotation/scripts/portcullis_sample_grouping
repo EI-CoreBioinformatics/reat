@@ -24,7 +24,7 @@ for group, samples in group_to_sample.items():
         "strand": "",
         "bam": []
     })
-    for sample in samples[0].strip("] [,").split(','):
+    for sample in samples:
         portcullis_groups[group_to_index[group]]["strand"] = aligned_samples[sample.strip(' ')]['strand']
         portcullis_groups[group_to_index[group]]["bam"].extend(aligned_samples[sample.strip(' ')]['bam'])
 

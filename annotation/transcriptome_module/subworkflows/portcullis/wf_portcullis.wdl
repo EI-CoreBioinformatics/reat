@@ -6,6 +6,7 @@ import "../common/rt_struct.wdl"
 workflow portcullis {
     input {
         File reference
+        String merge_operator = "max"
         Object? group_to_samples # Consider applying "localization_optional" to the preparation task
         Array[AlignedSample] aligned_samples
         File? annotation
@@ -59,6 +60,7 @@ workflow portcullis {
 
     call Merge {
         input:
+        merge_operator = merge_operator,
         tabs = to_merge
     }
 
@@ -273,6 +275,7 @@ task Filter {
 task Merge {
     input {
         Array[File] tabs
+        String merge_operator
         RuntimeAttr? runtime_attr_override
     }
     
@@ -299,7 +302,7 @@ task Merge {
 
     command <<<
         set -euxo pipefail
-        (junctools set --prefix=portcullis_merged --output=portcullis.merged.tab --operator=mean union ~{sep=" " tabs} || touch portcullis.merged.tab)
+        (junctools set --prefix=portcullis_merged --output=portcullis.merged.tab --operator=~{merge_operator} union ~{sep=" " tabs} || touch portcullis.merged.tab)
         junctools convert -if portcullis -of ebed --output=portcullis.merged.bed portcullis.merged.tab
         junctools convert -if portcullis -of igff --output=portcullis.merged.gff3 portcullis.merged.tab
     >>>

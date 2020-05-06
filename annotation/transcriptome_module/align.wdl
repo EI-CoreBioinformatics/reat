@@ -17,6 +17,7 @@ workflow wf_align {
         Array[LRSample]? HQ_long_read_samples
         File? reference_annotation
         Object? group_to_samples
+        String portcullis_merge_operator = "max"
         String LQ_aligner = "minimap2"
         String HQ_aligner = "gmap"
         String HQ_assembler = "merge"
@@ -67,6 +68,7 @@ workflow wf_align {
             input:
             reference = wf_sanitise.reference,
             annotation = wf_sanitise.annotation,
+            merge_operator = portcullis_merge_operator,
             group_to_samples = group_to_samples,
             aligned_samples = wf_align_short.aligned_samples
         }
