@@ -221,6 +221,7 @@ task MikadoPick {
     mikado pick ~{"--source Mikado_" + mode} ~{"--mode " + mode} --procs=~{cpus} \
     ~{"--flank " + flank} --start-method=spawn ~{"--json-conf=" + config_file} \
     -od mikado_pick --loci-out mikado-~{mode}.loci.gff3 -lv INFO ~{"-db " + mikado_db} \
+    --subloci-out mikado-~{mode}.subloci.gff3 --monosubloci-out mikado-~{mode}.monosubloci.gff3
     ~{transcripts}
     mikado compare -r mikado_pick/mikado-~{mode}.loci.gff3 -l mikado_pick/index_loci.log --index
     mikado util stats  mikado_pick/mikado-~{mode}.loci.gff3 mikado_pick/mikado-~{mode}.loci.gff3.stats
