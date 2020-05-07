@@ -1,5 +1,6 @@
 version 1.0
 
+import "../common/tasks.wdl"
 import "../common/structs.wdl"
 import "../common/rt_struct.wdl"
 
@@ -50,12 +51,28 @@ workflow wf_assembly_long {
 
         File def_gff = select_first([FilterGFF.filtered_gff, GffreadMerge.gff, stringtie_assemble.gff, stringtie_collapse.gff])
         AssembledSample assembled_long = object { name: sample.name+"."+sample.aligner+assembler, strand: sample.strand, assembly: def_gff}
+        if (assembler != "filter") {
+            call tasks.Stats {
+                input:
+                gff = def_gff
+            }
+        }
+    }
+    
+    Array[File] assembled_samples_stats = select_all(Stats.stats)
+
+    if (length(assembled_samples_stats)>1) {
+        call tasks.SummaryStats {
+            input:
+            stats = assembled_samples_stats
+        }
     }
 
     output {
         Array[AssembledSample] gff = assembled_long
+        Array[File?] stats = Stats.stats
+        File? summary_stats = SummaryStats.summary
     }
-
 }
 
 task FilterGFF {

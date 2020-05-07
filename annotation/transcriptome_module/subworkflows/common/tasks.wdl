@@ -265,3 +265,32 @@ task tophatIndex {
         maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
     }
 }
+
+task SummaryStats {
+    input {
+        Array[File] stats
+    }
+
+    output {
+        File summary = "summary.stats.tsv"
+    }
+
+    command <<<
+    cat ~{sep=" " stats} > summary.stats.tsv
+    >>>
+}
+
+task Stats {
+    input {
+        File gff
+    }
+
+    output {
+        File stats = basename(gff)+".stats.tsv"
+    }
+
+    command <<<
+    mikado util stats ~{gff} --tab-stats ~{basename(gff)}.stats.tsv
+    >>>
+
+}

@@ -1,5 +1,6 @@
 version 1.0
 
+import "../common/tasks.wdl"
 import "../common/structs.wdl"
 import "../common/rt_struct.wdl"
 
@@ -55,10 +56,24 @@ workflow wf_assembly_short {
             runtime_attr_override = assembly_resources
         }
     }
+    Array[AssembledSample] all_assemblies = flatten([stringtie_assembly, Scallop.assembly])
 
+    scatter (assembly in all_assemblies) {
+        call tasks.Stats {
+            input:
+            gff = assembly.assembly
+        }
+    }
+
+    call tasks.SummaryStats {
+        input:
+        stats = Stats.stats
+    }
+    
     output {
-        Array[AssembledSample] assemblies = flatten([stringtie_assembly, Scallop.assembly])
-        Array[File] fassemblies = flatten([Merge.assembly, Scallop.assembled])
+        Array[AssembledSample] assemblies = all_assemblies
+        Array[File] stats = Stats.stats
+        File summary_stats = SummaryStats.summary
     }
 }
 
