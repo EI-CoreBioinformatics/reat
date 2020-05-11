@@ -16,6 +16,36 @@ For cleanliness:
   Start refactoring from the right (inner most section)
 
 * Tasks
+** TODO DS review 1
+*** DONE Sanitite output the results (reference + index)
+    CLOSED: [2020-05-11 Mon 12:04]
+    - CLOSING NOTE [2020-05-11 Mon 12:04]
+*** DONE Merge bams before stringtie instead of using stringtie merge after assembly
+    CLOSED: [2020-05-11 Mon 14:32]
+    - CLOSING NOTE [2020-05-11 Mon 14:32] \\
+      It seems a better option to merge assemblies rather than bams, so this was implemented.
+      There will also be no merge calls for single alignment samples, in case there are artifacts when
+      running merge unnecesarily.
+*** DONE Fix bug in portcullis grouping
+    CLOSED: [2020-05-11 Mon 12:04]
+    - CLOSING NOTE [2020-05-11 Mon 12:04]
+*** DONE Add *fail* files to output
+    CLOSED: [2020-05-11 Mon 13:50]
+    - CLOSING NOTE [2020-05-11 Mon 13:50] \\
+      Done, this is done taking the results of the Portcullis Full task and combining the results in a Merge task for the pass files and another for the fail files
+*** TODO Group and generate basic + summary stats on the alignment results
+**** DONE Individual statistics and plots
+     CLOSED: [2020-05-11 Mon 13:52]
+     - CLOSING NOTE [2020-05-11 Mon 13:52]
+**** TODO Summary statistics, per sample and overall
+*** TODO Read and incorporate stats from GENANNO-466
+**** DONE Generate stats for the assemblies
+     CLOSED: [2020-05-11 Mon 13:53]
+     - CLOSING NOTE [2020-05-11 M
+**** DONE Generate Mikado stats
+     CLOSED: [2020-05-11 Mon 13:53]
+     - CLOSING NOTE [2020-05-11 Mon 13:5
+**** TODO Generate summary stats for the assemblies
 ** TODO Generate a main "running" script that will tie everything together with CLI + input file validation
 ** TODO Start thinking about a good installation procedure for all the non-dependency requirements
 *** TODO Create a dockerfile with all the dependencies and it's installation

@@ -39,14 +39,19 @@ workflow wf_assembly_short {
             }
         }
 
-        call Merge {
-            input:
-            name = aligned_sample.name,
-            aligner_name = aligned_sample.aligner,
-            assemblies = select_first([no_annot.assembled, annot.assembled]),
-            runtime_attr_override = assembly_resources
+        Array[File] stringtie_assemblies = select_first([no_annot.assembled, annot.assembled])
+        if (length(stringtie_assemblies) > 1) {
+            call Merge {
+                input:
+                name = aligned_sample.name,
+                aligner_name = aligned_sample.aligner,
+                assemblies = stringtie_assemblies,
+                runtime_attr_override = assembly_resources
+            }
         }
-        AssembledSample stringtie_assembly = object { name: aligned_sample.name+"."+aligned_sample.aligner+".stringtie", strand: aligned_sample.strand, assembly: Merge.assembly}
+
+        File def_stringtie_assembly = select_first([Merge.assembly, stringtie_assemblies[0]]) # Indexing the array is OK because we expect a single item in it
+        AssembledSample stringtie_assembly = object { name: aligned_sample.name+"."+aligned_sample.aligner+".stringtie", strand: aligned_sample.strand, assembly: def_stringtie_assembly}
     }
 
     scatter (aligned_sample in aligned_samples) {
@@ -58,22 +63,37 @@ workflow wf_assembly_short {
     }
     Array[AssembledSample] all_assemblies = flatten([stringtie_assembly, Scallop.assembly])
 
-    scatter (assembly in all_assemblies) {
-        call tasks.Stats {
+    scatter (assembly in stringtie_assembly) {
+        call tasks.TranscriptAssemblyStats as Stringtie_Stats{
             input:
             gff = assembly.assembly
         }
     }
 
-    call tasks.SummaryStats {
-        input:
-        stats = Stats.stats
+    scatter (assembly in Scallop.assembly) {
+        call tasks.TranscriptAssemblyStats as Scallop_Stats {
+            input:
+            gff = assembly.assembly
+        }
     }
-    
+
+    call tasks.TranscriptAssemblySummaryStats as Stringtie_Summary_Stats{
+        input:
+        stats = Stringtie_Stats.stats,
+        output_prefix = "stringtie"
+    }
+
+    call tasks.TranscriptAssemblySummaryStats as Scallop_Summary_Stats{
+        input:
+        stats = Scallop_Stats.stats,
+        output_prefix = "scallop"
+    }
+
     output {
         Array[AssembledSample] assemblies = all_assemblies
-        Array[File] stats = Stats.stats
-        File summary_stats = SummaryStats.summary
+        Array[File] stats = flatten([Stringtie_Stats.stats, Scallop_Stats.stats])
+        File stringtie_summary_stats = Stringtie_Summary_Stats.summary
+        File scallop_summary_stats = Scallop_Summary_Stats.summary
     }
 }
 

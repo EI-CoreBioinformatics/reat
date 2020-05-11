@@ -9,6 +9,7 @@ workflow wf_assembly_long {
         File? reference_annotation
         Array[AlignedSample] aligned_samples
         String assembler = "filter"
+        String stats_output_prefix
         RuntimeAttr? assembly_resources
     }
 
@@ -52,26 +53,29 @@ workflow wf_assembly_long {
         File def_gff = select_first([FilterGFF.filtered_gff, GffreadMerge.gff, stringtie_assemble.gff, stringtie_collapse.gff])
         AssembledSample assembled_long = object { name: sample.name+"."+sample.aligner+assembler, strand: sample.strand, assembly: def_gff}
         if (assembler != "filter") {
-            call tasks.Stats {
+            call tasks.TranscriptAssemblyStats {
                 input:
                 gff = def_gff
             }
         }
     }
     
-    Array[File] assembled_samples_stats = select_all(Stats.stats)
+    Array[File] assembled_samples_stats = select_all(TranscriptAssemblyStats.stats)
 
-    if (length(assembled_samples_stats)>1) {
-        call tasks.SummaryStats {
+    # If at least one sample was assembled then generate the summary stats.
+    # Otherwise, since all samples were just filtered, there will be no stats present in the array
+    if (length(assembled_samples_stats)>=1) {
+        call tasks.TranscriptAssemblySummaryStats {
             input:
-            stats = assembled_samples_stats
+            stats = assembled_samples_stats,
+            output_prefix = stats_output_prefix
         }
     }
 
     output {
         Array[AssembledSample] gff = assembled_long
-        Array[File?] stats = Stats.stats
-        File? summary_stats = SummaryStats.summary
+        Array[File?] stats = TranscriptAssemblyStats.stats
+        File? summary_stats = TranscriptAssemblySummaryStats.summary
     }
 }
 

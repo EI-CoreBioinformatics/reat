@@ -82,7 +82,7 @@ workflow wf_align {
             is_hq = false,
             aligner = LQ_aligner,
             long_samples = def_lq_long_sample,
-            bed_junctions = portcullis.bed,
+            bed_junctions = portcullis.pass_bed,
             indexing_resources = long_read_indexing_resources,
             alignment_resources = long_read_alignment_resources
         }
@@ -94,7 +94,8 @@ workflow wf_align {
             reference_annotation = wf_sanitise.annotation,
             aligned_samples = LQ_align.bams,
             assembler = LQ_assembler,
-            assembly_resources = long_read_assembly_resources
+            assembly_resources = long_read_assembly_resources,
+            stats_output_prefix = "LQ"
         }
     }
 
@@ -106,7 +107,7 @@ workflow wf_align {
             is_hq = true,
             aligner = HQ_aligner,
             long_samples = def_hq_long_sample,
-            bed_junctions = portcullis.bed,
+            bed_junctions = portcullis.pass_bed,
             indexing_resources = long_read_indexing_resources,
             alignment_resources = long_read_alignment_resources
         }
@@ -118,7 +119,8 @@ workflow wf_align {
             reference_annotation = wf_sanitise.annotation,
             aligned_samples = HQ_align.bams,
             assembler = HQ_assembler,
-            assembly_resources = long_read_assembly_resources
+            assembly_resources = long_read_assembly_resources,
+            stats_output_prefix = "HQ"
         }
     }
 
@@ -127,13 +129,13 @@ workflow wf_align {
         IndexedReference clean_reference_index = wf_sanitise.indexed_reference
         File? clean_annotation = wf_sanitise.annotation
 
-        Array[Array[File]]? stats = wf_align_short.stats
-        Array[Array[Array[File]]]? plots = wf_align_short.plots
+        File? pass_filtered_tab = portcullis.pass_tab
+        File? pass_filtered_bed = portcullis.pass_bed
+        File? pass_filtered_gff3 = portcullis.pass_gff3
 
-
-        File? filtered_tab = portcullis.tab
-        File? filtered_bed = portcullis.bed
-        File? filtered_gff3 = portcullis.gff3
+        File? fail_filtered_tab = portcullis.fail_tab
+        File? fail_filtered_bed = portcullis.fail_bed
+        File? fail_filtered_gff3 = portcullis.fail_gff3
 
         Array[AlignedSample]? sr_bams = wf_align_short.aligned_samples
         Array[AlignedSample]? lq_bams = LQ_align.bams
@@ -142,5 +144,13 @@ workflow wf_align {
         Array[AssembledSample]? SR_gff = wf_assembly_short.assemblies
         Array[AssembledSample]? LQ_gff = LQ_assembly.gff
         Array[AssembledSample]? HQ_gff = HQ_assembly.gff
+
+        Array[Array[File]]? stats = wf_align_short.stats
+        Array[Array[Array[File]]]? plots = wf_align_short.plots
+
+        File? SR_stringtie_stats = wf_assembly_short.stringtie_summary_stats
+        File? SR_scallop_stats = wf_assembly_short.scallop_summary_stats
+        File? LQ_stats = LQ_assembly.summary_stats
+        File? HQ_stats = HQ_assembly.summary_stats
     }
 }

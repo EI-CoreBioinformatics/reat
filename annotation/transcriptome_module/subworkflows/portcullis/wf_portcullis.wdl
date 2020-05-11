@@ -41,7 +41,8 @@ workflow portcullis {
                 reference_bed = PrepareRef.refbed
             }
         }
-        Array[File] def_grouped = groupedFull.pass
+        Array[File] def_grouped_pass = groupedFull.pass_tab
+        Array[File] def_grouped_fail = groupedFull.pass_tab
     }
 
     if (!defined(group_to_samples)) {
@@ -53,21 +54,35 @@ workflow portcullis {
                 reference_bed = PrepareRef.refbed
             }
         }
-        Array[File] def_ungrouped = Full.pass
+        Array[File] def_ungrouped_pass = Full.pass_tab
+        Array[File] def_ungrouped_fail = Full.pass_tab
     }
 
-    Array[File] to_merge = select_first([def_grouped, def_ungrouped])
+    Array[File] to_merge_pass = select_first([def_grouped_pass, def_ungrouped_pass])
+    Array[File] to_merge_fail = select_first([def_grouped_fail, def_ungrouped_fail])
 
-    call Merge {
+    call Merge as PassMerge {
         input:
         merge_operator = merge_operator,
-        tabs = to_merge
+        tabs = to_merge_pass,
+        is_pass = true
+    }
+
+    call Merge as FailMerge {
+        input:
+        merge_operator = merge_operator,
+        tabs = to_merge_fail,
+        is_pass = false
     }
 
     output {
-        File tab = Merge.tab
-        File bed = Merge.bed
-        File gff3 = Merge.gff3
+        File pass_tab = PassMerge.tab
+        File pass_bed = PassMerge.bed
+        File pass_gff3 = PassMerge.gff3
+
+        File fail_tab = FailMerge.tab
+        File fail_bed = FailMerge.bed
+        File fail_gff3 = FailMerge.gff3
     }
 }
 
@@ -96,7 +111,9 @@ task Full {
     }
 
     output {
-        File pass = "portcullis_out/3-filt/portcullis_filtered.pass.junctions.tab"
+        File pass_tab = "portcullis_out/3-filt/portcullis_filtered.pass.junctions.tab"
+
+        File fail_tab = "portcullis_out/3-filt/portcullis_filtered.fail.junctions.tab"
     }
 
     command <<<
@@ -276,9 +293,11 @@ task Merge {
     input {
         Array[File] tabs
         String merge_operator
+        Boolean is_pass
         RuntimeAttr? runtime_attr_override
     }
     
+    String type_text = if(is_pass) then "pass" else "fail"
     RuntimeAttr default_attr = object {
         cpu_cores: 1,
         mem_gb: 4,
@@ -295,15 +314,15 @@ task Merge {
   }
 
     output {
-        File tab = "portcullis.merged.tab"
-        File bed = "portcullis.merged.bed"
-        File gff3 = "portcullis.merged.gff3"
+        File tab = "portcullis." + type_text + ".merged.tab"
+        File bed = "portcullis." + type_text + ".merged.bed"
+        File gff3 = "portcullis." + type_text + ".merged.gff3"
     }
 
     command <<<
         set -euxo pipefail
-        (junctools set --prefix=portcullis_merged --output=portcullis.merged.tab --operator=~{merge_operator} union ~{sep=" " tabs} || touch portcullis.merged.tab)
-        junctools convert -if portcullis -of ebed --output=portcullis.merged.bed portcullis.merged.tab
-        junctools convert -if portcullis -of igff --output=portcullis.merged.gff3 portcullis.merged.tab
+        (junctools set --prefix=portcullis_merged --output=portcullis.~{type_text}.merged.tab --operator=~{merge_operator} union ~{sep=" " tabs} || touch portcullis.~{type_text}.merged.tab)
+        junctools convert -if portcullis -of ebed --output=portcullis.~{type_text}.merged.bed portcullis.~{type_text}.merged.tab
+        junctools convert -if portcullis -of igff --output=portcullis.~{type_text}.merged.gff3 portcullis.~{type_text}.merged.tab
     >>>
 }

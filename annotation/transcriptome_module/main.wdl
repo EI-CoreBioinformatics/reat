@@ -72,19 +72,28 @@ workflow ei_annotation {
         File? clean_annotation = wf_align.clean_annotation
         IndexedReference clean_reference_index = wf_align.clean_reference_index
 
-        Array[AssembledSample]? sr_asms = wf_align.SR_gff
-        Array[AssembledSample]? lq_asms = wf_align.LQ_gff
-        Array[AssembledSample]? hq_asms = wf_align.HQ_gff
-
         Array[AlignedSample]? sr_bams = wf_align.sr_bams
         Array[AlignedSample]? lq_bams = wf_align.lq_bams
         Array[AlignedSample]? hq_bams = wf_align.hq_bams
 
-        File? portcullis_tab = wf_align.filtered_tab
-        File? portcullis_bed = wf_align.filtered_bed
-        File? portcullis_gff3 = wf_align.filtered_gff3
+        Array[AssembledSample]? sr_asms = wf_align.SR_gff
+        Array[AssembledSample]? lq_asms = wf_align.LQ_gff
+        Array[AssembledSample]? hq_asms = wf_align.HQ_gff
 
-        Array[Array[File]]? stats = wf_align.stats
+        File? sr_stringtie_stats = wf_align.SR_stringtie_stats
+        File? sr_scallop_stats = wf_align.SR_scallop_stats
+        File? lq_stats = wf_align.LQ_stats
+        File? hq_stats = wf_align.HQ_stats
+
+        File? portcullis_pass_tab = wf_align.pass_filtered_tab
+        File? portcullis_pass_bed = wf_align.pass_filtered_bed
+        File? portcullis_pass_gff3 = wf_align.pass_filtered_gff3
+
+        File? portcullis_fail_tab = wf_align.fail_filtered_tab
+        File? portcullis_fail_bed = wf_align.fail_filtered_bed
+        File? portcullis_fail_gff3 = wf_align.fail_filtered_gff3
+
+        # Array[Array[File]]? stats = wf_align.stats
         Array[Array[Array[File]]]? plots = wf_align.plots
 
         File? mikado_long_orfs = wf_main_mikado.long_orfs

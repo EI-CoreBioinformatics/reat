@@ -115,7 +115,6 @@ workflow wf_align_short {
     }
 
     output {
-        # Array[IndexedAlignedSample] indexed_aligned_samples = indexed_aligned_sample
         Array[AlignedSample] aligned_samples = sorted_aligned_sample
         Array[Array[File]] stats = Stats.stats
         Array[Array[Array[File]]] plots = Stats.plots
@@ -166,12 +165,14 @@ task Stats {
     }
 
     output {
-        File stats = name + ".stats"
-        Array[File] plots = glob("plot/*.png")
+        File stats = "align_short_stats/" + name + ".stats"
+        Array[File] plots = glob("align_short_stats/plot/*.png")
     }
 
     command <<<
         set -euxo pipefail
+        mkdir align_short_stats
+        cd align_short_stats
         samtools stats ~{bam} > ~{name + ".stats"} && \
         plot-bamstats -p "plot/~{name}" ~{name + ".stats"}
     >>>

@@ -233,7 +233,7 @@ task StarIndex {
   }
 }
 
-task tophatIndex {
+task TophatIndex {
     input {
         File reference
         RuntimeAttr? runtime_attr_override
@@ -266,31 +266,34 @@ task tophatIndex {
     }
 }
 
-task SummaryStats {
+task TranscriptAssemblySummaryStats {
     input {
         Array[File] stats
+        String output_prefix
     }
 
     output {
-        File summary = "summary.stats.tsv"
+        File summary = output_prefix + ".summary.stats.tsv"
     }
 
     command <<<
-    cat ~{sep=" " stats} > summary.stats.tsv
+    cat ~{sep=" " stats} > ~{output_prefix}.summary.stats.tsv
     >>>
 }
 
-task Stats {
+task TranscriptAssemblyStats {
     input {
         File gff
     }
 
     output {
-        File stats = basename(gff)+".stats.tsv"
+        File stats = "assembly_stats/" + basename(gff) + ".stats.tsv"
     }
 
     command <<<
-    mikado util stats ~{gff} --tab-stats ~{basename(gff)}.stats.tsv
+    mkdir assembly_stats
+    cd assembly_stats
+    mikado util stats ~{gff} ~{basename(gff)}.stats.tsv
     >>>
 
 }
