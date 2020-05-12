@@ -51,7 +51,7 @@ workflow wf_assembly_long {
         }
 
         File def_gff = select_first([FilterGFF.filtered_gff, GffreadMerge.gff, stringtie_assemble.gff, stringtie_collapse.gff])
-        AssembledSample assembled_long = object { name: sample.name+"."+sample.aligner+assembler, strand: sample.strand, assembly: def_gff}
+        AssembledSample assembled_long = object { name: sample.name+"."+sample.aligner+"."+assembler, strand: sample.strand, assembly: def_gff}
         if (assembler != "filter") {
             call tasks.TranscriptAssemblyStats {
                 input:
