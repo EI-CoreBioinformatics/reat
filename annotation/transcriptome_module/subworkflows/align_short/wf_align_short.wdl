@@ -112,7 +112,7 @@ workflow wf_align_short {
         AlignedSample sorted_aligned_sample = object {name: aligned_sample.name + if aligned_sample.merge then ".merged" else "", strand: aligned_sample.strand, merge: aligned_sample.merge, aligner: aligned_sample.aligner, bam: aligned_file}
     }
 
-    scatter (aligned_sample in def_aligned_samples) {
+    scatter (aligned_sample in sorted_aligned_sample) {
         scatter (bam in aligned_sample.bam) {
             call AlignmentStats {
                 input:
@@ -121,14 +121,12 @@ workflow wf_align_short {
             }
         }
 
-        if (length(aligned_sample.bam) > 1) {
-            call SummaryAlignmentStats {
-                input:
-                stats = AlignmentStats.stats,
-                output_prefix = aligned_sample.name
-            }
+        call SummaryAlignmentStats {
+            input:
+            stats = AlignmentStats.stats,
+            output_prefix = aligned_sample.name
         }
-        File summary_alignment_stats = select_first([SummaryAlignmentStats.summary_stats, AlignmentStats.stats[0]])
+        File summary_alignment_stats = SummaryAlignmentStats.summary_stats
     }
 
     output {

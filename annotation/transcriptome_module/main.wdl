@@ -94,6 +94,7 @@ workflow ei_annotation {
         File? portcullis_fail_gff3 = wf_align.fail_filtered_gff3
 
         # Array[Array[File]]? stats = wf_align.stats
+        Array[File]? short_alignment_summary_stats = wf_align.summary_stats
         Array[Array[Array[File]]]? plots = wf_align.plots
 
         File? mikado_long_orfs = wf_main_mikado.long_orfs

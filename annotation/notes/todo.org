@@ -20,20 +20,24 @@ For cleanliness:
 *** DONE Sanitite output the results (reference + index)
     CLOSED: [2020-05-11 Mon 12:04]
     - CLOSING NOTE [2020-05-11 Mon 12:04]
-*** TODO Merge bams before stringtie instead of using stringtie merge after assembly
+*** DONE Merge bams before stringtie instead of using stringtie merge after assembly
+    CLOSED: [2020-05-12 Tue 19:16]
+    - CLOSING NOTE [2020-05-12 Tue 19:16] \\
+      There's an option when defining a sample where merging of the alignment files 
+      before assembly can be activated
     - CLOSING NOTE [2020-05-11 Mon 14:32] \\
       It seems a better option to merge assemblies rather than bams, so this was implemented.
       There will also be no merge calls for single alignment samples, in case there are artifacts when
       running merge unnecesarily.
-DS comment:
+
+DS comment reopens this since:
 My preference would be to have two options 
 1) as you have it now i.e. the fastq files are aligned separately, assembled and then merged if a label has more than one file. 
 2) an option to pass all fastq relating to the same label to the aligner, the resulting bams are than assembled and no merging 
 is required (this is what we do now). This way as a user you can decide how best to combine these fastq files. It would also allow 
-us to evaluate the difference between these approaches.
+us to evaluate the difference between these approaches. Useful for some cases where the bams can definitely be grouped together
+or when they have been subdivided beforehand.
 
-1 Is the current default and has already been implemented along with the check for when there is just one bam, not running merge.
-2 Needs to be implemented
 *** DONE Fix bug in portcullis grouping
     CLOSED: [2020-05-11 Mon 12:04]
     - CLOSING NOTE [2020-05-11 Mon 12:04]
@@ -41,11 +45,15 @@ us to evaluate the difference between these approaches.
     CLOSED: [2020-05-11 Mon 13:50]
     - CLOSING NOTE [2020-05-11 Mon 13:50] \\
       Done, this is done taking the results of the Portcullis Full task and combining the results in a Merge task for the pass files and another for the fail files
-*** TODO Group and generate basic + summary stats on the alignment results
+*** DONE Group and generate basic + summary stats on the alignment results
+    CLOSED: [2020-05-12 Tue 19:16]
+    - CLOSING NOTE [2020-05-12 Tue 19:16]
 **** DONE Individual statistics and plots
      CLOSED: [2020-05-11 Mon 13:52]
      - CLOSING NOTE [2020-05-11 Mon 13:52]
-**** TODO Summary statistics, per sample and overall
+**** DONE Summary statistics, per sample and overall
+     CLOSED: [2020-05-12 Tue 19:16]
+     - CLOSING NOTE [2020-05-12 Tue 19:16]
 ***** TODO Write parser for samtools-stats
 ***** TODO Accumulate summary results in both a table and an extra nameable file
 *** TODO Read and incorporate stats from GENANNO-466
@@ -56,7 +64,10 @@ us to evaluate the difference between these approaches.
      CLOSED: [2020-05-11 Mon 13:53]
      - CLOSING NOTE [2020-05-11 Mon 13:5
 **** TODO Generate summary stats for the assemblies
-***** TODO Write parser for mikado-stats (Use Christian's code)
+***** DONE Write parser for mikado-stats (Use Christian's code)
+      CLOSED: [2020-05-12 Tue 19:18]
+      - CLOSING NOTE [2020-05-12 Tue 19:18] \\
+        This code has been added, now it needs to be transformed into a matrix
 ***** TODO Accumulate summary results in both a table and an extra namable file
 ** TODO Generate a main "running" script that will tie everything together with CLI + input file validation
 ** TODO Start thinking about a good installation procedure for all the non-dependency requirements

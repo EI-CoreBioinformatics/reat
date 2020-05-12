@@ -148,6 +148,8 @@ workflow wf_align {
         Array[Array[File]]? stats = wf_align_short.stats
         Array[Array[Array[File]]]? plots = wf_align_short.plots
 
+        Array[File]? summary_stats = wf_align_short.summary_stats
+
         File? SR_stringtie_stats = wf_assembly_short.stringtie_summary_stats
         File? SR_scallop_stats = wf_assembly_short.scallop_summary_stats
         File? LQ_stats = LQ_assembly.summary_stats
