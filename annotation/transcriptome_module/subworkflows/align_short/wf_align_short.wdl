@@ -49,7 +49,7 @@ workflow wf_align_short {
                         runtime_attr_override = alignment_resources
                     }
                 }
-                AlignedSample hisat_aligned_sample = object {bam: nopt.bam, strand: sample.strand, aligner: "hisat", name: sample.name}
+                AlignedSample hisat_aligned_sample = object {bam: nopt.bam, strand: sample.strand, aligner: "hisat", name: sample.name, merge: sample.merge}
             }
         }
         if (!defined(Hisat2SpliceSites.sites)) {
@@ -64,7 +64,7 @@ workflow wf_align_short {
                        runtime_attr_override = alignment_resources
                    }
                }
-               AlignedSample hisat_aligned_sample_no_sites = object {bam: wopt.bam, strand: sample.strand, aligner: "hisat", name: sample.name}
+               AlignedSample hisat_aligned_sample_no_sites = object {bam: wopt.bam, strand: sample.strand, aligner: "hisat", name: sample.name, merge: sample.merge }
             }
         }
         Array[AlignedSample] def_hisat_aligned = select_first([hisat_aligned_sample, hisat_aligned_sample_no_sites])
@@ -87,7 +87,7 @@ workflow wf_align_short {
                     runtime_attr_override = alignment_resources
                 }
             }
-            AlignedSample star_aligned_sample = object { bam: Star.aligned_pair, name: sample.name, strand: sample.strand, aligner: "star" }
+            AlignedSample star_aligned_sample = object { bam: Star.aligned_pair, name: sample.name, strand: sample.strand, aligner: "star", merge: sample.merge }
         }
     }
 
@@ -101,24 +101,108 @@ workflow wf_align_short {
                 runtime_attr_override = sort_resources
             }
         }
-        AlignedSample sorted_aligned_sample = object {name: aligned_sample.name, strand: aligned_sample.strand, aligner: aligned_sample.aligner, bam: Sort.sorted_bam}
+        if (aligned_sample.merge) {
+            call MergeAlignments {
+                input:
+                bams = Sort.sorted_bam,
+                name = aligned_sample.name
+            }
+        }
+        Array[File] aligned_file =  select_first([MergeAlignments.bam,Sort.sorted_bam])
+        AlignedSample sorted_aligned_sample = object {name: aligned_sample.name + if aligned_sample.merge then ".merged" else "", strand: aligned_sample.strand, merge: aligned_sample.merge, aligner: aligned_sample.aligner, bam: aligned_file}
     }
 
     scatter (aligned_sample in def_aligned_samples) {
         scatter (bam in aligned_sample.bam) {
-            call Stats {
+            call AlignmentStats {
                 input:
                 bam = bam,
                 runtime_attr_override = stats_resources
             }
         }
+
+        if (length(aligned_sample.bam) > 1) {
+            call SummaryAlignmentStats {
+                input:
+                stats = AlignmentStats.stats,
+                output_prefix = aligned_sample.name
+            }
+        }
+        File summary_alignment_stats = select_first([SummaryAlignmentStats.summary_stats, AlignmentStats.stats[0]])
     }
 
     output {
         Array[AlignedSample] aligned_samples = sorted_aligned_sample
-        Array[Array[File]] stats = Stats.stats
-        Array[Array[Array[File]]] plots = Stats.plots
+        Array[Array[File]] stats = AlignmentStats.stats
+        Array[Array[Array[File]]] plots = AlignmentStats.plots
+        Array[File] summary_stats = summary_alignment_stats
     }
+}
+
+task SummaryAlignmentStats {
+    input {
+        Array[File] stats
+        String output_prefix
+    }
+
+    output {
+        File summary_stats = output_prefix + ".summary.stats"
+    }
+
+    command <<<
+    alignment_summary_stats ~{sep=" " stats} > ~{output_prefix}.summary.stats
+    >>>
+}
+
+task AlignmentStats {
+    input {
+        File bam
+        String name = basename(bam, ".bam")
+        RuntimeAttr? runtime_attr_override
+    }
+
+    output {
+        File stats = "align_short_stats/" + name + ".stats"
+        Array[File] plots = glob("align_short_stats/plot/*.png")
+    }
+
+    command <<<
+        set -euxo pipefail
+        mkdir align_short_stats
+        cd align_short_stats
+        samtools stats ~{bam} > ~{name + ".stats"} && \
+        plot-bamstats -p "plot/~{name}" ~{name + ".stats"}
+    >>>
+    
+    RuntimeAttr default_attr = object {
+        cpu_cores: 1,
+        mem_gb: 4,
+        max_retries: 1
+    }
+    
+    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
+
+    runtime {
+        cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
+        memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
+        maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+    }
+}
+
+task MergeAlignments {
+    input { 
+        Array[File] bams
+        String name
+    }
+
+    output {
+        Array[File] bam = glob(name + ".merged.bam")
+    }
+
+    command <<<
+    samtools merge ~{name}.merged.bam ~{sep=" " bams}
+    samtools index ~{name}.merged.bam
+    >>>
 }
 
 task Sort{
@@ -149,41 +233,6 @@ task Sort{
     
     RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
 
-
-    runtime {
-        cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
-        memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
-        maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
-    }
-}
-
-task Stats {
-    input {
-        File bam
-        String name = basename(bam, ".bam")
-        RuntimeAttr? runtime_attr_override
-    }
-
-    output {
-        File stats = "align_short_stats/" + name + ".stats"
-        Array[File] plots = glob("align_short_stats/plot/*.png")
-    }
-
-    command <<<
-        set -euxo pipefail
-        mkdir align_short_stats
-        cd align_short_stats
-        samtools stats ~{bam} > ~{name + ".stats"} && \
-        plot-bamstats -p "plot/~{name}" ~{name + ".stats"}
-    >>>
-    
-    RuntimeAttr default_attr = object {
-        cpu_cores: 1,
-        mem_gb: 4,
-        max_retries: 1
-    }
-    
-    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
 
     runtime {
         cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])

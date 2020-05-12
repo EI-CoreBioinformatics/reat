@@ -277,7 +277,7 @@ task TranscriptAssemblySummaryStats {
     }
 
     command <<<
-    cat ~{sep=" " stats} > ~{output_prefix}.summary.stats.tsv
+    mikado_summary_stats ~{sep=" " stats} > ~{output_prefix}.summary.stats.tsv
     >>>
 }
 

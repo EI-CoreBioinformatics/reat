@@ -38,7 +38,7 @@ workflow wf_align_long {
                     runtime_attr_override = alignment_resources
                 }
             }
-            AlignedSample mm2_aligned_sample = object {name: sample.name, strand:sample.strand, aligner:"minimap2", bam: Minimap2Long.bam}
+            AlignedSample mm2_aligned_sample = object {name: sample.name, strand:sample.strand, aligner:"minimap2", bam: Minimap2Long.bam, merge:false}
         }
     }
 
@@ -60,7 +60,7 @@ workflow wf_align_long {
                     runtime_attr_override = alignment_resources
                 }
             }
-            AlignedSample gmap_aligned_sample = object {name: sample.name, strand:sample.strand, aligner:"gmap", bam: GMapLong.bam}
+            AlignedSample gmap_aligned_sample = object {name: sample.name, strand:sample.strand, aligner:"gmap", bam: GMapLong.bam, merge:false}
         }
     }
 

@@ -19,6 +19,7 @@ struct PRSample {
     Array[ReadPair]+ read_pair
     Int? score
     Boolean? is_ref
+    Boolean merge
 }
 
 struct SESample {
@@ -27,25 +28,20 @@ struct SESample {
     Array[File]+ SR
     Int? score
     Boolean? is_ref
+    Boolean merge
 }
 
 struct AlignedSample {
     String name
     String strand
     String aligner
+    Boolean merge
     Array[File] bam
 }
 
 struct IndexedBam{
     File bam
     File index
-}
-
-struct IndexedAlignedSample {
-    String name
-    String strand
-    String aligner
-    Array[IndexedBam] index_bam
 }
 
 struct AlignedSampleStats {

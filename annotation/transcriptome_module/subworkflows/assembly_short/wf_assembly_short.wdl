@@ -77,23 +77,27 @@ workflow wf_assembly_short {
         }
     }
 
-    call tasks.TranscriptAssemblySummaryStats as Stringtie_Summary_Stats{
-        input:
-        stats = Stringtie_Stats.stats,
-        output_prefix = "stringtie"
+    if (length(Stringtie_Stats.stats) > 1) { 
+        call tasks.TranscriptAssemblySummaryStats as Stringtie_Summary_Stats{
+            input:
+            stats = Stringtie_Stats.stats,
+            output_prefix = "stringtie"
+        }
     }
 
-    call tasks.TranscriptAssemblySummaryStats as Scallop_Summary_Stats{
-        input:
-        stats = Scallop_Stats.stats,
-        output_prefix = "scallop"
+    if (length(Scallop_Stats.stats) > 1) {
+        call tasks.TranscriptAssemblySummaryStats as Scallop_Summary_Stats{
+            input:
+            stats = Scallop_Stats.stats,
+            output_prefix = "scallop"
+        }
     }
 
     output {
         Array[AssembledSample] assemblies = all_assemblies
         Array[File] stats = flatten([Stringtie_Stats.stats, Scallop_Stats.stats])
-        File stringtie_summary_stats = Stringtie_Summary_Stats.summary
-        File scallop_summary_stats = Scallop_Summary_Stats.summary
+        File stringtie_summary_stats = select_first([Stringtie_Summary_Stats.summary, Stringtie_Stats.stats[0]])
+        File scallop_summary_stats = select_first([Scallop_Summary_Stats.summary, Scallop_Stats.stats[0]])
     }
 }
 
