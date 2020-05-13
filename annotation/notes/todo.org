@@ -16,7 +16,9 @@ For cleanliness:
   Start refactoring from the right (inner most section)
 
 * Tasks
-** TODO DS review 1
+** DONE DS review 1
+   CLOSED: [2020-05-13 Wed 12:19]
+   - CLOSING NOTE [2020-05-13 Wed 12:19]
 *** DONE Sanitite output the results (reference + index)
     CLOSED: [2020-05-11 Mon 12:04]
     - CLOSING NOTE [2020-05-11 Mon 12:04]
@@ -56,19 +58,25 @@ or when they have been subdivided beforehand.
      - CLOSING NOTE [2020-05-12 Tue 19:16]
 ***** TODO Write parser for samtools-stats
 ***** TODO Accumulate summary results in both a table and an extra nameable file
-*** TODO Read and incorporate stats from GENANNO-466
+*** DONE Read and incorporate stats from GENANNO-466
+    CLOSED: [2020-05-13 Wed 12:19]
+    - CLOSING NOTE [2020-05-13 Wed 12:19]
 **** DONE Generate stats for the assemblies
      CLOSED: [2020-05-11 Mon 13:53]
      - CLOSING NOTE [2020-05-11 M
 **** DONE Generate Mikado stats
      CLOSED: [2020-05-11 Mon 13:53]
      - CLOSING NOTE [2020-05-11 Mon 13:5
-**** TODO Generate summary stats for the assemblies
+**** DONE Generate summary stats for the assemblies
+     CLOSED: [2020-05-13 Wed 12:18]
+     - CLOSING NOTE [2020-05-13 Wed 12:18]
 ***** DONE Write parser for mikado-stats (Use Christian's code)
       CLOSED: [2020-05-12 Tue 19:18]
       - CLOSING NOTE [2020-05-12 Tue 19:18] \\
         This code has been added, now it needs to be transformed into a matrix
-***** TODO Accumulate summary results in both a table and an extra namable file
+***** DONE Accumulate summary results in both a table and an extra namable file
+      CLOSED: [2020-05-13 Wed 12:18]
+      - CLOSING NOTE [2020-05-13 Wed 12:18]
 ** TODO Generate a main "running" script that will tie everything together with CLI + input file validation
 ** TODO Start thinking about a good installation procedure for all the non-dependency requirements
 *** TODO Create a dockerfile with all the dependencies and it's installation

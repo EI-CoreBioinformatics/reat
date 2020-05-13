@@ -40,6 +40,10 @@ workflow wf_assembly_short {
         }
 
         Array[File] stringtie_assemblies = select_first([no_annot.assembled, annot.assembled])
+        # If this contains more than one ReadPair, and has been marked as "merge", 
+        # then it will contain a single bam file as the result of the
+        # alignment part of the workflow, so it will not need merging assemblies.
+        # Otherwise, this conditional merges the assemblies generated for the multiple bam files
         if (length(stringtie_assemblies) > 1) {
             call Merge {
                 input:
@@ -51,7 +55,11 @@ workflow wf_assembly_short {
         }
 
         File def_stringtie_assembly = select_first([Merge.assembly, stringtie_assemblies[0]]) # Indexing the array is OK because we expect a single item in it
-        AssembledSample stringtie_assembly = object { name: aligned_sample.name+"."+aligned_sample.aligner+".stringtie", strand: aligned_sample.strand, assembly: def_stringtie_assembly}
+        AssembledSample stringtie_assembly = object { 
+            name: aligned_sample.name+"."+aligned_sample.aligner+".stringtie", 
+            strand: aligned_sample.strand, 
+            assembly: def_stringtie_assembly
+            }
     }
 
     scatter (aligned_sample in aligned_samples) {
@@ -77,27 +85,23 @@ workflow wf_assembly_short {
         }
     }
 
-    if (length(Stringtie_Stats.stats) > 1) { 
-        call tasks.TranscriptAssemblySummaryStats as Stringtie_Summary_Stats{
-            input:
-            stats = Stringtie_Stats.stats,
-            output_prefix = "stringtie"
-        }
+    call tasks.TranscriptAssemblySummaryStats as Stringtie_Summary_Stats{
+        input:
+        stats = Stringtie_Stats.stats,
+        output_prefix = "stringtie"
     }
 
-    if (length(Scallop_Stats.stats) > 1) {
-        call tasks.TranscriptAssemblySummaryStats as Scallop_Summary_Stats{
-            input:
-            stats = Scallop_Stats.stats,
-            output_prefix = "scallop"
-        }
+    call tasks.TranscriptAssemblySummaryStats as Scallop_Summary_Stats{
+        input:
+        stats = Scallop_Stats.stats,
+        output_prefix = "scallop"
     }
 
     output {
         Array[AssembledSample] assemblies = all_assemblies
         Array[File] stats = flatten([Stringtie_Stats.stats, Scallop_Stats.stats])
-        File stringtie_summary_stats = select_first([Stringtie_Summary_Stats.summary, Stringtie_Stats.stats[0]])
-        File scallop_summary_stats = select_first([Scallop_Summary_Stats.summary, Scallop_Stats.stats[0]])
+        File stringtie_summary_stats = Stringtie_Summary_Stats.summary
+        File scallop_summary_stats = Scallop_Summary_Stats.summary
     }
 }
 
