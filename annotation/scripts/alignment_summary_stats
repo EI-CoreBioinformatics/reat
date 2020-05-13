@@ -16,13 +16,13 @@ class open_files:
 
     def __enter__(self):
         self.fhs = []
-        for f, fl in zip(self.files, self.flags):
-            self.fhs.append(open(f, fl))
+        for f_, fl in zip(self.files, self.flags):
+            self.fhs.append(open(f_, fl))
         return self.fhs
 
-    def __exit__(self, type, value, traceback):
-        for f in self.fhs:
-            f.close()
+    def __exit__(self, type_, value, traceback):
+        for f_ in self.fhs:
+            f_.close()
 
 
 def parse_line(stat_input_file):
@@ -40,36 +40,21 @@ with open_files(input_files, ['r' for x in range(len(input_files))]) as stat_fil
     # Parse the first stats file to collect stats and fields
     print('', file=sys.stderr)
     print(0, "file: ", '.'.join(input_files[0].split('/')[-1].split('.')[:-1]), file=sys.stderr)
-    stats["stat"].append('.'.join(input_files[0].split('/')[-1].split('.')[:-1]))
-    line = parse_line(stat_files[0])
-    while line[0]:
-        if "SN" != line[0]:
-            line = parse_line(stat_files[0])
-            continue
-        line[1] = line[1].replace(':', '')
-        line[1] = line[1].replace(' ', '_')
-        print(line[1:3], file=sys.stderr)
-        stats[line[1]].append(line[2])
-        line = parse_line(stat_files[0])
-
-    # Parse the rest of the files to collect the rest of the stats
-    other_stats = stat_files[1:]
-    for f, file in enumerate(other_stats):
+    for file_index, file in enumerate(stat_files):
         print('', file=sys.stderr)
-        print(f, "file: ", '.'.join(input_files[1:][f].split('/')[-1].split('.')[:-1]), file=sys.stderr)
-        stats["stat"].append('.'.join(input_files[1:][f].split('/')[-1].split('.')[:-1]))
+        print(file_index, "file: ", '.'.join(input_files[file_index].split('/')[-1].split('.')[:-1]), file=sys.stderr)
+        stats["Stat"].append('.'.join(input_files[file_index].split('/')[-1].split('.')[:-1]))
         line = parse_line(file)
         while line[0] != '':
             if "SN" != line[0]:
                 line = parse_line(file)
                 continue
             line[1] = line[1].replace(':', '')
-            line[1] = line[1].replace(' ', '_')
             stats[line[1]].append(line[2])
             print(line[1:3], file=sys.stderr)
             line = parse_line(file)
 
-writer = csv.writer(sys.stdout)
+writer = csv.writer(sys.stdout, delimiter='\t')
 for k, v in stats.items():
     if k not in stats_to_filter:
         writer.writerow([k] + v)
