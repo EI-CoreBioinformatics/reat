@@ -154,7 +154,7 @@ task GMapLong {
     Int cpus = 16
 
     output {
-        File bam = "gmap."+name+".bam"
+        File bam = "alignments/gmap."+name+".bam"
     }
 
     command <<<
@@ -170,6 +170,9 @@ task GMapLong {
         then
             in_pipe="gunzip -c ~{LR}"
         fi
+
+        mkdir alignments
+        cd alignments
 
         $in_pipe | $(determine_gmap.py ~{reference}) --dir="$(dirname ~{gmap_index[0]})" --db=test_genome \
         ~{"--min-intronlength=" + min_intronlength} ~{"--max-intronlength-middle=" + max_intronlength_middle} ~{"--max-intronlength-ends=" + max_intronlength_ends} --npaths=1 \
@@ -210,7 +213,7 @@ task Minimap2Long {
     Int cpus = 16
 
     output {
-        File bam = "minimap2."+name+".bam"
+        File bam = "alignments/minimap2."+name+".bam"
     }
 
     command <<<
@@ -228,6 +231,8 @@ task Minimap2Long {
             in_pipe="gunzip -c ~{LR}"
         fi
         
+        mkdir alignments
+        cd alignments
         $in_pipe | \
         minimap2 \
         -ax ~{if (is_hq) then "splice:hq" else "splice"} \

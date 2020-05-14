@@ -371,13 +371,15 @@ task GenerateFinalOutput {
     }
 
     output {
-        File bed = output_prefix+"-"+prefix+".transdecoder.bed"
-        File cds = output_prefix+"-"+prefix+".transdecoder.cds"
-        File pep = output_prefix+"-"+prefix+".transdecoder.pep"
-        File gff = output_prefix+"-"+prefix+".transdecoder.gff3"
+        File bed = "orf/" + output_prefix+"-"+prefix+".transdecoder.bed"
+        File cds = "orf/" + output_prefix+"-"+prefix+".transdecoder.cds"
+        File pep = "orf/" + output_prefix+"-"+prefix+".transdecoder.pep"
+        File gff = "orf/" + output_prefix+"-"+prefix+".transdecoder.gff3"
     }
 
     command <<<
+    mkdir orf
+    cd orf
     cat ~{sep=" " final_models} > "~{output_prefix}-~{prefix}.transdecoder.gff3"
     gff3_file_to_bed.pl "~{output_prefix}-~{output_prefix}-~{prefix}.transdecoder.gff3" > "~{output_prefix}-~{prefix}.transdecoder.bed"
     gff3_file_to_proteins.pl --gff3 "~{output_prefix}-~{prefix}.transdecoder.gff3" --fasta ~{transcripts} ~{genetic_code} > "~{output_prefix}-~{prefix}.transdecoder.pep"

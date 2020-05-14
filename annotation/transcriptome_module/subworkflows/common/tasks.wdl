@@ -6,6 +6,7 @@ import "./rt_struct.wdl"
 task SanitiseAnnotation {
     input {
         File? annotation
+        String output_directory = "annotation"
         RuntimeAttr? runtime_attr_override
     }
     
@@ -18,7 +19,7 @@ task SanitiseAnnotation {
     RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
 
     output {
-        File sanitised_annotation = "reference.san.gtf"
+        File sanitised_annotation = output_directory + "/reference.san.gtf"
     }
 
   runtime {
@@ -30,11 +31,12 @@ task SanitiseAnnotation {
     command <<<
         set -euxo pipefail
         filepath=~{annotation}
+        mkdir ~{output_directory}
         if [ ${filepath##*.} == "gff" ]
         then
-            mikado util convert -of gtf ~{annotation} "reference.san.gtf"
+            mikado util convert -of gtf ~{annotation} ~{output_directory}/reference.san.gtf
         else
-            ln ~{annotation} "reference.san.gtf"
+            ln ~{annotation} ~{output_directory}/reference.san.gtf
         fi
     >>>
 }
@@ -75,15 +77,21 @@ task MergeFiles {
 task IndexFasta {
     input {
         File reference_fasta
+        String output_directory = "reference"
         RuntimeAttr? runtime_attr_override
     }
     
     output {
-        IndexedReference indexed_fasta = {"fasta": basename(reference_fasta), "fai": basename(reference_fasta)+".fai"}
+        IndexedReference indexed_fasta = {
+            "fasta": output_directory+"/"+basename(reference_fasta), 
+            "fai": output_directory+"/"+basename(reference_fasta)+".fai"
+        }
     }
 
     command <<<
         set -euxo pipefail
+        mkdir ~{output_directory}
+        cd ~{output_directory}
         ln -s ~{reference_fasta} .
         samtools faidx ~{basename(reference_fasta)}
     >>>

@@ -144,11 +144,11 @@ task SummaryAlignmentStats {
     }
 
     output {
-        File summary_stats = output_prefix + ".summary.stats"
+        File summary_stats = output_prefix + ".summary.stats.tsv"
     }
 
     command <<<
-    alignment_summary_stats ~{sep=" " stats} > ~{output_prefix}.summary.stats
+    alignment_summary_stats ~{sep=" " stats} > ~{output_prefix}.summary.stats.tsv
     >>>
 }
 
@@ -161,7 +161,7 @@ task AlignmentStats {
 
     output {
         File stats = "align_short_stats/" + name + ".stats"
-        Array[File] plots = glob("align_short_stats/plot/*.png")
+        Array[File] plots = glob("align_short_stats/plot/*")
     }
 
     command <<<
@@ -194,10 +194,12 @@ task MergeAlignments {
     }
 
     output {
-        Array[File] bam = glob(name + ".merged.bam")
+        Array[File] bam = ["alignments/" + name + ".merged.bam"]
     }
 
     command <<<
+    mkdir alignments
+    cd alignments
     samtools merge ~{name}.merged.bam ~{sep=" " bams}
     samtools index ~{name}.merged.bam
     >>>

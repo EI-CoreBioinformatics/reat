@@ -65,6 +65,7 @@ workflow portcullis {
         input:
         merge_operator = merge_operator,
         tabs = to_merge_pass,
+        output_directory = "portcullis",
         is_pass = true
     }
 
@@ -72,6 +73,7 @@ workflow portcullis {
         input:
         merge_operator = merge_operator,
         tabs = to_merge_fail,
+        output_directory = "portcullis",
         is_pass = false
     }
 
@@ -294,6 +296,7 @@ task Merge {
         Array[File] tabs
         String merge_operator
         Boolean is_pass
+        String output_directory
         RuntimeAttr? runtime_attr_override
     }
     
@@ -314,13 +317,15 @@ task Merge {
   }
 
     output {
-        File tab = "portcullis." + type_text + ".merged.tab"
-        File bed = "portcullis." + type_text + ".merged.bed"
-        File gff3 = "portcullis." + type_text + ".merged.gff3"
+        File tab = output_directory + "/portcullis." + type_text + ".merged.tab"
+        File bed = output_directory + "/portcullis." + type_text + ".merged.bed"
+        File gff3 = output_directory + "/portcullis." + type_text + ".merged.gff3"
     }
 
     command <<<
         set -euxo pipefail
+        mkdir ~{output_directory}
+        cd ~{output_directory}
         (junctools set --prefix=portcullis_merged --output=portcullis.~{type_text}.merged.tab --operator=~{merge_operator} union ~{sep=" " tabs} || touch portcullis.~{type_text}.merged.tab)
         junctools convert -if portcullis -of ebed --output=portcullis.~{type_text}.merged.bed portcullis.~{type_text}.merged.tab
         junctools convert -if portcullis -of igff --output=portcullis.~{type_text}.merged.gff3 portcullis.~{type_text}.merged.tab

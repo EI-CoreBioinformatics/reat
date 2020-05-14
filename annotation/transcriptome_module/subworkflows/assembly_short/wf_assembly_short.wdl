@@ -117,7 +117,7 @@ task Stringtie {
     Int cpus = 8
 
     output {
-        File assembled = prefix+".stringtie.gtf"
+        File assembled = "stringtie_assemblies/"+prefix+".stringtie.gtf"
     }
 
     command <<<
@@ -132,6 +132,8 @@ task Stringtie {
             ;;
         esac
 
+        mkdir stringtie_assemblies
+        cd stringtie_assemblies
         stringtie ~{aligned_sample} \
         -p "~{cpus}" \
         "${strandness}" \
@@ -202,8 +204,11 @@ task Scallop {
     Int cpus = 2
 
     output {
-        File assembled = aligned_sample.name+"."+aligned_sample.aligner+".scallop.gtf"
-        AssembledSample assembly = {"name": aligned_sample.name+"."+aligned_sample.aligner+".scallop", "strand": aligned_sample.strand, "assembly": aligned_sample.name+"."+aligned_sample.aligner+".scallop.gtf"}
+        File assembled = "scallop/"+aligned_sample.name+"."+aligned_sample.aligner+".scallop.gtf"
+        AssembledSample assembly = {
+            "name": aligned_sample.name+"."+aligned_sample.aligner+".scallop", 
+            "strand": aligned_sample.strand, 
+            "assembly": "scallop/" + aligned_sample.name+"."+aligned_sample.aligner+".scallop.gtf"}
     }
 
     command <<<
@@ -225,6 +230,9 @@ task Scallop {
             strandness="--library_type unstranded"
             ;;
         esac
+
+        mkdir scallop
+        cd scallop
 
         scallop --verbose 0 -i ~{sep=" " aligned_sample.bam} -o "~{aligned_sample.name+"."+aligned_sample.aligner}.scallop.gtf" "${strandness}"
     >>>

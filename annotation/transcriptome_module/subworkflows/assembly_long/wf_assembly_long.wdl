@@ -87,10 +87,12 @@ task FilterGFF {
     }
 
     output {
-        File filtered_gff = basename(gff)+"."+min_identity+"id"+min_coverage+"cov.gff"
+        File filtered_gff = "assemblies/" + basename(gff)+"."+min_identity+"id"+min_coverage+"cov.gff"
     }
 
     command <<<
+    mkdir assemblies
+    cd assemblies
     filter_gmap_hardFilter_v0.1.pl --gff ~{gff} --identity ~{min_identity} --coverage ~{min_coverage} > ~{basename(gff)}.~{min_identity}id~{min_coverage}cov.gff
     >>>
 }
@@ -107,11 +109,13 @@ task StringtieLong {
     Int cpus = 8
 
     output {
-        File gff = aligned_sample.name+"."+aligned_sample.aligner+".stringtie.gtf"
+        File gff = "assemblies/" + aligned_sample.name+"."+aligned_sample.aligner+".stringtie.gtf"
     }
 
     command <<<
         set -euxo pipefail
+        mkdir assemblies
+        cd assemblies
         stringtie -p "~{cpus}" ~{"-G " + reference_annotation} ~{collapse_string} ~{sep=" " aligned_sample.bam} -o "~{aligned_sample.name}.~{aligned_sample.aligner}.stringtie.gtf"
     >>>
 
@@ -138,11 +142,13 @@ task Sam2gff {
     }
     
     output {
-        File gff = aligned_sample.name+"."+aligned_sample.aligner+".sam2gff.gff"
+        File gff = "assemblies/" + aligned_sample.name+"."+aligned_sample.aligner+".sam2gff.gff"
     }
 
     command <<<
         set -euxo pipefail
+        mkdir assemblies
+        cd assemblies
         for bam in ~{sep=" " aligned_sample.bam}; do
         samtools view -F 4 -F 0x900 $bam; done | sam2gff -s ~{aligned_sample.name} > ~{aligned_sample.name}.~{aligned_sample.aligner}.sam2gff.gff
     >>>
@@ -170,11 +176,13 @@ task GffreadMerge {
     }
 
     output {
-        File gff = aligned_sample.name+"."+aligned_sample.aligner+".gffread_merge.gtf"
+        File gff = "assemblies/" + aligned_sample.name+"."+aligned_sample.aligner+".gffread_merge.gtf"
     }
 
     command <<<
         set -euxo pipefail
+        mkdir assemblies
+        cd assemblies
         for bam in ~{sep=" " aligned_sample.bam}; do
         samtools view -F 4 -F 0x900 $bam; done | sam2gff -s ~{aligned_sample.name} | gffread -T -M -K -o ~{aligned_sample.name}.~{aligned_sample.aligner}.gffread_merge.gtf
     >>>

@@ -213,27 +213,26 @@ task MikadoPick {
     Int cpus = 8
 
     output {
-        File index_log = "mikado_pick/" + output_prefix + "-index_loci.log"
-        File loci_index = "mikado_pick/" + output_prefix + "-mikado-"+mode+".loci.gff3.midx"
-        File loci = "mikado_pick/" + output_prefix + "-mikado-" + mode + ".loci.gff3"
-        File scores = "mikado_pick/" + output_prefix + "-mikado-" + mode + ".loci.scores.tsv"
-        File metrics = "mikado_pick/" + output_prefix + "-mikado-" + mode + ".loci.metrics.tsv"
-        File stats = "mikado_pick/" + output_prefix + "-mikado-" + mode + ".loci.gff3.stats"
-        File subloci = "mikado_pick/" + output_prefix + "-mikado-" + mode + ".subloci.gff3"
-        File monoloci = "mikado_pick/" + output_prefix + "-mikado-" + mode + ".monoloci.gff3"
+        File index_log  = output_prefix + "-index_loci.log"
+        File loci_index = output_prefix + "-mikado-"+mode+".loci.gff3.midx"
+        File loci       = output_prefix + "-mikado-" + mode + ".loci.gff3"
+        File scores     = output_prefix + "-mikado-" + mode + ".loci.scores.tsv"
+        File metrics    = output_prefix + "-mikado-" + mode + ".loci.metrics.tsv"
+        File stats      = output_prefix + "-mikado-" + mode + ".loci.gff3.stats"
+        File subloci    = output_prefix + "-mikado-" + mode + ".subloci.gff3"
+        File monoloci   = output_prefix + "-mikado-" + mode + ".monoloci.gff3"
     }
 
     command <<<
     set -euxo pipefail
     export TMPDIR=/tmp
-    mkdir -p mikado_pick
     mikado pick ~{"--source Mikado_" + mode} ~{"--mode " + mode} --procs=~{cpus} \
     ~{"--flank " + flank} --start-method=spawn ~{"--json-conf=" + config_file} \
-    -od mikado_pick --loci-out ~{output_prefix}-mikado-~{mode}.loci.gff3 -lv INFO ~{"-db " + mikado_db} \
+    --loci-out ~{output_prefix}-mikado-~{mode}.loci.gff3 -lv INFO ~{"-db " + mikado_db} \
     --subloci-out ~{output_prefix}-mikado-~{mode}.subloci.gff3 --monoloci-out ~{output_prefix}-mikado-~{mode}.monoloci.gff3 \
     ~{transcripts}
-    mikado compare -r mikado_pick/~{output_prefix}-mikado-~{mode}.loci.gff3 -l mikado_pick/~{output_prefix}-index_loci.log --index
-    mikado util stats  mikado_pick/~{output_prefix}-mikado-~{mode}.loci.gff3 mikado_pick/~{output_prefix}-mikado-~{mode}.loci.gff3.stats
+    mikado compare -r ~{output_prefix}-mikado-~{mode}.loci.gff3 -l ~{output_prefix}-index_loci.log --index
+    mikado util stats  ~{output_prefix}-mikado-~{mode}.loci.gff3 ~{output_prefix}-mikado-~{mode}.loci.gff3.stats
     >>>
 
     RuntimeAttr default_attr = object {
