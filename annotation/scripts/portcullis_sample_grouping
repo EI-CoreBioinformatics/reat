@@ -8,8 +8,13 @@ aligned_samples = {}
 with open(sys.argv[1]) as tsvfile:
     reader = csv.DictReader(tsvfile, dialect='excel-tab')
     for sample in reader:
-        aligned_samples[sample['name']] = {"strand": sample['strand'], "aligner": sample['aligner'],
-                                           "bam": sample['bam'].strip(']["').split(',')}
+        clean_bam = sample['bam'].replace(']', '').replace('[', '').replace('"', '').replace(' ', '')
+        aligned_samples[sample['name']] = \
+            {
+            "strand": sample['strand'],
+            "aligner": sample['aligner'],
+            "bam": clean_bam.split(',')
+            }
 
 group_to_sample = json.load(open(sys.argv[2]))
 portcullis_groups = []
