@@ -88,13 +88,13 @@ workflow wf_assembly_short {
     call tasks.TranscriptAssemblySummaryStats as Stringtie_Summary_Stats{
         input:
         stats = Stringtie_Stats.stats,
-        output_prefix = "stringtie"
+        output_prefix = "assembly_short.stringtie"
     }
 
     call tasks.TranscriptAssemblySummaryStats as Scallop_Summary_Stats{
         input:
         stats = Scallop_Stats.stats,
-        output_prefix = "scallop"
+        output_prefix = "assembly_short.scallop"
     }
 
     output {
@@ -117,7 +117,7 @@ task Stringtie {
     Int cpus = 8
 
     output {
-        File assembled = "stringtie_assemblies/"+prefix+".stringtie.gtf"
+        File assembled = "assembly_short/"+prefix+".stringtie.gtf"
     }
 
     command <<<
@@ -132,8 +132,8 @@ task Stringtie {
             ;;
         esac
 
-        mkdir stringtie_assemblies
-        cd stringtie_assemblies
+        mkdir assembly_short
+        cd assembly_short
         stringtie ~{aligned_sample} \
         -p "~{cpus}" \
         "${strandness}" \
@@ -168,11 +168,13 @@ task Merge {
     Int cpus = 8
 
     output {
-        File assembly = name+"."+aligner_name+".stringtie.gtf"
+        File assembly = "assembly_short/" + name+"."+aligner_name+".stringtie.gtf"
     }
 
     command <<<
         set -euxo pipefail
+        mkdir assembly_short
+        cd assembly_short
         stringtie --merge \
         ~{"-G " + annotation} \
         -o "~{name+"."+aligner_name}.stringtie.gtf" \
@@ -204,11 +206,11 @@ task Scallop {
     Int cpus = 2
 
     output {
-        File assembled = "scallop/"+aligned_sample.name+"."+aligned_sample.aligner+".scallop.gtf"
+        File assembled = "assembly_short/"+aligned_sample.name+"."+aligned_sample.aligner+".scallop.gtf"
         AssembledSample assembly = {
             "name": aligned_sample.name+"."+aligned_sample.aligner+".scallop", 
             "strand": aligned_sample.strand, 
-            "assembly": "scallop/" + aligned_sample.name+"."+aligned_sample.aligner+".scallop.gtf"}
+            "assembly": assembled}
     }
 
     command <<<
@@ -231,8 +233,8 @@ task Scallop {
             ;;
         esac
 
-        mkdir scallop
-        cd scallop
+        mkdir assembly_short
+        cd assembly_short
 
         scallop --verbose 0 -i ~{sep=" " aligned_sample.bam} -o "~{aligned_sample.name+"."+aligned_sample.aligner}.scallop.gtf" "${strandness}"
     >>>

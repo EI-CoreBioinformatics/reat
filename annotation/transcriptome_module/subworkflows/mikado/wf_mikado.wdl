@@ -214,13 +214,13 @@ task MikadoPick {
 
     output {
         File index_log  = output_prefix + "-index_loci.log"
-        File loci_index = output_prefix + "-mikado-"+mode+".loci.gff3.midx"
-        File loci       = output_prefix + "-mikado-" + mode + ".loci.gff3"
-        File scores     = output_prefix + "-mikado-" + mode + ".loci.scores.tsv"
-        File metrics    = output_prefix + "-mikado-" + mode + ".loci.metrics.tsv"
-        File stats      = output_prefix + "-mikado-" + mode + ".loci.gff3.stats"
-        File subloci    = output_prefix + "-mikado-" + mode + ".subloci.gff3"
-        File monoloci   = output_prefix + "-mikado-" + mode + ".monoloci.gff3"
+        File loci_index = output_prefix + "-" +mode+".loci.gff3.midx"
+        File loci       = output_prefix + "-" + mode + ".loci.gff3"
+        File scores     = output_prefix + "-" + mode + ".loci.scores.tsv"
+        File metrics    = output_prefix + "-" + mode + ".loci.metrics.tsv"
+        File stats      = output_prefix + "-" + mode + ".loci.gff3.stats"
+        File subloci    = output_prefix + "-" + mode + ".subloci.gff3"
+        File monoloci   = output_prefix + "-" + mode + ".monoloci.gff3"
     }
 
     command <<<
@@ -228,11 +228,11 @@ task MikadoPick {
     export TMPDIR=/tmp
     mikado pick ~{"--source Mikado_" + mode} ~{"--mode " + mode} --procs=~{cpus} \
     ~{"--flank " + flank} --start-method=spawn ~{"--json-conf=" + config_file} \
-    --loci-out ~{output_prefix}-mikado-~{mode}.loci.gff3 -lv INFO ~{"-db " + mikado_db} \
-    --subloci-out ~{output_prefix}-mikado-~{mode}.subloci.gff3 --monoloci-out ~{output_prefix}-mikado-~{mode}.monoloci.gff3 \
+    --loci-out ~{output_prefix}-~{mode}.loci.gff3 -lv INFO ~{"-db " + mikado_db} \
+    --subloci-out ~{output_prefix}-~{mode}.subloci.gff3 --monoloci-out ~{output_prefix}-~{mode}.monoloci.gff3 \
     ~{transcripts}
-    mikado compare -r ~{output_prefix}-mikado-~{mode}.loci.gff3 -l ~{output_prefix}-index_loci.log --index
-    mikado util stats  ~{output_prefix}-mikado-~{mode}.loci.gff3 ~{output_prefix}-mikado-~{mode}.loci.gff3.stats
+    mikado compare -r ~{output_prefix}-~{mode}.loci.gff3 -l ~{output_prefix}-index_loci.log --index
+    mikado util stats  ~{output_prefix}-~{mode}.loci.gff3 ~{output_prefix}-~{mode}.loci.gff3.stats
     >>>
 
     RuntimeAttr default_attr = object {

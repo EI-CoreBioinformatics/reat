@@ -46,26 +46,6 @@ workflow wf_align_short {
                 splice_sites = Hisat2SpliceSites.sites
             }
         }
-
-        # if (defined(Hisat2SpliceSites.sites)) {
-        #     # Array[AlignedSample] nopt_alignmetns = hisat_aligned_sample
-        # }
-        # if (!defined(Hisat2SpliceSites.sites)) {
-        #     scatter (sample in samples) {
-        #        scatter(PR in sample.read_pair) {
-        #            call Hisat as wopt {
-        #                input:
-        #                strand = sample.strand,
-        #                name = sample.name,
-        #                sample = PR,
-        #                index = Hisat2Index.index,
-        #                runtime_attr_override = alignment_resources
-        #            }
-        #        }
-        #        AlignedSample hisat_aligned_sample_no_sites = object {bam: wopt.bam, strand: sample.strand, aligner: "hisat", name: sample.name, merge: sample.merge }
-        #     }
-        #     Array[AlignedSample] wopt_alignments = hisat_aligned_sample_no_sites
-        # }
         Array[AlignedSample] def_hisat_aligned = Hisat.aligned_sample
     }
 

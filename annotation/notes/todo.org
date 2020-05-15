@@ -16,6 +16,7 @@ For cleanliness:
   Start refactoring from the right (inner most section)
 
 * Tasks
+** TODO Create a structure for the results
 ** DONE DS review 1
    CLOSED: [2020-05-13 Wed 12:19]
    - CLOSING NOTE [2020-05-13 Wed 12:19]
@@ -76,7 +77,7 @@ or when they have been subdivided beforehand.
         This code has been added, now it needs to be transformed into a matrix
 ***** DONE Accumulate summary results in both a table and an extra namable file
       CLOSED: [2020-05-13 Wed 12:18]
-      - CLOSING NOTE [2020-05-13 Wed 12:18]
+      - CLOSING NOTE [2020-05-13 Wed 12:1
 ** TODO Generate a main "running" script that will tie everything together with CLI + input file validation
 ** TODO Start thinking about a good installation procedure for all the non-dependency requirements
 *** TODO Create a dockerfile with all the dependencies and it's installation

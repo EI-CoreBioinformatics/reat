@@ -77,7 +77,7 @@ task MergeFiles {
 task IndexFasta {
     input {
         File reference_fasta
-        String output_directory = "reference"
+        String output_directory = "sanitised_reference"
         RuntimeAttr? runtime_attr_override
     }
     

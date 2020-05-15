@@ -12,24 +12,28 @@ workflow wf_assembly_long {
         String stats_output_prefix
         RuntimeAttr? assembly_resources
     }
+    String output_directory = "assembly_long"
 
     scatter (sample in aligned_samples) {
         if (assembler == "filter") {
             call Sam2gff {
                 input:
                 aligned_sample = sample,
-                runtime_attr_override = assembly_resources
+                runtime_attr_override = assembly_resources,
+                output_directory = output_directory
             }
             call FilterGFF {
                 input:
-                gff = Sam2gff.gff
+                gff = Sam2gff.gff,
+                output_directory = output_directory
             }
         }
         if (assembler == "merge") {
             call GffreadMerge {
                 input:
                 aligned_sample = sample,
-                runtime_attr_override = assembly_resources
+                runtime_attr_override = assembly_resources,
+                output_directory = output_directory
             }
         }
         if (assembler == "stringtie") {
@@ -37,7 +41,8 @@ workflow wf_assembly_long {
                 input:
                 reference_annotation = reference_annotation,
                 aligned_sample = sample,
-                runtime_attr_override = assembly_resources
+                runtime_attr_override = assembly_resources,
+                output_directory = output_directory
             }
         }
         if (assembler == "stringtie_collapse") {
@@ -46,7 +51,8 @@ workflow wf_assembly_long {
                 reference_annotation = reference_annotation,
                 collapse = true,
                 aligned_sample = sample,
-                runtime_attr_override = assembly_resources
+                runtime_attr_override = assembly_resources,
+                output_directory = output_directory
             }
         }
 
@@ -84,15 +90,16 @@ task FilterGFF {
         File gff
         String min_coverage = "80"
         String min_identity = "95"
+        String output_directory
     }
 
     output {
-        File filtered_gff = "assemblies/" + basename(gff)+"."+min_identity+"id"+min_coverage+"cov.gff"
+        File filtered_gff = output_directory + "/" + basename(gff)+"."+min_identity+"id"+min_coverage+"cov.gff"
     }
 
     command <<<
-    mkdir assemblies
-    cd assemblies
+    mkdir ~{output_directory}
+    cd ~{output_directory}
     filter_gmap_hardFilter_v0.1.pl --gff ~{gff} --identity ~{min_identity} --coverage ~{min_coverage} > ~{basename(gff)}.~{min_identity}id~{min_coverage}cov.gff
     >>>
 }
@@ -103,19 +110,20 @@ task StringtieLong {
         Boolean collapse = false
         String collapse_string = if (collapse==true) then "-R " else "-L "
         AlignedSample aligned_sample
+        String output_directory
         RuntimeAttr? runtime_attr_override
     }
 
     Int cpus = 8
 
     output {
-        File gff = "assemblies/" + aligned_sample.name+"."+aligned_sample.aligner+".stringtie.gtf"
+        File gff = output_directory + "/" + aligned_sample.name+"."+aligned_sample.aligner+".stringtie.gtf"
     }
 
     command <<<
         set -euxo pipefail
-        mkdir assemblies
-        cd assemblies
+        mkdir ~{output_directory}
+        cd ~{output_directory}
         stringtie -p "~{cpus}" ~{"-G " + reference_annotation} ~{collapse_string} ~{sep=" " aligned_sample.bam} -o "~{aligned_sample.name}.~{aligned_sample.aligner}.stringtie.gtf"
     >>>
 
@@ -137,18 +145,19 @@ task StringtieLong {
 
 task Sam2gff {
     input {
+        String output_directory
         AlignedSample aligned_sample
         RuntimeAttr? runtime_attr_override
     }
     
     output {
-        File gff = "assemblies/" + aligned_sample.name+"."+aligned_sample.aligner+".sam2gff.gff"
+        File gff = output_directory + "/" + aligned_sample.name+"."+aligned_sample.aligner+".sam2gff.gff"
     }
 
     command <<<
         set -euxo pipefail
-        mkdir assemblies
-        cd assemblies
+        mkdir ~{output_directory}
+        cd ~{output_directory}
         for bam in ~{sep=" " aligned_sample.bam}; do
         samtools view -F 4 -F 0x900 $bam; done | sam2gff -s ~{aligned_sample.name} > ~{aligned_sample.name}.~{aligned_sample.aligner}.sam2gff.gff
     >>>
@@ -171,18 +180,19 @@ task Sam2gff {
 
 task GffreadMerge {
     input {
+        String output_directory
         AlignedSample aligned_sample
         RuntimeAttr? runtime_attr_override
     }
 
     output {
-        File gff = "assemblies/" + aligned_sample.name+"."+aligned_sample.aligner+".gffread_merge.gtf"
+        File gff = output_directory + "/" + aligned_sample.name+"."+aligned_sample.aligner+".gffread_merge.gtf"
     }
 
     command <<<
         set -euxo pipefail
-        mkdir assemblies
-        cd assemblies
+        mkdir ~{output_directory}
+        cd ~{output_directory}
         for bam in ~{sep=" " aligned_sample.bam}; do
         samtools view -F 4 -F 0x900 $bam; done | sam2gff -s ~{aligned_sample.name} | gffread -T -M -K -o ~{aligned_sample.name}.~{aligned_sample.aligner}.gffread_merge.gtf
     >>>
