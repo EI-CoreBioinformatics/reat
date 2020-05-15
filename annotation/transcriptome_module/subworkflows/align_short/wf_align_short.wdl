@@ -3,6 +3,7 @@ version 1.0
 import "../common/structs.wdl"
 import "../common/rt_struct.wdl"
 import "../common/tasks.wdl"
+import "./wf_hisat.wdl" as hisat
 
 workflow wf_align_short {
     input {
@@ -36,38 +37,36 @@ workflow wf_align_short {
             input: reference = reference_genome
         }
 
-        if (defined(Hisat2SpliceSites.sites)) {
-            scatter (sample in samples) {
-                scatter(PR in sample.read_pair) {
-                    call Hisat as nopt{
-                        input:
-                        sites = Hisat2SpliceSites.sites,
-                        strand = sample.strand,
-                        name = sample.name,
-                        sample = PR,
-                        index = Hisat2Index.index,
-                        runtime_attr_override = alignment_resources
-                    }
-                }
-                AlignedSample hisat_aligned_sample = object {bam: nopt.bam, strand: sample.strand, aligner: "hisat", name: sample.name, merge: sample.merge}
+        scatter (sample in samples) {
+            call hisat.wf_Hisat as Hisat {
+                input:
+                sample = sample,
+                index = Hisat2Index.index,
+                alignment_resources = alignment_resources,
+                splice_sites = Hisat2SpliceSites.sites
             }
         }
-        if (!defined(Hisat2SpliceSites.sites)) {
-            scatter (sample in samples) {
-               scatter(PR in sample.read_pair) {
-                   call Hisat as wopt {
-                       input:
-                       strand = sample.strand,
-                       name = sample.name,
-                       sample = PR,
-                       index = Hisat2Index.index,
-                       runtime_attr_override = alignment_resources
-                   }
-               }
-               AlignedSample hisat_aligned_sample_no_sites = object {bam: wopt.bam, strand: sample.strand, aligner: "hisat", name: sample.name, merge: sample.merge }
-            }
-        }
-        Array[AlignedSample] def_hisat_aligned = select_first([hisat_aligned_sample, hisat_aligned_sample_no_sites])
+
+        # if (defined(Hisat2SpliceSites.sites)) {
+        #     # Array[AlignedSample] nopt_alignmetns = hisat_aligned_sample
+        # }
+        # if (!defined(Hisat2SpliceSites.sites)) {
+        #     scatter (sample in samples) {
+        #        scatter(PR in sample.read_pair) {
+        #            call Hisat as wopt {
+        #                input:
+        #                strand = sample.strand,
+        #                name = sample.name,
+        #                sample = PR,
+        #                index = Hisat2Index.index,
+        #                runtime_attr_override = alignment_resources
+        #            }
+        #        }
+        #        AlignedSample hisat_aligned_sample_no_sites = object {bam: wopt.bam, strand: sample.strand, aligner: "hisat", name: sample.name, merge: sample.merge }
+        #     }
+        #     Array[AlignedSample] wopt_alignments = hisat_aligned_sample_no_sites
+        # }
+        Array[AlignedSample] def_hisat_aligned = Hisat.aligned_sample
     }
 
     if (aligner == "star") {
@@ -109,7 +108,13 @@ workflow wf_align_short {
             }
         }
         Array[File] aligned_file =  select_first([MergeAlignments.bam,Sort.sorted_bam])
-        AlignedSample sorted_aligned_sample = object {name: aligned_sample.name + if aligned_sample.merge then ".merged" else "", strand: aligned_sample.strand, merge: aligned_sample.merge, aligner: aligned_sample.aligner, bam: aligned_file}
+        AlignedSample sorted_aligned_sample = object {
+            name: aligned_sample.name,
+            strand: aligned_sample.strand, 
+            merge: aligned_sample.merge, 
+            aligner: aligned_sample.aligner, 
+            bam: aligned_file
+            }
     }
 
     scatter (aligned_sample in sorted_aligned_sample) {
@@ -205,7 +210,7 @@ task MergeAlignments {
     >>>
 }
 
-task Sort{
+task Sort {
     input {
         File bam
         String name = basename(bam, ".bam")
@@ -215,12 +220,14 @@ task Sort{
     Int cpus = 8
 
     output {
-        IndexedBam indexed_bam = object { bam: name + ".sorted.bam", index: name + ".sorted.bam.bai" }
-        File sorted_bam = name + ".sorted.bam"
+        IndexedBam indexed_bam = object { bam: "alignments/" + name + ".sorted.bam", index: "alignments/" + name + ".sorted.bam.bai" }
+        File sorted_bam = "alignments/" + name + ".sorted.bam"
     }
 
     command <<<
         set -euxo pipefail
+        mkdir alignments
+        cd alignments
         samtools sort -@~{cpus} ~{bam} > ~{name + ".sorted.bam"}
         samtools index ~{name + ".sorted.bam"}
     >>>
@@ -303,63 +310,6 @@ task Hisat2SpliceSites {
     }
 }
 
-task Hisat {
-    input {
-        Array[File] index
-        File? sites
-        ReadPair sample
-        String strand
-        String name
-        String rp_name = name+"."+basename(sample.R1)
-        RuntimeAttr? runtime_attr_override
-    }
-
-    Int cpus = 8
-    
-    output {
-        File bam = rp_name + ".hisat.bam"
-    }
-
-    command <<<
-        set -euxo pipefail
-        strandness=""
-        case "~{strand}" in
-            fr-firststrand)
-            strandness="--rna-strandness=RF"
-            ;;
-            fr-secondstrand)
-            strandness="--rna-strandness=FR"
-            ;;
-            f)
-            strandness="--rna-strandness=F"
-            ;;
-            r)
-            strandness="--rna-strandness=R"
-            ;;
-        esac
-    hisat2 -p ~{cpus} -x ~{sub(index[0], "\\.\\d\\.ht2l?", "")} \
-    ${strandness} \
-    --min-intronlen=20 \
-    --max-intronlen=2000 \
-    ~{"--known-splicesite-infile " + sites} \
-    -1 ~{sample.R1} ~{"-2 " + sample.R2} | samtools sort -@ 4 - > "~{rp_name}.hisat.bam"
-    >>>
-
-    RuntimeAttr default_attr = object {
-        cpu_cores: "~{cpus}",
-        mem_gb: 16,
-        max_retries: 1
-    }
-    
-    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
-
-
-    runtime {
-        cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
-        memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
-        maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
-    }
-}
 
 task Star {
     input {
