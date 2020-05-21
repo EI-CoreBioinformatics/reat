@@ -66,11 +66,102 @@ workflow wf_align_long {
 
     Array[AlignedSample] def_alignments = select_first([mm2_aligned_sample, gmap_aligned_sample])
 
+    scatter (aligned_sample in def_alignments) {
+        scatter (bam in aligned_sample.bam) {
+            call LongAlignmentStats {
+                input:
+                bam = bam
+            }
+        }
+
+        call SummaryAlignmentStats {
+            input:
+            stats = LongAlignmentStats.stats,
+            output_prefix = aligned_sample.name
+        }
+        File summary_alignment_stats = SummaryAlignmentStats.summary_stats
+    }
+
+    call CollectAlignmentStats {
+        input:
+        summary_stats = summary_alignment_stats,
+        prefix = if(is_hq) then "HQ" else "LQ"
+    }
     output {
         Array[AlignedSample] bams = def_alignments
+        Array[File] summary_stats = summary_alignment_stats
+        File summary_stats_table = CollectAlignmentStats.summary_stats_table
     }
 
 }
+
+task CollectAlignmentStats {
+    input {
+        Array[File] summary_stats
+        String prefix
+    }
+
+    output {
+        File summary_stats_table = prefix+".alignment.stats.summary.tsv"
+    }
+
+    command <<<
+    short_read_summary_stats_table ~{sep=" " summary_stats} > ~{prefix}.alignment.stats.summary.tsv
+    >>>
+}
+
+task SummaryAlignmentStats {
+    input {
+        Array[File] stats
+        String output_prefix
+    }
+
+    output {
+        File summary_stats = "alignments/" + output_prefix + ".summary.stats.tsv"
+    }
+
+    command <<<
+    mkdir alignments
+    cd alignments
+    alignment_summary_stats ~{sep=" " stats} > ~{output_prefix}.summary.stats.tsv
+    >>>
+}
+
+task LongAlignmentStats {
+    input {
+        File bam
+        String name = basename(bam, ".bam")
+        RuntimeAttr? runtime_attr_override
+    }
+
+    output {
+        File stats = "align_long_stats/" + name + ".stats"
+        Array[File] plots = glob("align_long_stats/plot/*")
+    }
+
+    command <<<
+        set -euxo pipefail
+        mkdir align_long_stats
+        cd align_long_stats
+        samtools stats ~{bam} > ~{name + ".stats"} && \
+        plot-bamstats -p "plot/~{name}" ~{name + ".stats"}
+    >>>
+    
+    RuntimeAttr default_attr = object {
+        cpu_cores: 1,
+        mem_gb: 4,
+        max_retries: 1
+    }
+    
+    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
+
+    runtime {
+        cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
+        memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
+        maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+    }
+}
+
 
 task GMapIndex {
     input {
