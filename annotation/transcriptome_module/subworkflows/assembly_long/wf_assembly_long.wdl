@@ -61,7 +61,8 @@ workflow wf_assembly_long {
         if (assembler != "filter") {
             call tasks.TranscriptAssemblyStats {
                 input:
-                gff = def_gff
+                gff = def_gff,
+                output_directory = output_directory
             }
         }
     }
@@ -74,13 +75,13 @@ workflow wf_assembly_long {
         call tasks.TranscriptAssemblySummaryStats {
             input:
             stats = assembled_samples_stats,
-            output_prefix = stats_output_prefix
+            output_prefix = "assembly_long." + stats_output_prefix
         }
     }
 
     output {
         Array[AssembledSample] gff = assembled_long
-        Array[File?] stats = TranscriptAssemblyStats.stats
+        Array[File] stats = assembled_samples_stats
         File? summary_stats = TranscriptAssemblySummaryStats.summary
     }
 }
