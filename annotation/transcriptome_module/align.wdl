@@ -95,7 +95,7 @@ workflow wf_align {
             aligned_samples = LQ_align.bams,
             assembler = LQ_assembler,
             assembly_resources = long_read_assembly_resources,
-            stats_output_prefix = "LQ"
+            stats_output_prefix = "LQ_read_samples"
         }
     }
 
@@ -120,12 +120,11 @@ workflow wf_align {
             aligned_samples = HQ_align.bams,
             assembler = HQ_assembler,
             assembly_resources = long_read_assembly_resources,
-            stats_output_prefix = "HQ"
+            stats_output_prefix = "HQ_read_samples"
         }
     }
 
     output {
-        File clean_reference = wf_sanitise.reference
         IndexedReference clean_reference_index = wf_sanitise.indexed_reference
         File? clean_annotation = wf_sanitise.annotation
 
@@ -137,9 +136,9 @@ workflow wf_align {
         File? fail_filtered_bed = portcullis.fail_bed
         File? fail_filtered_gff3 = portcullis.fail_gff3
 
-        Array[AlignedSample]? sr_bams = wf_align_short.aligned_samples
-        Array[AlignedSample]? lq_bams = LQ_align.bams
-        Array[AlignedSample]? hq_bams = HQ_align.bams
+        Array[AlignedSample]? SR_bams = wf_align_short.aligned_samples
+        Array[AlignedSample]? LQ_bams = LQ_align.bams
+        Array[AlignedSample]? HQ_bams = HQ_align.bams
 
         Array[AssembledSample]? SR_gff = wf_assembly_short.assemblies
         Array[AssembledSample]? LQ_gff = LQ_assembly.gff
@@ -148,11 +147,21 @@ workflow wf_align {
         Array[Array[File]]? stats = wf_align_short.stats
         Array[Array[Array[File]]]? plots = wf_align_short.plots
 
-        Array[File]? summary_stats = wf_align_short.summary_stats
+        Array[File]? SR_summary_stats = wf_align_short.summary_stats
+        Array[File]? LQ_summary_stats = LQ_align.summary_stats
+        Array[File]? HQ_summary_stats = HQ_align.summary_stats
 
-        File? SR_stringtie_stats = wf_assembly_short.stringtie_summary_stats
-        File? SR_scallop_stats = wf_assembly_short.scallop_summary_stats
-        File? LQ_stats = LQ_assembly.summary_stats
-        File? HQ_stats = HQ_assembly.summary_stats
+        File? SR_summary_stats_table = wf_align_short.summary_stats_table
+        File? LQ_summary_stats_table = LQ_align.summary_stats_table
+        File? HQ_summary_stats_table = HQ_align.summary_stats_table
+
+        Array[File]? SR_assembly_stats = wf_assembly_short.stats
+        Array[File]? LQ_assembly_stats = LQ_assembly.stats
+        Array[File]? HQ_assembly_stats = HQ_assembly.stats
+
+        File? SR_stringtie_summary_stats = wf_assembly_short.stringtie_summary_stats
+        File? SR_scallop_summary_stats = wf_assembly_short.scallop_summary_stats
+        File? LQ_assembly_summary_stats = LQ_assembly.summary_stats
+        File? HQ_assembly_summary_stats = HQ_assembly.summary_stats
     }
 }
