@@ -11,6 +11,8 @@ workflow wf_assembly_short {
         RuntimeAttr? assembly_resources
     }
 
+    String output_directory = "assembly_short"
+
     scatter (aligned_sample in aligned_samples) {
         # There's some issue with scatter of scatter and optional parameters, 
         # the following if construct is to eliminate the parameter from the WF if it is not present
@@ -23,6 +25,7 @@ workflow wf_assembly_short {
                     aligned_sample = bam,
                     strand = aligned_sample.strand,
                     reference_annotation = reference_annotation,
+                    output_directory = output_directory,
                     runtime_attr_override = assembly_resources
                 }
             }
@@ -34,6 +37,7 @@ workflow wf_assembly_short {
                     input:
                     aligned_sample = bam,
                     strand = aligned_sample.strand,
+                    output_directory = output_directory,
                     runtime_attr_override = assembly_resources
                 }
             }
@@ -50,6 +54,7 @@ workflow wf_assembly_short {
                 name = aligned_sample.name,
                 aligner_name = aligned_sample.aligner,
                 assemblies = stringtie_assemblies,
+                output_directory = output_directory,
                 runtime_attr_override = assembly_resources
             }
         }
@@ -66,6 +71,7 @@ workflow wf_assembly_short {
         call Scallop {
             input:
             aligned_sample = aligned_sample,
+            output_directory = output_directory,
             runtime_attr_override = assembly_resources
         }
     }
@@ -74,14 +80,16 @@ workflow wf_assembly_short {
     scatter (assembly in stringtie_assembly) {
         call tasks.TranscriptAssemblyStats as Stringtie_Stats{
             input:
-            gff = assembly.assembly
+            gff = assembly.assembly,
+            output_directory = output_directory
         }
     }
 
     scatter (assembly in Scallop.assembly) {
         call tasks.TranscriptAssemblyStats as Scallop_Stats {
             input:
-            gff = assembly.assembly
+            gff = assembly.assembly,
+            output_directory = output_directory
         }
     }
 
@@ -108,6 +116,7 @@ workflow wf_assembly_short {
 task Stringtie {
     input {
         File aligned_sample
+        String output_directory
         String prefix = basename(aligned_sample, ".bam")
         String strand
         File? reference_annotation
@@ -117,7 +126,7 @@ task Stringtie {
     Int cpus = 8
 
     output {
-        File assembled = "assembly_short/"+prefix+".stringtie.gtf"
+        File assembled = output_directory + "/"+prefix+".stringtie.gtf"
     }
 
     command <<<
@@ -132,8 +141,8 @@ task Stringtie {
             ;;
         esac
 
-        mkdir assembly_short
-        cd assembly_short
+        mkdir ~{output_directory}
+        cd ~{output_directory}
         stringtie ~{aligned_sample} \
         -p "~{cpus}" \
         "${strandness}" \
@@ -160,6 +169,7 @@ task Merge {
     input {
         String name
         String aligner_name
+        String output_directory
         Array[File] assemblies
         File? annotation
         RuntimeAttr? runtime_attr_override
@@ -168,13 +178,13 @@ task Merge {
     Int cpus = 8
 
     output {
-        File assembly = "assembly_short/" + name+"."+aligner_name+".stringtie.gtf"
+        File assembly = output_directory + "/" + name+"."+aligner_name+".stringtie.gtf"
     }
 
     command <<<
         set -euxo pipefail
-        mkdir assembly_short
-        cd assembly_short
+        mkdir ~{output_directory}
+        cd ~{output_directory}
         stringtie --merge \
         ~{"-G " + annotation} \
         -o "~{name+"."+aligner_name}.stringtie.gtf" \
@@ -199,6 +209,7 @@ task Merge {
 
 task Scallop {
     input {
+        String output_directory
         AlignedSample aligned_sample
         RuntimeAttr? runtime_attr_override
     }
@@ -206,7 +217,7 @@ task Scallop {
     Int cpus = 2
 
     output {
-        File assembled = "assembly_short/"+aligned_sample.name+"."+aligned_sample.aligner+".scallop.gtf"
+        File assembled = output_directory+"/"+aligned_sample.name+"."+aligned_sample.aligner+".scallop.gtf"
         AssembledSample assembly = {
             "name": aligned_sample.name+"."+aligned_sample.aligner+".scallop", 
             "strand": aligned_sample.strand, 
@@ -233,8 +244,8 @@ task Scallop {
             ;;
         esac
 
-        mkdir assembly_short
-        cd assembly_short
+        mkdir ~{output_directory}
+        cd ~{output_directory}
 
         scallop --verbose 0 -i ~{sep=" " aligned_sample.bam} -o "~{aligned_sample.name+"."+aligned_sample.aligner}.scallop.gtf" "${strandness}"
     >>>
