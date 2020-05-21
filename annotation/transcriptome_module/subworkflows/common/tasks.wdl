@@ -292,15 +292,16 @@ task TranscriptAssemblySummaryStats {
 task TranscriptAssemblyStats {
     input {
         File gff
+        String output_directory
     }
 
     output {
-        File stats = "assembly_stats/" + basename(gff) + ".stats.tsv"
+        File stats = output_directory + "/" + basename(gff) + ".stats.tsv"
     }
 
     command <<<
-    mkdir assembly_stats
-    cd assembly_stats
+    mkdir ~{output_directory}
+    cd ~{output_directory}
     mikado util stats ~{gff} ~{basename(gff)}.stats.tsv
     >>>
 
