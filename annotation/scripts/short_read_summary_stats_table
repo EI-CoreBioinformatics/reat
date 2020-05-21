@@ -1,0 +1,61 @@
+#!/usr/bin/env python3
+import argparse
+import sys
+import csv
+from collections import defaultdict
+
+to_filter = ["Stat", "is sorted", "filtered sequences"]
+
+to_average = ["error rate", "average length", "average first fragment length", "average last fragment length",
+              "average quality", "percentage of properly paired reads (%)", "insert size average",
+              "insert size standard deviation", "percentage of properly mapped pairs"]
+
+to_max = ["maximum length", "maximum first fragment length", "maximum last fragment length"]
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("stats_tsv", type=str, nargs='+')
+    args = ap.parse_args()
+
+    stats_files = args.stats_tsv
+    stats_table = defaultdict(list)
+    for f, filepath in enumerate(stats_files):
+        stats_fh = open(filepath)
+        # Get the name of the sample
+        sample_name = '.'.join(stats_files[f].split('/')[-1].split('.')[:-3])
+        stats_table["Stat"].append(sample_name)
+        # Collect all the stats outputs
+        for line in stats_fh:
+            line = line.strip().split('\t')
+            stat_name = line[0]
+            if "sequences" == stat_name:
+                sample_weights = [float(x) for x in line[1:]]
+                sample_weights_total = sum(sample_weights)
+            if stat_name in to_filter:
+                continue
+            elif stat_name in to_average:
+                # stat_val = mean(map(float, line[1:]))
+                stat_val = sum(
+                    sample_weights[i] * float(line[i + 1]) for i in range(len(line[1:]))) / sample_weights_total
+                if "error rate" != stat_name:
+                    stat_val = round(stat_val, 2)
+            elif stat_name in to_max:
+                stat_val = max(map(int, line[1:]))
+            else:
+                stat_val = sum(map(int, line[1:]))
+
+            if stat_name == "error rate":
+                stats_table[stat_name].append("{:e}".format(stat_val))
+            else:
+                stats_table[stat_name].append(stat_val)
+
+    # Print the results
+    writer = csv.writer(sys.stdout, delimiter='\t')
+    for k, v in stats_table.items():
+        if k not in []:
+            writer.writerow([k] + v)
+
+
+if __name__ == "__main__":
+    main()
