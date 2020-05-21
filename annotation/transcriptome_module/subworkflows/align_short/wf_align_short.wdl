@@ -114,12 +114,32 @@ workflow wf_align_short {
         File summary_alignment_stats = SummaryAlignmentStats.summary_stats
     }
 
+    call CollectAlignmentStats {
+        input:
+        summary_stats = SummaryAlignmentStats.summary_stats
+    }
+
     output {
         Array[AlignedSample] aligned_samples = sorted_aligned_sample
         Array[Array[File]] stats = AlignmentStats.stats
         Array[Array[Array[File]]] plots = AlignmentStats.plots
         Array[File] summary_stats = summary_alignment_stats
+        File summary_stats_table = CollectAlignmentStats.stats_table
     }
+}
+
+task CollectAlignmentStats {
+    input {
+        Array[File] summary_stats
+    }
+
+    output {
+        File stats_table = "SR_read_samples.alignment.stats.summary.tsv"
+    }
+
+    command <<<
+    short_read_summary_stats_table ~{sep=" " summary_stats} > SR_read_samples.alignment.stats.summary.tsv
+    >>>
 }
 
 task SummaryAlignmentStats {
@@ -129,10 +149,12 @@ task SummaryAlignmentStats {
     }
 
     output {
-        File summary_stats = output_prefix + ".summary.stats.tsv"
+        File summary_stats = "alignments/" + output_prefix + ".summary.stats.tsv"
     }
 
     command <<<
+    mkdir alignments
+    cd alignments
     alignment_summary_stats ~{sep=" " stats} > ~{output_prefix}.summary.stats.tsv
     >>>
 }
