@@ -134,11 +134,11 @@ task CollectAlignmentStats {
     }
 
     output {
-        File stats_table = "SR_read_samples.alignment.stats.summary.tsv"
+        File stats_table = "align_short.SR_read_samples.summary.stats.tsv"
     }
 
     command <<<
-    short_read_summary_stats_table ~{sep=" " summary_stats} > SR_read_samples.alignment.stats.summary.tsv
+    short_read_summary_stats_table ~{sep=" " summary_stats} > align_short.SR_read_samples.summary.stats.tsv
     >>>
 }
 

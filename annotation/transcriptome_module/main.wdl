@@ -110,7 +110,6 @@ workflow ei_annotation {
         File? mikado_longLQ_metrics = wf_main_mikado.longLQ_metrics
         File? mikado_longLQ_stats = wf_main_mikado.longLQ_stats
 
-#        IndexedReference masked_genome = RepeatMasker.masked_genome
-#        Array[Array[File]]? maybe_exonerate_hits = Exonerate.exonerate_results
+        File mikado_summary_stats = wf_main_mikado.mikado_stats_summary
     }
 }

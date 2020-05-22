@@ -1,6 +1,7 @@
 version 1.0
 
 import "subworkflows/common/structs.wdl"
+import "subworkflows/common/tasks.wdl"
 import "subworkflows/mikado/wf_mikado.wdl" as mikado
 
 workflow wf_main_mikado {
@@ -137,6 +138,28 @@ workflow wf_main_mikado {
         }
     }
 
+    Array[File] mikado_loci_files = select_all([
+            Mikado_long.loci, 
+        Mikado_short_and_long.loci, 
+        Mikado_longHQ.loci, 
+        Mikado_longLQ.loci, 
+        Mikado_short_and_long_noLQ.loci
+        ])
+
+    scatter (mikado_run in mikado_loci_files) {
+        call tasks.TranscriptAssemblyStats {
+            input:
+            gff = mikado_run,
+            output_directory = "mikado"
+        }
+    }
+
+    call tasks.TranscriptAssemblySummaryStats {
+        input:
+        stats = TranscriptAssemblyStats.stats,
+        output_prefix = "mikado"
+    }
+
     output {
         File? long_orfs = Mikado_long.orfs
         File? long_loci = Mikado_long.loci
@@ -168,5 +191,6 @@ workflow wf_main_mikado {
         File? longLQ_metrics = Mikado_longLQ.metrics
         File? longLQ_stats = Mikado_longLQ.stats
 
+        File mikado_stats_summary = TranscriptAssemblySummaryStats.summary
     }
 }
