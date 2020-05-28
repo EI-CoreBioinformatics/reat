@@ -138,25 +138,17 @@ workflow wf_main_mikado {
         }
     }
 
-    Array[File] mikado_loci_files = select_all([
-            Mikado_long.loci, 
-        Mikado_short_and_long.loci, 
-        Mikado_longHQ.loci, 
-        Mikado_longLQ.loci, 
-        Mikado_short_and_long_noLQ.loci
+    Array[File] mikado_stats_files = select_all([
+            Mikado_long.stats, 
+        Mikado_short_and_long.stats, 
+        Mikado_longHQ.stats, 
+        Mikado_longLQ.stats, 
+        Mikado_short_and_long_noLQ.stats
         ])
-
-    scatter (mikado_run in mikado_loci_files) {
-        call tasks.TranscriptAssemblyStats {
-            input:
-            gff = mikado_run,
-            output_directory = "mikado"
-        }
-    }
 
     call tasks.TranscriptAssemblySummaryStats {
         input:
-        stats = TranscriptAssemblyStats.stats,
+        stats = mikado_stats_files,
         output_prefix = "mikado"
     }
 
