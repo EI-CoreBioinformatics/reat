@@ -21,6 +21,7 @@ workflow wf_transdecoder {
         File? orf_proteins
         Boolean refine_start_codons = true
         Int minprot = 100
+        Int chunk_size = 50000
         String genetic_code = "universal"
     }
 
@@ -49,9 +50,18 @@ workflow wf_transdecoder {
 
 
 # Step 1 Subdivide the prepared_transcripts
+
+    call tasks.CountSequences {
+        input:
+        sequences_file = prepared_transcripts,
+    }
+
+    Float fl_chunk_size = chunk_size
+
     call tasks.SplitSequences {
         input:
         sequences_file = prepared_transcripts,
+        num_out_files = ceil(CountSequences.num_sequences / fl_chunk_size),
         prefix = "transdecoder_split"
     }
 

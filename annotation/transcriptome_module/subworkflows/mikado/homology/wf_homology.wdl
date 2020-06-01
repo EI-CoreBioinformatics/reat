@@ -8,17 +8,28 @@ workflow wf_homology {
     input {
         File reference
         String homology_alignment_program
+        Int chunk_size = 50000
         File? protein_db
         RuntimeAttr? index_resources
         RuntimeAttr? protein_alignment_resources
     }
 
+
     # Split sequence file
     if (defined(protein_db)) {
         File def_db = select_first([protein_db])
-        call tasks.SplitSequences {
+
+        call tasks.CountSequences { 
             input:
             sequences_file = reference
+        }
+        
+        Float fl_chunk_size = chunk_size
+
+        call tasks.SplitSequences {
+            input:
+            sequences_file = reference,
+            num_out_files = ceil(CountSequences.num_sequences / fl_chunk_size)
         }
 
         call prt_aln.SanitiseProteinBlastDB {

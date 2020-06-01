@@ -58,6 +58,21 @@ task SplitSequences {
     >>>
 }
 
+task CountSequences {
+    input {
+        File sequences_file
+    }
+
+    output {
+        Int num_sequences = read_int(stdout())
+    }
+
+    command <<<
+        set -euxo pipefail
+        grep -c "^>" ~{sequences_file}
+    >>>
+}
+
 task MergeFiles {
     input {
         Array[File] files_to_merge
