@@ -8,8 +8,6 @@ The transcriptome module is divided in three entrypoints: A single general entry
 
 ## Align workflow (`align.wdl`)
 
-Mention all the possible choices for aligners (short, and long) and assemblers (short, and long) along with the filtering options (merge, merge_collapse and filter_gff).
-
 The align workflow is comprised of alignment, assembly and splice junction curation using portcullis for short reads and alignment and assembly of long reads informed by predetermined splice junctions (via portcullis or reference guided).
 
 ### Alignment
@@ -50,12 +48,22 @@ TODO: Add an example of the statistics and the configuration section.
 
 ### Portcullis
 
-TODO: Explain how portcullis is used.
+Portcullis[TODO: citation] provides a splice junction filtering tool. The output of this step can be used to guide long read alignments using validated junctions, this is specially useful for de novo projects.
 
-A diagram would be helpful here.
+This step can be customised by specifying special groupings of the input aligned samples. The groupings are defined by a label and a list of alignment labels to be considered together. For best results, the configuration must ensure that groupings take the strandness of the aligned data into account.
+
+TODO: Add diagram
 
 ## Mikado workflow (`mikado.wdl`)
 
-Define in words what this is. Link to the Mikado paper as a reference.
+Mikado [TODO: citation] is used to select the most useful set of transcripts from multiple transcript assemblies. Mikado can select from multiple assembly sources against chimeric, fragmented, short or disrupted CDS transcripts to generate a set of gene models. This is achieved through scoring transcripts with metrics relating to ORF position, number and length, UTR length and cDNA size. Other sources of information for Mikado such as splicing junctions and Homology are also used.
 
-Add a diagram of mikado + ancilliary processes (ORFs + Homology).
+TODO: Add a diagram of mikado + ancilliary processes (ORFs + Homology).
+
+### ORF Calling (Optional)
+
+As part of generating accurate gene models from the initial transcriptomic data, REAT incorporates the process of ORF calling as one of it's steps. This can be achieved specifically by using either `Transdecoder` (TODO add citation) or `Prodigal` (TODO add citation). This workflow generates input data that is used to inform Mikado's workflow choice of the most representative transcripts.
+
+### Homology (Optional)
+
+REAT can make use of a collection of proteins from closely related species to help Mikado score transcripts based on their similarity to sequences in this database. This workflow manages the user's choice of protein aligner (`blast` or `diamond`) along with parameterising their execution for best performance in your infrastructure.
