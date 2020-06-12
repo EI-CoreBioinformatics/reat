@@ -12,10 +12,10 @@ workflow wf_main_mikado {
         Array[AssembledSample]? HQ_assemblies
         Array[AssembledSample]? SR_assemblies
         File? annotation_bed
-        File homology_proteins
-        File orf_calling_proteins
+        File? homology_proteins
+        File? orf_calling_proteins
         Boolean separate_LQ = false
-        String orf_calling_program
+        String? orf_calling_program
         Boolean run_mikado_homology = true
         RuntimeAttr? orf_calling_resources
         RuntimeAttr? protein_index_resources

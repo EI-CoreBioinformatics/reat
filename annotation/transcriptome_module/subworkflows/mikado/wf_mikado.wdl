@@ -12,8 +12,8 @@ workflow wf_mikado {
         Array[AssembledSample]? LQ_assemblies
         Array[AssembledSample]? HQ_assemblies
         File scoring_file
-        File orf_calling_proteins
-        File homology_proteins
+        File? orf_calling_proteins
+        File? homology_proteins
         String output_prefix
         RuntimeAttr? orf_calling_resources
         RuntimeAttr? orf_protein_index_resources
@@ -24,7 +24,7 @@ workflow wf_mikado {
         File? junctions
         Int prodigal_gencode = 1
         String transdecoder_genetic_code = "universal"
-        String orf_caller = "Prodigal"
+        String? orf_caller = "Prodigal"
         String transdecoder_alignment_program = "blast"
         String homology_alignment_program = "diamond"
         Boolean mikado_do_homology_assessment
@@ -80,7 +80,7 @@ workflow wf_mikado {
     }
 
     # ORF Calling
-    if (orf_caller != "None") {
+    if (defined(orf_caller)) {
         if (orf_caller == "Prodigal") {
             call pdg.wf_prodigal {
                 input:

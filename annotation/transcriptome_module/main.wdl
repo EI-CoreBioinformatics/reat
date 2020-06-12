@@ -13,8 +13,8 @@ workflow ei_annotation {
         Array[LRSample]? HQ_long_read_samples
         File? annotation
         File mikado_scoring_file
-        File orf_calling_proteins
-        File homology_proteins
+        File? orf_calling_proteins
+        File? homology_proteins
     }
 
     parameter_meta {
