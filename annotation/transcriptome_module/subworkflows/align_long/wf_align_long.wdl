@@ -231,6 +231,7 @@ task GMapLong {
         File reference
         Array[File] gmap_index
         File LR
+        String LR_basename = sub(basename(LR), "\.[^/.]+$", "")
         String name
         String strand
         File? iit
@@ -245,7 +246,7 @@ task GMapLong {
     Int cpus = 16
 
     output {
-        File bam = "alignments/gmap."+name+".bam"
+        File bam = "alignments/gmap."+name+"."+LR_basename+".bam"
     }
 
     command <<<
@@ -271,7 +272,7 @@ task GMapLong {
         ~{"--min-trimmed-coverage=" + min_trimmed_coverage} \
         ~{"--min-identity=" + min_identity} \
         --format=samse \
-        --nthreads="~{cpus}" | samtools view -F 4 -F 0x900 -bS - | samtools sort -@ 4 --reference ~{reference} -T gmap.sort -o gmap.~{name}.bam -
+        --nthreads="~{cpus}" | samtools view -F 4 -F 0x900 -bS - | samtools sort -@ 4 --reference ~{reference} -T gmap.sort -o gmap.~{name}.~{LR_basename}.bam -
     >>>
 
     RuntimeAttr default_attr = object {
@@ -293,6 +294,7 @@ task GMapLong {
 task Minimap2Long {
     input {
         File LR
+        String LR_basename = sub(basename(LR), "\.[^/.]+$", "")
         Boolean is_hq
         String name
         String strand
@@ -304,7 +306,7 @@ task Minimap2Long {
     Int cpus = 16
 
     output {
-        File bam = "alignments/minimap2."+name+".bam"
+        File bam = "alignments/minimap2."+name+"."+LR_basename+".bam"
     }
 
     command <<<
@@ -335,7 +337,7 @@ task Minimap2Long {
         -L --MD \
         --eqx -2 \
         --secondary=no \
-        ~{reference} - | samtools view -F 4 -F 0x900 -bS - | samtools sort -@ 4 --reference ~{reference} -T minimap2.sort -o minimap2.~{name}.bam -
+        ~{reference} - | samtools view -F 4 -F 0x900 -bS - | samtools sort -@ 4 --reference ~{reference} -T minimap2.sort -o minimap2.~{name}.~{LR_basename}.bam -
     >>>
 
     RuntimeAttr default_attr = object {
