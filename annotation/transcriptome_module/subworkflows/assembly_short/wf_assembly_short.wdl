@@ -145,7 +145,7 @@ task Stringtie {
         cd ~{output_directory}
         stringtie ~{aligned_sample} \
         -p "~{cpus}" \
-        "${strandness}" \
+        ${strandness} \
         ~{"-G " + reference_annotation} \
         -o "~{prefix}.stringtie.gtf"
     >>>
