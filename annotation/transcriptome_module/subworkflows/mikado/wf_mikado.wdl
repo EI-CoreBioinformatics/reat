@@ -81,7 +81,8 @@ workflow wf_mikado {
 
     # ORF Calling
     if (defined(orf_caller)) {
-        if (orf_caller == "Prodigal") {
+        String def_orf_caller = select_first([orf_caller])
+        if (def_orf_caller == "Prodigal") {
             call pdg.wf_prodigal {
                 input:
                 gencode = prodigal_gencode,
@@ -91,7 +92,7 @@ workflow wf_mikado {
             }
         }
 
-        if (orf_caller == "GTCDS") {
+        if (def_orf_caller == "GTCDS") {
             call GTCDS {
                 input:
                 prepared_transcripts = MikadoPrepare.prepared_fasta,
@@ -100,7 +101,7 @@ workflow wf_mikado {
             }
         }
 
-        if (orf_caller == "Transdecoder") {
+        if (def_orf_caller == "Transdecoder") {
             call tdc.wf_transdecoder as Transdecoder {
                 input:
                 prepared_transcripts = MikadoPrepare.prepared_fasta,
@@ -118,7 +119,7 @@ workflow wf_mikado {
     }
 
     # Mikado Homology
-    if (mikado_do_homology_assessment) {
+    if (mikado_do_homology_assessment && defined(homology_proteins)) {
         call hml.wf_homology as Homology {
             input:
             homology_alignment_program = homology_alignment_program,
@@ -132,7 +133,7 @@ workflow wf_mikado {
     call MikadoSerialise {
         input:
         homology_alignments = 
-        if (mikado_do_homology_assessment) then 
+        if (mikado_do_homology_assessment && defined(homology_proteins)) then 
             select_first([Homology.homology]) else 
             Homology.homology, # These lines ensure the Homology task completed correctly if it was requested
         clean_seqs_db = Homology.homology_clean_db,
