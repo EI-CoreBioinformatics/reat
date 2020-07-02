@@ -1,0 +1,11 @@
+- name: Transcriptome_Module
+  tags:
+    - integration
+  command: >-
+    cromwell run -o tests/configuration/cromwell_options.json
+    -i tests/integration/transcriptome_input.json annotation/transcriptome_module/main.wdl
+  files:
+    - path: "reat/outputs/mikado.summary.stats.tsv"
+    - path: "log.out"
+      contains:
+      - "WorkflowSucceededState"
