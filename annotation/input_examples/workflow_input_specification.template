@@ -1,0 +1,187 @@
+{
+  "ei_annotation.paired_samples":
+    "Array[
+      WomCompositeType {
+        name -> String
+        score -> Int?
+        is_ref -> Boolean?
+        merge -> Boolean
+        strand -> String
+        read_pair -> Array[
+          WomCompositeType {
+            R1 -> File
+            R2 -> File
+          }
+        ]+
+      }
+    ]? (optional)"
+  ,
+  "ei_annotation.LQ_long_read_samples":
+    "Array[
+      WomCompositeType {
+        name -> String
+        score -> Int?
+        is_ref -> Boolean?
+        strand -> String
+        LR -> Array[File]+ 
+      }
+    ]? (optional)"
+  ,
+  "ei_annotation.HQ_long_read_samples": 
+    "Array[
+      WomCompositeType {
+        name -> String
+        score -> Int?
+        is_ref -> Boolean?
+        strand -> String
+        LR -> Array[File]+
+      }
+    ]? (optional)"
+  ,
+  "ei_annotation.annotation": "File? (optional)",
+  "ei_annotation.orf_calling_proteins": "File? (optional)",
+  "ei_annotation.wf_main_mikado.annotation_bed": "File? (optional)",
+  "ei_annotation.homology_proteins": "File? (optional)",
+  "ei_annotation.wf_align.LQ_assembler": "String (optional, default = \"stringtie\")",
+  "ei_annotation.wf_align.LQ_aligner": "String (optional, default = \"minimap2\")",
+  "ei_annotation.wf_main_mikado.run_mikado_homology": "Boolean (optional, default = true)",
+  "ei_annotation.wf_align.HQ_aligner": "String (optional, default = \"gmap\")",
+  "ei_annotation.wf_align.portcullis_merge_operator": "String (optional, default = \"max\")",
+  "ei_annotation.mikado_scoring_file": "File",
+  "ei_annotation.wf_align.HQ_assembler": "String (optional, default = \"merge\")",
+  "ei_annotation.wf_align.group_to_samples": "Object? (optional)",
+  "ei_annotation.wf_main_mikado.orf_calling_program": "String? (optional)",
+  "ei_annotation.reference_genome": "File",
+  "ei_annotation.wf_main_mikado.separate_LQ": "Boolean (optional, default = false)",
+  "ei_annotation.wf_main_mikado.homology_index_resources":
+    "WomCompositeType {
+      cpu_cores -> Int?
+      max_retries -> Int?
+      boot_disk_gb -> Int?
+      disk_gb -> Int?
+      constraints -> String?
+      mem_gb -> Float?
+      preemptible_tries -> Int? 
+    }? (optional)"
+  ,
+  "ei_annotation.wf_align.short_read_assembly_resources": 
+    "WomCompositeType {
+      cpu_cores -> Int?
+      max_retries -> Int?
+      boot_disk_gb -> Int?
+      disk_gb -> Int?
+      constraints -> String?
+      mem_gb -> Float?
+      preemptible_tries -> Int? 
+    }? (optional)"
+  ,
+  "ei_annotation.wf_align.long_read_alignment_resources":
+    "WomCompositeType {
+      cpu_cores -> Int?
+      max_retries -> Int?
+      boot_disk_gb -> Int?
+      disk_gb -> Int?
+      constraints -> String?
+      mem_gb -> Float?
+      preemptible_tries -> Int? 
+    }? (optional)"
+  ,
+  "ei_annotation.wf_main_mikado.orf_calling_resources":
+    "WomCompositeType {
+      cpu_cores -> Int?
+      max_retries -> Int?
+      boot_disk_gb -> Int?
+      disk_gb -> Int?
+      constraints -> String?
+      mem_gb -> Float?
+      preemptible_tries -> Int? 
+    }? (optional)"
+  ,
+  "ei_annotation.wf_align.short_read_stats_resources":
+    "WomCompositeType {
+      cpu_cores -> Int?
+      max_retries -> Int?
+      boot_disk_gb -> Int?
+      disk_gb -> Int?
+      constraints -> String?
+      mem_gb -> Float?
+      preemptible_tries -> Int? 
+    }? (optional)"
+  ,
+  "ei_annotation.wf_align.long_read_indexing_resources":
+    "WomCompositeType {
+      cpu_cores -> Int?
+      max_retries -> Int?
+      boot_disk_gb -> Int?
+      disk_gb -> Int?
+      constraints -> String?
+      mem_gb -> Float?
+      preemptible_tries -> Int? 
+    }? (optional)"
+  ,
+  "ei_annotation.wf_main_mikado.protein_index_resources":
+    "WomCompositeType {
+      cpu_cores -> Int?
+      max_retries -> Int?
+      boot_disk_gb -> Int?
+      disk_gb -> Int?
+      constraints -> String?
+      mem_gb -> Float?
+      preemptible_tries -> Int? 
+    }? (optional)"
+  ,
+  "ei_annotation.wf_align.long_read_assembly_resources":
+    "WomCompositeType {
+      cpu_cores -> Int?
+      max_retries -> Int?
+      boot_disk_gb -> Int?
+      disk_gb -> Int?
+      constraints -> String?
+      mem_gb -> Float?
+      preemptible_tries -> Int? 
+    }? (optional)"
+  ,
+  "ei_annotation.wf_main_mikado.homology_alignment_resources":
+    "WomCompositeType {
+      cpu_cores -> Int?
+      max_retries -> Int?
+      boot_disk_gb -> Int?
+      disk_gb -> Int?
+      constraints -> String?
+      mem_gb -> Float?
+      preemptible_tries -> Int? 
+    }? (optional)"
+  ,
+  "ei_annotation.wf_align.short_read_alignment_sort_resources":
+    "WomCompositeType {
+      cpu_cores -> Int?
+      max_retries -> Int?
+      boot_disk_gb -> Int?
+      disk_gb -> Int?
+      constraints -> String?
+      mem_gb -> Float?
+      preemptible_tries -> Int? 
+    }? (optional)"
+  ,
+  "ei_annotation.wf_main_mikado.protein_alignment_resources":
+    "WomCompositeType {
+      cpu_cores -> Int?
+      max_retries -> Int?
+      boot_disk_gb -> Int?
+      disk_gb -> Int?
+      constraints -> String?
+      mem_gb -> Float?
+      preemptible_tries -> Int? 
+    }? (optional)"
+  ,
+  "ei_annotation.wf_align.short_read_alignment_resources":
+    "WomCompositeType {
+      cpu_cores -> Int?
+      max_retries -> Int?
+      boot_disk_gb -> Int?
+      disk_gb -> Int?
+      constraints -> String?
+      mem_gb -> Float?
+      preemptible_tries -> Int? 
+    }? (optional)"
+}
