@@ -17,6 +17,7 @@
 # inputs.json is validated
 
 import argparse
+import json
 import subprocess
 
 
@@ -121,18 +122,43 @@ def main():
 
     # Print input file for cromwell
 
+    computational_resources = json.load(cli_arguments.computational_resources)
+    cromwell_inputs = computational_resources
+    for s in cli_arguments.samples:
+        sample = json.load(s)
+        cromwell_inputs.update(sample)
+
+    cromwell_inputs["ei_annotation.reference_genome"] = cli_arguments.reference.name
+    cromwell_inputs["ei_annotation.mikado_scoring_file"] = cli_arguments.mikado_scoring_file.name
     # Validate input against schema
+    input_filepath = "input.json"
+    with open(input_filepath, 'w') as cromwell_input_file:
+        json.dump(cromwell_inputs, cromwell_input_file)
 
     # Submit pipeline to server or run locally depending on the arguments
-
-    wdl_file = "/Users/yanesl/rundir/cromwell_tests/basename/basename.wdl"
+    wdl_file = "/Users/yanesl/IdeaProjects/ei-cautious-broccoli/annotation/transcriptome_module/main.wdl"
     if cli_arguments.server is None:
-        subprocess.run(["cromwell", "run", "-i", "/Users/yanesl/rundir/cromwell_tests/basename/input.json", wdl_file])
+        print("Starting:")
+        print(' '.join(["cromwell", "run", "-i", input_filepath, wdl_file]))
+        sp_cromwell = subprocess.run(
+            ["cromwell", "run", "-i", input_filepath, wdl_file],
+            universal_newlines=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE
+        )
+        if sp_cromwell.returncode is not 0:
+            sentinel = "Check the content of stderr for potential additional information: "
+            error_file_start_pos = sp_cromwell.stdout.find(sentinel)
+            error_file = sp_cromwell.stdout[error_file_start_pos+len(sentinel):].split("\n")[0][:-1]
+            print(error_file)
+            with open(error_file, 'r') as failed_job_stderr_file:
+                print(failed_job_stderr_file.read())
     else:
         subprocess.run(
             ["cromwell", "submit", "-h", cli_arguments.server, "-i",
-             "/Users/yanesl/rundir/cromwell_tests/basename/input.json", wdl_file]
+             input_filepath, wdl_file]
         )
+
 
 
 if __name__ == '__main__':
