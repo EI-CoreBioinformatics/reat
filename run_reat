@@ -1,0 +1,139 @@
+#!/usr/bin/env python3
+
+# run_reat can result in the following outcomes
+#     Success:
+#         Reat is started in a 'run' backend (local, hpc)
+#         Reat is started in a 'server' hosted on the network
+#     Failure:
+#         Reat fails to start or be submitted and the reason is provided to the user
+
+# run_reat parses all the arguments required, generates an input file for cromwell and submits a job to the requested
+# backend. The arguments are validated using the json input schema defined in the validation directory.
+
+# run_reat supports multiple input json files which are subsequently merged into a single file, this allows reusability
+# of some parts of the input such as resource requirements and default extra parameters
+
+# run_reat accepts many customisation parameters in the command-line which are translated into the inputs.json before
+# inputs.json is validated
+
+import argparse
+import subprocess
+
+
+def collect_arguments():
+    ap = argparse.ArgumentParser(add_help=True)
+
+    # General inputs
+    ap.add_argument("--samples", nargs='+', type=argparse.FileType('r'),
+                    help="Reads organised in the input specification for REAT, for more information please look at "
+                         "the template file", required=True)
+    ap.add_argument("--reference", type=argparse.FileType('r'),
+                    help="Reference FASTA to annotate", required=True)
+    ap.add_argument("--annotation", type=argparse.FileType('r'),
+                    help="Annotation of the reference, this file will be used as the base for the new annotation "
+                         "which will incorporate from the available evidence new gene models or update existing "
+                         "ones")
+    ap.add_argument("--mikado_scoring_file", type=argparse.FileType('r'),
+                    help="Mikado scoring file", required=True)
+    ap.add_argument("--computational_resources", type=argparse.FileType('r'),
+                    help="Computational resources for REAT, please look at the template for more information",
+                    required=True)
+
+    runtime = ap.add_mutually_exclusive_group(required=True)
+    runtime.add_argument("--server", type=str,
+                         help="Run the workflow in a cromwell server. Address and port of the cromwell server to "
+                              "submit the workflow")
+    runtime.add_argument("--run", type=argparse.FileType('r'),
+                         help="Configuration file for the backend, please follow "
+                              "https://cromwell.readthedocs.io/en/stable/backends/HPC/ for more information")
+
+    alignment_parameters = ap.add_argument_group("alignment", "Parameters for alignment of short and long reads")
+
+    # Aligner choices
+    alignment_parameters.add_argument("--short_reads_aligner", choices=['hisat', 'star'],
+                                      help="Choice of short read aligner", default='hisat')
+    alignment_parameters.add_argument("--long_reads_aligner", choices=['minimap2', 'gmap'],
+                                      help="Choice of long read aligner", default='gmap')
+
+    alignment_parameters.add_argument("--min_intron_length", type=int,
+                                      help="Where available, the minimum intron length allowed will be specified for "
+                                           "the aligners", default=200)
+    alignment_parameters.add_argument("--max_intron_length", type=int,
+                                      help="Where available, the maximum intron length allowed will be specified for "
+                                           "the aligners", default=2000)
+    alignment_parameters.add_argument("--max_intron_length_middle", type=int,
+                                      help="Where available, the maximum *internal* intron length allowed will be "
+                                           "specified for the aligner, when specified this implies max_intron_length "
+                                           "only applies to the *ends* and this parameter to the *internal* introns",
+                                      default=4000)
+
+    alignment_parameters.add_argument("--short_read_aligner_extra_parameters", type=str,
+                                      help="Extra command-line parameters for the selected short read aligner, please "
+                                           "note that extra parameters are not validated and will have to match the "
+                                           "parameters available for the selected read aligner")
+    alignment_parameters.add_argument("--long_read_aligner_extra_parameters", type=str,
+                                      help="Extra command-line parameters for the selected long read aligner, please "
+                                           "note that extra parameters are not validated and will have to match the "
+                                           "parameters available for the selected read aligner")
+
+    # Assembler choices
+    assembly_parameters = ap.add_argument_group("assembly", "Parameters for assembly of short and long reads")
+    assembly_parameters.add_argument("--long_reads_assembler",
+                                     choices=["filter", "merge", "stringtie", "stringtie_collapse"],
+                                     help="Choice of long read assembler."
+                                          "\n- filter: Simply filters the reads based on identity and coverage"
+                                          "- merge: cluster the input transcripts into loci, discarding "
+                                          "\"duplicated\" transcripts (those with the same exact introns and fully "
+                                          "contained or equal boundaries). This option also discards contained "
+                                          "transcripts"
+                                          "- stringtie: Assembles the long reads alignments into transcripts"
+                                          "- stringtie_collapse: Cleans and collapses long reads but does not "
+                                          "assembles them", default='stringtie')
+    assembly_parameters.add_argument("--long_reads_assembler_extra_parameters",
+                                     help="Extra parameters for the long reads assembler, please note that extra "
+                                          "parameters are not validated and will have to match the parameters "
+                                          "available for the selected assembler")
+    assembly_parameters.add_argument("--scallop_extra_parameters",
+                                     help="Extra parameters for scallop, please note that extra "
+                                          "parameters are not validated and will have to match the parameters "
+                                          "available for scallop")
+
+    assembly_parameters.add_argument("--stringtie_extra_parameters",
+                                     help="Extra parameters for stringtie, please note that extra "
+                                          "parameters are not validated and will have to match the parameters "
+                                          "available for stringtie")
+
+    # Portcullis extra parameters
+    portcullis_parameters = ap.add_argument_group("portcullis", "Parameters specific to portcullis")
+    portcullis_parameters.add_argument("--extra_parameters", type=str, help="Extra parameters for portcullis execution")
+
+    # Orf calling
+    orf_calling_parameters = ap.add_argument_group("ORF Caller", "Parameters for ORF calling programs")
+    orf_calling_parameters.add_argument("--orf_caller", choices=['prodigal', 'transdecoder', 'none'],
+                                        help="Choice of available orf calling softwares", default='prodigal')
+
+    args = ap.parse_args()
+    return args
+
+
+def main():
+    cli_arguments = collect_arguments()
+
+    # Print input file for cromwell
+
+    # Validate input against schema
+
+    # Submit pipeline to server or run locally depending on the arguments
+
+    wdl_file = "/Users/yanesl/rundir/cromwell_tests/basename/basename.wdl"
+    if cli_arguments.server is None:
+        subprocess.run(["cromwell", "run", "-i", "/Users/yanesl/rundir/cromwell_tests/basename/input.json", wdl_file])
+    else:
+        subprocess.run(
+            ["cromwell", "submit", "-h", cli_arguments.server, "-i",
+             "/Users/yanesl/rundir/cromwell_tests/basename/input.json", wdl_file]
+        )
+
+
+if __name__ == '__main__':
+    main()
