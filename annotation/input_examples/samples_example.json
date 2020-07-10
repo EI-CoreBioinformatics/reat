@@ -1,0 +1,71 @@
+{
+  "ei_annotation.paired_samples": [
+    {
+      "name": "SRR2927545",
+      "strand": "fr-unstranded",
+      "merge": false,
+      "read_pair": [
+        {
+          "R1": "test_reads/SRR2927545.mapped_chr4_busco.R1.fastq",
+          "R2": "test_reads/SRR2927545.mapped_chr4_busco.R2.fastq"
+        }
+      ]
+    },
+    {
+      "name": "SRP099175",
+      "strand": "fr-unstranded",
+      "merge": false,
+      "read_pair": [
+        {
+          "R1": "test_reads/SRR5242383.mapped_chr4_busco.R1.fastq",
+          "R2": "test_reads/SRR5242383.mapped_chr4_busco.R2.fastq"
+        },
+        {
+          "R1": "test_reads/SRR5242384.mapped_chr4_busco.R1.fastq",
+          "R2": "test_reads/SRR5242384.mapped_chr4_busco.R2.fastq"
+        }
+      ]
+    },
+    {
+      "name": "SRP099175_merged",
+      "strand": "fr-unstranded",
+      "merge": true,
+      "read_pair": [
+        {
+          "R1": "test_reads/SRR5242383.mapped_chr4_busco.R1.fastq",
+          "R2": "test_reads/SRR5242383.mapped_chr4_busco.R2.fastq"
+        },
+        {
+          "R1": "test_reads/SRR5242384.mapped_chr4_busco.R1.fastq",
+          "R2": "test_reads/SRR5242384.mapped_chr4_busco.R2.fastq"
+        }
+      ]
+    }
+  ],
+  "ei_annotation.LQ_long_read_samples": [
+    {
+      "name": "ERR3764349_single",
+      "strand": "fr-firststrand",
+      "LR": [
+        "test_reads/ERR3764349.mapped_chr4_busco.fastq"
+      ]
+    },
+    {
+      "name": "ERR3764349_doubled",
+      "strand": "fr-firststrand",
+      "LR": [
+        "test_reads/ERR3764349.mapped_chr4_busco.fastq",
+        "test_reads/ERR3764349.mapped_chr4_busco2.fastq"
+      ]
+    }
+  ],
+  "ei_annotation.HQ_long_read_samples": [
+    {
+      "name": "SRR5298102",
+      "strand": "fr-firststrand",
+      "LR": [
+        "test_reads/SRR5298102.mapped_chr4_busco.fastq"
+      ]
+    }
+  ]
+}
