@@ -13,10 +13,10 @@ workflow portcullis {
     }
 
     parameter_meta {
-        reference: "Genome reference file."
-        annotation: "Reference annotation of junctions in BED format."
-        sample_groups: "Pre-defined groupings for the aligned_samples, these need to match the sample names. Each portcullis run groups one or more samples."
-        aligned_samples: "List of aligned samples."
+        reference: {description: "Genome reference file.", category: "required"}
+        annotation: {description:"Reference annotation of junctions in BED format.", category:"required"}
+        sample_groups: {description:"Pre-defined groupings for the aligned_samples, these need to match the sample names. Each portcullis run groups one or more samples.", category:"required"}
+        aligned_samples: {description:"List of aligned samples.", category:"required"}
     }
 
     if (defined(annotation)) {

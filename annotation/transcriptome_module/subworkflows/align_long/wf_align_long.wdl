@@ -14,13 +14,13 @@ workflow wf_align_long {
     }
 
     parameter_meta {
-        reference: "Genome target to align the reads"
-        long_samples: "Long read samples, each item is defined by a name, it's strand and one or more long read files."
-        is_hq: "Selects high quality parameters for the alignment program."
-        bed_junctions: "Where possible uses a user provided set of junctions to guide the alignments."
-        aligner: "Selects the aligner program, the options are: minimap2 and gmap."
-        alignment_resources: "Computational resources to override the defaults for running the alignments."
-        indexing_resources: "Computational resources to generate the genome target index previous to alignment, overrides defaults."
+        reference: {description:"Genome target to align the reads", category: "required"}
+        long_samples: {description:"Long read samples, each item is defined by a name, it's strand and one or more long read files.", category: "required"}
+        is_hq: {description:"Selects high quality parameters for the alignment program.", category: "required"}
+        bed_junctions: {description:"Where possible uses a user provided set of junctions to guide the alignments.", category: "required"}
+        aligner: {description:"Selects the aligner program, the options are: minimap2 and gmap.", category: "required"}
+        alignment_resources: {description:"Computational resources to override the defaults for running the alignments.", category: "required"}
+        indexing_resources: {description:"Computational resources to generate the genome target index previous to alignment, overrides defaults.", category: "required"}
     }
     
     # Add aligner option
