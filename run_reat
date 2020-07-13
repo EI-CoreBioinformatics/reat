@@ -56,7 +56,10 @@ def collect_arguments():
                     help="Workflow execution options, includes cache usage and result directories structure and "
                          "location")
 
+    # Mikado arguments
     mikado_parameters = ap.add_argument_group("mikado", "Parameters for Mikado runs")
+    mikado_parameters.add_argument("--run_mikado_homology", type=bool,
+                                   help="Use the homology proteins provided for scoring transcripts")
     mikado_parameters.add_argument("--mikado_scoring_file", type=argparse.FileType('r'),
                                    help="Mikado scoring file", required=True)
     mikado_parameters.add_argument("--homology_proteins", type=argparse.FileType('r'),
@@ -244,7 +247,7 @@ def main():
     workflow_options_file = None
     if cli_arguments.workflow_options_file is not None:
         workflow_options_file = cli_arguments.workflow_options_file.name
-    execute_cromwell(cli_arguments, cli_arguments.output_parameters_file.name,
+    return execute_cromwell(cli_arguments, cli_arguments.output_parameters_file.name,
                      workflow_options_file, wdl_file)
 
 
@@ -259,9 +262,9 @@ def validate_cromwell_inputs(cromwell_inputs):
 
 def execute_cromwell(cli_arguments, input_parameters_filepath, workflow_options_file, wdl_file):
     if cli_arguments.server is None:
-        cromwell_run(input_parameters_filepath, workflow_options_file, wdl_file)
+        return cromwell_run(input_parameters_filepath, workflow_options_file, wdl_file)
     else:
-        cromwell_submit(cli_arguments, input_parameters_filepath, workflow_options_file, wdl_file)
+        return cromwell_submit(cli_arguments, input_parameters_filepath, workflow_options_file, wdl_file)
 
 
 def cromwell_submit(cli_arguments, input_parameters_filepath, workflow_options_file, wdl_file):
@@ -274,6 +277,8 @@ def cromwell_submit(cli_arguments, input_parameters_filepath, workflow_options_f
         ["cromwell", "submit", "-h", cli_arguments.server, "-i",
          input_parameters_filepath, "-o", workflow_options_file, wdl_file]
     )
+    # FIXME return the code of the request or some mapping to useful error codes
+    return 0
 
 
 def cromwell_run(input_parameters_filepath, workflow_options_file, wdl_file):
@@ -299,7 +304,7 @@ def cromwell_run(input_parameters_filepath, workflow_options_file, wdl_file):
             print(error_file)
             with open(error_file, 'r') as failed_job_stderr_file:
                 print(failed_job_stderr_file.read())
-
+    return sp_cromwell.returncode
 
 if __name__ == '__main__':
     main()

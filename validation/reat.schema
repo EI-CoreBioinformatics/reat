@@ -121,10 +121,10 @@
             "enum": ["prodigal", "transdecoder", "none"]
         },
         "ei_annotation.wf_main_mikado.run_mikado_homology": {
-            "$ref": "#/defitions/Boolean"
+            "$ref": "#/definitions/Boolean"
         },
         "ei_annotation.wf_main_mikado.separate_LQ": {
-            "$ref": "#/defitions/Boolean"
+            "$ref": "#/definitions/Boolean"
         }
     },
     "required": ["ei_annotation.reference_genome"],
