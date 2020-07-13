@@ -9,6 +9,11 @@ workflow wf_align_long {
         Boolean is_hq
         File? bed_junctions
         String aligner = "minimap2"
+        String? aligner_extra_parameters
+        Float min_identity = 0.9
+        Int? min_intron_len = 20
+        Int? max_intron_len = 2000
+        Int? max_intron_len_middle = 2000
         RuntimeAttr? alignment_resources
         RuntimeAttr? indexing_resources
     }
@@ -35,6 +40,8 @@ workflow wf_align_long {
                     name = sample.name,
                     reference = reference,
                     bed_junctions = bed_junctions,
+                    max_intron_len = select_first([max_intron_len, 2000]),
+                    extra_parameters = aligner_extra_parameters,
                     runtime_attr_override = alignment_resources
                 }
             }
@@ -57,6 +64,11 @@ workflow wf_align_long {
                     strand = sample.strand,
                     name = sample.name,
                     reference = reference,
+                    min_identity = min_identity,
+                    min_intron_len = select_first([min_intron_len,20]),
+                    max_intron_len = select_first([max_intron_len,2000]),
+                    max_intron_len_middle = select_first([max_intron_len_middle, 4000]),
+                    extra_parameters = aligner_extra_parameters,
                     runtime_attr_override = alignment_resources
                 }
             }
@@ -234,12 +246,13 @@ task GMapLong {
         String LR_basename = sub(basename(LR), "\.[^/.]+$", "")
         String name
         String strand
+        String? extra_parameters
         File? iit
         Int? min_trimmed_coverage
-        Float min_identity = 0.9
-        Int max_intronlength_middle = 50000
-        Int max_intronlength_ends = 10000
-        Int min_intronlength = 20
+        Float min_identity
+        Int max_intron_len_middle
+        Int max_intron_len
+        Int min_intron_len
         RuntimeAttr? runtime_attr_override
     }
 
@@ -267,11 +280,11 @@ task GMapLong {
         cd alignments
 
         $in_pipe | $(determine_gmap.py ~{reference}) --dir="$(dirname ~{gmap_index[0]})" --db=test_genome \
-        ~{"--min-intronlength=" + min_intronlength} ~{"--max-intronlength-middle=" + max_intronlength_middle} ~{"--max-intronlength-ends=" + max_intronlength_ends} --npaths=1 \
+        ~{"--min-intronlength=" + min_intron_len} ~{"--max-intronlength-middle=" + max_intron_len_middle} ~{"--max-intronlength-ends=" + max_intron_len} --npaths=1 \
         ~{"-m " + iit} \
         ~{"--min-trimmed-coverage=" + min_trimmed_coverage} \
         ~{"--min-identity=" + min_identity} \
-        --format=samse \
+        --format=samse ~{extra_parameters}\
         --nthreads="~{cpus}" | samtools view -F 4 -F 0x900 -bS - | samtools sort -@ 4 --reference ~{reference} -T gmap.sort -o gmap.~{name}.~{LR_basename}.bam -
     >>>
 
@@ -299,6 +312,8 @@ task Minimap2Long {
         String name
         String strand
         File reference
+        Int max_intron_len
+        String? extra_parameters
         File? bed_junctions
         RuntimeAttr? runtime_attr_override
     }
@@ -327,11 +342,11 @@ task Minimap2Long {
         mkdir alignments
         cd alignments
         $in_pipe | \
-        minimap2 \
+        minimap2 ~{extra_parameters} \
         -ax ~{if (is_hq) then "splice:hq" else "splice"} \
         ~{"--junc-bed " + bed_junctions} \
         --cs=long \
-        -G 2000 \
+        -G ~{max_intron_len} \
         -u b \
         -t ~{cpus} \
         -L --MD \

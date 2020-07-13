@@ -21,7 +21,7 @@
                 "properties": {
                     "name": {
                         "type": "string",
-                        "is_name": True,
+                        "is_name": true
                     },
                     "strand": {
                         "$ref": "#/definitions/strand"
@@ -32,9 +32,9 @@
                     "LR": {
                         "type": "array",
                         "items": {
-                            "type": "string",
+                            "type": "string"
                         }
-                    },
+                    }
                 },
                 "required": ["name", "strand", "LR"]
             }
@@ -42,7 +42,7 @@
 
         "LR_Assembler": {
             "enum": ["filter", "merge", "stringtie", "stringtie_collapse"]
-        },
+        }
     },
 
     "type": "object",
@@ -57,7 +57,7 @@
                 "properties": {
                     "name": {
                         "type": "string",
-                        "is_name": True,
+                        "is_name": true
                     },
                     "strand": {
                         "$ref": "#/definitions/strand"
@@ -79,7 +79,7 @@
                             },
                             "required": ["R1", "R2"]
                         }
-                    },
+                    }
                 },
                 "required": ["name", "strand", "read_pair"]
             }
@@ -118,19 +118,19 @@
             "type": "string"
         },
         "ei_annotation.wf_main_mikado.orf_calling_program": {
-            "enum": ["Prodigal", "Transdecoder", "None"]
+            "enum": ["prodigal", "transdecoder", "none"]
         },
         "ei_annotation.wf_main_mikado.run_mikado_homology": {
             "$ref": "#/defitions/Boolean"
         },
         "ei_annotation.wf_main_mikado.separate_LQ": {
             "$ref": "#/defitions/Boolean"
-        },
+        }
     },
     "required": ["ei_annotation.reference_genome"],
     "anyOf": [
-        {"required": ["ei_annotation.paired_samples"], },
-        {"required": ["ei_annotation.HQ_long_read_samples"], },
-        {"required": ["ei_annotation.LQ_long_read_samples"], },
+        {"required": ["ei_annotation.paired_samples"] },
+        {"required": ["ei_annotation.HQ_long_read_samples"] },
+        {"required": ["ei_annotation.LQ_long_read_samples"] }
     ]
 }

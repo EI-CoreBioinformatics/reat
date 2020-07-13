@@ -7,6 +7,9 @@ workflow wf_Hisat{
     input {
         PRSample sample
         File? splice_sites
+        Int min_intron_len
+        Int max_intron_len
+        String? extra_parameters
         Array[File] index
         RuntimeAttr? alignment_resources
     }
@@ -19,6 +22,9 @@ workflow wf_Hisat{
             name = sample.name,
             sample = PR,
             index = index,
+            min_intron_len = min_intron_len,
+            max_intron_len = max_intron_len,
+            extra_parameters = extra_parameters,
             runtime_attr_override = alignment_resources
         }
     }
@@ -43,6 +49,9 @@ task Hisat {
         String strand
         String name
         String rp_name = name+"."+basename(sample.R1)
+        Int min_intron_len
+        Int max_intron_len
+        String? extra_parameters
         RuntimeAttr? runtime_attr_override
     }
 
@@ -70,9 +79,9 @@ task Hisat {
             ;;
         esac
     hisat2 -p ~{cpus} -x ~{sub(index[0], "\\.\\d\\.ht2l?", "")} \
-    ${strandness} \
-    --min-intronlen=20 \
-    --max-intronlen=2000 \
+    ${strandness} ~{extra_parameters} \
+    --min-intronlen=~{min_intron_len} \
+    --max-intronlen=~{max_intron_len} \
     ~{"--known-splicesite-infile " + sites} \
     -1 ~{sample.R1} ~{"-2 " + sample.R2} | samtools sort -@ 4 - > "~{rp_name}.hisat.bam"
     >>>

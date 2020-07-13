@@ -24,7 +24,7 @@ workflow wf_mikado {
         File? junctions
         Int prodigal_gencode = 1
         String transdecoder_genetic_code = "universal"
-        String? orf_caller = "Prodigal"
+        String? orf_caller = "prodigal"
         String transdecoder_alignment_program = "blast"
         String homology_alignment_program = "diamond"
         Boolean mikado_do_homology_assessment
@@ -82,7 +82,7 @@ workflow wf_mikado {
     # ORF Calling
     if (defined(orf_caller)) {
         String def_orf_caller = select_first([orf_caller])
-        if (def_orf_caller == "Prodigal") {
+        if (def_orf_caller == "prodigal") {
             call pdg.wf_prodigal {
                 input:
                 gencode = prodigal_gencode,
@@ -101,7 +101,7 @@ workflow wf_mikado {
             }
         }
 
-        if (def_orf_caller == "Transdecoder") {
+        if (def_orf_caller == "transdecoder") {
             call tdc.wf_transdecoder as Transdecoder {
                 input:
                 prepared_transcripts = MikadoPrepare.prepared_fasta,

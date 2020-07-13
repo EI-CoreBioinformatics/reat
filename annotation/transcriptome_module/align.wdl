@@ -17,11 +17,37 @@ workflow wf_align {
         Array[LRSample]? HQ_long_read_samples
         File? reference_annotation
         Object? group_to_samples
+
+        Float min_identity = 0.9
+        Int? min_intron_len = 20
+        Int? max_intron_len = 2000
+        Int? max_intron_len_middle = 2000
+
         String portcullis_merge_operator = "max"
+        String? portcullis_extra_parameters
+
         String LQ_aligner = "minimap2"
         String HQ_aligner = "gmap"
         String HQ_assembler = "merge"
         String LQ_assembler = "stringtie"
+
+        # Long read aligners optional extra parameters
+        String? HQ_aligner_extra_parameters
+        String? LQ_aligner_extra_parameters
+
+        # Short read aligners optional extra parameters
+        String? PR_hisat_extra_parameters
+        String? PR_star_extra_parameters
+
+        # Assemblers optional extra parameters
+        String? HQ_assembler_extra_parameters
+        String? LQ_assembler_extra_parameters
+        String? PR_stringtie_extra_parameters
+        String? PR_scallop_extra_parameters
+
+        Int? assembly_filter_min_coverage
+        Int? assembly_filter_min_identity
+
         RuntimeAttr? short_read_alignment_resources
         RuntimeAttr? short_read_alignment_sort_resources
         RuntimeAttr? short_read_stats_resources
@@ -52,6 +78,10 @@ workflow wf_align {
             samples = def_paired_samples,
             reference_genome = wf_sanitise.reference,
             reference_annotation = wf_sanitise.annotation,
+            hisat_extra_parameters = PR_hisat_extra_parameters,
+            star_extra_parameters = PR_star_extra_parameters,
+            min_intron_len = select_first([min_intron_len, 20]),
+            max_intron_len = select_first([max_intron_len, 2000]),
             alignment_resources = short_read_alignment_resources,
             sort_resources = short_read_alignment_sort_resources,
             stats_resources = short_read_stats_resources
@@ -82,6 +112,11 @@ workflow wf_align {
             is_hq = false,
             aligner = LQ_aligner,
             long_samples = def_lq_long_sample,
+            min_identity = min_identity,
+            min_intron_len = select_first([min_intron_len, 20]),
+            max_intron_len = select_first([max_intron_len, 2000]),
+            max_intron_len_middle = select_first([max_intron_len_middle, 2000]),
+            aligner_extra_parameters = LQ_aligner_extra_parameters,
             bed_junctions = portcullis.pass_bed,
             indexing_resources = long_read_indexing_resources,
             alignment_resources = long_read_alignment_resources
@@ -107,6 +142,11 @@ workflow wf_align {
             is_hq = true,
             aligner = HQ_aligner,
             long_samples = def_hq_long_sample,
+            min_identity = min_identity,
+            min_intron_len = min_intron_len,
+            max_intron_len = max_intron_len,
+            max_intron_len_middle = max_intron_len_middle,
+            aligner_extra_parameters = HQ_aligner_extra_parameters,
             bed_junctions = portcullis.pass_bed,
             indexing_resources = long_read_indexing_resources,
             alignment_resources = long_read_alignment_resources

@@ -10,7 +10,11 @@ workflow wf_align_short {
         Array[PRSample] samples
         File reference_genome
         File? reference_annotation
+        String? hisat_extra_parameters
+        String? star_extra_parameters
         String aligner = "hisat"
+        Int min_intron_len
+        Int max_intron_len
         RuntimeAttr? alignment_resources
         RuntimeAttr? sort_resources
         RuntimeAttr? stats_resources
@@ -42,6 +46,9 @@ workflow wf_align_short {
                 input:
                 sample = sample,
                 index = Hisat2Index.index,
+                extra_parameters = hisat_extra_parameters,
+                min_intron_len = min_intron_len,
+                max_intron_len = max_intron_len,
                 alignment_resources = alignment_resources,
                 splice_sites = Hisat2SpliceSites.sites
             }
@@ -63,6 +70,9 @@ workflow wf_align_short {
                     name = sample.name,
                     sample = PR,
                     index = StarIndex.index,
+                    min_intron_len = min_intron_len,
+                    max_intron_len = max_intron_len,
+                    star_extra_parameters = star_extra_parameters,
                     runtime_attr_override = alignment_resources
                 }
             }
@@ -317,6 +327,9 @@ task Star {
     input {
         Array[File] index
         File? reference_annotation
+        String? star_extra_parameters
+        Int min_intron_len
+        Int max_intron_len
         ReadPair sample
         String strand
         String name
@@ -344,15 +357,15 @@ task Star {
             ;;
         esac
 
-            STAR --genomeDir "$(dirname ~{index[0]})" \
+            STAR --genomeDir "$(dirname ~{index[0]})" ~{star_extra_parameters} \
     --runThreadN ~{cpus} \
     "${compression}" \
     --runMode alignReads \
     --outSAMtype BAM Unsorted \
     --outSAMattributes NH HI AS nM XS NM MD --outSAMstrandField intronMotif \
-    --alignIntronMin 20 \
-    --alignIntronMax 2000 \
-    --alignMatesGapMax 2000 \
+    --alignIntronMin ~{min_intron_len} \
+    --alignIntronMax ~{max_intron_len} \
+    --alignMatesGapMax ~{max_intron_len} \
     ~{"--sjdbGTFfile " + reference_annotation} \
     --readFilesIn ~{sample.R1} ~{sample.R2} && ln -s Aligned.out.bam "~{rp_name}.star.bam"
     >>>
