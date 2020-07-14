@@ -1,26 +1,26 @@
 #!/usr/bin/env python3
 
-# run_reat can result in the following outcomes
+# __main__.py can result in the following outcomes
 #     Success:
 #         Reat is started in a 'run' backend (local, hpc)
 #         Reat is started in a 'server' hosted on the network
 #     Failure:
 #         Reat fails to start or be submitted and the reason is provided to the user
 
-# run_reat parses all the arguments required, generates an input file for cromwell and submits a job to the requested
+# __main__.py parses all the arguments required, generates an input file for cromwell and submits a job to the requested
 # backend. The arguments are validated using the json input schema defined in the validation directory.
 
-# run_reat supports multiple input json files which are subsequently merged into a single file, this allows reusability
+# __main__.py supports multiple input json files which are subsequently merged into a single file, allows reusability
 # of some parts of the input such as resource requirements and default extra parameters
 
-# run_reat accepts many customisation parameters in the command-line which are translated into the inputs.json before
+# __main__.py accepts many customisation parameters in the command-line which are translated into the inputs.json before
 # inputs.json is validated
 
 import argparse
 import json
 from jsonschema import ValidationError, validators, Draft7Validator
 import subprocess
-
+import pkgutil
 
 def is_valid_name(validator, value, instance, schema):
     if not isinstance(instance, str):
@@ -130,7 +130,7 @@ def collect_arguments():
                                           "transcripts"
                                           "- stringtie: Assembles the long reads alignments into transcripts"
                                           "- stringtie_collapse: Cleans and collapses long reads but does not "
-                                          "assembles them", default='merge')
+                                          "assemble them", default='merge')
     assembly_parameters.add_argument("--LQ_assembler",
                                      choices=["filter", "merge", "stringtie", "stringtie_collapse"],
                                      help="Choice of long read assembler."
@@ -243,7 +243,7 @@ def main():
 
     # Submit pipeline to server or run locally depending on the arguments
     # FIXME this file should be part of the resources installed along with the package and pointed at from there
-    wdl_file = "/Users/yanesl/IdeaProjects/ei-cautious-broccoli/annotation/transcriptome_module/main.wdl"
+    wdl_file = pkgutil.get_data("annotation", "transcriptome_module/main.wdl")
     workflow_options_file = None
     if cli_arguments.workflow_options_file is not None:
         workflow_options_file = cli_arguments.workflow_options_file.name
@@ -252,7 +252,7 @@ def main():
 
 
 def validate_cromwell_inputs(cromwell_inputs):
-    with open("/Users/yanesl/IdeaProjects/ei-cautious-broccoli/validation/reat.schema", 'r') as schema:
+    with open(pkgutil.get_data("annotation", "reat.schema"), 'r') as schema:
         reat_schema = json.load(schema)
     all_validators = dict(Draft7Validator.VALIDATORS)
     all_validators["is_name"] = is_valid_name
@@ -305,6 +305,7 @@ def cromwell_run(input_parameters_filepath, workflow_options_file, wdl_file):
             with open(error_file, 'r') as failed_job_stderr_file:
                 print(failed_job_stderr_file.read())
     return sp_cromwell.returncode
+
 
 if __name__ == '__main__':
     main()
