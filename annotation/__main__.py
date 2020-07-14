@@ -20,7 +20,13 @@ import argparse
 import json
 from jsonschema import ValidationError, validators, Draft7Validator
 import subprocess
-import pkgutil
+
+try:
+    import importlib.resources as pkg_resources
+except ImportError:
+    # Try backported to PY<37 `importlib_resources`.
+    import importlib_resources as pkg_resources
+
 
 def is_valid_name(validator, value, instance, schema):
     if not isinstance(instance, str):
@@ -49,7 +55,7 @@ def collect_arguments():
     ap.add_argument("--parameters_file", type=argparse.FileType('r'),
                     help="Base parameters file, this file can be the output of a previous REAT run which will be used "
                          "as the base for a new parameters file written to the output_parameters_file argument")
-    ap.add_argument("--output_parameters_file", type=argparse.FileType('w'),
+    ap.add_argument("--output_parameters_file", type=str,
                     help="REAT parameters file, this file will be used as the input for REAT. It provides the "
                          "arguments for the workflow.", default="reat_input.json")
     ap.add_argument("--workflow_options_file", type=argparse.FileType('r'),
@@ -232,28 +238,28 @@ def combine_arguments(cli_arguments):
 
 def main():
     cli_arguments = collect_arguments()
-
     # Print input file for cromwell
     cromwell_inputs = combine_arguments(cli_arguments)
     # Validate input against schema
     validate_cromwell_inputs(cromwell_inputs)
 
-    with open(cli_arguments.output_parameters_file.name, 'w') as cromwell_input_file:
+    with open(cli_arguments.output_parameters_file, 'w') as cromwell_input_file:
         json.dump(cromwell_inputs, cromwell_input_file)
 
     # Submit pipeline to server or run locally depending on the arguments
     # FIXME this file should be part of the resources installed along with the package and pointed at from there
-    wdl_file = pkgutil.get_data("annotation", "transcriptome_module/main.wdl")
-    workflow_options_file = None
-    if cli_arguments.workflow_options_file is not None:
-        workflow_options_file = cli_arguments.workflow_options_file.name
-    return execute_cromwell(cli_arguments, cli_arguments.output_parameters_file.name,
-                     workflow_options_file, wdl_file)
+    with pkg_resources.path("annotation.transcriptome_module", "main.wdl") as wdl_file:
+        workflow_options_file = None
+        if cli_arguments.workflow_options_file is not None:
+            workflow_options_file = cli_arguments.workflow_options_file.name
+        return execute_cromwell(cli_arguments, cli_arguments.output_parameters_file,
+                                workflow_options_file, wdl_file)
 
 
 def validate_cromwell_inputs(cromwell_inputs):
-    with open(pkgutil.get_data("annotation", "reat.schema"), 'r') as schema:
-        reat_schema = json.load(schema)
+    with pkg_resources.path("validation", "reat.schema") as schema_file:
+        with open(schema_file, 'r') as schema:
+            reat_schema = json.load(schema)
     all_validators = dict(Draft7Validator.VALIDATORS)
     all_validators["is_name"] = is_valid_name
     reat_validator = validators.create(meta_schema=reat_schema, validators=all_validators)
@@ -284,7 +290,7 @@ def cromwell_submit(cli_arguments, input_parameters_filepath, workflow_options_f
 def cromwell_run(input_parameters_filepath, workflow_options_file, wdl_file):
     workflow_options = "-o " + workflow_options_file if workflow_options_file is not None else ""
     print("Starting:")
-    print(' '.join(["cromwell", "run", "-i", input_parameters_filepath, workflow_options, wdl_file]))
+    print(' '.join(["cromwell", "run", "-i", input_parameters_filepath, workflow_options, str(wdl_file)]))
     sp_cromwell = subprocess.run(
         ["cromwell", "run", "-i", input_parameters_filepath, wdl_file],
         universal_newlines=True,
