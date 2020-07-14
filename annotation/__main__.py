@@ -247,7 +247,6 @@ def main():
         json.dump(cromwell_inputs, cromwell_input_file)
 
     # Submit pipeline to server or run locally depending on the arguments
-    # FIXME this file should be part of the resources installed along with the package and pointed at from there
     with pkg_resources.path("annotation.transcriptome_module", "main.wdl") as wdl_file:
         workflow_options_file = None
         if cli_arguments.workflow_options_file is not None:
