@@ -1,17 +1,11 @@
 #!/usr/bin/env python3
 
-import os
 import sys
-import errno
 import re
-import subprocess
-import pdb
-from math import floor
-from collections import namedtuple, Counter
+from collections import namedtuple
 from six.moves import urllib
 from argparse import ArgumentParser
 
-from Bio import SeqIO
 from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
 from Bio.SeqFeature import SeqFeature, FeatureLocation
