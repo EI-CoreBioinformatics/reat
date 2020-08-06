@@ -1,0 +1,143 @@
+#!/usr/bin/env python3
+import sys
+import argparse
+
+
+class Exon:
+    def __init__(self, uid, gstart, gend, tstart, tend, score, phase):
+        self.uid = uid
+        self.gstart = gstart
+        self.gend = gend
+        self.tstart = tstart
+        self.tend = tend
+        self.score = score
+        self.phase = phase
+
+
+class Gene:
+    def __init__(self, uid, genome, gstart, gend, target, direction, score, identity, coverage, alignment_length, target_length, exons):
+        self.uid = uid
+        self.genome = genome
+        self.gstart = gstart
+        self.gend = gend
+        self.target = target
+        self.direction = direction
+        self.score = score
+        self.identity = identity
+        self.coverage = coverage
+        self.alignment_length = alignment_length
+        self.target_length = target_length
+        self.exons= exons
+        
+    def to_gff(self):
+        print(self.genome, "ALN", "gene", self.gstart, self.gend, self.score, 
+              self.direction, ".", "ID=%s.g%d;Name=%s.m%d"%
+              (self.target,self.uid,self.target,self.uid), sep='\t')
+        print(self.genome, "ALN", "mRNA", self.gstart, self.gend, 
+              self.score, self.direction, ".", 
+              "ID=%s.m%d;Parent=%s.g%d;Name=%s.m%d;Note=%s|"
+              "alnLen:%d|len:%d|cov:%.2f|id:%.2f|score:%d"%
+              (self.target,self.uid,self.target,self.uid,self.target,self.uid,self.target,
+               self.alignment_length,self.target_length,self.coverage,self.identity,self.score), sep='\t')
+        
+        for e, exon in enumerate(self.exons, 1):
+            print(self.genome, "ALN", "CDS", exon.gstart, exon.gend, exon.score, 
+                  self.direction, exon.phase, "ID=%s.cds%d;Name=%s;Parent=%s.m%d"%(self.target,e,self.target,self.target,self.uid), sep='\t')
+            print(self.genome, "ALN", "exon", exon.gstart, exon.gend, exon.score, 
+                  self.direction, exon.phase, "ID=%s.exon%d;Name=%s;Parent=%s.m%d"%(self.target,e,self.target,self.target,self.uid), sep='\t')
+        print("###")
+
+
+class SpalnReader(object):
+    def __init__(self, filename, className="SpalnReader"):
+        self.filename = filename
+        self.className = className
+        self.cur = 0
+        self.line = ""
+        self.raw = []
+        self.num_genes = 0
+        self.num_exons = 0
+        try:
+            self.infile = open(self.filename, 'r')
+        except IOError as e:
+            errMsg = self.className + ": could not read file " + \
+                fileName + "\n" + str(e)
+            raise IOError(errMsg)
+            
+    def __enter__(self):
+        return self
+    
+    def __exit__(self):
+        self.infile.close()
+        
+    def __iter__(self):
+        return self
+    
+    def __next__(self):
+        self.cur = self.infile.tell()
+        self.line = self.infile.readline().strip()
+        if self.infile.tell() == self.cur:
+            raise StopIteration("EOF reached!!")
+        self.raw = self.line.strip().split()
+        if len(self.raw) == 0 or self.raw[0]=='': 
+            raise Exception("Found an unexpected empty line a position {0}".format(self.cur))
+        exon_list = []
+        while True:
+            try:
+                if self.raw[0] == '!!!!!':
+                    return Gene(self.num_genes,genome, gstart, gend, target, 
+                                direction, score, identity, coverage, 
+                                alnLen, tLen, exon_list)
+                if self.raw[0] == '@':
+                    self.num_genes+=1
+                    genome = self.raw[1]
+                    direction = self.raw[2]
+                    gstart = self.raw[4]
+                    gend = self.raw[5]
+                    target = self.raw[7]
+                    score = float(self.raw[14])
+                    identity = float(self.raw[16])
+                    coverage = float(self.raw[18])
+                    alnLen = exon_list[-1].tend-exon_list[0].tstart+1
+                    tLen = int(self.raw[8])
+                else:
+                    self.num_exons+=1
+                    target = self.raw[0]
+                    genome = self.raw[1]
+                    match = self.raw[2]
+                    tstart = int(self.raw[6])
+                    tend = int(self.raw[7])
+                    gstart = int(self.raw[8])
+                    gend = int(self.raw[9])
+                    phase = self.raw[18]
+                    exon_list.append(Exon(self.num_exons,gstart,gend,tstart,tend,match,phase))
+            except Exception as e:
+                raise Exception("Unexpected input format at position {0}, line:\n {1}".format(self.cur, self.line)) from e
+            self.cur = self.infile.tell()
+            self.line = self.infile.readline().strip()
+            if self.infile.tell() == self.cur:
+                raise StopIteration("EOF reached!!")
+            self.raw = self.line.strip().split()
+            if len(self.raw) == 0 or self.raw[0]=='': 
+                raise Exception("Found an unexpected empty line a position {0}".format(self.cur))
+        raise Exception("_Unexpected input format at position {0}, line:\n {1}".format(self.cur, self.line))
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--spaln_file", type=argparse.FileType('r'))
+    ap.add_argument("--min_coverage", type=int, default=50)
+    ap.add_argument("--min_identity", type=int, default=70)
+    args = ap.parse_args()
+    min_identity = args.min_identity
+    min_coverage = args.min_coverage
+    spaln_file = args.spaln_file
+
+    for g in SpalnReader(spaln_file.name):
+        if g.coverage > min_coverage and g.identity > min_identity:
+            g.to_gff()
+
+if __name__ == "__main__":
+    try:
+        main()
+    except (BrokenPipeError, IOError):
+        sys.stderr.close()
