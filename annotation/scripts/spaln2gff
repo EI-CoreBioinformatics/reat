@@ -80,14 +80,12 @@ class SpalnReader(object):
         return self
 
     def __next__(self):
-        self.avance()
+        self.advance()
         exon_list = []
         while True:
             try:
                 if self.raw[0] == '!!!!!':
-                    return Gene(self.num_genes, genome, gstart, gend, target,
-                                direction, score, identity, coverage,
-                                alignment_len, target_len, exon_list)
+                    self.advance()
                 if self.raw[0] == '@':
                     self.num_genes += 1
                     genome = self.raw[1]
@@ -100,6 +98,9 @@ class SpalnReader(object):
                     coverage = float(self.raw[18])
                     alignment_len = exon_list[-1].tend - exon_list[0].tstart + 1
                     target_len = int(self.raw[8])
+                    return Gene(self.num_genes, genome, gstart, gend, target,
+                                direction, score, identity, coverage,
+                                alignment_len, target_len, exon_list)
                 else:
                     self.num_exons += 1
                     target = self.raw[0]
@@ -111,11 +112,13 @@ class SpalnReader(object):
                     gend = int(self.raw[9])
                     phase = self.raw[18]
                     exon_list.append(Exon(self.num_exons, gstart, gend, tstart, tend, match, phase))
+            except StopIteration as _:
+                raise StopIteration("EOF")
             except Exception as e:
                 raise Exception("Unexpected input at position {0}, line:\n {1}".format(self.cur, self.line)) from e
-            self.avance()
+            self.advance()
 
-    def avance(self):
+    def advance(self):
         self.cur = self.infile.tell()
         self.line = self.infile.readline().strip()
         if self.infile.tell() == self.cur:
