@@ -44,11 +44,11 @@ class Gene:
               file=file)
 
         for e, exon in enumerate(self.exons, 1):
-            print("{0}\tALN\tCDS\t{1}\t{2}\t{3}\t{4}\t{5}\tID={6}.cds{7};Name={6};Parent={6}.m{7}"
+            print("{0}\tALN\tCDS\t{1}\t{2}\t{3}\t{4}\t{5}\tID={6}.cds{7};Name={6};Parent={6}.m{8}"
                   .format(self.genome, exon.gstart, exon.gend, exon.score,self.direction, exon.phase,
                           self.target, e, self.uid),
                   file=file)
-            print("{0}\tALN\texon\t{1}\t{2}\t{3}\t{4}\t{5}\tID={6}.exon{7};Name={6};Parent={6}.m{7}"
+            print("{0}\tALN\texon\t{1}\t{2}\t{3}\t{4}\t{5}\tID={6}.exon{7};Name={6};Parent={6}.m{8}"
                   .format(self.genome, exon.gstart, exon.gend, exon.score,self.direction, exon.phase,
                           self.target, e, self.uid),
                   file=file)
