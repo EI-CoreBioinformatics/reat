@@ -15,7 +15,8 @@ class Exon:
 
 
 class Gene:
-    def __init__(self, uid, genome, gstart, gend, target, direction, score, identity, coverage, alignment_length, target_length, exons):
+    def __init__(self, uid, genome, gstart, gend, target, direction, score, identity, coverage, alignment_length,
+                 target_length, exons):
         self.uid = uid
         self.genome = genome
         self.gstart = gstart
@@ -27,31 +28,36 @@ class Gene:
         self.coverage = coverage
         self.alignment_length = alignment_length
         self.target_length = target_length
-        self.exons= exons
-        
-    def to_gff(self):
-        print(self.genome, "ALN", "gene", self.gstart, self.gend, self.score, 
-              self.direction, ".", "ID=%s.g%d;Name=%s.m%d"%
-              (self.target,self.uid,self.target,self.uid), sep='\t')
-        print(self.genome, "ALN", "mRNA", self.gstart, self.gend, 
-              self.score, self.direction, ".", 
-              "ID=%s.m%d;Parent=%s.g%d;Name=%s.m%d;Note=%s|"
-              "alnLen:%d|len:%d|cov:%.2f|id:%.2f|score:%d"%
-              (self.target,self.uid,self.target,self.uid,self.target,self.uid,self.target,
-               self.alignment_length,self.target_length,self.coverage,self.identity,self.score), sep='\t')
-        
+        self.exons = exons
+
+    def to_gff(self, file=None):
+        if file is None:
+            file = sys.stdout
+        print("{0}\tALN\tgene\t{1}\t{2}\t{3}\t{4}\t.\tID={5}.g{6};Name={5}.m{6}"
+              .format(self.genome, self.gstart, self.gend, self.score, self.direction, self.target, self.uid),
+              file=file)
+
+        print("{0}\tALN\tmRNA\t{1}\t{2}\t{3}\t{4}\t.\tID={5}.m{6};Parent={5}.g{6};Name={5}.m{6};"
+              "Note={5}|alnLen:{7}|len:{8}|cov:{9:.2f}|id:{10:.2f}|score:{11}"
+              .format(self.genome, self.gstart, self.gend, self.score, self.direction, self.target, self.uid,
+                      self.alignment_length, self.target_length, self.coverage, self.identity, self.score),
+              file=file)
+
         for e, exon in enumerate(self.exons, 1):
-            print(self.genome, "ALN", "CDS", exon.gstart, exon.gend, exon.score, 
-                  self.direction, exon.phase, "ID=%s.cds%d;Name=%s;Parent=%s.m%d"%(self.target,e,self.target,self.target,self.uid), sep='\t')
-            print(self.genome, "ALN", "exon", exon.gstart, exon.gend, exon.score, 
-                  self.direction, exon.phase, "ID=%s.exon%d;Name=%s;Parent=%s.m%d"%(self.target,e,self.target,self.target,self.uid), sep='\t')
-        print("###")
+            print("{0}\tALN\tCDS\t{1}\t{2}\t{3}\t{4}\t{5}\tID={6}.cds{7};Name={6};Parent={6}.m{7}"
+                  .format(self.genome, exon.gstart, exon.gend, exon.score,self.direction, exon.phase,
+                          self.target, e, self.uid),
+                  file=file)
+            print("{0}\tALN\texon\t{1}\t{2}\t{3}\t{4}\t{5}\tID={6}.exon{7};Name={6};Parent={6}.m{7}"
+                  .format(self.genome, exon.gstart, exon.gend, exon.score,self.direction, exon.phase,
+                          self.target, e, self.uid),
+                  file=file)
+        print("###", file=file)
 
 
 class SpalnReader(object):
-    def __init__(self, filename, className="SpalnReader"):
+    def __init__(self, filename):
         self.filename = filename
-        self.className = className
         self.cur = 0
         self.line = ""
         self.raw = []
@@ -60,36 +66,30 @@ class SpalnReader(object):
         try:
             self.infile = open(self.filename, 'r')
         except IOError as e:
-            errMsg = self.className + ": could not read file " + \
-                fileName + "\n" + str(e)
-            raise IOError(errMsg)
-            
+            error_msg = self.__class__.__name__ + ": could not read file " + \
+                        filename + "\n" + str(e)
+            raise IOError(error_msg)
+
     def __enter__(self):
         return self
-    
+
     def __exit__(self):
         self.infile.close()
-        
+
     def __iter__(self):
         return self
-    
+
     def __next__(self):
-        self.cur = self.infile.tell()
-        self.line = self.infile.readline().strip()
-        if self.infile.tell() == self.cur:
-            raise StopIteration("EOF reached!!")
-        self.raw = self.line.strip().split()
-        if len(self.raw) == 0 or self.raw[0]=='': 
-            raise Exception("Found an unexpected empty line a position {0}".format(self.cur))
+        self.avance()
         exon_list = []
         while True:
             try:
                 if self.raw[0] == '!!!!!':
-                    return Gene(self.num_genes,genome, gstart, gend, target, 
-                                direction, score, identity, coverage, 
-                                alnLen, tLen, exon_list)
+                    return Gene(self.num_genes, genome, gstart, gend, target,
+                                direction, score, identity, coverage,
+                                alignment_len, target_len, exon_list)
                 if self.raw[0] == '@':
-                    self.num_genes+=1
+                    self.num_genes += 1
                     genome = self.raw[1]
                     direction = self.raw[2]
                     gstart = self.raw[4]
@@ -98,10 +98,10 @@ class SpalnReader(object):
                     score = float(self.raw[14])
                     identity = float(self.raw[16])
                     coverage = float(self.raw[18])
-                    alnLen = exon_list[-1].tend-exon_list[0].tstart+1
-                    tLen = int(self.raw[8])
+                    alignment_len = exon_list[-1].tend - exon_list[0].tstart + 1
+                    target_len = int(self.raw[8])
                 else:
-                    self.num_exons+=1
+                    self.num_exons += 1
                     target = self.raw[0]
                     genome = self.raw[1]
                     match = self.raw[2]
@@ -110,17 +110,20 @@ class SpalnReader(object):
                     gstart = int(self.raw[8])
                     gend = int(self.raw[9])
                     phase = self.raw[18]
-                    exon_list.append(Exon(self.num_exons,gstart,gend,tstart,tend,match,phase))
+                    exon_list.append(Exon(self.num_exons, gstart, gend, tstart, tend, match, phase))
             except Exception as e:
-                raise Exception("Unexpected input format at position {0}, line:\n {1}".format(self.cur, self.line)) from e
-            self.cur = self.infile.tell()
-            self.line = self.infile.readline().strip()
-            if self.infile.tell() == self.cur:
-                raise StopIteration("EOF reached!!")
-            self.raw = self.line.strip().split()
-            if len(self.raw) == 0 or self.raw[0]=='': 
-                raise Exception("Found an unexpected empty line a position {0}".format(self.cur))
-        raise Exception("_Unexpected input format at position {0}, line:\n {1}".format(self.cur, self.line))
+                raise Exception("Unexpected input at position {0}, line:\n {1}".format(self.cur, self.line)) from e
+            self.avance()
+
+    def avance(self):
+        self.cur = self.infile.tell()
+        self.line = self.infile.readline().strip()
+        if self.infile.tell() == self.cur:
+            raise StopIteration("EOF reached!!")
+        self.raw = self.line.strip().split()
+        if len(self.raw) == 0 or self.raw[0] == '':
+            raise Exception("Found an unexpected empty line a position {0}".format(self.cur))
+
 
 def main():
     ap = argparse.ArgumentParser()
@@ -135,6 +138,7 @@ def main():
     for g in SpalnReader(spaln_file.name):
         if g.coverage > min_coverage and g.identity > min_identity:
             g.to_gff()
+
 
 if __name__ == "__main__":
     try:
