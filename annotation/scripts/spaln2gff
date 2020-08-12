@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import sys
 import argparse
-
+from collections import defaultdict
 
 class Exon:
     def __init__(self, uid, gstart, gend, tstart, tend, score, phase):
@@ -13,68 +13,76 @@ class Exon:
         self.score = score
         self.phase = phase
 
+    def __repr__(self):
+        return "{0}-{1}\t{2}-{3}\t{4}\t{5}".format(self.gstart,self.gend,self.tstart,self.tend,self.phase,self.score)
+
+    def __str__(self):
+        return "{0}-{1}\t{2}-{3}\t{4}\t{5}".format(self.gstart,self.gend,self.tstart,self.tend,self.phase,self.score)
 
 class Gene:
-    def __init__(self, uid, genome, gstart, gend, target, direction, score, identity, coverage, alignment_length,
+    def __init__(self, uid, genome, gstart, gend, target, strand, score, identity, coverage,
                  target_length, exons):
         self.uid = uid
         self.genome = genome
         self.gstart = gstart
         self.gend = gend
         self.target = target
-        self.direction = direction
+        self.strand = strand
         self.score = score
         self.identity = identity
         self.coverage = coverage
-        self.alignment_length = alignment_length
         self.target_length = target_length
         self.exons = exons
+        if '-' == strand:
+            self.exons.reverse()
+            for e in self.exons:
+                if e.gstart > e.gend:
+                    e.gstart, e.gend = e.gend, e.gstart
+                e.tstart, e.tend = e.tend, e.tstart
+
+        self.gstart = self.exons[0].gstart
 
     def to_gff(self, file=None):
         if file is None:
             file = sys.stdout
         print("{0}\tALN\tgene\t{1}\t{2}\t{3}\t{4}\t.\tID={5}.g{6};Name={5}.m{6}"
-              .format(self.genome, self.gstart, self.gend, self.score, self.direction, self.target, self.uid),
+              .format(self.genome, self.gstart, self.gend, self.score, self.strand, self.target, self.uid),
               file=file)
-
+        alignment_len = self.exons[-1].tend - self.exons[0].tstart + 1
+        if '-' == self.strand:
+            alignment_len = self.exons[0].tstart - self.exons[-1].tend + 1
         print("{0}\tALN\tmRNA\t{1}\t{2}\t{3}\t{4}\t.\tID={5}.m{6};Parent={5}.g{6};Name={5}.m{6};"
               "Note={5}|alnLen:{7}|len:{8}|cov:{9:.2f}|id:{10:.2f}|score:{11}"
-              .format(self.genome, self.gstart, self.gend, self.score, self.direction, self.target, self.uid,
-                      self.alignment_length, self.target_length, self.coverage, self.identity, self.score),
+              .format(self.genome, self.gstart, self.gend, self.score, self.strand, self.target, self.uid,
+                      alignment_len, self.target_length, self.coverage, self.identity, self.score),
               file=file)
 
         for e, exon in enumerate(self.exons, 1):
-            print("{0}\tALN\tCDS\t{1}\t{2}\t{3}\t{4}\t{5}\tID={6}.cds{7};Name={6};Parent={6}.m{8}"
-                  .format(self.genome, exon.gstart, exon.gend, exon.score,self.direction, exon.phase,
+            if exon.gstart > exon.gend:
+                exon.gstart, exon.gend = exon.gend, exon.gstart
+            print("{0}\tALN\tCDS\t{1}\t{2}\t{3}\t{4}\t{5}\tID={6}.cds{7};Parent={6}.m{8}"
+                  .format(self.genome, exon.gstart, exon.gend, exon.score,self.strand, exon.phase,
                           self.target, e, self.uid),
                   file=file)
-            print("{0}\tALN\texon\t{1}\t{2}\t{3}\t{4}\t{5}\tID={6}.exon{7};Name={6};Parent={6}.m{8}"
-                  .format(self.genome, exon.gstart, exon.gend, exon.score,self.direction, exon.phase,
+            print("{0}\tALN\texon\t{1}\t{2}\t{3}\t{4}\t{5}\tID={6}.exon{7};Parent={6}.m{8}"
+                  .format(self.genome, exon.gstart, exon.gend, exon.score,self.strand, exon.phase,
                           self.target, e, self.uid),
                   file=file)
         print("###", file=file)
 
 
 class SpalnReader(object):
-    def __init__(self, filename):
-        self.filename = filename
+    def __init__(self, fp):
+        self.file = fp
         self.cur = 0
         self.line = ""
         self.raw = []
         self.num_genes = 0
         self.num_exons = 0
-        try:
-            self.infile = open(self.filename, 'r')
-        except IOError as e:
-            error_msg = self.__class__.__name__ + ": could not read file " + \
-                        filename + "\n" + str(e)
-            raise IOError(error_msg)
+        self.genes = defaultdict(int)
 
     def __enter__(self):
         return self
-
-    def __exit__(self):
-        self.infile.close()
 
     def __iter__(self):
         return self
@@ -89,18 +97,17 @@ class SpalnReader(object):
                 if self.raw[0] == '@':
                     self.num_genes += 1
                     genome = self.raw[1]
-                    direction = self.raw[2]
+                    strand = self.raw[2]
                     gstart = self.raw[4]
                     gend = self.raw[5]
                     target = self.raw[7]
+                    self.genes[target]+=1
                     score = float(self.raw[14])
                     identity = float(self.raw[16])
                     coverage = float(self.raw[18])
-                    alignment_len = exon_list[-1].tend - exon_list[0].tstart + 1
                     target_len = int(self.raw[8])
-                    return Gene(self.num_genes, genome, gstart, gend, target,
-                                direction, score, identity, coverage,
-                                alignment_len, target_len, exon_list)
+                    return Gene(self.genes[target], genome, gstart, gend, target,
+                                strand, score, identity, coverage, target_len, exon_list)
                 else:
                     self.num_exons += 1
                     target = self.raw[0]
@@ -119,9 +126,9 @@ class SpalnReader(object):
             self.advance()
 
     def advance(self):
-        self.cur = self.infile.tell()
-        self.line = self.infile.readline().strip()
-        if self.infile.tell() == self.cur:
+        self.cur = self.file.tell()
+        self.line = self.file.readline()
+        if self.file.tell() == self.cur:
             raise StopIteration("EOF reached!!")
         self.raw = self.line.strip().split()
         if len(self.raw) == 0 or self.raw[0] == '':
@@ -131,14 +138,15 @@ class SpalnReader(object):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--spaln_file", type=argparse.FileType('r'))
-    ap.add_argument("--min_coverage", type=int, default=50)
-    ap.add_argument("--min_identity", type=int, default=70)
+    ap.add_argument("--min_coverage", type=int, default=80)
+    ap.add_argument("--min_identity", type=int, default=50)
     args = ap.parse_args()
     min_identity = args.min_identity
     min_coverage = args.min_coverage
     spaln_file = args.spaln_file
 
-    for g in SpalnReader(spaln_file.name):
+    print("##gff-version 3")
+    for g in SpalnReader(spaln_file):
         if g.coverage > min_coverage and g.identity > min_identity:
             g.to_gff()
 
