@@ -42,9 +42,7 @@ class Gene:
 
         self.gstart = self.exons[0].gstart
 
-    def to_gff(self, file=None):
-        if file is None:
-            file = sys.stdout
+    def to_gff(self, file=sys.stdout):
         print("{0}\tALN\tgene\t{1}\t{2}\t{3}\t{4}\t.\tID={5}.g{6};Name={5}.m{6}"
               .format(self.genome, self.gstart, self.gend, self.score, self.strand, self.target, self.uid),
               file=file)
@@ -122,33 +120,41 @@ class SpalnReader(object):
             except StopIteration as _:
                 raise StopIteration("EOF")
             except Exception as e:
-                raise Exception("Unexpected input at position {0}, line:\n {1}".format(self.cur, self.line)) from e
+                raise Exception("Unexpected input:\n {0}".format(self.line)) from e
             self.advance()
 
     def advance(self):
-        self.cur = self.file.tell()
         self.line = self.file.readline()
-        if self.file.tell() == self.cur:
-            raise StopIteration("EOF reached!!")
         self.raw = self.line.strip().split()
         if len(self.raw) == 0 or self.raw[0] == '':
-            raise Exception("Found an unexpected empty line a position {0}".format(self.cur))
+            raise StopIteration("EOF")
 
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--spaln_file", type=argparse.FileType('r'))
+    ap.add_argument("-i", "--spaln_filename")
+    ap.add_argument("-o", "--gff3_output")
+    ap.add_argument("-s", "--source", required=True, help="source name for gff3 file")
     ap.add_argument("--min_coverage", type=int, default=80)
     ap.add_argument("--min_identity", type=int, default=50)
     args = ap.parse_args()
     min_identity = args.min_identity
     min_coverage = args.min_coverage
-    spaln_file = args.spaln_file
 
-    print("##gff-version 3")
+    if not args.spaln_filename:
+        spaln_file = sys.stdin
+    else:
+        spaln_file = open(args.spaln_filename, 'r')
+
+    if not args.gff3_output:
+        output_gff3 = sys.stdout
+    else:
+        output_gff3 = open(args.gff3_output, 'w')
+
+    print("##gff-version 3", file=output_gff3)
     for g in SpalnReader(spaln_file):
         if g.coverage > min_coverage and g.identity > min_identity:
-            g.to_gff()
+            g.to_gff(output_gff3)
 
 
 if __name__ == "__main__":
