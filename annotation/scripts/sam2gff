@@ -2,7 +2,7 @@
 
 import sys
 import re
-from collections import namedtuple
+from collections import namedtuple, defaultdict, Counter
 from six.moves import urllib
 from argparse import ArgumentParser
 
@@ -13,78 +13,23 @@ from Bio.SeqFeature import SeqFeature, FeatureLocation
 Interval = namedtuple('Interval', ['start', 'end'])
 
 
-class _IdHandler:
-    """Generate IDs for GFF3 Parent/Child relationships where they don't exist.
-    """
-
-    def __init__(self):
-        self._prefix = "biopygen"
-        self._counter = 1
-        self._seen_ids = []
-
-    def _generate_id(self, quals):
-        """Generate a unique ID not present in our existing IDs.
-        """
-        gen_id = self._get_standard_id(quals)
-        if gen_id is None:
-            while 1:
-                gen_id = "%s%s" % (self._prefix, self._counter)
-                if gen_id not in self._seen_ids:
-                    break
-                self._counter += 1
-        return gen_id
-
-    def _get_standard_id(self, quals):
-        """Retrieve standardized IDs from other sources like NCBI GenBank.
-        This tries to find IDs from known key/values when stored differently
-        than GFF3 specifications.
-        """
-        possible_keys = ["transcript_id", "protein_id"]
-        for test_key in possible_keys:
-            if test_key in quals:
-                cur_id = quals[test_key]
-                if isinstance(cur_id, tuple) or isinstance(cur_id, list):
-                    return cur_id[0]
-                else:
-                    return cur_id
-        return None
-
-    def update_quals(self, quals, has_children):
-        """Update a set of qualifiers, adding an ID if necessary.
-        """
-        cur_id = quals.get("ID", None)
-        # if we have an ID, record it
-        if cur_id:
-            if not isinstance(cur_id, list) and not isinstance(cur_id, tuple):
-                cur_id = [cur_id]
-            for add_id in cur_id:
-                self._seen_ids.append(add_id)
-        # if we need one and don't have it, create a new one
-        elif has_children:
-            new_id = self._generate_id(quals)
-            self._seen_ids.append(new_id)
-            quals["ID"] = [new_id]
-        return quals
-
-
 class GFF3Writer:
     """Write GFF3 files starting with standard Biopython objects.
     """
 
     def __init__(self, out_handle):
-        self.id_handler = _IdHandler()
         self._out_handle = out_handle
         self._write_header(out_handle)
+        self._seen_transcripts = defaultdict(int)
         pass
 
     def write(self, rec):
         """Write the provided records to the given handle in GFF3 format.
         """
-        self._write_annotations(rec.annotations, rec.id, len(rec.seq), self._out_handle)
+        self._seen_transcripts[rec.id]+=1
         for sf in rec.features:
             sf = self._clean_feature(sf)
-            self.id_handler = self._write_feature(sf, rec.id, self._out_handle,
-                                                  self.id_handler)
+            self._write_feature(sf, rec.id, self._out_handle)
         self._out_handle.write("###\n")
 
     def _clean_feature(self, feature):
@@ -111,10 +56,10 @@ class GFF3Writer:
             phase = "."
         return str(phase)
 
-    def _write_feature(self, feature, rec_id, out_handle, id_handler,
-                       parent_id=None):
+    def _write_feature(self, feature, rec_id, out_handle, parent_id=None):
         """Write a feature with location information.
         """
+        print(feature.qualifiers, file=sys.stderr)
         if feature.strand == 1:
             strand = '+'
         elif feature.strand == -1:
@@ -131,7 +76,6 @@ class GFF3Writer:
             if not "Parent" in quals:
                 quals["Parent"] = []
             quals["Parent"].append(parent_id)
-        quals = id_handler.update_quals(quals, len(feature.sub_features) > 0)
         if feature.type:
             ftype = feature.type
         else:
@@ -148,10 +92,7 @@ class GFF3Writer:
         out_handle.write("\t".join(parts) + "\n")
 
         for sub_feature in feature.sub_features:
-            id_handler = self._write_feature(sub_feature, rec_id, out_handle,
-                                             id_handler, quals["ID"][0])
-
-        return id_handler
+            self._write_feature(sub_feature, rec_id, out_handle, quals["ID"][0])
 
     def _format_keyvals(self, keyvals):
         format_kvs = []
@@ -167,15 +108,6 @@ class GFF3Writer:
                     format_vals.append(val)
             format_kvs.append("%s=%s" % (key, ",".join(format_vals)))
         return ";".join(format_kvs)
-
-    def _write_annotations(self, anns, rec_id, size, out_handle):
-        """Add annotations which refer to an entire sequence.
-        """
-        format_anns = self._format_keyvals(anns)
-        if format_anns:
-            parts = [rec_id, "annotation", "remark", "1", str(size if size > 1 else 1),
-                     ".", ".", ".", format_anns]
-            out_handle.write("\t".join(parts) + "\n")
 
     def _write_header(self, out_handle):
         """Write out standard header directives.
@@ -454,7 +386,7 @@ class GMAPSAMRecord(SAMRecord):
             return
         self.sStart = int(raw[3]) - 1
         self.cigar = raw[5]
-        self.qLen = len(raw[10])
+        self.qLen = len(raw[9]) if raw[9]!='*' else len(raw[10])
         self.segments = self.parse_cigar(self.cigar, self.sStart)
         self.sEnd = self.segments[-1].end
         self.flag = SAMRecord.parse_sam_flag(int(raw[1]))  # strand can be overwritten by XS:A flag
@@ -484,7 +416,7 @@ class GMAPSAMRecord(SAMRecord):
             self.qCoverage = (self.qEnd - self.qStart) * 1. / self.qLen
 
 
-def convert_sam_rec_to_gff3_rec(r, source):
+def convert_sam_rec_to_gff3_rec(r, source, qid_seen=None):
     """
     :param r: GMAPSAMRecord record
     :param qid_seen: list of qIDs processed so far -- if redundant, we have to put a unique suffix
@@ -523,6 +455,14 @@ def convert_sam_rec_to_gff3_rec(r, source):
     mismatches = r.num_nonmatches
     matches = r.num_mat_or_sub - r.num_nonmatches
 
+    if qid_seen is not None:
+        if r.qID in qid_seen: 
+            qid_seen[r.qID] += 1
+            r.qID += '.path' + str(qid_seen[r.qID])
+        else: 
+            r.qID += '.path1'
+            qid_seen[r.qID] += 1
+
     gene_qualifiers = {"source": source, "ID": r.qID, "Name": r.qID}  # for gene record
     mRNA_qualifiers = {"source": source, "ID": r.qID + '.mRNA', "Name": r.qID + '.mRNA', "Parent": r.qID,
                        "coverage": "{0:.1f}".format(r.qCoverage * 10 ** 2) if r.qCoverage is not None else "NA",
@@ -552,6 +492,8 @@ def main():
     parser.add_argument("-i", "--sam_filename")
     parser.add_argument("-o", "--gff3_output")
     parser.add_argument("-s", "--source", required=True, help="source name for gff3 file")
+    parser.add_argument("--min_coverage", help="Coverage filter 0-100", type=int, default=0)
+    parser.add_argument("--min_identity", help="Identity filter 0-100", type=int, default=0)
 
     args = parser.parse_args()
 
@@ -570,11 +512,13 @@ def main():
     else:
         output_gff3 = open(args.gff3_output, 'w')
 
+    qid_seen = Counter()
     writer = GFF3Writer(output_gff3)
     for r0 in GMAPSAMReader(input_file_handle, has_header):
-        rec = convert_sam_rec_to_gff3_rec(r0, args.source)
-        if rec is not None:
-            writer.write(rec)
+        if r0.identity*100 > args.min_identity and r0.qCoverage*100 > args.min_coverage:
+            rec = convert_sam_rec_to_gff3_rec(r0, args.source, qid_seen)
+            if rec is not None:
+                writer.write(rec)
 
     if args.gff3_output:
         print("Output written to {0}.".format(args.gff3_output), file=sys.stderr)
@@ -585,3 +529,4 @@ if __name__ == "__main__":
         main()
     except (BrokenPipeError, IOError):
         sys.stderr.close()
+
