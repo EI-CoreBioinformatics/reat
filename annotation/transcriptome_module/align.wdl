@@ -116,7 +116,7 @@ workflow wf_align {
             min_intron_len = select_first([min_intron_len, 20]),
             max_intron_len = select_first([max_intron_len, 2000]),
             max_intron_len_middle = select_first([max_intron_len_middle, 2000]),
-            aligner_extra_parameters = LQ_aligner_extra_parameters,
+            aligner_extra_parameters = select_first([LQ_aligner_extra_parameters, ""]),
             bed_junctions = portcullis.pass_bed,
             indexing_resources = long_read_indexing_resources,
             alignment_resources = long_read_alignment_resources
@@ -146,7 +146,7 @@ workflow wf_align {
             min_intron_len = min_intron_len,
             max_intron_len = max_intron_len,
             max_intron_len_middle = max_intron_len_middle,
-            aligner_extra_parameters = HQ_aligner_extra_parameters,
+            aligner_extra_parameters = select_first([HQ_aligner_extra_parameters, ""]),
             bed_junctions = portcullis.pass_bed,
             indexing_resources = long_read_indexing_resources,
             alignment_resources = long_read_alignment_resources
