@@ -35,7 +35,8 @@ setup(
         "validation": ["reat.schema"],
         "annotation": ["transcriptome_module/*.wdl",
                        "transcriptome_module/*/**/*.wdl",
-                       "transcriptome_module/*/**/**/*.wdl"],
+                       "transcriptome_module/*/**/**/*.wdl",
+                       "homology_module/*.wdl"],
     },
     entry_points={
         "console_scripts": [

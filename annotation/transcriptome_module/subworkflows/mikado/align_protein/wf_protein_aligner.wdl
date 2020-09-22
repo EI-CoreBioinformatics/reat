@@ -70,6 +70,7 @@ task BlastAlign {
         Array[File] index
         File query
         String? extra
+        String? matrix
         String blast_type
         String outfmt
         String output_filename
@@ -98,7 +99,7 @@ task BlastAlign {
 
     command <<<
         set -euxo pipefail
-        ~{blast_type} ~{extra} -db ~{sub(index[0], "\.[^.]+$", "")} -num_threads ~{cpus} -query ~{query} -outfmt "~{outfmt}" > ~{output_filename}
+        ~{blast_type} ~{extra} -db ~{sub(index[0], "\.[^.]+$", "")} -num_threads ~{cpus} -query ~{query} ~{"-matrix " + matrix} -outfmt "~{outfmt}" > ~{output_filename}
     >>>
 }
 
@@ -137,6 +138,7 @@ task DiamondAlign {
     input {
         File index
         File query
+        String? matrix
         String? extra
         String outfmt
         String blast_type
@@ -168,6 +170,6 @@ task DiamondAlign {
 
     command <<<
         set -euxo pipefail
-        diamond ~{blast_type} ~{extra} -f ~{outfmt} -p "~{cpus}" -d "~{index}" -q "~{query}" > "~{output_filename}"
+        diamond ~{blast_type} ~{extra} ~{"--matrix " + matrix} -f ~{outfmt} -p "~{cpus}" -d "~{index}" -q "~{query}" > "~{output_filename}"
     >>>
 }

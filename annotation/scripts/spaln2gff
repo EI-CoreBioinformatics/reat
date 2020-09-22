@@ -3,6 +3,7 @@ import sys
 import argparse
 from collections import defaultdict
 
+
 class Exon:
     def __init__(self, uid, gstart, gend, tstart, tend, score, phase):
         self.uid = uid
@@ -14,10 +15,13 @@ class Exon:
         self.phase = phase
 
     def __repr__(self):
-        return "{0}-{1}\t{2}-{3}\t{4}\t{5}".format(self.gstart,self.gend,self.tstart,self.tend,self.phase,self.score)
+        return "{0}-{1}\t{2}-{3}\t{4}\t{5}".format(self.gstart, self.gend, self.tstart, self.tend, self.phase,
+                                                   self.score)
 
     def __str__(self):
-        return "{0}-{1}\t{2}-{3}\t{4}\t{5}".format(self.gstart,self.gend,self.tstart,self.tend,self.phase,self.score)
+        return "{0}-{1}\t{2}-{3}\t{4}\t{5}".format(self.gstart, self.gend, self.tstart, self.tend, self.phase,
+                                                   self.score)
+
 
 class Gene:
     def __init__(self, uid, genome, gstart, gend, target, strand, score, identity, coverage,
@@ -59,11 +63,11 @@ class Gene:
             if exon.gstart > exon.gend:
                 exon.gstart, exon.gend = exon.gend, exon.gstart
             print("{0}\tALN\tCDS\t{1}\t{2}\t{3}\t{4}\t{5}\tID={6}.cds{7};Parent={6}.m{8}"
-                  .format(self.genome, exon.gstart, exon.gend, exon.score,self.strand, exon.phase,
+                  .format(self.genome, exon.gstart, exon.gend, exon.score, self.strand, exon.phase,
                           self.target, e, self.uid),
                   file=file)
             print("{0}\tALN\texon\t{1}\t{2}\t{3}\t{4}\t{5}\tID={6}.exon{7};Parent={6}.m{8}"
-                  .format(self.genome, exon.gstart, exon.gend, exon.score,self.strand, exon.phase,
+                  .format(self.genome, exon.gstart, exon.gend, exon.score, self.strand, exon.phase,
                           self.target, e, self.uid),
                   file=file)
         print("###", file=file)
@@ -99,7 +103,7 @@ class SpalnReader(object):
                     gstart = self.raw[4]
                     gend = self.raw[5]
                     target = self.raw[7]
-                    self.genes[target]+=1
+                    self.genes[target] += 1
                     score = float(self.raw[14])
                     identity = float(self.raw[16])
                     coverage = float(self.raw[18])
@@ -116,6 +120,10 @@ class SpalnReader(object):
                     gstart = int(self.raw[8])
                     gend = int(self.raw[9])
                     phase = self.raw[18]
+                    if phase == '2':
+                        phase = 1
+                    if phase == '1':
+                        phase = 2
                     exon_list.append(Exon(self.num_exons, gstart, gend, tstart, tend, match, phase))
             except StopIteration as _:
                 raise StopIteration("EOF")
