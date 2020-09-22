@@ -7,6 +7,9 @@
 #     Failure:
 #         Reat fails to start or be submitted and the reason is provided to the user
 
+# __main__.py checks the user environment to ensure the required software is available if this is not the case
+# the user is informed of which software is and which isn't available
+
 # __main__.py parses all the arguments required, generates an input file for cromwell and submits a job to the requested
 # backend. The arguments are validated using the json input schema defined in the validation directory.
 
@@ -18,6 +21,8 @@
 
 import argparse
 import json
+import sys
+
 from jsonschema import ValidationError, validators, Draft7Validator
 import subprocess
 
@@ -34,6 +39,77 @@ def is_valid_name(validator, value, instance, schema):
 
     if value and set(instance).intersection("][/?\\\'\" .*$)(}{"):
         yield ValidationError("%r is not alphanumeric" % (instance,))
+
+
+def check_environment():
+    software_available = {
+        "mikado": {"command": "mikado --version".split(' '), "result": "Mikado v2.0rc2"},
+        "diamond": {"command": "diamond version".split(' '), "result": "diamond version 0.9.30"},
+        "blastn": {"command": "blastn -version".split(' '), "result": "blastn: 2.10.0+"},
+        "blastx": {"command": "blastx -version".split(' '), "result": "blastx: 2.10.0+"},
+        "samtools": {"command": "samtools --version".split(' '), "result": "samtools 1.10"},
+        "bamtools": {"command": "bamtools --version".split(' '), "result": "bamtools 2.5.1"},
+        "gffread": {"command": "gffread --version".split(' '), "result": "0.11.7"},
+        "gmap": {"command": "gmap --version".split(' '), "result": "version 2019-09-12"},
+        "minimap2": {"command": "minimap2 --version".split(' '), "result": "2.17-r941"},
+        "genometools": {"command": "gt --version".split(' '), "result": "gt (GenomeTools) 1.6.1"},
+        "hisat2": {"command": "hisat2 --version".split(' '), "result": "version 2.1.0"},
+        "star": {"command": "star --version".split(' '), "result": "2.7.3a"},
+        "seqtk": {"command": ["seqtk"], "result": "Version: 1.3-r114-dirty"},
+        "stringtie": {"command": "stringtie --version".split(' '), "result": "2.1.1"},
+        "scallop": {"command": "scallop --version".split(' '), "result": "v0.10.4"},
+        "scallop-lr": {"command": "scallop-lr --version".split(' '), "result": "v0.9.2"},
+        "prodigal": {"command": "prodigal -v".split(' '), "result": "Prodigal V2.6.3: February, 2016"},
+        "transdecoder": {"command": "TransDecoder.LongOrfs --version".split(' '),
+                         "result": "TransDecoder.LongOrfs 5.5.0"},
+        "portcullis": {"command": "portcullis --version".split(' '), "result": "portcullis 1.2.0"},
+        # "BioPerl": {"command": ["perl", "-MBio::Root::Version", "-e", "\'print $Bio::Root::Version::VERSION\n\'"],
+        #             "result": "1.7.7"},
+    }
+    # Check the following software is installed and available in the user's environment
+    # * Mikado - 2.0
+    # * DIAMOND - 0.9.31
+    # * FullLengtherNext - 1.0.1
+    # * BLAST - 2.7.1
+    # * MagicBlast - 1.5.0
+    # * LibDeflate - master
+    # * HTSLib - 1.9
+    # * Samtools - 1.9
+    # * BCFTools - 1.9
+    # * BAMtools - 2.5.1
+    # * gclib - 54917d0
+    # * gffread - ba7535f
+    # * GMAP - 2019-02-15
+    # * MiniMap2 - 2.17
+    # * GenomeTools - 1.5.10
+    # * HISAT2 - 2.1.0
+    # * STAR - 2.7.3a
+    # * seqtk - master
+    # * Stringtie2 - v2.1.1
+    # * Scallop - 0.10.4
+    # * Scallop-lr - 0.9.2
+    # * Prodigal - 2.6.3
+    # * Transdecoder - 5.5.0
+    # * Portcullis - 1.2.2
+    # * BioPerl
+
+    for key, item in software_available.items():
+        result = subprocess.run(item["command"], capture_output=True)
+        output = result.stdout.decode()
+        output += result.stderr.decode()
+        item["rc"] = result.returncode
+        if key == "seqtk":
+            if "Version" in output:
+                item["rc"] = 0
+        if item["result"] not in output:
+            print("\"", key, "\"", " current available version:", sep="", file=sys.stderr)
+            print(output.strip(), file=sys.stderr)
+            print("is not the same as the expected version:", file=sys.stderr)
+            print(item["result"], file=sys.stderr)
+        # Command not in path, wrong version or failed to execute
+        if item["rc"] != 0:
+            raise Exception("Command {0} is missing, please check your PATH".format(key))
+    return software_available
 
 
 def collect_arguments():
@@ -200,14 +276,17 @@ def combine_arguments(cli_arguments):
     cromwell_inputs["ei_annotation.wf_align.HQ_aligner_extra_parameters"] = cli_arguments.HQ_aligner_extra_parameters
     cromwell_inputs["ei_annotation.wf_align.LQ_aligner_extra_parameters"] = cli_arguments.LQ_aligner_extra_parameters
 
-    cromwell_inputs["ei_annotation.wf_align.PR_stringtie_extra_parameters"] = cli_arguments.PR_stringtie_extra_parameters
+    cromwell_inputs[
+        "ei_annotation.wf_align.PR_stringtie_extra_parameters"] = cli_arguments.PR_stringtie_extra_parameters
     cromwell_inputs["ei_annotation.wf_align.PR_scallop_extra_parameters"] = cli_arguments.PR_scallop_extra_parameters
 
     cromwell_inputs["ei_annotation.wf_align.HQ_assembler"] = cli_arguments.HQ_assembler
     cromwell_inputs["ei_annotation.wf_align.LQ_assembler"] = cli_arguments.LQ_assembler
 
-    cromwell_inputs["ei_annotation.wf_align.HQ_assembler_extra_parameters"] = cli_arguments.HQ_assembler_extra_parameters
-    cromwell_inputs["ei_annotation.wf_align.LQ_assembler_extra_parameters"] = cli_arguments.LQ_assembler_extra_parameters
+    cromwell_inputs[
+        "ei_annotation.wf_align.HQ_assembler_extra_parameters"] = cli_arguments.HQ_assembler_extra_parameters
+    cromwell_inputs[
+        "ei_annotation.wf_align.LQ_assembler_extra_parameters"] = cli_arguments.LQ_assembler_extra_parameters
 
     cromwell_inputs["ei_annotation.wf_align.min_intron_len"] = cli_arguments.min_intron_len
     cromwell_inputs["ei_annotation.wf_align.max_intron_len"] = cli_arguments.max_intron_len
@@ -225,7 +304,7 @@ def combine_arguments(cli_arguments):
     if cli_arguments.orf_calling_proteins is not None:
         cromwell_inputs["ei_annotation.orf_calling_proteins"] = cli_arguments.orf_calling_proteins
 
-    if cli_arguments.orf_caller is not "none":
+    if cli_arguments.orf_caller != "none":
         cromwell_inputs["ei_annotation.wf_main_mikado.orf_calling_program"] = cli_arguments.orf_caller
 
     if cli_arguments.separate_mikado_LQ:
@@ -234,25 +313,6 @@ def combine_arguments(cli_arguments):
         cromwell_inputs["ei_annotation.wf_main_mikado.separate_LQ"] = "false"
 
     return cromwell_inputs
-
-
-def main():
-    cli_arguments = collect_arguments()
-    # Print input file for cromwell
-    cromwell_inputs = combine_arguments(cli_arguments)
-    # Validate input against schema
-    validate_cromwell_inputs(cromwell_inputs)
-
-    with open(cli_arguments.output_parameters_file, 'w') as cromwell_input_file:
-        json.dump(cromwell_inputs, cromwell_input_file)
-
-    # Submit pipeline to server or run locally depending on the arguments
-    with pkg_resources.path("annotation.transcriptome_module", "main.wdl") as wdl_file:
-        workflow_options_file = None
-        if cli_arguments.workflow_options_file is not None:
-            workflow_options_file = cli_arguments.workflow_options_file.name
-        return execute_cromwell(cli_arguments, cli_arguments.output_parameters_file,
-                                workflow_options_file, wdl_file)
 
 
 def validate_cromwell_inputs(cromwell_inputs):
@@ -274,9 +334,7 @@ def execute_cromwell(cli_arguments, input_parameters_filepath, workflow_options_
 
 def cromwell_submit(cli_arguments, input_parameters_filepath, workflow_options_file, wdl_file):
     # FIXME
-    # To submit a workflow to a server subworkflows need to be included as a zip file, this could be a file that is pre-
-    # packaged during installation and pointed to, or generated for each run. Pre-packaging seems to be a more sensible
-    # option
+    # Package the pipeline dependencies from the installed resources folder into a zip file for submitting
 
     subprocess.run(
         ["cromwell", "submit", "-h", cli_arguments.server, "-i",
@@ -296,7 +354,7 @@ def cromwell_run(input_parameters_filepath, workflow_options_file, wdl_file):
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE
     )
-    if sp_cromwell.returncode is not 0:
+    if sp_cromwell.returncode != 0:
         sentinel = "Check the content of stderr for potential additional information: "
         error_file_start_pos = sp_cromwell.stdout.find(sentinel)
         if error_file_start_pos < 0:
@@ -310,6 +368,27 @@ def cromwell_run(input_parameters_filepath, workflow_options_file, wdl_file):
             with open(error_file, 'r') as failed_job_stderr_file:
                 print(failed_job_stderr_file.read())
     return sp_cromwell.returncode
+
+
+def main():
+    check_environment()
+
+    cli_arguments = collect_arguments()
+    # Print input file for cromwell
+    cromwell_inputs = combine_arguments(cli_arguments)
+    # Validate input against schema
+    validate_cromwell_inputs(cromwell_inputs)
+
+    with open(cli_arguments.output_parameters_file, 'w') as cromwell_input_file:
+        json.dump(cromwell_inputs, cromwell_input_file)
+
+    # Submit pipeline to server or run locally depending on the arguments
+    with pkg_resources.path("annotation.transcriptome_module", "main.wdl") as wdl_file:
+        workflow_options_file = None
+        if cli_arguments.workflow_options_file is not None:
+            workflow_options_file = cli_arguments.workflow_options_file.name
+        return execute_cromwell(cli_arguments, cli_arguments.output_parameters_file,
+                                workflow_options_file, wdl_file)
 
 
 if __name__ == '__main__':
