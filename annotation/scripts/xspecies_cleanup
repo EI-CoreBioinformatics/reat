@@ -1,0 +1,157 @@
+#!/usr/bin/env python3
+
+import argparse
+import textwrap
+
+import pyfaidx
+from eicore2.parsers.GFF import GFFReader
+
+universal_code = {
+    'ATA': 'I', 'ATC': 'I', 'ATT': 'I', 'ATG': 'M',
+    'ACA': 'T', 'ACC': 'T', 'ACG': 'T', 'ACT': 'T',
+    'AAC': 'N', 'AAT': 'N', 'AAA': 'K', 'AAG': 'K',
+    'AGC': 'S', 'AGT': 'S', 'AGA': 'R', 'AGG': 'R',
+    'CTA': 'L', 'CTC': 'L', 'CTG': 'L', 'CTT': 'L',
+    'CCA': 'P', 'CCC': 'P', 'CCG': 'P', 'CCT': 'P',
+    'CAC': 'H', 'CAT': 'H', 'CAA': 'Q', 'CAG': 'Q',
+    'CGA': 'R', 'CGC': 'R', 'CGG': 'R', 'CGT': 'R',
+    'GTA': 'V', 'GTC': 'V', 'GTG': 'V', 'GTT': 'V',
+    'GCA': 'A', 'GCC': 'A', 'GCG': 'A', 'GCT': 'A',
+    'GAC': 'D', 'GAT': 'D', 'GAA': 'E', 'GAG': 'E',
+    'GGA': 'G', 'GGC': 'G', 'GGG': 'G', 'GGT': 'G',
+    'TCA': 'S', 'TCC': 'S', 'TCG': 'S', 'TCT': 'S',
+    'TTC': 'F', 'TTT': 'F', 'TTA': 'L', 'TTG': 'L',
+    'TAC': 'Y', 'TAT': 'Y', 'TAA': '*', 'TAG': '*',
+    'TGC': 'C', 'TGT': 'C', 'TGA': '*', 'TGG': 'W',
+}
+
+
+def translate(seq):
+    prot = ""
+    try:
+        for codon in zip(seq[0::3], seq[1::3], seq[2::3]):
+            prot += universal_code[''.join(codon)]
+    except KeyError:
+        # TODO: There's probably a better way of handling codons with ambiguous NTs
+        pass
+    return prot
+
+
+def main():
+    p = argparse.ArgumentParser()
+    p.add_argument("-i", "--input", type=argparse.FileType('r'), required=True,
+                   help="Input file containing pair of gff,fasta file for each species")
+    p.add_argument("-l", "--min_protein", type=int, default=2,
+                   help="Check the length of the translated CDS protein is longer than min_protein")
+    p.add_argument("-m", "--max_intron", type=int, default=200000,
+                   help="Check introns are shorter than max_intron")
+    args = p.parse_args()
+
+    input_pairs = args.input
+    min_length = args.min_protein
+    max_intron = args.max_intron
+
+    for p in input_pairs:
+        gff_file, fasta_file = p.strip().split()
+        print(f'GFF: {gff_file}\nFASTA: {fasta_file}')
+        # count = 0
+        with pyfaidx.Fasta(fasta_file) as genome:
+            total_genes = 0
+            total_valid_genes = 0
+            total_transcripts = 0
+            total_valid_transcripts = 0
+            total_short_proteins = 0
+            total_long_introns = 0
+            total_non_coding_rna = 0
+            total_internal_stop = 0
+            total_non_canonical_splicing = 0
+            for gene in GFFReader(gff_file):
+                # if count == 100:
+                #     break
+                num_valid_transcripts = 0
+                for mrna_id, mrna in gene.mrnas.items():
+                    # if count == 100:
+                    #     break
+                    # count += 1
+                    # Check is coding
+                    if len(mrna.cds_exons) == 0:
+                        print(f"Non coding mrna: {mrna_id}")
+                        total_non_coding_rna += 1
+                        continue
+                    # Check CDS translated length
+                    seq = get_protein_seq(genome, mrna)
+                    if len(seq) < min_length:
+                        print(f"Protein < {min_length}: {mrna_id}")
+                        total_short_proteins += 1
+                        continue
+                    # Check for internal codon
+                    has_internal_stop = any([s == '*' for s in seq[:-1]])
+                    if has_internal_stop:
+                        print(f"Internal stop: {mrna_id}")
+                        total_internal_stop += 1
+                        continue
+                    # Check for canonical splice sites
+                    if len(mrna.cds_exons) > 1:
+                        valid_intron, valid_splicing = check_splicing_sites(genome, max_intron, mrna)
+                        if not valid_splicing:
+                            # print(f"Non-canonical splicing: {mrna_id} {mrna.strand}")
+                            total_non_canonical_splicing += 1
+                            continue
+                        if not valid_intron:
+                            total_long_introns += 1
+                            print(f"Long intron: {mrna_id}")
+                            continue
+                    num_valid_transcripts += 1
+                if num_valid_transcripts > 0:
+                    total_valid_genes += 1
+                    total_valid_transcripts += num_valid_transcripts
+                total_genes += 1
+                total_transcripts += len(gene.mrnas.items())
+            print(f'Valid genes: {total_valid_genes} / {total_genes}')
+            print(f'Valid transcripts: {total_valid_transcripts} / {total_transcripts}')
+            print(f'Transcripts without coding exons: {total_non_coding_rna}')
+            print(f'Transcripts with non-canonical splicing: {total_non_canonical_splicing}')
+            print(f'Transcripts with introns > {max_intron}: {total_long_introns}')
+            print(f'Transcripts with internal stop codons: {total_internal_stop}')
+            print(f'Transcripts with proteins < {min_length}: {total_short_proteins}')
+
+
+def check_splicing_sites(genome, max_intron, mrna):
+    valid_splicing = True
+    valid_intron = True
+    for i in mrna.introns:
+        if i[1] - i[0] > max_intron:
+            valid_intron = False
+            break
+        if mrna.strand == '+':
+            donor = genome.get_seq(mrna.chrom, i[0], i[0] + 1).seq
+            acceptor = genome.get_seq(mrna.chrom, i[1] - 1, i[1]).seq
+        else:
+            acceptor = (-genome.get_seq(mrna.chrom, i[0], i[0] + 1)).seq
+            donor = (-genome.get_seq(mrna.chrom, i[1] - 1, i[1])).seq
+
+        # canonical (GT AG), (GC AG), (AT AC)
+        if (donor, acceptor) not in (("GT", "AG"), ("GC", "AG"), ("AT", "AC")):
+            valid_splicing = False
+            print(f"{mrna.uid} Invalid splicing {(donor, acceptor)}")
+            break
+    return valid_intron, valid_splicing
+
+
+def get_protein_seq(genome, mrna):
+    # print(f'{mrna_id}: {mrna.strand}')
+    if mrna.strand == '+':
+        seq = genome.get_spliced_seq(mrna.chrom, [(e.start, e.end) for e in mrna.cds_exons])
+        # for exon in mrna.cds_exons:
+        #     # print(f'{exon.uid}, {exon.chrom}, {exon.start}, {exon.end}, {exon.phase}')
+        # # print('\n'.join(textwrap.wrap(translate(seq.seq), width=80)))
+    else:
+        seq = genome.get_spliced_seq(mrna.chrom, [(e.start, e.end) for e in reversed(mrna.cds_exons)])
+        # for exon in reversed(mrna.cds_exons):
+        #     # print(f'{exon.uid}, {exon.chrom}, {exon.start}, {exon.end}')
+        # # print('\n'.join(textwrap.wrap(translate(seq.complement.reverse.seq), width=80)))
+    return seq
+
+
+if __name__ == '__main__':
+    main()
