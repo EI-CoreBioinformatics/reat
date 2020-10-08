@@ -1,4 +1,7 @@
+#!/usr/bin/env python3
+
 import argparse
+from textwrap import wrap
 import sys
 import pyfaidx
 
@@ -33,9 +36,12 @@ def main():
     protein_file = args.proteins
     cds_file = args.cds
 
+    print("##gff-version 3", file=output_file)
+    print("#", ' '.join(sys.argv), file=output_file)
+    print("#xspecies_tool 0.0.1", file=output_file)
     for p in input_pairs:
         gff_file, fasta_file = p.strip().split()
-        print(f'GFF: {gff_file}\nFASTA: {fasta_file}')
+        print(f'GFF: {gff_file}\nFASTA: {fasta_file}', file=error_file)
         with pyfaidx.Fasta(fasta_file, read_ahead=10000000) as genome:
             total_genes = 0
             total_valid_genes = 0
@@ -49,7 +55,7 @@ def main():
             for gene in GFFReader(gff_file):
                 num_valid_transcripts = 0
                 first = True
-                for mrna_id, mrna in gene.mrnas.items():
+                for mrna_id, mrna in sorted(gene.mrnas.items(), key=lambda x: x[0]):
                     if len(mrna.cds_exons) == 0:
                         print(f"Non coding mrna: {mrna_id}", file=error_file)
                         total_non_coding_rna += 1
@@ -79,23 +85,30 @@ def main():
                             print(f"Long intron: {mrna_id}", file=error_file)
                             continue
                     num_valid_transcripts += 1
+                    if aa_seq[0] == 'M':
+                        mrna.attr['five_prime_complete'] = 'true'
+                    if aa_seq[-1] == '*':
+                        mrna.attr['three_prime_complete'] = 'true'
                     if first:
-                        print(f"{gene.chrom}\t{gene.source}\tgene\t{gene.start}\t{gene.end}\t{gene.score}\t"
-                              f"{gene.strand}\t.\t{gene.attr}", file=output_file)
+                        print_gff_line(gene, "gene", gene, output_file)
                         first = False
-                    print(f"{mrna.chrom}\t{mrna.source}\tmRNA\t{mrna.start}\t{mrna.end}\t{mrna.score}\t{mrna.strand}"
-                          f"\t.\t{mrna.attr}", file=output_file)
+                    print_gff_line(mrna, "mRNA", mrna, output_file)
+
                     for e in mrna.exons:
-                        print(f"{e.chrom}\t{mrna.source}\texon\t{e.start}\t{e.end}\t{e.score}\t{e.strand}"
-                              f"\t{e.phase}\t{e.attr}", file=output_file)
+                        print_gff_line(e, "exon", mrna, output_file)
+
                     for c in mrna.cds_exons:
-                        print(f"{c.chrom}\t{mrna.source}\tCDS\t{c.start}\t{c.end}\t{c.score}\t{c.strand}"
-                              f"\t{c.phase}\t{c.attr}", file=output_file)
+                        print_gff_line(c, "CDS", mrna, output_file)
 
                     if protein_file:
-                        print(f">{mrna_id}\n{aa_seq}", file=protein_file)
+                        print(">", mrna_id, sep='', file=protein_file)
+                        if aa_seq[-1] == '*':
+                            print('\n'.join(wrap(aa_seq[:-1])), file=protein_file)
+                        else:
+                            print('\n'.join(wrap(aa_seq)), file=protein_file)
                     if cds_file:
-                        print(f">{mrna_id}\n{cds_seq}", file=cds_file)
+                        print(">", mrna_id, sep='', file=cds_file)
+                        print('\n'.join(wrap(cds_seq)), file=cds_file)
                 if num_valid_transcripts > 0:
                     total_valid_genes += 1
                     total_valid_transcripts += num_valid_transcripts
@@ -114,6 +127,38 @@ def main():
             print(f'Transcripts with introns > {max_intron}: {total_long_introns}')
             print(f'Transcripts with internal stop codons: {total_internal_stop}')
             print(f'Transcripts with proteins < {min_length}: {total_short_proteins}')
+
+
+def print_gff_line(item, ftype, mrna, output_file):
+    try:
+        phase = item.phase if item.phase else '.'
+    except AttributeError:
+        phase = '.'
+    print(f"{item.chrom}\t{mrna.source}\t{ftype}\t{item.start}\t{item.end}\t"
+          f"{item.score if item.score else '.'}\t"
+          f"{item.strand if item.strand else '.'}\t"
+          f"{phase}\t",
+          file=output_file, end='')
+    print_attributes(item, output_file)
+
+
+def print_attributes(item, output_file):
+    if item.uid:
+        print(f"ID={item.uid}", file=output_file, end=';')
+    attrl = list(item.attr.items())
+    for k, v in attrl[:-1]:
+        print(f"{k}=", file=output_file, end='')
+        if isinstance(v, list):
+            print(f"{','.join(v)}", file=output_file, end=';')
+        else:
+            print(f"{v}", file=output_file, end=';')
+
+    k, v = attrl[-1]
+    print(f"{k}=", file=output_file, end='')
+    if isinstance(v, list):
+        print(f"{','.join(v)}", file=output_file)
+    else:
+        print(f"{v}", file=output_file)
 
 
 def check_splicing_sites(genome, max_intron, mrna):
@@ -155,4 +200,3 @@ def get_cds_seq(genome, mrna):
 
 if __name__ == '__main__':
     main()
-
