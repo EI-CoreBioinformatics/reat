@@ -14,49 +14,75 @@ struct GenomeProteins {
 workflow ei_homology {
     input {
         Array[GenomeAnnotation] annotations
+        File genome_to_annotate
     }
 
-    call PrepareAnnotations {
-        input:
-        annotation = annotations
+    call IndexGenome {
+        genome = genome_to_annotate
     }
 
-    call AlignProteins {
-        input:
-        genome_proteins = PrepareAnnotations.genome_proteins
-    }
+    scatter (annotation in annotations) {
+        call PrepareAnnotations {
+            input:
+            annotation = annotation
+        }
 
-    call ScoreAlignments {
-        input:
-        alignments = AlignProteins.alignments,
-        genome_proteins = PrepareAnnotations.genome_proteins
+        GenomeProteins cleaned_up = object { genome: annotation.genome, annotation_gff: PrepareAnnotations.cleaned_up_gff, protein_sequences: PrepareAnnotations.proteins}
+
+        call AlignProteins {
+            input:
+            genome_to_annotate = genome_to_annotate,
+            genome_proteins = cleaned_up
+        }
+
+        call ScoreAlignments {
+            input:
+            alignments = AlignProteins.alignments,
+            genome_to_annotate = genome_to_annotate,
+            genome_proteins = cleaned_up
+        }
+    }
+    output {
+        Array[File] scored_alignments = ScoreAlignments.scored_alignments
+    }
+}
+
+task IndexGenome {
+    input {
+        File genome
     }
 
     output {
-        File scored_alignments = ScoreAlignments.result
+        Array[File] genome_index = glob(sub(basename(genome),  "\.[^/.]+$", ""))
     }
+
+    command <<<
+        spaln -WP ~{genome_to_annotate}
+    >>>
 }
 
 task PrepareAnnotations {
     input {
-        GenomeAnnotations annotation
-        String out_prefix = sub(basename(annotation.genome),  "\.[^/.]+$", "")
+        GenomeAnnotation annotation
+        String out_prefix = sub(basename(annotation.annotation_gff),  "\.[^/.]+$", "")
         Int min_cds_len = 20 # nts
     }
 
     output {
-        GenomeProteins genome_proteins = object {genome: annotation.genome, annotation_gff: annotation.annotation_gff, proteins: "proteins.fa"}
+        File cleaned_up_gff = out_prefix + ".gff"
+        File proteins = out_prefix + ".proteins.fa"
     }
 
     # TODO:
-    # - Extract filtered proteins from annotations in GFF or GTF format
+    # - Extract filtered proteins from annotations GTF format, the following only works on GFF
     command <<<
-        extract_coding_sequences -genome ~{annotation.genome} -min_len ~{min_cds_len} -o ~{out_prefix} ~{annotation.annotation_gff}
+        xspecies_cleanup --annotation ~{annotation.annotation_gff} --genome ~{annotation.genome} --min_protein ~{min_cds_len} -y ~{out_prefix}.proteins.fa > ~{out_prefix}.gff
     >>>
 }
 
 task AlignProteins {
     input {
+        File genome_to_annotate
         GenomeProteins genome_proteins
         String species = "Eudicoty" # TODO: Need a lookup table from the original file
         Int min_exon_len = 20
@@ -64,22 +90,25 @@ task AlignProteins {
         Int min_identity = 50
     }
 
+    Int num_cpus = 12
+    String out_prefix = sub(basename(genome_proteins.genome), "\.[^/.]+$", "")
+
     output {
-        File alignments = "alignment.gff"
+        File alignments = out_prefix+".alignment.gff"
     }
 
-    Int num_cpus = 12
-
     command <<<
-        spaln -WP ~{genome_proteins.genome}
-        spaln -t~{num_cpus} -O0,12 -Q7 -T~{species} -d~{sub(basename(genome_proteins.genome), "\.[^/.]+$", "")} -o alignment -yL~{min_exon_len} ~{genome_proteins.protein_sequences}
-        sortgrcd -O4 alignment.grd | tee alignment.s | spaln2gff --min_coverage ~{min_coverage} --min_identity ~{min_identity} -s "spaln" alignment.gff
+        spaln -t~{num_cpus} -KP -O0,12 -Q7 ~{"-T"+species} -d~{out_prefix} -o ~{out_prefix} -yL~{min_exon_len} ~{genome_proteins.protein_sequences}
+        sortgrcd -O4 ~{out_prefix}.grd | tee ~{out_prefix}.s | spaln2gff --min_coverage ~{min_coverage} --min_identity ~{min_identity} -s "spaln" > ~{out_prefix}.alignment.gff
     >>>
+
+
 }
 
 task ScoreAlignments {
     input {
         File alignments
+        File genome_to_annotate
         GenomeProteins genome_proteins
         Int max_intron_len = 2000
     }
@@ -93,6 +122,6 @@ task ScoreAlignments {
     # - Annotate exons with splice signal (to account for non-canonical splicing)
     # - Compare models to original structure (mgc approach preferably on-line)
     command <<<
-        echo "TODO ~{genome_proteins.genome} ~{genome_proteins.annotation} ~{alignments} ~{max_intron_len}" > scored_alignments.gff
+        echo "xspecies_scoring --max_intron ~{max_intron_len} --genome ~{genome_to_annotate} --annotation ~{genome_proteins.annotation_gff} ~{alignments}" > scored_alignments.gff
     >>>
 }
