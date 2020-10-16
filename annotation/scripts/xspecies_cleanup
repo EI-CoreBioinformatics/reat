@@ -56,7 +56,7 @@ def main():
         total_intergenic_distance = 0
         last_gene_chrom = ""
         last_gene_start = 0
-        for gene in GFFReader(gff_file):
+        for gene in GFFReader(gff_file.name):
             num_valid_transcripts = 0
             first = True
             for mrna_id, mrna in sorted(gene.mrnas.items(), key=lambda x: x[0]):

@@ -18,6 +18,7 @@ workflow ei_homology {
     }
 
     call IndexGenome {
+        input:
         genome = genome_to_annotate
     }
 
@@ -31,8 +32,9 @@ workflow ei_homology {
 
         call AlignProteins {
             input:
-            genome_to_annotate = genome_to_annotate,
-            genome_proteins = cleaned_up
+                genome_index = IndexGenome.genome_index,
+                genome_to_annotate = genome_to_annotate,
+                genome_proteins = cleaned_up
         }
 
         call ScoreAlignments {
@@ -53,11 +55,17 @@ task IndexGenome {
     }
 
     output {
-        Array[File] genome_index = glob(sub(basename(genome),  "\.[^/.]+$", ""))
+        Array[File] genome_index = glob("genome_to_annotate.*")
+    }
+
+    runtime {
+        continueOnReturnCode: [0, -1]
     }
 
     command <<<
-        spaln -WP ~{genome_to_annotate}
+        set -euxo pipefail
+        ln ~{genome} genome_to_annotate.fasta
+        spaln -W -KP -t12 genome_to_annotate.fasta
     >>>
 }
 
@@ -73,15 +81,15 @@ task PrepareAnnotations {
         File proteins = out_prefix + ".proteins.fa"
     }
 
-    # TODO:
-    # - Extract filtered proteins from annotations GTF format, the following only works on GFF
     command <<<
+        set -euxo pipefail
         xspecies_cleanup --annotation ~{annotation.annotation_gff} --genome ~{annotation.genome} --min_protein ~{min_cds_len} -y ~{out_prefix}.proteins.fa > ~{out_prefix}.gff
     >>>
 }
 
 task AlignProteins {
     input {
+        Array[File] genome_index
         File genome_to_annotate
         GenomeProteins genome_proteins
         String species = "Eudicoty" # TODO: Need a lookup table from the original file
@@ -91,14 +99,17 @@ task AlignProteins {
     }
 
     Int num_cpus = 12
-    String out_prefix = sub(basename(genome_proteins.genome), "\.[^/.]+$", "")
+#    String out_prefix = sub(basename(genome_index[0]), "\.[^/.]+$", "")
+    String out_prefix = sub(basename(genome_proteins.annotation_gff), "\.[^/.]+$", "")
 
     output {
         File alignments = out_prefix+".alignment.gff"
     }
 
     command <<<
-        spaln -t~{num_cpus} -KP -O0,12 -Q7 ~{"-T"+species} -d~{out_prefix} -o ~{out_prefix} -yL~{min_exon_len} ~{genome_proteins.protein_sequences}
+        set -euxo pipefail
+        ln ~{sub(genome_index[0], "\.[^/.]+$", "")}.* .
+        spaln -t~{num_cpus} -KP -O0,12 -Q7 ~{"-T"+species} -dgenome_to_annotate -o ~{out_prefix} -yL~{min_exon_len} ~{genome_proteins.protein_sequences}
         sortgrcd -O4 ~{out_prefix}.grd | tee ~{out_prefix}.s | spaln2gff --min_coverage ~{min_coverage} --min_identity ~{min_identity} -s "spaln" > ~{out_prefix}.alignment.gff
     >>>
 
@@ -113,15 +124,36 @@ task ScoreAlignments {
         Int max_intron_len = 2000
     }
 
+    String aln_prefix = sub(basename(alignments), "\.[^/.]+$", "")
+    String ref_prefix = sub(basename(genome_proteins.genome), "\.[^/.]+$", "")
+
     output {
         File scored_alignments = "scored_alignments.gff"
+        File alignment_compare = "comp_"+aln_prefix+"_"+ref_prefix+".tab"
+        File alignment_compare_detail = "comp_"+aln_prefix+"_"+ref_prefix+"_detail.tab"
     }
 
     # TODO:
     # - Annotate models with the count of introns exceeding max_intron_len per model
     # - Annotate exons with splice signal (to account for non-canonical splicing)
     # - Compare models to original structure (mgc approach preferably on-line)
+
+    # For now extract using `gffread -g call-AlignProteins/shard-0/inputs/1074434829/GCF_000184785.3_Aflo_1.1_genomic.fna
+    # -x GCF_000184785.3_Aflo_1.1_transcripts.fa --bed -o GCF_000184785.3_Aflo_1.1.bed`
+    # And similar for the alignments
+    # Then call mgc with both beds and the groups created by `create_mgc_groups`
+    # Finally, collate all the metrics and scores into a final value or set of values
     command <<<
+        set -euxo pipefail
+        grep -v "exon" ~{alignments} | gffread -g ~{genome_to_annotate} -x ~{aln_prefix}.fa --bed -o ~{aln_prefix}.bed
+        grep -v "exon" ~{genome_proteins.annotation_gff} | gffread -g ~{genome_proteins.genome} -x ~{ref_prefix}.fa --bed -o ~{ref_prefix}.bed
+        create_mgc_groups -f ~{aln_prefix}.fa
+
+        cat ~{aln_prefix}.fa ~{ref_prefix}.fa > all_cdnas.fa
+        cat ~{aln_prefix}.bed ~{ref_prefix}.bed > all_cdnas.bed
+
+        multi_genome_compare.py -t 12 --groups groups.txt --cdnas all_cdnas.fa --bed12 all_cdnas.bed -o comp_~{aln_prefix}_~{ref_prefix}.tab -d comp_~{aln_prefix}_~{ref_prefix}_detail.tab
+
         echo "xspecies_scoring --max_intron ~{max_intron_len} --genome ~{genome_to_annotate} --annotation ~{genome_proteins.annotation_gff} ~{alignments}" > scored_alignments.gff
     >>>
 }
