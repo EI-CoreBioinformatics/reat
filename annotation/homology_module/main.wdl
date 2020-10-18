@@ -83,7 +83,7 @@ task PrepareAnnotations {
 
     command <<<
         set -euxo pipefail
-        xspecies_cleanup --annotation ~{annotation.annotation_gff} --genome ~{annotation.genome} --min_protein ~{min_cds_len} -y ~{out_prefix}.proteins.fa > ~{out_prefix}.gff
+        xspecies_cleanup --annotation ~{annotation.annotation_gff} --genome ~{annotation.genome} --min_protein ~{min_cds_len} -y ~{out_prefix}.proteins.fa -o ~{out_prefix}.gff
     >>>
 }
 

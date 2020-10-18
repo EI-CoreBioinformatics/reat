@@ -2,6 +2,7 @@
 
 import sys
 import argparse
+import time
 from textwrap import wrap
 
 import pyfaidx
@@ -253,4 +254,6 @@ def get_cds_seq(genome, mrna):
 
 
 if __name__ == '__main__':
+    t1 = time.time()
     main()
+    print(f'Finished in {time.time() - t1}')
