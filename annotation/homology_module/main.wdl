@@ -45,7 +45,9 @@ workflow ei_homology {
         }
     }
     output {
-        Array[File] scored_alignments = ScoreAlignments.scored_alignments
+        Array[File] alignments = AlignProteins.alignments
+        Array[File] mgc_evaluation = ScoreAlignments.alignment_compare
+        Array[File] mgc_evaluation_detail = ScoreAlignments.alignment_compare_detail
     }
 }
 
