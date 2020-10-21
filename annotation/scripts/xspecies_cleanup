@@ -291,23 +291,24 @@ def get_cds_seq(genome, mrna, is_alignment=False):
     cds_length = 0
     cds_intron_len = 0
     last_codon = ""
-    if mrna.strand == '+':
-        for e in mrna.cds_exons:
+    for e in mrna.cds_exons:
+        if mrna.strand == '+':
             aln_seq.append(genome.get_seq(e.chrom, e.start, e.end).seq)
             cds_length += e.end - e.start
-        if is_alignment:
-            last_cds_exon = mrna.cds_exons[-1]
-            last_codon = genome.get_seq(
-                last_cds_exon.chrom, last_cds_exon.end+1, last_cds_exon.end+3).seq.upper()
-
-    else:
-        for e in mrna.cds_exons:
+        else:
             aln_seq.append(genome.get_seq(e.chrom, e.start, e.end).reverse.complement.seq)
             cds_length += e.end - e.start
+
+    if mrna.strand == '-':
         if is_alignment:
             last_cds_exon = mrna.cds_exons[0]
             last_codon = genome.get_seq(
                 last_cds_exon.chrom, last_cds_exon.start-4, last_cds_exon.start-2).reverse.complement.seq.upper()
+    else:
+        if is_alignment:
+            last_cds_exon = mrna.cds_exons[-1]
+            last_codon = genome.get_seq(
+                last_cds_exon.chrom, last_cds_exon.end+1, last_cds_exon.end+3).seq.upper()
 
     for ei in mrna.cds_introns:
         cds_intron_len += ei[1] - ei[0]
