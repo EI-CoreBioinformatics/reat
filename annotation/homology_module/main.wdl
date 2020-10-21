@@ -85,7 +85,7 @@ task PrepareAnnotations {
 
     command <<<
         set -euxo pipefail
-        xspecies_cleanup --annotation ~{annotation.annotation_gff} --genome ~{annotation.genome} --min_protein ~{min_cds_len} -y ~{out_prefix}.proteins.fa -o ~{out_prefix}.gff
+        xspecies_cleanup --filters all --annotation ~{annotation.annotation_gff} --genome ~{annotation.genome} --min_protein ~{min_cds_len} -y ~{out_prefix}.proteins.fa -o ~{out_prefix}.gff
     >>>
 }
 
@@ -147,15 +147,14 @@ task ScoreAlignments {
     # Finally, collate all the metrics and scores into a final value or set of values
     command <<<
         set -euxo pipefail
-        grep -v "exon" ~{alignments} | gffread -g ~{genome_to_annotate} -x ~{aln_prefix}.fa --bed -o ~{aln_prefix}.bed
-        grep -v "exon" ~{genome_proteins.annotation_gff} | gffread -g ~{genome_proteins.genome} -x ~{ref_prefix}.fa --bed -o ~{ref_prefix}.bed
+        xspecies_cleanup --filters none -g ~{genome_to_annotate} -A ~{alignments} --cds ~{aln_prefix}.fa --bed ~{aln_prefix}.bed -o scored_alignments.gff
+        xspecies_cleanup --filters all -g ~{genome_proteins.genome} -a ~{genome_proteins.annotation_gff} --cds ~{ref_prefix}.fa --bed ~{ref_prefix}.bed -o ~{ref_prefix}.clean.gff
+
         create_mgc_groups -f ~{aln_prefix}.fa
 
         cat ~{aln_prefix}.fa ~{ref_prefix}.fa > all_cdnas.fa
         cat ~{aln_prefix}.bed ~{ref_prefix}.bed > all_cdnas.bed
 
         multi_genome_compare.py -t 12 --groups groups.txt --cdnas all_cdnas.fa --bed12 all_cdnas.bed -o comp_~{aln_prefix}_~{ref_prefix}.tab -d comp_~{aln_prefix}_~{ref_prefix}_detail.tab
-
-        echo "xspecies_scoring --max_intron ~{max_intron_len} --genome ~{genome_to_annotate} --annotation ~{genome_proteins.annotation_gff} ~{alignments}" > scored_alignments.gff
     >>>
 }
