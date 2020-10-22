@@ -92,7 +92,7 @@ def main():
     print("##gff-version 3", file=output_file)
     print("#", ' '.join(sys.argv), file=output_file)
     print("#xspecies_tool 0.0.1", file=output_file)
-    print(f'GFF: {gff_file.name}\nFASTA: {fasta_file.name}', file=error_file)
+    # print(f'GFF: {gff_file.name}\nFASTA: {fasta_file.name}', file=error_file)
     with pyfaidx.Fasta(fasta_file.name, read_ahead=10000000) as genome:
         total_genes = 0
         total_valid_genes = 0
@@ -165,14 +165,28 @@ def main():
                 if len(mrna.exons) == 1:
                     total_monoexonic_transcripts += 1
 
-                if cds_seq[:3] in start_codons():
-                    mrna.attr['five_prime_complete'] = 'true'
-                if is_alignment and last_codon in stop_codons():
-                    mrna.attr['three_prime_complete'] = 'true'
-                    # Extend the last exon and cds_exon coordinates to include the stop codon
+                if cds_seq[:3] not in start_codons():
+                    mrna.attr['missing_start'] = 'true'
 
-                elif cds_seq[-3:] in stop_codons():
-                    mrna.attr['three_prime_complete'] = 'true'
+                if is_alignment:
+                    # Extend the last exon and cds_exon coordinates to include the stop codon
+                    if last_codon not in stop_codons():
+                        mrna.attr['missing_stop'] = 'true'
+                    else:
+                        cds_seq += last_codon
+                        last_exon = mrna.exons[-1]
+                        last_cds_exon = mrna.cds_exons[-1]
+                        if mrna.strand == '-':
+                            last_cds_exon.start -= 3
+                            last_exon.start -= 3
+                            mrna.start = min(mrna.start, last_cds_exon.start)
+                        else:
+                            last_cds_exon.end += 3
+                            last_exon.end += 3
+                            mrna.end = max(mrna.end, last_cds_exon.end)
+
+                elif cds_seq[-3:] not in stop_codons():
+                    mrna.attr['missing_stop'] = 'true'
 
                 if first:
                     print_gff_line(gene, "gene", gene, output_file)
@@ -193,6 +207,8 @@ def main():
                     else:
                         print('\n'.join(wrap(aa_seq)), file=protein_file)
                 if cds_file:
+                    # cds_exons_seq_len = sum([e.end - e.start + 1 for e in mrna.cds_exons])
+                    # assert len(cds_seq) == cds_exons_seq_len
                     print(">", mrna_id, sep='', file=cds_file)
                     print('\n'.join(wrap(cds_seq)), file=cds_file)
 
@@ -288,16 +304,13 @@ def check_splicing_sites(genome, max_intron, mrna):
 
 def get_cds_seq(genome, mrna, is_alignment=False):
     aln_seq = []
-    cds_length = 0
     cds_intron_len = 0
     last_codon = ""
     for e in mrna.cds_exons:
         if mrna.strand == '+':
             aln_seq.append(genome.get_seq(e.chrom, e.start, e.end).seq)
-            cds_length += e.end - e.start
         else:
             aln_seq.append(genome.get_seq(e.chrom, e.start, e.end).reverse.complement.seq)
-            cds_length += e.end - e.start
 
     if mrna.strand == '-':
         if is_alignment:
@@ -315,7 +328,7 @@ def get_cds_seq(genome, mrna, is_alignment=False):
 
     aln_cds = ''.join(aln_seq)
     aln_cds = aln_cds[int(mrna.cds_exons[0].phase):]
-    return aln_cds.upper(), cds_length, cds_intron_len, last_codon
+    return aln_cds.upper(), len(aln_cds), cds_intron_len, last_codon
 
 
 if __name__ == '__main__':

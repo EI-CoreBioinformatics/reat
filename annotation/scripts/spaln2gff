@@ -47,7 +47,7 @@ class Gene:
         self.gstart = self.exons[0].gstart
 
     def to_gff(self, file=sys.stdout):
-        print("{0}\tALN\tgene\t{1}\t{2}\t{3}\t{4}\t.\tID={5}.g{6};Name={5}.m{6}"
+        print("{0}\tALN\tgene\t{1}\t{2}\t{3}\t{4}\t.\tID={5}.g{6};Name={5}.g{6}"
               .format(self.genome, self.gstart, self.gend, self.score, self.strand, self.target, self.uid),
               file=file)
         alignment_len = self.exons[-1].tend - self.exons[0].tstart + 1

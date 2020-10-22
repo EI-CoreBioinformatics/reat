@@ -15,7 +15,7 @@ def main():
         for line in fasta:
             if line[0] != ">":
                 continue
-            alignments_fa.append(line.strip()[1:])
+            alignments_fa.append(line.strip().split()[0][1:])
 
     gene_to_group = defaultdict(list)
     for k in alignments_fa:

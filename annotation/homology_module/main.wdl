@@ -1,4 +1,5 @@
 version 1.0
+import "./rt_struct.wdl"
 
 struct GenomeAnnotation {
     File genome
@@ -15,6 +16,8 @@ workflow ei_homology {
     input {
         Array[GenomeAnnotation] annotations
         File genome_to_annotate
+        RuntimeAttr? score_attr
+        RuntimeAttr? aln_attr
     }
 
     call IndexGenome {
@@ -34,14 +37,16 @@ workflow ei_homology {
             input:
                 genome_index = IndexGenome.genome_index,
                 genome_to_annotate = genome_to_annotate,
-                genome_proteins = cleaned_up
+                genome_proteins = cleaned_up,
+                runtime_attr_override = aln_attr
         }
 
         call ScoreAlignments {
             input:
             alignments = AlignProteins.alignments,
             genome_to_annotate = genome_to_annotate,
-            genome_proteins = cleaned_up
+            genome_proteins = cleaned_up,
+            runtime_attr_override = score_attr
         }
     }
     output {
@@ -98,9 +103,18 @@ task AlignProteins {
         Int min_exon_len = 20
         Int min_coverage = 80
         Int min_identity = 50
+        RuntimeAttr? runtime_attr_override
+    }
+    Int cpus = 6
+    RuntimeAttr default_attr = object {
+        cpu_cores: "~{cpus}",
+        mem_gb: 32,
+        max_retries: 1
     }
 
-    Int num_cpus = 12
+    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
+
+    Int task_cpus = runtime_attr.cpu_cores
 #    String out_prefix = sub(basename(genome_index[0]), "\.[^/.]+$", "")
     String out_prefix = sub(basename(genome_proteins.annotation_gff), "\.[^/.]+$", "")
 
@@ -111,10 +125,15 @@ task AlignProteins {
     command <<<
         set -euxo pipefail
         ln ~{sub(genome_index[0], "\.[^/.]+$", "")}.* .
-        spaln -t~{num_cpus} -KP -O0,12 -Q7 ~{"-T"+species} -dgenome_to_annotate -o ~{out_prefix} -yL~{min_exon_len} ~{genome_proteins.protein_sequences}
+        spaln -t~{task_cpus} -KP -O0,12 -Q7 ~{"-T"+species} -dgenome_to_annotate -o ~{out_prefix} -yL~{min_exon_len} ~{genome_proteins.protein_sequences}
         sortgrcd -O4 ~{out_prefix}.grd | tee ~{out_prefix}.s | spaln2gff --min_coverage ~{min_coverage} --min_identity ~{min_identity} -s "spaln" > ~{out_prefix}.alignment.gff
     >>>
 
+    runtime {
+        cpu: task_cpus
+        memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
+        maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+    }
 
 }
 
@@ -124,6 +143,7 @@ task ScoreAlignments {
         File genome_to_annotate
         GenomeProteins genome_proteins
         Int max_intron_len = 2000
+        RuntimeAttr? runtime_attr_override
     }
 
     String aln_prefix = sub(basename(alignments), "\.[^/.]+$", "")
@@ -134,6 +154,17 @@ task ScoreAlignments {
         File alignment_compare = "comp_"+aln_prefix+"_"+ref_prefix+".tab"
         File alignment_compare_detail = "comp_"+aln_prefix+"_"+ref_prefix+"_detail.tab"
     }
+
+    Int cpus = 6
+    RuntimeAttr default_attr = object {
+        cpu_cores: "~{cpus}",
+        mem_gb: 32,
+        max_retries: 1
+    }
+
+    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
+
+    Int task_cpus = runtime_attr.cpu_cores
 
     # TODO:
     # - Annotate models with the count of introns exceeding max_intron_len per model
@@ -161,6 +192,13 @@ task ScoreAlignments {
         cat ~{aln_prefix}.cdna.fa ~{ref_prefix}.cdna.fa > all_cdnas.fa
         cat ~{aln_prefix}.bed12 ~{ref_prefix}.bed12 > all_cdnas.bed
 
-        multi_genome_compare.py -t 12 --groups groups.txt --cdnas all_cdnas.fa --bed12 all_cdnas.bed -o comp_~{aln_prefix}_~{ref_prefix}.tab -d comp_~{aln_prefix}_~{ref_prefix}_detail.tab
+        multi_genome_compare.py -t ~{task_cpus} --groups groups.txt --cdnas all_cdnas.fa --bed12 all_cdnas.bed -o comp_~{aln_prefix}_~{ref_prefix}.tab -d comp_~{aln_prefix}_~{ref_prefix}_detail.tab
     >>>
+
+    runtime {
+        cpu: task_cpus
+        memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
+        maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+    }
+
 }
