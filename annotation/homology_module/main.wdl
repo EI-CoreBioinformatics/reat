@@ -147,13 +147,19 @@ task ScoreAlignments {
     # Finally, collate all the metrics and scores into a final value or set of values
     command <<<
         set -euxo pipefail
-        xspecies_cleanup --filters none -g ~{genome_to_annotate} -A ~{alignments} --cds ~{aln_prefix}.fa --bed ~{aln_prefix}.bed -o scored_alignments.gff
-        xspecies_cleanup --filters all -g ~{genome_proteins.genome} -a ~{genome_proteins.annotation_gff} --cds ~{ref_prefix}.fa --bed ~{ref_prefix}.bed -o ~{ref_prefix}.clean.gff
+        xspecies_cleanup --filters none -g ~{genome_to_annotate} -A ~{alignments} -o ~{aln_prefix}.stop_extended.extra_attr.gff
+        xspecies_cleanup --filters all -g ~{genome_proteins.genome} -a ~{genome_proteins.annotation_gff} -o ~{ref_prefix}.clean.extra_attr.gff
 
-        create_mgc_groups -f ~{aln_prefix}.fa
+        gffread -g ~{genome_to_annotate} -T -w ~{aln_prefix}.cdna.fa -o ~{aln_prefix}.gtf ~{alignments}
+        gffread -g ~{genome_proteins.genome} -T -w ~{ref_prefix}.cdna.fa -o ~{ref_prefix}.gtf ~{genome_proteins.annotation_gff}
 
-        cat ~{aln_prefix}.fa ~{ref_prefix}.fa > all_cdnas.fa
-        cat ~{aln_prefix}.bed ~{ref_prefix}.bed > all_cdnas.bed
+        mikado util convert -if gtf -of bed12 ~{aln_prefix}.gtf ~{aln_prefix}.bed12
+        mikado util convert -if gtf -of bed12 ~{ref_prefix}.gtf ~{ref_prefix}.bed12
+
+        create_mgc_groups -f ~{aln_prefix}.cdna.fa
+
+        cat ~{aln_prefix}.cdna.fa ~{ref_prefix}.cdna.fa > all_cdnas.fa
+        cat ~{aln_prefix}.bed12 ~{ref_prefix}.bed12 > all_cdnas.bed
 
         multi_genome_compare.py -t 12 --groups groups.txt --cdnas all_cdnas.fa --bed12 all_cdnas.bed -o comp_~{aln_prefix}_~{ref_prefix}.tab -d comp_~{aln_prefix}_~{ref_prefix}_detail.tab
     >>>

@@ -92,6 +92,7 @@ class SpalnReader(object):
     def __next__(self):
         self.advance()
         exon_list = []
+        valid = True
         while True:
             try:
                 if self.raw[0] == '!!!!!':
@@ -100,16 +101,25 @@ class SpalnReader(object):
                     self.num_genes += 1
                     genome = self.raw[1]
                     strand = self.raw[2]
-                    gstart = self.raw[4]
-                    gend = self.raw[5]
+                    gstart = int(self.raw[4])
+                    gend = int(self.raw[5])
+                    if gstart > gend:
+                        gend, gstart = abs(gstart), abs(gend)
                     target = self.raw[7]
                     self.genes[target] += 1
                     score = float(self.raw[14])
                     identity = float(self.raw[16])
                     coverage = float(self.raw[18])
                     target_len = int(self.raw[8])
-                    return Gene(self.genes[target], genome, gstart, gend, target,
-                                strand, score, identity, coverage, target_len, exon_list)
+                    if valid:
+                        return Gene(self.genes[target], genome, gstart, gend, target,
+                                    strand, score, identity, coverage, target_len, exon_list)
+                    else:
+                        self.advance()
+                        self.num_exons -= len(exon_list)
+                        exon_list = []
+                        valid = True
+                        continue
                 else:
                     self.num_exons += 1
                     target = self.raw[0]
@@ -119,6 +129,8 @@ class SpalnReader(object):
                     tend = int(self.raw[7])
                     gstart = int(self.raw[8])
                     gend = int(self.raw[9])
+                    if gstart < 0 or gend < 0:
+                        valid = False
                     phase = self.raw[18]
                     if phase == '2':
                         phase = 1
