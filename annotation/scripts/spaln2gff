@@ -56,7 +56,7 @@ class Gene:
         print("{0}\tALN\tmRNA\t{1}\t{2}\t{3}\t{4}\t.\tID={5}.m{6};Parent={5}.g{6};Name={5}.m{6};"
               "Note={5}|cov:{7:.2f}|id:{8:.2f}"
               .format(self.genome, self.gstart, self.gend, self.score, self.strand, self.target, self.uid,
-                      self.target_length/alignment_len, self.identity),
+                      alignment_len/self.target_length, self.identity),
               file=file)
 
         for e, exon in enumerate(self.exons, 1):
