@@ -41,15 +41,27 @@ workflow ei_homology {
                 runtime_attr_override = aln_attr
         }
 
-        call ScoreAlignments {
+        call PrepareAlignments {
             input:
             alignments = AlignProteins.alignments,
             genome_to_annotate = genome_to_annotate,
-            genome_proteins = cleaned_up,
+            genome_proteins = cleaned_up
+        }
+        String aln_prefix = sub(basename(AlignProteins.alignments), "\.[^/.]+$", "")
+        String ref_prefix = sub(basename(cleaned_up.genome), "\.[^/.]+$", "")
+
+        call ScoreAlignments {
+            input:
+            cdnas = PrepareAlignments.cdnas,
+            bed = PrepareAlignments.bed,
+            groups = PrepareAlignments.groups,
+            aln_prefix = aln_prefix,
+            ref_prefix = ref_prefix,
             runtime_attr_override = score_attr
         }
     }
     output {
+        Array[File] clean_annotations = PrepareAnnotations.cleaned_up_gff
         Array[File] alignments = AlignProteins.alignments
         Array[File] mgc_evaluation = ScoreAlignments.alignment_compare
         Array[File] mgc_evaluation_detail = ScoreAlignments.alignment_compare_detail
@@ -84,13 +96,13 @@ task PrepareAnnotations {
     }
 
     output {
-        File cleaned_up_gff = out_prefix + ".gff"
+        File cleaned_up_gff = out_prefix + ".clean.extra_attr.gff"
         File proteins = out_prefix + ".proteins.fa"
     }
 
     command <<<
         set -euxo pipefail
-        xspecies_cleanup --filters all --annotation ~{annotation.annotation_gff} --genome ~{annotation.genome} --min_protein ~{min_cds_len} -y ~{out_prefix}.proteins.fa -o ~{out_prefix}.gff
+        xspecies_cleanup --filters all --annotation ~{annotation.annotation_gff} --genome ~{annotation.genome} --min_protein ~{min_cds_len} -y ~{out_prefix}.proteins.fa -o ~{out_prefix}.clean.extra_attr.gff
     >>>
 }
 
@@ -117,16 +129,19 @@ task AlignProteins {
     Int task_cpus = runtime_attr.cpu_cores
 #    String out_prefix = sub(basename(genome_index[0]), "\.[^/.]+$", "")
     String out_prefix = sub(basename(genome_proteins.annotation_gff), "\.[^/.]+$", "")
+    String ref_prefix = sub(basename(genome_proteins.genome), "\.[^/.]+$", "")
 
     output {
-        File alignments = out_prefix+".alignment.gff"
+        File alignments = ref_prefix+".alignment.stop_extended.extra_attr.gff"
     }
 
     command <<<
         set -euxo pipefail
         ln ~{sub(genome_index[0], "\.[^/.]+$", "")}.* .
         spaln -t~{task_cpus} -KP -O0,12 -Q7 ~{"-T"+species} -dgenome_to_annotate -o ~{out_prefix} -yL~{min_exon_len} ~{genome_proteins.protein_sequences}
-        sortgrcd -O4 ~{out_prefix}.grd | tee ~{out_prefix}.s | spaln2gff --min_coverage ~{min_coverage} --min_identity ~{min_identity} -s "spaln" > ~{out_prefix}.alignment.gff
+        sortgrcd -O4 ~{out_prefix}.grd | tee ~{out_prefix}.s | spaln2gff --min_coverage ~{min_coverage} --min_identity ~{min_identity} -s "spaln" > ~{ref_prefix}.alignment.gff
+
+        xspecies_cleanup --filters none -g ~{genome_to_annotate} -A ~{ref_prefix}.alignment.gff -o ~{ref_prefix}.alignment.stop_extended.extra_attr.gff
     >>>
 
     runtime {
@@ -137,20 +152,57 @@ task AlignProteins {
 
 }
 
-task ScoreAlignments {
+task PrepareAlignments {
     input {
         File alignments
         File genome_to_annotate
         GenomeProteins genome_proteins
-        Int max_intron_len = 2000
-        RuntimeAttr? runtime_attr_override
+        Int max_intron_len = 200000
     }
 
     String aln_prefix = sub(basename(alignments), "\.[^/.]+$", "")
     String ref_prefix = sub(basename(genome_proteins.genome), "\.[^/.]+$", "")
 
     output {
-        File scored_alignments = "scored_alignments.gff"
+        File cdnas = "all_cdnas.fa"
+        File bed = "all_cdnas.bed"
+        File groups = "groups.txt"
+    }
+
+    command <<<
+        set -euxo pipefail
+        gffread -g ~{genome_to_annotate} -T -w ~{aln_prefix}.cdna.fa -o ~{aln_prefix}.gtf ~{alignments}
+        gffread -g ~{genome_proteins.genome} -T -w ~{ref_prefix}.cdna.fa -o ~{ref_prefix}.gtf ~{genome_proteins.annotation_gff}
+
+        mikado util convert -if gtf -of bed12 ~{aln_prefix}.gtf ~{aln_prefix}.bed12
+        mikado util convert -if gtf -of bed12 ~{ref_prefix}.gtf ~{ref_prefix}.bed12
+
+        create_mgc_groups -f ~{aln_prefix}.cdna.fa
+
+        cat ~{aln_prefix}.cdna.fa ~{ref_prefix}.cdna.fa > all_cdnas.fa
+        cat ~{aln_prefix}.bed12 ~{ref_prefix}.bed12 > all_cdnas.bed
+    >>>
+
+    runtime {
+        cpu: 1
+        memory: "8 GB"
+        maxRetries: 1
+    }
+
+}
+
+task ScoreAlignments {
+    input {
+        File cdnas
+        File bed
+        File groups
+        String aln_prefix
+        String ref_prefix
+        RuntimeAttr? runtime_attr_override
+    }
+
+
+    output {
         File alignment_compare = "comp_"+aln_prefix+"_"+ref_prefix+".tab"
         File alignment_compare_detail = "comp_"+aln_prefix+"_"+ref_prefix+"_detail.tab"
     }
@@ -171,28 +223,9 @@ task ScoreAlignments {
     # - Annotate exons with splice signal (to account for non-canonical splicing)
     # - Compare models to original structure (mgc approach preferably on-line)
 
-    # For now extract using `gffread -g call-AlignProteins/shard-0/inputs/1074434829/GCF_000184785.3_Aflo_1.1_genomic.fna
-    # -x GCF_000184785.3_Aflo_1.1_transcripts.fa --bed -o GCF_000184785.3_Aflo_1.1.bed`
-    # And similar for the alignments
-    # Then call mgc with both beds and the groups created by `create_mgc_groups`
-    # Finally, collate all the metrics and scores into a final value or set of values
     command <<<
         set -euxo pipefail
-        xspecies_cleanup --filters none -g ~{genome_to_annotate} -A ~{alignments} -o ~{aln_prefix}.stop_extended.extra_attr.gff
-        xspecies_cleanup --filters all -g ~{genome_proteins.genome} -a ~{genome_proteins.annotation_gff} -o ~{ref_prefix}.clean.extra_attr.gff
-
-        gffread -g ~{genome_to_annotate} -T -w ~{aln_prefix}.cdna.fa -o ~{aln_prefix}.gtf ~{alignments}
-        gffread -g ~{genome_proteins.genome} -T -w ~{ref_prefix}.cdna.fa -o ~{ref_prefix}.gtf ~{genome_proteins.annotation_gff}
-
-        mikado util convert -if gtf -of bed12 ~{aln_prefix}.gtf ~{aln_prefix}.bed12
-        mikado util convert -if gtf -of bed12 ~{ref_prefix}.gtf ~{ref_prefix}.bed12
-
-        create_mgc_groups -f ~{aln_prefix}.cdna.fa
-
-        cat ~{aln_prefix}.cdna.fa ~{ref_prefix}.cdna.fa > all_cdnas.fa
-        cat ~{aln_prefix}.bed12 ~{ref_prefix}.bed12 > all_cdnas.bed
-
-        multi_genome_compare.py -t ~{task_cpus} --groups groups.txt --cdnas all_cdnas.fa --bed12 all_cdnas.bed -o comp_~{aln_prefix}_~{ref_prefix}.tab -d comp_~{aln_prefix}_~{ref_prefix}_detail.tab
+        multi_genome_compare.py -t ~{task_cpus} --groups ~{groups} --cdnas ~{cdnas} --bed12 ~{bed} -o comp_~{aln_prefix}_~{ref_prefix}.tab -d comp_~{aln_prefix}_~{ref_prefix}_detail.tab
     >>>
 
     runtime {

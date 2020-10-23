@@ -54,9 +54,9 @@ class Gene:
         if '-' == self.strand:
             alignment_len = self.exons[0].tstart - self.exons[-1].tend + 1
         print("{0}\tALN\tmRNA\t{1}\t{2}\t{3}\t{4}\t.\tID={5}.m{6};Parent={5}.g{6};Name={5}.m{6};"
-              "Note={5}|alnLen:{7}|len:{8}|cov:{9:.2f}|id:{10:.2f}|score:{11}"
+              "Note={5}|cov:{7:.2f}|id:{8:.2f}"
               .format(self.genome, self.gstart, self.gend, self.score, self.strand, self.target, self.uid,
-                      alignment_len, self.target_length, self.coverage, self.identity, self.score),
+                      self.target_length/alignment_len, self.identity),
               file=file)
 
         for e, exon in enumerate(self.exons, 1):

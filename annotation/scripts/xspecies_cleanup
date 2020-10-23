@@ -132,12 +132,16 @@ def main():
                     if noncanonical_splicing > 0:
                         print(f"Non-canonical splicing: {mrna_id} {mrna.strand}", file=error_file)
                         total_non_canonical_splicing += 1
-                        mrna.attr['non_canonical_splice_sites'] = noncanonical_splicing
+                        if is_alignment:
+                            mrna.attr['non_canonical_splice_sites'] = noncanonical_splicing
+                            mrna.attr['Note'] += f"|non_canonical={noncanonical_splicing}"
                         if filter_by_canonical_splicing:
                             continue
                     if long_introns > 0:
                         total_long_introns += 1
-                        mrna.attr['long_introns'] = long_introns
+                        if is_alignment:
+                            mrna.attr['long_introns'] = long_introns
+                            mrna.attr['Note'] += f"|long_introns={long_introns}"
                         print(f"Long intron: {mrna_id}", file=error_file)
                         if filter_by_long_intron:
                             continue
@@ -148,7 +152,9 @@ def main():
                 # Check CDS translated length
                 if len(aa_seq) < min_length:
                     print(f"Protein < {min_length}: {mrna_id}", file=error_file)
-                    mrna.attr["short_protein"] = 'true'
+                    if is_alignment:
+                        mrna.attr["short_protein"] = 'true'
+                        mrna.attr['Note'] += f"|short_protein=true"
                     total_short_proteins += 1
                     if filter_short_proteins:
                         continue
@@ -156,7 +162,9 @@ def main():
                 has_internal_stop = '*' in aa_seq[:-1]
                 if has_internal_stop:
                     print(f"Internal stop: {mrna_id}", file=error_file)
-                    mrna.attr['internal_stop'] = 'true'
+                    if is_alignment:
+                        mrna.attr['internal_stop'] = 'true'
+                        mrna.attr['Note'] += '|internal_stop=true'
                     total_internal_stop += 1
                     if filter_by_internal_stop:
                         continue
@@ -166,12 +174,15 @@ def main():
                     total_monoexonic_transcripts += 1
 
                 if cds_seq[:3] not in start_codons():
-                    mrna.attr['missing_start'] = 'true'
+                    if is_alignment:
+                        mrna.attr['missing_start'] = 'true'
+                        mrna.attr['Note'] += '|missing_start=true'
 
                 if is_alignment:
                     # Extend the last exon and cds_exon coordinates to include the stop codon
                     if last_codon not in stop_codons():
                         mrna.attr['missing_stop'] = 'true'
+                        mrna.attr['Note'] += '|missing_stop=true'
                     else:
                         cds_seq += last_codon
                         last_exon = mrna.exons[-1]
