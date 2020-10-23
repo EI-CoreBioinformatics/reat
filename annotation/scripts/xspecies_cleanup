@@ -191,10 +191,12 @@ def main():
                             last_cds_exon.start -= 3
                             last_exon.start -= 3
                             mrna.start = min(mrna.start, last_cds_exon.start)
+                            gene.start = min(gene.start, last_cds_exon.start)
                         else:
                             last_cds_exon.end += 3
                             last_exon.end += 3
                             mrna.end = max(mrna.end, last_cds_exon.end)
+                            gene.end = min(gene.end, last_cds_exon.end)
 
                 elif cds_seq[-3:] not in stop_codons():
                     mrna.attr['missing_stop'] = 'true'

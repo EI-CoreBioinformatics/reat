@@ -16,13 +16,15 @@ workflow ei_homology {
     input {
         Array[GenomeAnnotation] annotations
         File genome_to_annotate
+        RuntimeAttr? index_attr
         RuntimeAttr? score_attr
         RuntimeAttr? aln_attr
     }
 
     call IndexGenome {
         input:
-        genome = genome_to_annotate
+        genome = genome_to_annotate,
+        runtime_attr_override = index_attr
     }
 
     scatter (annotation in annotations) {
@@ -71,21 +73,37 @@ workflow ei_homology {
 task IndexGenome {
     input {
         File genome
+        RuntimeAttr? runtime_attr_override
     }
 
     output {
         Array[File] genome_index = glob("genome_to_annotate.*")
     }
 
-    runtime {
-        continueOnReturnCode: [0, -1]
+    Int cpus = 12
+    RuntimeAttr default_attr = object {
+        cpu_cores: "~{cpus}",
+        mem_gb: 16,
+        max_retries: 1
     }
+
+    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
+
+    Int task_cpus = runtime_attr.cpu_cores
 
     command <<<
         set -euxo pipefail
         ln ~{genome} genome_to_annotate.fasta
-        spaln -W -KP -t12 genome_to_annotate.fasta
+        spaln -W -KP -t~{task_cpus} genome_to_annotate.fasta
     >>>
+
+    runtime {
+        continueOnReturnCode: [0, -1]
+        cpu: task_cpus
+        memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
+        maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+    }
+
 }
 
 task PrepareAnnotations {
