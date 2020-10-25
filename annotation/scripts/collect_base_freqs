@@ -3,6 +3,7 @@ from collections import Counter
 import argparse
 import sys
 
+
 def collect_base_freqs_from_files(file_names):
     nt_counts = Counter()
     total_nts = 0
@@ -16,8 +17,10 @@ def collect_base_freqs_from_files(file_names):
 
     return nt_counts, total_nts
 
+
 def list_str(values):
     return values.split(',')
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -27,7 +30,7 @@ if __name__ == "__main__":
 
     file_names = args.base_freqs
     
-    if args.o != None:
+    if args.o is not None:
         outputh = open(args.o, "w")
     else:
         outputh = sys.stdout
