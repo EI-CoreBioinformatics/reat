@@ -42,6 +42,7 @@ def is_valid_name(validator, value, instance, schema):
 
 
 def check_environment():
+    # Check the following software is installed and available in the user's environment
     software_available = {
         "mikado": {"command": "mikado --version".split(' '), "result": "Mikado v2.0rc2"},
         "diamond": {"command": "diamond version".split(' '), "result": "diamond version 0.9.30"},
@@ -63,35 +64,9 @@ def check_environment():
         "transdecoder": {"command": "TransDecoder.LongOrfs --version".split(' '),
                          "result": "TransDecoder.LongOrfs 5.5.0"},
         "portcullis": {"command": "portcullis --version".split(' '), "result": "portcullis 1.2.0"},
-        # "BioPerl": {"command": ["perl", "-MBio::Root::Version", "-e", "\'print $Bio::Root::Version::VERSION\n\'"],
-        #             "result": "1.7.7"},
+        "BioPerl": {"command": ["perl", "-MBio::Root::Version", "-e", """print $Bio::Root::Version::VERSION\n"""],
+                    "result": "1.7.7"},
     }
-    # Check the following software is installed and available in the user's environment
-    # * Mikado - 2.0
-    # * DIAMOND - 0.9.31
-    # * FullLengtherNext - 1.0.1
-    # * BLAST - 2.7.1
-    # * MagicBlast - 1.5.0
-    # * LibDeflate - master
-    # * HTSLib - 1.9
-    # * Samtools - 1.9
-    # * BCFTools - 1.9
-    # * BAMtools - 2.5.1
-    # * gclib - 54917d0
-    # * gffread - ba7535f
-    # * GMAP - 2019-02-15
-    # * MiniMap2 - 2.17
-    # * GenomeTools - 1.5.10
-    # * HISAT2 - 2.1.0
-    # * STAR - 2.7.3a
-    # * seqtk - master
-    # * Stringtie2 - v2.1.1
-    # * Scallop - 0.10.4
-    # * Scallop-lr - 0.9.2
-    # * Prodigal - 2.6.3
-    # * Transdecoder - 5.5.0
-    # * Portcullis - 1.2.2
-    # * BioPerl
 
     for key, item in software_available.items():
         result = subprocess.run(item["command"], capture_output=True)
@@ -372,7 +347,6 @@ def cromwell_run(input_parameters_filepath, workflow_options_file, wdl_file):
 
 def main():
     check_environment()
-
     cli_arguments = collect_arguments()
     # Print input file for cromwell
     cromwell_inputs = combine_arguments(cli_arguments)
