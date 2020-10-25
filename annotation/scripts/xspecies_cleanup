@@ -35,7 +35,8 @@ def parse_args():
 
 
 def start_codons():
-    return {"ATG", "CTG", "TTG"}
+    return {"ATG"}
+    # return {"ATG", "CTG", "TTG"}
 
 
 def stop_codons():
@@ -92,7 +93,7 @@ def main():
     print("##gff-version 3", file=output_file)
     print("#", ' '.join(sys.argv), file=output_file)
     print("#xspecies_tool 0.0.1", file=output_file)
-    # print(f'GFF: {gff_file.name}\nFASTA: {fasta_file.name}', file=error_file)
+
     with pyfaidx.Fasta(fasta_file.name, read_ahead=10000000) as genome:
         total_genes = 0
         total_valid_genes = 0
@@ -162,8 +163,8 @@ def main():
                 has_internal_stop = '*' in aa_seq[:-1]
                 if has_internal_stop:
                     print(f"Internal stop: {mrna_id}", file=error_file)
+                    mrna.attr['internal_stop'] = 'true'
                     if is_alignment:
-                        mrna.attr['internal_stop'] = 'true'
                         mrna.attr['Note'] += '|internal_stop=true'
                     total_internal_stop += 1
                     if filter_by_internal_stop:
@@ -174,29 +175,17 @@ def main():
                     total_monoexonic_transcripts += 1
 
                 if cds_seq[:3] not in start_codons():
+                    mrna.attr['missing_start'] = 'true'
                     if is_alignment:
-                        mrna.attr['missing_start'] = 'true'
                         mrna.attr['Note'] += '|missing_start=true'
 
                 if is_alignment:
-                    # Extend the last exon and cds_exon coordinates to include the stop codon
                     if last_codon not in stop_codons():
                         mrna.attr['missing_stop'] = 'true'
                         mrna.attr['Note'] += '|missing_stop=true'
-                    else:
+                    else:  # Extend the last exon and cds_exon coordinates to include the stop codon
                         cds_seq += last_codon
-                        last_exon = mrna.exons[-1]
-                        last_cds_exon = mrna.cds_exons[-1]
-                        if mrna.strand == '-':
-                            last_cds_exon.start -= 3
-                            last_exon.start -= 3
-                            mrna.start = min(mrna.start, last_cds_exon.start)
-                            gene.start = min(gene.start, last_cds_exon.start)
-                        else:
-                            last_cds_exon.end += 3
-                            last_exon.end += 3
-                            mrna.end = max(mrna.end, last_cds_exon.end)
-                            gene.end = min(gene.end, last_cds_exon.end)
+                        gene.extend_three_prime_end_cds(mrna_id, 3)
 
                 elif cds_seq[-3:] not in stop_codons():
                     mrna.attr['missing_stop'] = 'true'
@@ -221,6 +210,7 @@ def main():
                         print('\n'.join(wrap(aa_seq)), file=protein_file)
                 if cds_file:
                     # cds_exons_seq_len = sum([e.end - e.start + 1 for e in mrna.cds_exons])
+                    # cds_exons_seq_len -= int(mrna.cds_exons[0].phase)
                     # assert len(cds_seq) == cds_exons_seq_len
                     print(">", mrna_id, sep='', file=cds_file)
                     print('\n'.join(wrap(cds_seq)), file=cds_file)
