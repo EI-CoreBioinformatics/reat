@@ -143,20 +143,32 @@ def main():
                         total_non_canonical_splicing += 1
                         if is_alignment:
                             mrna.attr['aln_non_canonical_splice_sites'] = noncanonical_splicing
-                            mrna.attr['Note'] += f"|aln_non_canonical={noncanonical_splicing}"
+                            try:
+                                mrna.attr['Note'] += f"|aln_non_canonical={noncanonical_splicing}"
+                            except KeyError:
+                                mrna.attr['Note'] = f"aln_non_canonical={noncanonical_splicing}"
                         else:
                             mrna.attr['ref_non_canonical_splice_sites'] = noncanonical_splicing
-                            mrna.attr['Note'] += f"|ref_non_canonical={noncanonical_splicing}"
+                            try:
+                                mrna.attr['Note'] += f"|ref_non_canonical={noncanonical_splicing}"
+                            except KeyError:
+                                mrna.attr['Note'] = f"ref_non_canonical={noncanonical_splicing}"
                         if filter_by_canonical_splicing:
                             continue
                     if long_introns > 0:
                         total_long_introns += 1
                         if is_alignment:
                             mrna.attr['aln_long_introns'] = long_introns
-                            mrna.attr['Note'] += f"|aln_long_introns={long_introns}"
+                            try:
+                                mrna.attr['Note'] += f"|aln_long_introns={long_introns}"
+                            except KeyError:
+                                mrna.attr['Note'] = f"aln_long_introns={long_introns}"
                         else:
                             mrna.attr['ref_long_introns'] = long_introns
-                            mrna.attr['Note'] += f"|ref_long_introns={long_introns}"
+                            try:
+                                mrna.attr['Note'] += f"|ref_long_introns={long_introns}"
+                            except KeyError:
+                                mrna.attr['Note'] = f"ref_long_introns={long_introns}"
                         print(f"Long intron: {mrna_id}", file=error_file)
                         if filter_by_long_intron:
                             continue
@@ -169,10 +181,16 @@ def main():
                     print(f"Protein < {min_length}: {mrna_id}", file=error_file)
                     if is_alignment:
                         mrna.attr['aln_short_protein'] = 'true'
-                        mrna.attr['Note'] += '|aln_short_protein=true'
+                        try:
+                            mrna.attr['Note'] += '|aln_short_protein=true'
+                        except KeyError:
+                            mrna.attr['Note'] = 'aln_short_protein=true'
                     else:
                         mrna.attr['ref_short_protein'] = 'true'
-                        mrna.attr['Note'] += '|ref_short_protein=true'
+                        try:
+                            mrna.attr['Note'] += '|ref_short_protein=true'
+                        except KeyError:
+                            mrna.attr['Note'] = 'ref_short_protein=true'
                     total_short_proteins += 1
                     if filter_short_proteins:
                         continue
@@ -182,10 +200,16 @@ def main():
                     print(f"Internal stop: {mrna_id}", file=error_file)
                     if is_alignment:
                         mrna.attr['aln_internal_stop'] = 'true'
-                        mrna.attr['Note'] += '|aln_internal_stop=true'
+                        try:
+                            mrna.attr['Note'] += '|aln_internal_stop=true'
+                        except KeyError:
+                            mrna.attr['Note'] = 'aln_internal_stop=true'
                     else:
                         mrna.attr['ref_internal_stop'] = 'true'
-                        mrna.attr['Note'] += '|ref_internal_stop=true'
+                        try:
+                            mrna.attr['Note'] += '|ref_internal_stop=true'
+                        except KeyError:
+                            mrna.attr['Note'] = 'ref_internal_stop=true'
                     total_internal_stop += 1
                     if filter_by_internal_stop:
                         continue
@@ -197,22 +221,34 @@ def main():
                 if cds_seq[:3] not in start_codons():
                     if is_alignment:
                         mrna.attr['aln_missing_start'] = 'true'
-                        mrna.attr['Note'] += '|aln_missing_start=true'
+                        try:
+                            mrna.attr['Note'] += '|aln_missing_start=true'
+                        except KeyError:
+                            mrna.attr['Note'] = 'aln_missing_start=true'
                     else:
                         mrna.attr['ref_missing_start'] = 'true'
-                        mrna.attr['Note'] += '|ref_missing_start=true'
+                        try:
+                            mrna.attr['Note'] += '|ref_missing_start=true'
+                        except KeyError:
+                            mrna.attr['Note'] = 'ref_missing_start=true'
 
                 if is_alignment:
                     if last_codon not in stop_codons():
                         mrna.attr['aln_missing_stop'] = 'true'
-                        mrna.attr['Note'] += '|aln_missing_stop=true'
+                        try:
+                            mrna.attr['Note'] += '|aln_missing_stop=true'
+                        except KeyError:
+                            mrna.attr['Note'] = 'aln_missing_stop=true'
                     else:  # Extend the last exon and cds_exon coordinates to include the stop codon
                         cds_seq += last_codon
                         gene.extend_three_prime_end_cds(mrna_id, 3)
 
                 elif cds_seq[-3:] not in stop_codons():
                     mrna.attr['ref_missing_stop'] = 'true'
-                    mrna.attr['Note'] += '|ref_missing_stop=true'
+                    try:
+                        mrna.attr['Note'] += '|ref_missing_stop=true'
+                    except KeyError:
+                        mrna.attr['Note'] = 'ref_missing_stop=true'
 
                 if first:
                     print_gff_line(gene, "gene", gene, output_file)
