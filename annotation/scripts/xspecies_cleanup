@@ -26,6 +26,9 @@ def parse_args():
                    help="Check introns are shorter than max_intron")
     p.add_argument("-f", "--filters", choices=['all', 'none', 'intron_len', 'internal_stop', 'aa_len', 'splicing'],
                    help="Select which filters to activate", nargs='+', default='none')
+    p.add_argument('--merge', dest='merge', action='store_true')
+    p.add_argument('--no-merge', dest='merge', action='store_false')
+    p.set_defaults(merge=False)
     p.add_argument("-y", "--proteins", type=argparse.FileType('w'))
     p.add_argument("-x", "--cds", type=argparse.FileType('w'))
     p.add_argument("--bed", type=argparse.FileType('w'))
@@ -54,6 +57,7 @@ def main():
         gff_file = args.annotation
     min_length = args.min_protein
     max_intron = args.max_intron
+    merge = args.merge
 
     output_file = sys.stdout
     if args.output:
@@ -124,9 +128,13 @@ def main():
                     total_non_coding_rna += 1
                     continue
 
-                # Get translated seq
+                # Get translated seq before merging any short introns, this is for when the references have been
+                # deliberately made to have small introns as a workaround for internal stop codons
                 cds_seq, cds_length, cds_intron_len, last_codon = get_cds_seq(genome, mrna, is_alignment)
                 aa_seq = translate(cds_seq)
+                if merge:
+                    # Merges introns < 4bp by default
+                    mrna.merge_exons()
                 # Check for canonical splice sites
                 if len(mrna.exons) > 1:
                     long_introns, noncanonical_splicing, intron_length = check_splicing_sites(genome, max_intron, mrna)
