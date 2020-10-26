@@ -111,6 +111,7 @@ task PrepareAnnotations {
         GenomeAnnotation annotation
         String out_prefix = sub(basename(annotation.annotation_gff),  "\.[^/.]+$", "")
         Int min_cds_len = 20 # nts
+        String filters = "all"
     }
 
     output {
@@ -120,7 +121,7 @@ task PrepareAnnotations {
 
     command <<<
         set -euxo pipefail
-        xspecies_cleanup --filters all --annotation ~{annotation.annotation_gff} --genome ~{annotation.genome} --min_protein ~{min_cds_len} -y ~{out_prefix}.proteins.fa -o ~{out_prefix}.clean.extra_attr.gff
+        xspecies_cleanup --merge --filters none --annotation ~{annotation.annotation_gff} --genome ~{annotation.genome} --min_protein ~{min_cds_len} -y ~{out_prefix}.proteins.fa -o ~{out_prefix}.clean.extra_attr.gff
     >>>
 }
 
@@ -133,6 +134,7 @@ task AlignProteins {
         Int min_exon_len = 20
         Int min_coverage = 80
         Int min_identity = 50
+        String filters = "none"
         RuntimeAttr? runtime_attr_override
     }
     Int cpus = 6
@@ -237,9 +239,7 @@ task ScoreAlignments {
     Int task_cpus = runtime_attr.cpu_cores
 
     # TODO:
-    # - Annotate models with the count of introns exceeding max_intron_len per model
-    # - Annotate exons with splice signal (to account for non-canonical splicing)
-    # - Compare models to original structure (mgc approach preferably on-line)
+    # - Add mgc results to alignments
 
     command <<<
         set -euxo pipefail
