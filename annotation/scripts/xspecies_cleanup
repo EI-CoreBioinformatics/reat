@@ -315,14 +315,12 @@ def get_cds_seq(genome, mrna, is_alignment=False):
         else:
             aln_seq.append(genome.get_seq(e.chrom, e.start, e.end).reverse.complement.seq)
 
-    if mrna.strand == '-':
-        if is_alignment:
-            last_cds_exon = mrna.cds_exons[0]
+    if is_alignment:
+        last_cds_exon = mrna.cds_exons[-1]
+        if mrna.strand == '-':
             last_codon = genome.get_seq(
                 last_cds_exon.chrom, last_cds_exon.start-4, last_cds_exon.start-2).reverse.complement.seq.upper()
-    else:
-        if is_alignment:
-            last_cds_exon = mrna.cds_exons[-1]
+        else:
             last_codon = genome.get_seq(
                 last_cds_exon.chrom, last_cds_exon.end+1, last_cds_exon.end+3).seq.upper()
 
