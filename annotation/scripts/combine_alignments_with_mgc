@@ -1,0 +1,60 @@
+#!/usr/bin/env python
+
+import argparse
+import os
+import sys
+
+
+def main():
+    p = argparse.ArgumentParser()
+    p.add_argument("--detail", type=argparse.FileType('r'),
+                   help="multi_genome_compare details result file")
+    p.add_argument("--gff", type=argparse.FileType('r'),
+                   help="Gff file to augment with the detail file")
+    p.add_argument("-o", "--output", type=argparse.FileType('w'),
+                   help="Augmented output gff file path")
+
+    args = p.parse_args()
+    detail_file = args.detail
+    gff_file = args.gff
+    output_file = args.output
+
+    mrna_details = dict()
+    detail_file.readline()
+    for detail_line in detail_file:
+        line_data = detail_line.strip().split('\t')
+        aligned_mrna = line_data[3]
+        cds_id, cds_exon_f1, cds_junction_f1, cds_ccode = line_data[15], line_data[18], line_data[21], line_data[22]
+        mrna_details[aligned_mrna] = {"cds_id": cds_id,
+                                      "cds_exon_f1": cds_exon_f1,
+                                      "cds_junction_f1": cds_junction_f1,
+                                      "cds_ccode": cds_ccode
+                                      }
+
+    for gff_line in gff_file:
+        line_data = gff_line.strip().split('\t')
+        if len(line_data) == 9 and line_data[2].lower() == 'mrna':
+            attrs = line_data[8].split(';')
+            new_attrs = []
+            for attr in attrs:
+                k, v = attr.split('=', 1)
+                if k.lower() == 'note':
+                    note = v
+                else:
+                    if k == 'ID':
+                        mrna = v
+                    new_attrs.append(f"{k}={v}")
+            for k, v in mrna_details[mrna].items():
+                note += f"|{k}:{v}"
+                new_attrs.append(f"{k}={v}")
+            print('\t'.join([v for v in line_data[:-1]]), end='\t', file=output_file)
+            print(';'.join([attr for attr in new_attrs]), end='', file=output_file)
+            print(f";Note={note}", file=output_file)
+        else:
+            print(gff_line, end='', file=output_file)
+            if gff_line.split()[0] == '##gff-version':
+                print("#", os.path.basename(sys.argv[0]), ' ', ' '.join(sys.argv[1:]), sep='', file=output_file)
+
+
+if __name__ == "__main__":
+    main()

@@ -61,10 +61,16 @@ workflow ei_homology {
             ref_prefix = ref_prefix,
             runtime_attr_override = score_attr
         }
+
+        call CombineResults {
+            input:
+            alignment_compare_detail = ScoreAlignments.alignment_compare_detail,
+            alignment_gff = AlignProteins.alignments
+        }
     }
     output {
         Array[File] clean_annotations = PrepareAnnotations.cleaned_up_gff
-        Array[File] alignments = AlignProteins.alignments
+        Array[File] alignments = CombineResults.augmented_alignments_gff
         Array[File] mgc_evaluation = ScoreAlignments.alignment_compare
         Array[File] mgc_evaluation_detail = ScoreAlignments.alignment_compare_detail
     }
@@ -238,9 +244,6 @@ task ScoreAlignments {
 
     Int task_cpus = runtime_attr.cpu_cores
 
-    # TODO:
-    # - Add mgc results to alignments
-
     command <<<
         set -euxo pipefail
         multi_genome_compare.py -t ~{task_cpus} --groups ~{groups} --cdnas ~{cdnas} --bed12 ~{bed} -o comp_~{aln_prefix}_~{ref_prefix}.tab -d comp_~{aln_prefix}_~{ref_prefix}_detail.tab
@@ -252,4 +255,23 @@ task ScoreAlignments {
         maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
     }
 
+}
+
+
+task CombineResults {
+    input {
+        File alignment_compare_detail
+        File alignment_gff
+    }
+
+    String aln_prefix = sub(basename(alignment_gff), "\.[^/.]+$", "")
+
+    output {
+        File augmented_alignments_gff = aln_prefix+".mgc.gff"
+    }
+
+    command <<<
+        set -euxo pipefail
+        combine_alignments_with_mgc --detail ~{alignment_compare_detail} --gff ~{alignment_gff} -o ~{aln_prefix}.mgc.gff
+    >>>
 }

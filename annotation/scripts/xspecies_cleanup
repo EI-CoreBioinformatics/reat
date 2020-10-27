@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-
+import os
 import sys
 import argparse
 import time
@@ -95,7 +95,7 @@ def main():
             filter_by_canonical_splicing = True
 
     print("##gff-version 3", file=output_file)
-    print("#", ' '.join(sys.argv), file=output_file)
+    print("#", os.path.basename(sys.argv[0]), ' ', ' '.join(sys.argv[1:]), sep='', file=output_file)
     print("#xspecies_tool 0.0.1", file=output_file)
 
     with pyfaidx.Fasta(fasta_file.name, read_ahead=10000000) as genome:
@@ -269,9 +269,9 @@ def main():
                     else:
                         print('\n'.join(wrap(aa_seq)), file=protein_file)
                 if cds_file:
-                    # cds_exons_seq_len = sum([e.end - e.start + 1 for e in mrna.cds_exons])
-                    # cds_exons_seq_len -= int(mrna.cds_exons[0].phase)
-                    # assert len(cds_seq) == cds_exons_seq_len
+                    cds_exons_seq_len = sum([e.end - e.start + 1 for e in mrna.cds_exons])
+                    cds_exons_seq_len -= int(mrna.cds_exons[0].phase)
+                    assert len(cds_seq) == cds_exons_seq_len
                     print(">", mrna_id, sep='', file=cds_file)
                     print('\n'.join(wrap(cds_seq)), file=cds_file)
 
