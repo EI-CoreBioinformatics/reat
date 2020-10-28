@@ -131,6 +131,8 @@ def main():
                 # Get translated seq before merging any short introns, this is for when the references have been
                 # deliberately made to have small introns as a workaround for internal stop codons
                 cds_seq, cds_length, cds_intron_len, last_codon = get_cds_seq(genome, mrna, is_alignment)
+                cds_exons_seq_len = sum([e.end - e.start + 1 for e in mrna.cds_exons])
+                cds_exons_seq_len -= int(mrna.cds_exons[0].phase)
                 aa_seq = translate(cds_seq)
                 if merge:
                     # Merges introns < 4bp by default
@@ -269,8 +271,6 @@ def main():
                     else:
                         print('\n'.join(wrap(aa_seq)), file=protein_file)
                 if cds_file:
-                    cds_exons_seq_len = sum([e.end - e.start + 1 for e in mrna.cds_exons])
-                    cds_exons_seq_len -= int(mrna.cds_exons[0].phase)
                     assert len(cds_seq) == cds_exons_seq_len
                     print(">", mrna_id, sep='', file=cds_file)
                     print('\n'.join(wrap(cds_seq)), file=cds_file)
