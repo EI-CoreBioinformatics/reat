@@ -134,9 +134,11 @@ def main():
                 cds_exons_seq_len = sum([e.end - e.start + 1 for e in mrna.cds_exons])
                 cds_exons_seq_len -= int(mrna.cds_exons[0].phase)
                 aa_seq = translate(cds_seq)
+                bed_line = mrna.to_bed(coding=True)
                 if merge:
                     # Merges introns < 4bp by default
-                    mrna.merge_exons()
+                    (mexons, mcds) = mrna.merge_exons()
+                    print(f"Merged {mexons} exons and {mcds} CDSs for ID=", mrna_id, file=error_file)
                 # Check for canonical splice sites
                 if len(mrna.exons) > 1:
                     long_introns, noncanonical_splicing, intron_length = check_splicing_sites(genome, max_intron, mrna)
@@ -277,8 +279,9 @@ def main():
                     print('\n'.join(wrap(cds_seq)), file=cds_file)
 
                 if bed_file:
-                    s = mrna.to_bed(coding=True)
-                    print(s, file=bed_file)
+                    if is_alignment:
+                        bed_line = mrna.to_bed(coding=True)
+                    print(bed_line, file=bed_file)
 
             if num_valid_transcripts > 0:
                 total_valid_genes += 1
