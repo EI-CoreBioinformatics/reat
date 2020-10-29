@@ -45,10 +45,12 @@ workflow ei_homology {
 
         call PrepareAlignments {
             input:
-            alignments = AlignProteins.alignments,
-            genome_to_annotate = genome_to_annotate,
-            genome_proteins = cleaned_up
+            annotation_cdnas = PrepareAnnotations.cdnas,
+            alignment_cdnas  = AlignProteins.cdnas,
+            annotation_bed = PrepareAnnotations.bed,
+            alignment_bed = AlignProteins.bed
         }
+
         String aln_prefix = sub(basename(AlignProteins.alignments), "\.[^/.]+$", "")
         String ref_prefix = sub(basename(cleaned_up.genome), "\.[^/.]+$", "")
 
@@ -123,11 +125,13 @@ task PrepareAnnotations {
     output {
         File cleaned_up_gff = out_prefix + ".clean.extra_attr.gff"
         File proteins = out_prefix + ".proteins.fa"
+        File cdnas = out_prefix + ".cdna.fa"
+        File bed = out_prefix + ".bed"
     }
 
     command <<<
         set -euxo pipefail
-        xspecies_cleanup --merge --filters none --annotation ~{annotation.annotation_gff} --genome ~{annotation.genome} --min_protein ~{min_cds_len} -y ~{out_prefix}.proteins.fa -o ~{out_prefix}.clean.extra_attr.gff
+        xspecies_cleanup --merge --filters none --annotation ~{annotation.annotation_gff} -g ~{annotation.genome} --min_protein ~{min_cds_len} -x ~{out_prefix}.cdna.fa --bed ~{out_prefix}.bed -y ~{out_prefix}.proteins.fa -o ~{out_prefix}.clean.extra_attr.gff
     >>>
 }
 
@@ -159,6 +163,8 @@ task AlignProteins {
 
     output {
         File alignments = ref_prefix+".alignment.stop_extended.extra_attr.gff"
+        File cdnas = ref_prefix + ".alignment.cdna.fa"
+        File bed = ref_prefix + ".alignment.bed"
     }
 
     command <<<
@@ -167,7 +173,7 @@ task AlignProteins {
         spaln -t~{task_cpus} -KP -O0,12 -Q7 ~{"-T"+species} -dgenome_to_annotate -o ~{out_prefix} -yL~{min_exon_len} ~{genome_proteins.protein_sequences}
         sortgrcd -O4 ~{out_prefix}.grd | tee ~{out_prefix}.s | spaln2gff --min_coverage ~{min_coverage} --min_identity ~{min_identity} -s "spaln" > ~{ref_prefix}.alignment.gff
 
-        xspecies_cleanup --filters none -g ~{genome_to_annotate} -A ~{ref_prefix}.alignment.gff -o ~{ref_prefix}.alignment.stop_extended.extra_attr.gff
+        xspecies_cleanup --filters none -g ~{genome_to_annotate} -A ~{ref_prefix}.alignment.gff --bed ~{ref_prefix}.alignment.bed -x ~{ref_prefix}.alignment.cdna.fa -o ~{ref_prefix}.alignment.stop_extended.extra_attr.gff
     >>>
 
     runtime {
@@ -180,14 +186,11 @@ task AlignProteins {
 
 task PrepareAlignments {
     input {
-        File alignments
-        File genome_to_annotate
-        GenomeProteins genome_proteins
-        Int max_intron_len = 200000
+        File annotation_cdnas
+        File annotation_bed
+        File alignment_cdnas
+        File alignment_bed
     }
-
-    String aln_prefix = sub(basename(alignments), "\.[^/.]+$", "")
-    String ref_prefix = sub(basename(genome_proteins.genome), "\.[^/.]+$", "")
 
     output {
         File cdnas = "all_cdnas.fa"
@@ -197,16 +200,11 @@ task PrepareAlignments {
 
     command <<<
         set -euxo pipefail
-        gffread -g ~{genome_to_annotate} -T -w ~{aln_prefix}.cdna.fa -o ~{aln_prefix}.gtf ~{alignments}
-        gffread -g ~{genome_proteins.genome} -T -w ~{ref_prefix}.cdna.fa -o ~{ref_prefix}.gtf ~{genome_proteins.annotation_gff}
 
-        mikado util convert -if gtf -of bed12 ~{aln_prefix}.gtf ~{aln_prefix}.bed12
-        mikado util convert -if gtf -of bed12 ~{ref_prefix}.gtf ~{ref_prefix}.bed12
+        create_mgc_groups -f ~{alignment_cdnas}
 
-        create_mgc_groups -f ~{aln_prefix}.cdna.fa
-
-        cat ~{aln_prefix}.cdna.fa ~{ref_prefix}.cdna.fa > all_cdnas.fa
-        cat ~{aln_prefix}.bed12 ~{ref_prefix}.bed12 > all_cdnas.bed
+        cat ~{alignment_cdnas} ~{annotation_cdnas}  > all_cdnas.fa
+        cat ~{alignment_bed} ~{annotation_bed} > all_cdnas.bed
     >>>
 
     runtime {
