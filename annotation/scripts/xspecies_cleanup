@@ -135,14 +135,13 @@ def main():
 
                 # Get translated seq before merging any short introns, this is for when the references have been
                 # deliberately made to have small introns as a workaround for internal stop codons
-                cds_seq, cds_length, cds_intron_len, last_codon = get_spliced_seq(genome, mrna, is_alignment)
-                if is_alignment:
-                    cds_exons_seq_len = sum([e.end - e.start + 1 for e in mrna.cds_exons])
-                    cds_exons_seq_len -= int(mrna.cds_exons[0].phase)
-                else:
-                    cds_exons_seq_len = sum([e.end - e.start + 1 for e in mrna.exons])
+                cds_seq, cds_length, cds_intron_len, last_codon = get_spliced_cds_seq(genome, mrna, is_alignment)
+                cds_exons_seq_len = sum([e.end - e.start + 1 for e in mrna.cds_exons])
+                cds_exons_seq_len -= int(mrna.cds_exons[0].phase)
                 aa_seq = translate(cds_seq)
-                bed_line = mrna.to_bed()
+                bed_line = mrna.to_bed(coding=True)
+                mexons = 0
+                mcds = 0
                 if merge:
                     # Merges introns < 4bp by default
                     (mexons, mcds) = mrna.merge_exons()
@@ -283,7 +282,9 @@ def main():
                     else:
                         print('\n'.join(wrap(aa_seq)), file=protein_file)
                 if cds_file:
-                    assert len(cds_seq) == cds_exons_seq_len
+                    if mexons == 0:
+                        assert len(cds_seq) == cds_exons_seq_len + int(mrna.cds_exons[0].phase), \
+                            f"{mrna_id} processing failed the assertion, {len(cds_seq)} != {cds_exons_seq_len}"
                     print(">", mrna_id, sep='', file=cds_file)
                     print('\n'.join(wrap(cds_seq)), file=cds_file)
 
@@ -378,17 +379,17 @@ def check_splicing_sites(genome, max_intron, mrna):
     return long_intron, noncanonical_splicing, intron_length
 
 
-def get_spliced_seq(genome, mrna, is_alignment=False):
+def get_spliced_cds_seq(genome, mrna, is_alignment=False):
     aln_seq = []
     cds_intron_len = 0
     last_codon = ""
+    for e in mrna.cds_exons:
+        if mrna.strand == '+':
+            aln_seq.append(genome.get_seq(e.chrom, e.start, e.end).seq)
+        else:
+            aln_seq.append(genome.get_seq(e.chrom, e.start, e.end).reverse.complement.seq)
 
     if is_alignment:
-        for e in mrna.cds_exons:
-            if mrna.strand == '+':
-                aln_seq.append(genome.get_seq(e.chrom, e.start, e.end).seq)
-            else:
-                aln_seq.append(genome.get_seq(e.chrom, e.start, e.end).reverse.complement.seq)
         last_cds_exon = mrna.cds_exons[-1]
         if mrna.strand == '-':
             last_codon = genome.get_seq(
@@ -396,19 +397,11 @@ def get_spliced_seq(genome, mrna, is_alignment=False):
         else:
             last_codon = genome.get_seq(
                 last_cds_exon.chrom, last_cds_exon.end+1, last_cds_exon.end+3).seq.upper()
-        aln_cds = ''.join(aln_seq)
-        aln_cds = aln_cds[int(mrna.cds_exons[0].phase):]
-    else:
-        for e in mrna.exons:
-            if mrna.strand == '+':
-                aln_seq.append(genome.get_seq(e.chrom, e.start, e.end).seq)
-            else:
-                aln_seq.append(genome.get_seq(e.chrom, e.start, e.end).reverse.complement.seq)
-        aln_cds = ''.join(aln_seq)
 
     for ei in mrna.cds_introns:
         cds_intron_len += ei[1] - ei[0]
 
+    aln_cds = ''.join(aln_seq)
     return aln_cds.upper(), len(aln_cds), cds_intron_len, last_codon
 
 
