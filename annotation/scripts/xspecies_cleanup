@@ -128,6 +128,11 @@ def main():
                     total_non_coding_rna += 1
                     continue
 
+                # Discard any possible mitochondrial or chloropastic genes that "wrap around" the circle
+                fasta_len = len(genome[mrna.chrom])
+                if mrna.exons[-1].end > fasta_len:
+                    continue
+
                 # Get translated seq before merging any short introns, this is for when the references have been
                 # deliberately made to have small introns as a workaround for internal stop codons
                 cds_seq, cds_length, cds_intron_len, last_codon = get_spliced_seq(genome, mrna, is_alignment)
