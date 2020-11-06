@@ -8,6 +8,7 @@ from textwrap import wrap
 import pyfaidx
 
 from eicore2.models.Codon import translate
+from eicore2.models.RefSeq import get_spliced_cds_seq, check_splicing_sites
 from eicore2.parsers.GFF import GFFReader
 
 
@@ -149,7 +150,7 @@ def main():
                         print(f"Merged exons and CDS: {mrna_id} - {mexons},{mcds}", file=error_file)
                 # Check for canonical splice sites
                 if len(mrna.exons) > 1:
-                    long_introns, noncanonical_splicing, intron_length = check_splicing_sites(genome, max_intron, mrna)
+                    long_introns, noncanonical_splicing, intron_length = check_splicing_sites(genome, mrna, max_intron)
                     if noncanonical_splicing > 0:
                         print(f"Non-canonical splicing: {mrna_id} {mrna.strand}", file=error_file)
                         total_non_canonical_splicing += 1
@@ -355,54 +356,6 @@ def print_attributes(item, output_file):
         print(f"{','.join(v)}", file=output_file)
     else:
         print(f"{v}", file=output_file)
-
-
-def check_splicing_sites(genome, max_intron, mrna):
-    noncanonical_splicing = 0
-    long_intron = 0
-    intron_length = 0
-    for i in mrna.introns:
-        intron_length += i[1] - i[0]
-        if i[1] - i[0] > max_intron:
-            long_intron += 1
-
-        if mrna.strand == '+':
-            donor = genome.get_seq(mrna.chrom, i[0], i[0] + 1).seq
-            acceptor = genome.get_seq(mrna.chrom, i[1] - 1, i[1]).seq
-        else:
-            acceptor = (-genome.get_seq(mrna.chrom, i[0], i[0] + 1)).seq
-            donor = (-genome.get_seq(mrna.chrom, i[1] - 1, i[1])).seq
-
-        # canonical (GT AG), (GC AG), (AT AC)
-        if (donor.upper(), acceptor.upper()) not in (("GT", "AG"), ("GC", "AG"), ("AT", "AC")):
-            noncanonical_splicing += 1
-    return long_intron, noncanonical_splicing, intron_length
-
-
-def get_spliced_cds_seq(genome, mrna, is_alignment=False):
-    aln_seq = []
-    cds_intron_len = 0
-    last_codon = ""
-    for e in mrna.cds_exons:
-        if mrna.strand == '+':
-            aln_seq.append(genome.get_seq(e.chrom, e.start, e.end).seq)
-        else:
-            aln_seq.append(genome.get_seq(e.chrom, e.start, e.end).reverse.complement.seq)
-
-    if is_alignment:
-        last_cds_exon = mrna.cds_exons[-1]
-        if mrna.strand == '-':
-            last_codon = genome.get_seq(
-                last_cds_exon.chrom, last_cds_exon.start-4, last_cds_exon.start-2).complement.seq.upper()
-        else:
-            last_codon = genome.get_seq(
-                last_cds_exon.chrom, last_cds_exon.end+1, last_cds_exon.end+3).seq.upper()
-
-    for ei in mrna.cds_introns:
-        cds_intron_len += ei[1] - ei[0]
-
-    aln_cds = ''.join(aln_seq)
-    return aln_cds.upper(), len(aln_cds), cds_intron_len, last_codon
 
 
 if __name__ == '__main__':
