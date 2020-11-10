@@ -48,6 +48,8 @@ def is_valid_name(validator, value, instance, schema):
 def check_environment():
     # Check the following software is installed and available in the user's environment
     software_available = {
+        "spaln": {"command": ["spaln"],
+                  "result": "SPALN version 2.4.0 <191114>"},
         "mikado": {"command": "mikado --version".split(' '), "result": "Mikado v2.0rc2"},
         "diamond": {"command": "diamond version".split(' '), "result": "diamond version 0.9.30"},
         "blastn": {"command": "blastn -version".split(' '), "result": "blastn: 2.10.0+"},
@@ -69,7 +71,7 @@ def check_environment():
                          "result": "TransDecoder.LongOrfs 5.5.0"},
         "portcullis": {"command": "portcullis --version".split(' '), "result": "portcullis 1.2.0"},
         "BioPerl": {"command": ["perl", "-MBio::Root::Version", "-e", """print $Bio::Root::Version::VERSION\n"""],
-                    "result": "1.7.7"},
+                    "result": "1.7.7"}
     }
 
     for key, item in software_available.items():
@@ -80,14 +82,25 @@ def check_environment():
         if key == "seqtk":
             if "Version" in output:
                 item["rc"] = 0
+        if key == "spaln":
+            if "No input seq file !" in output:
+                item["rc"] = 0
         if item["result"] not in output:
-            print("\"", key, "\"", " current available version:", sep="", file=sys.stderr)
+            print("\"", key, "\"", " version information:", sep="", file=sys.stderr)
+            print('"""', file=sys.stderr)
             print(output.strip(), file=sys.stderr)
-            print("is not the same as the expected version:", file=sys.stderr)
+            print('"""', file=sys.stderr)
+            print(file=sys.stderr)
+            print("Does not contain indication of the required version:", file=sys.stderr)
+            print('"""', file=sys.stderr)
             print(item["result"], file=sys.stderr)
+            print('"""', file=sys.stderr)
+            print(file=sys.stderr)
+            print(file=sys.stderr)
         # Command not in path, wrong version or failed to execute
         if item["rc"] != 0:
-            raise Exception("Command {0} is missing, please check your PATH".format(key))
+            raise FileNotFoundError("Command {0} is missing, please check your PATH".format(key))
+
     return software_available
 
 
