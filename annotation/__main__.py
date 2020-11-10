@@ -11,20 +11,24 @@
 # the user is informed of which software is and which isn't available
 
 # __main__.py parses all the arguments required, generates an input file for cromwell and submits a job to the requested
-# backend. The arguments are validated using the json input schema defined in the validation directory.
+# backend (run or server mode). The arguments are validated using the json input schema defined in the validation
+# directory.
 
 # __main__.py supports multiple input json files which are subsequently merged into a single file, allows reusability
-# of some parts of the input such as resource requirements and default extra parameters
+# of some parts of the input such as resource requirements and default extra parameters.
 
 # __main__.py accepts many customisation parameters in the command-line which are translated into the inputs.json before
-# inputs.json is validated
+# inputs.json is validated.
+
+# If the user wishes to 'cancel' the workflow, SIGTERM or SIGINT will be managed by cascading them to the cromwell
+# process, SIGINT should allow for 'happy' process termination.
 
 import argparse
 import json
+import subprocess
 import sys
 
 from jsonschema import ValidationError, validators, Draft7Validator
-import subprocess
 
 try:
     import importlib.resources as pkg_resources
@@ -87,34 +91,49 @@ def check_environment():
     return software_available
 
 
-def collect_arguments():
-    ap = argparse.ArgumentParser(add_help=True)
+def parse_arguments():
+    reat_ap = argparse.ArgumentParser(add_help=True)
 
+    runtime = reat_ap.add_mutually_exclusive_group(required=True)
+    # runtime.add_argument("--server", type=str,
+    #                      help="Run the workflow in a cromwell server. Address and port of the cromwell server to "
+    #                           "submit the workflow")
+    runtime.add_argument("--run", type=argparse.FileType('r'),
+                         help="Configuration file for the backend, please follow "
+                              "https://cromwell.readthedocs.io/en/stable/backends/HPC/ for more information")
+
+    runtime.add_argument("--computational_resources", type=argparse.FileType('r'),
+                         help="Computational resources for REAT, please look at the template for more information",
+                         required=True)
+    runtime.add_argument("--output_parameters_file", type=str,
+                         help="REAT parameters file, this file will be used as the input for REAT. "
+                              "It provides the arguments for the workflow runtime.",
+                         default="reat_input.json")
+    runtime.add_argument("--workflow_options_file", type=argparse.FileType('r'),
+                         help="Workflow execution options, includes cache usage and result directories "
+                              "structure and location")
+
+    subparsers = reat_ap.add_subparsers(help="sub-command help", dest="reat_module")
+
+    transcriptome_ap = subparsers.add_parser('transcriptome',
+                                             help="Transcriptome module")
     # General inputs
-    ap.add_argument("--samples", nargs='+', type=argparse.FileType('r'),
-                    help="Reads organised in the input specification for REAT, for more information please look at "
-                         "the template file", required=True)
-    ap.add_argument("--reference", type=argparse.FileType('r'),
-                    help="Reference FASTA to annotate", required=True)
-    ap.add_argument("--annotation", type=argparse.FileType('r'),
-                    help="Annotation of the reference, this file will be used as the base for the new annotation "
-                         "which will incorporate from the available evidence new gene models or update existing "
-                         "ones")
-    ap.add_argument("--computational_resources", type=argparse.FileType('r'),
-                    help="Computational resources for REAT, please look at the template for more information",
-                    required=True)
-    ap.add_argument("--parameters_file", type=argparse.FileType('r'),
-                    help="Base parameters file, this file can be the output of a previous REAT run which will be used "
-                         "as the base for a new parameters file written to the output_parameters_file argument")
-    ap.add_argument("--output_parameters_file", type=str,
-                    help="REAT parameters file, this file will be used as the input for REAT. It provides the "
-                         "arguments for the workflow.", default="reat_input.json")
-    ap.add_argument("--workflow_options_file", type=argparse.FileType('r'),
-                    help="Workflow execution options, includes cache usage and result directories structure and "
-                         "location")
+    transcriptome_ap.add_argument("--samples", nargs='+', type=argparse.FileType('r'),
+                                  help="Reads organised in the input specification for REAT, for more information "
+                                       "please look at the template file", required=True)
+    transcriptome_ap.add_argument("--reference", type=argparse.FileType('r'),
+                                  help="Reference FASTA to annotate", required=True)
+    transcriptome_ap.add_argument("--annotation", type=argparse.FileType('r'),
+                                  help="Annotation of the reference, this file will be used as the base for the new"
+                                       " annotation which will incorporate from the available evidence new gene models"
+                                       " or update existing ones")
+    transcriptome_ap.add_argument("--parameters_file", type=argparse.FileType('r'),
+                                  help="Base parameters file, this file can be the output of a previous REAT run "
+                                       "which will be used as the base for a new parameters file written to the"
+                                       " output_parameters_file argument")
 
     # Mikado arguments
-    mikado_parameters = ap.add_argument_group("mikado", "Parameters for Mikado runs")
+    mikado_parameters = transcriptome_ap.add_argument_group("mikado", "Parameters for Mikado runs")
     mikado_parameters.add_argument("--run_mikado_homology", type=bool,
                                    help="Use the homology proteins provided for scoring transcripts")
     mikado_parameters.add_argument("--mikado_scoring_file", type=argparse.FileType('r'),
@@ -128,16 +147,9 @@ def collect_arguments():
                                         "high-quality, this option generates an extra set of mikado analyses "
                                         "including low-quality data")
 
-    runtime = ap.add_mutually_exclusive_group(required=True)
-    runtime.add_argument("--server", type=str,
-                         help="Run the workflow in a cromwell server. Address and port of the cromwell server to "
-                              "submit the workflow")
-    runtime.add_argument("--run", type=argparse.FileType('r'),
-                         help="Configuration file for the backend, please follow "
-                              "https://cromwell.readthedocs.io/en/stable/backends/HPC/ for more information")
-
     # Aligner choices
-    alignment_parameters = ap.add_argument_group("alignment", "Parameters for alignment of short and long reads")
+    alignment_parameters = transcriptome_ap.add_argument_group("alignment",
+                                                               "Parameters for alignment of short and long reads")
     alignment_parameters.add_argument("--short_reads_aligner", choices=['hisat', 'star'],
                                       help="Choice of short read aligner", default='hisat')
     alignment_parameters.add_argument("--HQ_aligner", choices=['minimap2', 'gmap'],
@@ -176,7 +188,8 @@ def collect_arguments():
                                            "parameters available for the selected read aligner")
 
     # Assembler choices
-    assembly_parameters = ap.add_argument_group("assembly", "Parameters for assembly of short and long reads")
+    assembly_parameters = transcriptome_ap.add_argument_group("assembly",
+                                                              "Parameters for assembly of short and long reads")
     assembly_parameters.add_argument("--HQ_assembler",
                                      choices=["filter", "merge", "stringtie", "stringtie_collapse"],
                                      help="Choice of long read assembler."
@@ -217,18 +230,39 @@ def collect_arguments():
                                           "available for scallop")
 
     # Portcullis extra parameters
-    portcullis_parameters = ap.add_argument_group("portcullis", "Parameters specific to portcullis")
+    portcullis_parameters = transcriptome_ap.add_argument_group("portcullis", "Parameters specific to portcullis")
     portcullis_parameters.add_argument("--extra_parameters", type=str, help="Extra parameters for portcullis execution")
 
     # Orf calling
-    orf_calling_parameters = ap.add_argument_group("ORF Caller", "Parameters for ORF calling programs")
+    orf_calling_parameters = transcriptome_ap.add_argument_group("ORF Caller", "Parameters for ORF calling programs")
     orf_calling_parameters.add_argument("--orf_caller", choices=['prodigal', 'transdecoder', 'none'],
                                         help="Choice of available orf calling softwares", default='none')
     orf_calling_parameters.add_argument("--orf_calling_proteins", type=argparse.FileType('r'),
                                         help="Set of proteins to be aligned to the genome for orf prediction by "
                                              "Transdecoder")
 
-    args = ap.parse_args()
+    homology_ap = subparsers.add_parser('homology', help="Homology module")
+
+    homology_ap.add_argument("--genome", type=argparse.FileType('r'),
+                             help="Fasta file of the genome to annotate")
+    homology_ap.add_argument("--annotations", nargs='+', type=argparse.FileType('r'),
+                             help="Reference annotations to extract proteins/cdnas for spliced alignments")
+    homology_ap.add_argument("--annotation_filters",
+                             choices=['all', 'none', 'intron_len', 'internal_stop', 'aa_len', 'splicing'], nargs='+',
+                             help="Filter annotation coding genes by the filter types specified")
+    homology_ap.add_argument("--annotation_min_cds", type=int,
+                             help="If 'aa_len' filter is enabled for annotation coding features, any CDS smaller than"
+                                  "this parameter will be filtered out")
+    homology_ap.add_argument("--alignment_species", type=str,
+                             help="Available aligner species, for more information, please look at URL")
+    homology_ap.add_argument("--alignment_min_exon_len", type=int, help="Minimum exon length, alignment parameter")
+    homology_ap.add_argument("--alignment_filters",
+                             choices=['all', 'none', 'intron_len', 'internal_stop', 'aa_len', 'splicing'],
+                             help="Filter alignment results by the filter types specified", nargs='+')
+    homology_ap.add_argument("--alignment_min_identity", type=int, help="Minimum identity filter for alignments")
+    homology_ap.add_argument("--alignment_min_coverage", type=int, help="Minimum coverage filter for alignments")
+
+    args = reat_ap.parse_args()
     return args
 
 
@@ -290,8 +324,8 @@ def combine_arguments(cli_arguments):
     return cromwell_inputs
 
 
-def validate_cromwell_inputs(cromwell_inputs):
-    with pkg_resources.path("validation", "reat.schema") as schema_file:
+def validate_transcriptome_inputs(cromwell_inputs):
+    with pkg_resources.path("validation", "transcriptome.schema") as schema_file:
         with open(schema_file, 'r') as schema:
             reat_schema = json.load(schema)
     all_validators = dict(Draft7Validator.VALIDATORS)
@@ -301,10 +335,10 @@ def validate_cromwell_inputs(cromwell_inputs):
 
 
 def execute_cromwell(cli_arguments, input_parameters_filepath, workflow_options_file, wdl_file):
-    if cli_arguments.server is None:
-        return cromwell_run(input_parameters_filepath, workflow_options_file, wdl_file)
-    else:
+    if cli_arguments.run is None:
         return cromwell_submit(cli_arguments, input_parameters_filepath, workflow_options_file, wdl_file)
+    else:
+        return cromwell_run(input_parameters_filepath, workflow_options_file, wdl_file)
 
 
 def cromwell_submit(cli_arguments, input_parameters_filepath, workflow_options_file, wdl_file):
@@ -346,18 +380,77 @@ def cromwell_run(input_parameters_filepath, workflow_options_file, wdl_file):
 
 
 def main():
-    check_environment()
-    cli_arguments = collect_arguments()
+    try:
+        check_environment()
+    except FileNotFoundError as exc:
+        print(exc, file=sys.stderr)
+        sys.exit(2)
+    cli_arguments = parse_arguments()
+    if cli_arguments.reat_module == "transcriptome":
+        return transcriptome_module(cli_arguments)
+    elif cli_arguments.reat_module == "homology":
+        return homology_module(cli_arguments)
+
+
+def transcriptome_module(cli_arguments):
     # Print input file for cromwell
     cromwell_inputs = combine_arguments(cli_arguments)
     # Validate input against schema
-    validate_cromwell_inputs(cromwell_inputs)
-
+    validate_transcriptome_inputs(cromwell_inputs)
     with open(cli_arguments.output_parameters_file, 'w') as cromwell_input_file:
         json.dump(cromwell_inputs, cromwell_input_file)
-
     # Submit pipeline to server or run locally depending on the arguments
     with pkg_resources.path("annotation.transcriptome_module", "main.wdl") as wdl_file:
+        workflow_options_file = None
+        if cli_arguments.workflow_options_file is not None:
+            workflow_options_file = cli_arguments.workflow_options_file.name
+        return execute_cromwell(cli_arguments, cli_arguments.output_parameters_file,
+                                workflow_options_file, wdl_file)
+
+
+def combine_arguments_homology(cli_arguments):
+    computational_resources = json.load(cli_arguments.computational_resources)
+    cromwell_inputs = computational_resources
+    for s in cli_arguments.annotations:
+        annotation = json.load(s)
+        cromwell_inputs.update(annotation)
+
+    cromwell_inputs["ei_homology.genome_to_annotate"] = cli_arguments.genome.name
+    cromwell_inputs["ei_homology.AlignProteins.species"] = cli_arguments.alignment_species
+
+    # Optional extra parameters
+    if cli_arguments.annotation_filters:
+        cromwell_inputs["ei_homology.PrepareAnnotations.filters"] = cli_arguments.annotation_filters
+    if cli_arguments.annotation_min_cds:
+        cromwell_inputs["ei_homology.PrepareAnnotations.min_cds_len"] = cli_arguments.annotation_min_cds
+    if cli_arguments.alignment_min_exon_len:
+        cromwell_inputs["ei_homology.AlignProteins.min_exon_len"] = cli_arguments.alignment_min_exon_len
+    if cli_arguments.alignment_filters:
+        cromwell_inputs["ei_homology.AlignProteins.filters"] = cli_arguments.alignment_filters
+    if cli_arguments.alignment_min_identity:
+        cromwell_inputs["ei_homology.AlignProteins.min_identity"] = cli_arguments.alignment_min_identity
+    if cli_arguments.alignment_min_coverage:
+        cromwell_inputs["ei_homology.AlignProteins.min_coverage"] = cli_arguments.alignment_min_coverage
+
+    return cromwell_inputs
+
+
+def validate_homology_inputs(cromwell_inputs):
+    with pkg_resources.path("validation", "homology.schema") as schema_file:
+        with open(schema_file, 'r') as schema:
+            schema = json.load(schema)
+    all_validators = dict(Draft7Validator.VALIDATORS)
+    reat_validator = validators.create(meta_schema=schema, validators=all_validators)
+    reat_validator(schema).validate(cromwell_inputs)
+
+
+def homology_module(cli_arguments):
+    cromwell_inputs = combine_arguments_homology(cli_arguments)
+    validate_homology_inputs(cromwell_inputs)
+    with open(cli_arguments.output_parameters_file, 'w') as cromwell_input_file:
+        json.dump(cromwell_inputs, cromwell_input_file)
+    # Submit pipeline to server or run locally depending on the arguments
+    with pkg_resources.path("annotation.homology_module", "main.wdl") as wdl_file:
         workflow_options_file = None
         if cli_arguments.workflow_options_file is not None:
             workflow_options_file = cli_arguments.workflow_options_file.name
