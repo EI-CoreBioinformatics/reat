@@ -7,3 +7,4 @@ dependencies.zip
 ei-cautious-broccoli.iml
 *.pyc
 tests/data
+*.egg-info/
