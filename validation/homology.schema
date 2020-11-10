@@ -1,0 +1,50 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+
+    "definitions": {
+        "filters": {
+            "enum": ["all", "none", "intron_len", "internal_stop", "aa_len", "splicing"]
+        }
+    }
+
+    "type": "object",
+    "properties": {
+        "ei_homology.genome_to_annotate": {
+            "type": "string"
+        }
+        "ei_homology.annotations": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "genome": {
+                        "type": "string",
+                    },
+                    "annotation": {
+                        "type": "string"
+                    }
+                },
+                "required": ["genome", "annotation"]
+            }
+        },
+        "ei_homology.AlignProteins.filters": {
+            "$ref": "#/definitions/filters"
+        }
+        "ei_homology.AlignProteins.species": {
+            "type": "string"
+        },
+        "ei_homology.PrepareAnnotations.filters": {
+            "$ref": "#/definitions/filters"
+        },
+        "ei_homology.AlignProteins.min_identity": {
+            "type": "int"
+        },
+        "ei_homology.AlignProteins.min_coverage": {
+            "type": "int"
+        },
+        "ei_homology.PrepareAnnotations.min_cds_len": {
+            "type": "int"
+        }
+    },
+    "required": ["ei_homology.genome_to_annotate", "ei_homology.annotations", "ei_homology.AlignProteins.species"]
+}

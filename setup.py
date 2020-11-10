@@ -4,7 +4,7 @@ import glob
 setup(
     name='ei-cautious-broccoli',
     version='0.2',
-    packages=find_packages('./'),
+    packages=find_packages('.'),
     url='github.com/ei-corebioinformatics/ei-cautious-broccoli',
     classifiers=[
         "Development Status :: 4 - Beta",
@@ -18,7 +18,7 @@ setup(
     license='MIT',
     author='Luis Yanes',
     author_email='luis.yanes@earlham.ac.uk',
-    description='Robust and extendable eukaryotic annotation toolkit',
+    description='Robust and Extendable Eukaryotic Annotation Toolkit',
     zip_safe=False,
     keywords="gene annotation WDL pipeline workflow",
     scripts=[
@@ -30,7 +30,7 @@ setup(
         "jsonschema~=3.2.0",
     ],
     package_data={
-        "validation": ["reat.schema"],
+        "validation": ["transcriptome.schema", "homology.schema"],
         "annotation": ["transcriptome_module/*.wdl",
                        "transcriptome_module/*/**/*.wdl",
                        "transcriptome_module/*/**/**/*.wdl",
