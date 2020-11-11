@@ -49,19 +49,19 @@ def check_environment():
     # Check the following software is installed and available in the user's environment
     software_available = {
         "spaln": {"command": ["spaln"],
-                  "result": "SPALN version 2.4.0 <191114>"},
+                  "result": "SPALN version 2.4.03"},
         "mikado": {"command": "mikado --version".split(' '), "result": "Mikado v2.0rc2"},
-        "diamond": {"command": "diamond version".split(' '), "result": "diamond version 0.9.30"},
-        "blastn": {"command": "blastn -version".split(' '), "result": "blastn: 2.10.0+"},
-        "blastx": {"command": "blastx -version".split(' '), "result": "blastx: 2.10.0+"},
-        "samtools": {"command": "samtools --version".split(' '), "result": "samtools 1.10"},
+        "diamond": {"command": "diamond version".split(' '), "result": "diamond version 0.9.31"},
+        "blastn": {"command": "blastn -version".split(' '), "result": "blastn: 2.7.1+"},
+        "blastx": {"command": "blastx -version".split(' '), "result": "blastx: 2.7.1+"},
+        "samtools": {"command": "samtools --version".split(' '), "result": "samtools 1.9"},
         "bamtools": {"command": "bamtools --version".split(' '), "result": "bamtools 2.5.1"},
-        "gffread": {"command": "gffread --version".split(' '), "result": "0.11.7"},
-        "gmap": {"command": "gmap --version".split(' '), "result": "version 2019-09-12"},
+        "gffread": {"command": "gffread --version".split(' '), "result": "0.10.1"},
+        "gmap": {"command": "gmap --version".split(' '), "result": "version 2019-02-15"},
         "minimap2": {"command": "minimap2 --version".split(' '), "result": "2.17-r941"},
-        "genometools": {"command": "gt --version".split(' '), "result": "gt (GenomeTools) 1.6.1"},
+        "genometools": {"command": "gt --version".split(' '), "result": "gt (GenomeTools) 1.5.10"},
         "hisat2": {"command": "hisat2 --version".split(' '), "result": "version 2.1.0"},
-        "star": {"command": "star --version".split(' '), "result": "2.7.3a"},
+        "star": {"command": "STAR --version".split(' '), "result": "2.7.3a"},
         "seqtk": {"command": ["seqtk"], "result": "Version: 1.3-r114-dirty"},
         "stringtie": {"command": "stringtie --version".split(' '), "result": "2.1.1"},
         "scallop": {"command": "scallop --version".split(' '), "result": "v0.10.4"},
@@ -107,24 +107,25 @@ def check_environment():
 def parse_arguments():
     reat_ap = argparse.ArgumentParser(add_help=True)
 
-    runtime = reat_ap.add_mutually_exclusive_group(required=True)
-    # runtime.add_argument("--server", type=str,
-    #                      help="Run the workflow in a cromwell server. Address and port of the cromwell server to "
-    #                           "submit the workflow")
-    runtime.add_argument("--run", type=argparse.FileType('r'),
-                         help="Configuration file for the backend, please follow "
-                              "https://cromwell.readthedocs.io/en/stable/backends/HPC/ for more information")
-
-    runtime.add_argument("--computational_resources", type=argparse.FileType('r'),
+    reat_ap.add_argument("--computational_resources", type=argparse.FileType('r'),
                          help="Computational resources for REAT, please look at the template for more information",
                          required=True)
-    runtime.add_argument("--output_parameters_file", type=str,
+    reat_ap.add_argument("--output_parameters_file", type=str,
                          help="REAT parameters file, this file will be used as the input for REAT. "
                               "It provides the arguments for the workflow runtime.",
                          default="reat_input.json")
-    runtime.add_argument("--workflow_options_file", type=argparse.FileType('r'),
+    reat_ap.add_argument("--workflow_options_file", type=argparse.FileType('r'),
                          help="Workflow execution options, includes cache usage and result directories "
                               "structure and location")
+
+    runtime = reat_ap.add_mutually_exclusive_group(required=True)
+
+    runtime.add_argument("--server", type=str,
+                         help="Run the workflow in a cromwell server. Address and port of the cromwell server to "
+                              "submit the workflow")
+    runtime.add_argument("--run", type=argparse.FileType('r'),
+                         help="Configuration file for the backend, please follow "
+                              "https://cromwell.readthedocs.io/en/stable/backends/HPC/ for more information")
 
     subparsers = reat_ap.add_subparsers(help="sub-command help", dest="reat_module")
 
@@ -356,7 +357,7 @@ def execute_cromwell(cli_arguments, input_parameters_filepath, workflow_options_
 
 def cromwell_submit(cli_arguments, input_parameters_filepath, workflow_options_file, wdl_file):
     # FIXME
-    # Package the pipeline dependencies from the installed resources folder into a zip file for submitting
+    #  Package the pipeline dependencies from the installed resources folder into a zip file for submitting
 
     subprocess.run(
         ["cromwell", "submit", "-h", cli_arguments.server, "-i",
