@@ -2,9 +2,14 @@ Bootstrap: docker
 From: ubuntu:18.04
 
 %environment
-export PATH=$PATH:/opt/software/hisat2-2.1.0:/opt/software/TransDecoder-TransDecoder-v5.5.0:/opt/software/TransDecoder-TransDecoder-v5.5.0/util:/opt/software/repeatmasker/RepeatMasker:/opt/software/repeatmasker/RepeatModeler
+export PATH=$PATH:/opt/software/hisat2-2.1.0
+export PATH=$PATH:/opt/software/TransDecoder-TransDecoder-v5.5.0:/opt/software/TransDecoder-TransDecoder-v5.5.0/util
+export PATH=$PATH:/opt/software/repeatmasker/RepeatMasker:/opt/software/repeatmasker/RepeatModeler
+export PATH=$PATH:/opt/software/spaln/bin
 export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
 export PYTHONPATH=$PYTHONPATH:/usr/local/lib/python3.6/dist-packages/
+export ALN_DBS=/opt/software/spaln/aln
+export ALN_TAB=/opt/software/spaln/tbl
 
 %post
 mkdir /jic
@@ -387,3 +392,11 @@ echo "\n\n\ny\n" | perl configure \
          -trf_prgm=/opt/software/repeatmasker/bin/trf
 
 cd ..
+
+# Gotoh's SPALN
+wget https://github.com/ogotoh/spaln/archive/ver.2.4.04.tar.gz
+tar xf spaln2.4.0.tar.gz
+cd spaln-ver.2.4.04/src
+./configure --exec-prefix=/opt/software/spaln/bin --table_dir=/opt/software/spaln/tbl --alndbs_dir=/opt/software/spaln/aln
+make
+make install
