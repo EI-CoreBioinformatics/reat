@@ -22,11 +22,14 @@
 
 # If the user wishes to 'cancel' the workflow, SIGTERM or SIGINT will be managed by cascading them to the cromwell
 # process, SIGINT should allow for 'happy' process termination.
-
+import io
 import argparse
 import json
+import os
+import signal
 import subprocess
 import sys
+from textwrap import wrap
 
 from jsonschema import ValidationError, validators, Draft7Validator
 
@@ -107,13 +110,9 @@ def check_environment():
 def parse_arguments():
     reat_ap = argparse.ArgumentParser(add_help=True)
 
-    reat_ap.add_argument("--cromwell_configuration", type=argparse.FileType('r'),
-                         help="Configuration file for cromwell, defines the execution backend and other parameters."
-                              "An example of this file can be found at https://github.com/ei-corebioinformatics/reat/")
-
     reat_ap.add_argument("--computational_resources", type=argparse.FileType('r'),
-                         help="Computational resources for REAT, please look at the template for more information",
-                         required=True)
+                         help="Computational resources for REAT, please look at the template for more information"
+                         )  # required=True)
     reat_ap.add_argument("--output_parameters_file", type=str,
                          help="REAT parameters file, this file will be used as the input for REAT. "
                               "It provides the arguments for the workflow runtime.",
@@ -151,22 +150,20 @@ def parse_arguments():
                                        " output_parameters_file argument")
 
     # Mikado arguments
-    mikado_parameters = transcriptome_ap.add_argument_group("mikado", "Parameters for Mikado runs")
-    mikado_parameters.add_argument("--run_mikado_homology", type=bool,
+    mikado_parameters = transcriptome_ap.add_argument_group("Mikado", "Parameters for Mikado runs")
+    mikado_parameters.add_argument("--run_mikado_homology", action="store_true",
                                    help="Use the homology proteins provided for scoring transcripts")
     mikado_parameters.add_argument("--mikado_scoring_file", type=argparse.FileType('r'),
                                    help="Mikado scoring file", required=True)
     mikado_parameters.add_argument("--homology_proteins", type=argparse.FileType('r'),
                                    help="Homology proteins database, used to score transcripts by Mikado")
-    mikado_parameters.add_argument("--do_mikado_homology", type=bool,
-                                   help="Specify whether or not to use homology data for Mikado scoring of gene models")
     mikado_parameters.add_argument("--separate_mikado_LQ", type=bool,
                                    help="Specify whether or not to analyse low-quality long reads separately from "
                                         "high-quality, this option generates an extra set of mikado analyses "
                                         "including low-quality data")
 
     # Aligner choices
-    alignment_parameters = transcriptome_ap.add_argument_group("alignment",
+    alignment_parameters = transcriptome_ap.add_argument_group("Alignment",
                                                                "Parameters for alignment of short and long reads")
     alignment_parameters.add_argument("--short_reads_aligner", choices=['hisat', 'star'],
                                       help="Choice of short read aligner", default='hisat')
@@ -206,7 +203,7 @@ def parse_arguments():
                                            "parameters available for the selected read aligner")
 
     # Assembler choices
-    assembly_parameters = transcriptome_ap.add_argument_group("assembly",
+    assembly_parameters = transcriptome_ap.add_argument_group("Assembly",
                                                               "Parameters for assembly of short and long reads")
     assembly_parameters.add_argument("--HQ_assembler",
                                      choices=["filter", "merge", "stringtie", "stringtie_collapse"],
@@ -248,7 +245,7 @@ def parse_arguments():
                                           "available for scallop")
 
     # Portcullis extra parameters
-    portcullis_parameters = transcriptome_ap.add_argument_group("portcullis", "Parameters specific to portcullis")
+    portcullis_parameters = transcriptome_ap.add_argument_group("Portcullis", "Parameters specific to portcullis")
     portcullis_parameters.add_argument("--extra_parameters", type=str, help="Extra parameters for portcullis execution")
 
     # Orf calling
@@ -356,7 +353,7 @@ def execute_cromwell(cli_arguments, input_parameters_filepath, workflow_options_
     if cli_arguments.run is None:
         return cromwell_submit(cli_arguments, input_parameters_filepath, workflow_options_file, wdl_file)
     else:
-        return cromwell_run(input_parameters_filepath, workflow_options_file, wdl_file)
+        return cromwell_run(input_parameters_filepath, cli_arguments.run.name, workflow_options_file, wdl_file)
 
 
 def cromwell_submit(cli_arguments, input_parameters_filepath, workflow_options_file, wdl_file):
@@ -381,35 +378,60 @@ def cromwell_run(input_parameters_filepath, cromwell_configuration, workflow_opt
 
     print("Starting:")
     print(' '.join(formatted_command_line))
-    sp_cromwell = subprocess.run(
-        formatted_command_line,
-        universal_newlines=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE
-    )
-    if sp_cromwell.returncode != 0:
-        sentinel = "Check the content of stderr for potential additional information: "
-        error_file_start_pos = sp_cromwell.stdout.find(sentinel)
-        if error_file_start_pos < 0:
-            # FIXME Unhandled error
-            print("Unhandled errors, please create an issue in the github to add support for improved messages and "
-                  "actions on how to resolve it")
-            print(sp_cromwell.stdout)
+    cromwell_sp_output = io.StringIO()
+    try:
+        sp_cromwell = subprocess.Popen(
+            formatted_command_line,
+            universal_newlines=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE
+        )
+        while True:
+            output = sp_cromwell.stdout.readline()
+            if sp_cromwell.poll() is not None:
+                break
+            if output:
+                cromwell_sp_output.write(output)
+                print(output.strip())
+    except KeyboardInterrupt:
+        sp_cromwell.send_signal(signal.SIGINT)
+        sp_cromwell.wait()
+        for line in sp_cromwell.stdout:
+            print(line.strip())
+    rc = sp_cromwell.poll()
+    if rc != 0:
+        if rc == 130:
+            print("Cromwell stopped by user request")
         else:
-            error_file = sp_cromwell.stdout[error_file_start_pos + len(sentinel):].split("\n")[0][:-1]
-            print(error_file)
-            with open(error_file, 'r') as failed_job_stderr_file:
-                print(failed_job_stderr_file.read())
-    return sp_cromwell.returncode
+            sentinel = "Check the content of stderr for potential additional information: "
+            cromwell_sp_output_str = cromwell_sp_output.getvalue()
+            error_file_start_pos = cromwell_sp_output_str.find(sentinel)
+            for line in sp_cromwell.stderr:
+                print(line)
+            if error_file_start_pos < 0:
+                # FIXME Unhandled error
+                print("Unhandled errors, please create an issue in the github to add support for improved messages and "
+                      "actions on how to resolve it")
+                print(cromwell_sp_output_str)
+            else:
+                error_file = cromwell_sp_output_str[error_file_start_pos + len(sentinel):].split("\n")[0][:-1]
+                print(error_file)
+                with open(error_file, 'r') as failed_job_stderr_file:
+                    print(failed_job_stderr_file.read())
+    return rc
 
 
 def main():
+    cli_arguments = parse_arguments()
     try:
         check_environment()
     except FileNotFoundError as exc:
+        print(f"When checking the environment, the software {exc.filename}, was not found.\nPlease make sure it is "
+              f"in the PATH environment variable of the shell executing REAT.\n\n"
+              f"The current PATH contains the following:")
+        print('\n'.join(wrap(', '.join(os.environ['PATH'].split(os.pathsep)))))
         print(exc, file=sys.stderr)
         sys.exit(2)
-    cli_arguments = parse_arguments()
     if cli_arguments.reat_module == "transcriptome":
         return transcriptome_module(cli_arguments)
     elif cli_arguments.reat_module == "homology":
