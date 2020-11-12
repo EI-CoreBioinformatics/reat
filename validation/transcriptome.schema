@@ -65,6 +65,9 @@
                     "score": {
                         "type": "number"
                     },
+                    "merge": {
+                        "$ref": "#/definitions/Boolean"
+                    },
                     "read_pair": {
                         "type": "array",
                         "items": {
@@ -81,7 +84,7 @@
                         }
                     }
                 },
-                "required": ["name", "strand", "read_pair"]
+                "required": ["name", "strand", "read_pair", "merge"]
             }
         },
         "ei_annotation.HQ_long_read_samples": {

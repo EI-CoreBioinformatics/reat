@@ -3,7 +3,7 @@
     {
       "name": "SRR2927545",
       "strand": "fr-unstranded",
-      "merge": false,
+      "merge": "false",
       "read_pair": [
         {
           "R1": "test_reads/SRR2927545.mapped_chr4_busco.R1.fastq",
@@ -14,7 +14,7 @@
     {
       "name": "SRP099175",
       "strand": "fr-unstranded",
-      "merge": false,
+      "merge": "false",
       "read_pair": [
         {
           "R1": "test_reads/SRR5242383.mapped_chr4_busco.R1.fastq",
@@ -29,7 +29,7 @@
     {
       "name": "SRP099175_merged",
       "strand": "fr-unstranded",
-      "merge": true,
+      "merge": "true",
       "read_pair": [
         {
           "R1": "test_reads/SRR5242383.mapped_chr4_busco.R1.fastq",
