@@ -49,7 +49,7 @@ def check_environment():
     # Check the following software is installed and available in the user's environment
     software_available = {
         "spaln": {"command": ["spaln"],
-                  "result": "SPALN version 2.4.03"},
+                  "result": "SPALN version 2.4.0"},
         "mikado": {"command": "mikado --version".split(' '), "result": "Mikado v2.0rc2"},
         "diamond": {"command": "diamond version".split(' '), "result": "diamond version 0.9.31"},
         "blastn": {"command": "blastn -version".split(' '), "result": "blastn: 2.7.1+"},
@@ -62,7 +62,7 @@ def check_environment():
         "genometools": {"command": "gt --version".split(' '), "result": "gt (GenomeTools) 1.5.10"},
         "hisat2": {"command": "hisat2 --version".split(' '), "result": "version 2.1.0"},
         "star": {"command": "STAR --version".split(' '), "result": "2.7.3a"},
-        "seqtk": {"command": ["seqtk"], "result": "Version: 1.3-r114-dirty"},
+        "seqtk": {"command": ["seqtk"], "result": "Version: 1.3-r115-dirty"},
         "stringtie": {"command": "stringtie --version".split(' '), "result": "2.1.1"},
         "scallop": {"command": "scallop --version".split(' '), "result": "v0.10.4"},
         "scallop-lr": {"command": "scallop-lr --version".split(' '), "result": "v0.9.2"},
@@ -70,8 +70,8 @@ def check_environment():
         "transdecoder": {"command": "TransDecoder.LongOrfs --version".split(' '),
                          "result": "TransDecoder.LongOrfs 5.5.0"},
         "portcullis": {"command": "portcullis --version".split(' '), "result": "portcullis 1.2.0"},
-        "BioPerl": {"command": ["perl", "-MBio::Root::Version", "-e", """print $Bio::Root::Version::VERSION\n"""],
-                    "result": "1.7.7"}
+        # "BioPerl": {"command": ["perl", "-MBio::Root::Version", "-e", """print $Bio::Root::Version::VERSION\n"""],
+        #             "result": "1.7.7"}
     }
 
     for key, item in software_available.items():
@@ -106,6 +106,10 @@ def check_environment():
 
 def parse_arguments():
     reat_ap = argparse.ArgumentParser(add_help=True)
+
+    reat_ap.add_argument("--cromwell_configuration", type=argparse.FileType('r'),
+                         help="Configuration file for cromwell, defines the execution backend and other parameters."
+                              "An example of this file can be found at https://github.com/ei-corebioinformatics/reat/")
 
     reat_ap.add_argument("--computational_resources", type=argparse.FileType('r'),
                          help="Computational resources for REAT, please look at the template for more information",
@@ -322,10 +326,10 @@ def combine_arguments(cli_arguments):
         cromwell_inputs["ei_annotation.wf_main_mikado.run_mikado_homology"] = "false"
 
     if cli_arguments.homology_proteins is not None:
-        cromwell_inputs["ei_annotation.homology_proteins"] = cli_arguments.homology_proteins
+        cromwell_inputs["ei_annotation.homology_proteins"] = cli_arguments.homology_proteins.name
 
     if cli_arguments.orf_calling_proteins is not None:
-        cromwell_inputs["ei_annotation.orf_calling_proteins"] = cli_arguments.orf_calling_proteins
+        cromwell_inputs["ei_annotation.orf_calling_proteins"] = cli_arguments.orf_calling_proteins.name
 
     if cli_arguments.orf_caller != "none":
         cromwell_inputs["ei_annotation.wf_main_mikado.orf_calling_program"] = cli_arguments.orf_caller
@@ -367,12 +371,18 @@ def cromwell_submit(cli_arguments, input_parameters_filepath, workflow_options_f
     return 0
 
 
-def cromwell_run(input_parameters_filepath, workflow_options_file, wdl_file):
-    workflow_options = "-o " + workflow_options_file if workflow_options_file is not None else ""
+def cromwell_run(input_parameters_filepath, cromwell_configuration, workflow_options_file, wdl_file):
+    if workflow_options_file:
+        formatted_command_line = ["java", f"-Dconfig.file={cromwell_configuration}", "-jar", "cromwell.jar", "run",
+                                  "-i", str(input_parameters_filepath), "-o", str(workflow_options_file), str(wdl_file)]
+    else:
+        formatted_command_line = ["java", f"-Dconfig.file={cromwell_configuration}", "-jar", "cromwell.jar", "run",
+                                  "-i", str(input_parameters_filepath), str(wdl_file)]
+
     print("Starting:")
-    print(' '.join(["cromwell", "run", "-i", input_parameters_filepath, workflow_options, str(wdl_file)]))
+    print(' '.join(formatted_command_line))
     sp_cromwell = subprocess.run(
-        ["cromwell", "run", "-i", input_parameters_filepath, wdl_file],
+        formatted_command_line,
         universal_newlines=True,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE

@@ -75,7 +75,7 @@ workflow wf_transdecoder {
         }
     }
 
-# Step 3 Select top longest CDS entries from the scatter and merge all NT freqs table
+# Step 3 Select top longest CDS entries from the scatter and merge all NT freqs table
 # Step 3 Filter similar proteins (can use TDC exclude_similar)
 # Step 3 Select top longest for the final set (can use TDC get_top_longest)
 # Step 3 Train the markov model
@@ -96,7 +96,7 @@ workflow wf_transdecoder {
 
 # Step 6.1 Scatter again to score all cds entries using "hexamer_scores_file"
 
-# Step 6.2 (optional) Run blastp on the chunks to filter
+# Step 6.2 (optional) Run blastp on the chunks to filter
     scatter (chunk in TransdecoderLongOrf.chunks) {
         call Calculate_Scores {
             input:
