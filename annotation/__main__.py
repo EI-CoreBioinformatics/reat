@@ -476,13 +476,13 @@ def combine_arguments_homology(cli_arguments):
 
     # Optional extra parameters
     if cli_arguments.annotation_filters:
-        cromwell_inputs["ei_homology.PrepareAnnotations.filters"] = cli_arguments.annotation_filters
+        cromwell_inputs["ei_homology.PrepareAnnotations.filters"] = ', '.join(cli_arguments.annotation_filters)
     if cli_arguments.annotation_min_cds:
         cromwell_inputs["ei_homology.PrepareAnnotations.min_cds_len"] = cli_arguments.annotation_min_cds
     if cli_arguments.alignment_min_exon_len:
         cromwell_inputs["ei_homology.AlignProteins.min_exon_len"] = cli_arguments.alignment_min_exon_len
     if cli_arguments.alignment_filters:
-        cromwell_inputs["ei_homology.AlignProteins.filters"] = cli_arguments.alignment_filters
+        cromwell_inputs["ei_homology.AlignProteins.filters"] = ', '.join(cli_arguments.alignment_filters)
     if cli_arguments.alignment_min_identity:
         cromwell_inputs["ei_homology.AlignProteins.min_identity"] = cli_arguments.alignment_min_identity
     if cli_arguments.alignment_min_coverage:
