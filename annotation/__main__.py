@@ -8,7 +8,7 @@
 #         Reat fails to start or be submitted and the reason is provided to the user
 
 # __main__.py checks the user environment to ensure the required software is available if this is not the case
-# the user is informed of which software is and which isn't available
+# the user is informed of which software is and which isn't available.
 
 # __main__.py parses all the arguments required, generates an input file for cromwell and submits a job to the requested
 # backend (run or server mode). The arguments are validated using the json input schema defined in the validation
@@ -22,6 +22,7 @@
 
 # If the user wishes to 'cancel' the workflow, SIGTERM or SIGINT will be managed by cascading them to the cromwell
 # process, SIGINT should allow for 'happy' process termination.
+import datetime
 import io
 import argparse
 import json
@@ -29,6 +30,7 @@ import os
 import signal
 import subprocess
 import sys
+import time
 from textwrap import wrap
 
 from jsonschema import ValidationError, validators, Draft7Validator
@@ -77,8 +79,12 @@ def check_environment():
         #             "result": "1.7.7"}
     }
 
+    programs_not_found = set()
     for key, item in software_available.items():
-        result = subprocess.run(item["command"], capture_output=True)
+        try:
+            result = subprocess.run(item["command"], capture_output=True)
+        except FileNotFoundError:
+            programs_not_found.add(key)
         output = result.stdout.decode()
         output += result.stderr.decode()
         item["rc"] = result.returncode
@@ -103,7 +109,12 @@ def check_environment():
         # Command not in path, wrong version or failed to execute
         if item["rc"] != 0:
             raise FileNotFoundError("Command {0} is missing, please check your PATH".format(key))
-
+    if len(programs_not_found) > 0:
+        print(f"When checking the environment, the software {', '.join([p for p in programs_not_found])}, not found.\n"
+              f"Please make sure it is in the PATH environment variable of the shell executing REAT.\n\n"
+              f"Currently PATH contains the following:")
+        print('\n'.join(wrap(', '.join(os.environ['PATH'].split(os.pathsep)))))
+        sys.exit(2)
     return software_available
 
 
@@ -128,7 +139,8 @@ def parse_arguments():
                               "submit the workflow")
     runtime.add_argument("--run", type=argparse.FileType('r'),
                          help="Configuration file for the backend, please follow "
-                              "https://cromwell.readthedocs.io/en/stable/backends/HPC/ for more information")
+                              "https://cromwell.readthedocs.io/en/stable/backends/HPC/ for more information.\n"
+                              "An example of this file can be found at ")
 
     subparsers = reat_ap.add_subparsers(help="sub-command help", dest="reat_module")
 
@@ -410,8 +422,8 @@ def cromwell_run(input_parameters_filepath, cromwell_configuration, workflow_opt
                 print(line)
             if error_file_start_pos < 0:
                 # FIXME Unhandled error
-                print("Unhandled errors, please create an issue in the github to add support for improved messages and "
-                      "actions on how to resolve it")
+                print("Unhandled errors, please report this as an issue to add support for improved messages and "
+                      "user friendly actions on how to resolve it")
                 print(cromwell_sp_output_str)
             else:
                 error_file = cromwell_sp_output_str[error_file_start_pos + len(sentinel):].split("\n")[0][:-1]
@@ -422,20 +434,17 @@ def cromwell_run(input_parameters_filepath, cromwell_configuration, workflow_opt
 
 
 def main():
+    start_time = time.time()
     cli_arguments = parse_arguments()
-    try:
-        check_environment()
-    except FileNotFoundError as exc:
-        print(f"When checking the environment, the software {exc.filename}, was not found.\nPlease make sure it is "
-              f"in the PATH environment variable of the shell executing REAT.\n\n"
-              f"The current PATH contains the following:")
-        print('\n'.join(wrap(', '.join(os.environ['PATH'].split(os.pathsep)))))
-        print(exc, file=sys.stderr)
-        sys.exit(2)
+    check_environment()
+
     if cli_arguments.reat_module == "transcriptome":
-        return transcriptome_module(cli_arguments)
+        rc = transcriptome_module(cli_arguments)
     elif cli_arguments.reat_module == "homology":
-        return homology_module(cli_arguments)
+        rc = homology_module(cli_arguments)
+
+    print(f"Done in {str(datetime.timedelta(seconds=time.time() - start_time))}")
+    return rc
 
 
 def transcriptome_module(cli_arguments):
