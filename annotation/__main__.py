@@ -55,6 +55,8 @@ def check_environment():
     software_available = {
         "spaln": {"command": ["spaln"],
                   "result": "SPALN version 2.4.0"},
+        "sortgrcd": {"command": ["sortgrcd"],
+                     "result": "sortgrcd version 2.2"},
         "mikado": {"command": "mikado --version".split(' '), "result": "Mikado v2.0rc2"},
         "diamond": {"command": "diamond version".split(' '), "result": "diamond version 0.9.31"},
         "blastn": {"command": "blastn -version".split(' '), "result": "blastn: 2.7.1+"},
