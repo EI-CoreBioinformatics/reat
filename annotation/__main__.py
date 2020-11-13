@@ -85,6 +85,7 @@ def check_environment():
             result = subprocess.run(item["command"], capture_output=True)
         except FileNotFoundError:
             programs_not_found.add(key)
+            continue
         output = result.stdout.decode()
         output += result.stderr.decode()
         item["rc"] = result.returncode
