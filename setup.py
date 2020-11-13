@@ -2,10 +2,10 @@ from setuptools import setup, find_packages
 import glob
 
 setup(
-    name='ei-cautious-broccoli',
+    name='reat',
     version='0.2',
     packages=find_packages('.'),
-    url='github.com/ei-corebioinformatics/ei-cautious-broccoli',
+    url='github.com/ei-corebioinformatics/reat',
     classifiers=[
         "Development Status :: 4 - Beta",
         "Topic :: Scientific Engineering :: Bio/Informatics",
