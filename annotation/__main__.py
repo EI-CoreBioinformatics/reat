@@ -412,11 +412,13 @@ def cromwell_run(input_parameters_filepath, cromwell_configuration, workflow_opt
             if output:
                 cromwell_sp_output.write(output)
                 print(output.strip())
+                sys.stdout.flush()
     except KeyboardInterrupt:
         sp_cromwell.send_signal(signal.SIGINT)
         sp_cromwell.wait()
         for line in sp_cromwell.stdout:
             print(line.strip())
+    sys.stdout.flush()
     rc = sp_cromwell.poll()
     if rc != 0:
         if rc == 130:
