@@ -55,7 +55,7 @@ def check_environment():
     software_available = {
         "spaln": {"command": ["spaln"],
                   "result": "SPALN version 2.4.0"},
-        "sortgrcd": {"command": ["sortgrcd"],
+        "sortgrcd": {"command": ["sortgrcd", "--help"],
                      "result": "sortgrcd version 2.2"},
         "mikado": {"command": "mikado --version".split(' '), "result": "Mikado v2.0rc2"},
         "diamond": {"command": "diamond version".split(' '), "result": "diamond version 0.9.31"},
@@ -97,6 +97,9 @@ def check_environment():
         if key == "spaln":
             if "No input seq file !" in output:
                 item["rc"] = 0
+        if key == "sortgrcd":
+            if output != "":
+                item["rc"] = 0
         if item["result"] not in output:
             print("\"", key, "\"", " version information:", sep="", file=sys.stderr)
             print('"""', file=sys.stderr)
@@ -125,8 +128,8 @@ def parse_arguments():
     reat_ap = argparse.ArgumentParser(add_help=True)
 
     reat_ap.add_argument("--computational_resources", type=argparse.FileType('r'),
-                         help="Computational resources for REAT, please look at the template for more information"
-                         )  # required=True)
+                         help="Computational resources for REAT, please look at the template for more information",
+                        required=True)
     reat_ap.add_argument("--output_parameters_file", type=str,
                          help="REAT parameters file, this file will be used as the input for REAT. "
                               "It provides the arguments for the workflow runtime.",
@@ -284,7 +287,8 @@ def parse_arguments():
                              help="If 'aa_len' filter is enabled for annotation coding features, any CDS smaller than"
                                   "this parameter will be filtered out")
     homology_ap.add_argument("--alignment_species", type=str,
-                             help="Available aligner species, for more information, please look at URL")
+                             help="Available aligner species, for more information, please look at URL",
+                             required=True)
     homology_ap.add_argument("--alignment_min_exon_len", type=int, help="Minimum exon length, alignment parameter")
     homology_ap.add_argument("--alignment_filters",
                              choices=['all', 'none', 'intron_len', 'internal_stop', 'aa_len', 'splicing'],
@@ -478,13 +482,13 @@ def combine_arguments_homology(cli_arguments):
 
     # Optional extra parameters
     if cli_arguments.annotation_filters:
-        cromwell_inputs["ei_homology.PrepareAnnotations.filters"] = ', '.join(cli_arguments.annotation_filters)
+        cromwell_inputs["ei_homology.PrepareAnnotations.filters"] = cli_arguments.annotation_filters
     if cli_arguments.annotation_min_cds:
         cromwell_inputs["ei_homology.PrepareAnnotations.min_cds_len"] = cli_arguments.annotation_min_cds
     if cli_arguments.alignment_min_exon_len:
         cromwell_inputs["ei_homology.AlignProteins.min_exon_len"] = cli_arguments.alignment_min_exon_len
     if cli_arguments.alignment_filters:
-        cromwell_inputs["ei_homology.AlignProteins.filters"] = ', '.join(cli_arguments.alignment_filters)
+        cromwell_inputs["ei_homology.AlignProteins.filters"] = cli_arguments.alignment_filters
     if cli_arguments.alignment_min_identity:
         cromwell_inputs["ei_homology.AlignProteins.min_identity"] = cli_arguments.alignment_min_identity
     if cli_arguments.alignment_min_coverage:

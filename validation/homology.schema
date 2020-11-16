@@ -6,7 +6,6 @@
             "enum": ["all", "none", "intron_len", "internal_stop", "aa_len", "splicing"]
         }
     },
-
     "type": "object",
     "properties": {
         "ei_homology.genome_to_annotate": {
@@ -24,17 +23,23 @@
                         "type": "string"
                     }
                 },
-                "required": ["genome", "annotation"]
+                "required": ["genome", "annotation_gff"]
             }
         },
         "ei_homology.AlignProteins.filters": {
-            "type": "string",
+            "type": "array",
+            "items": {
+                "$ref": "#/definitions/filters"
+            }
         },
         "ei_homology.AlignProteins.species": {
             "type": "string"
         },
         "ei_homology.PrepareAnnotations.filters": {
-            "type": "string"
+            "type": "array",
+            "items": {
+                "$ref": "#/definitions/filters"
+            }
         },
         "ei_homology.AlignProteins.min_identity": {
             "type": "int"
