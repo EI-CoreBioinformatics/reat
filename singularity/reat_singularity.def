@@ -391,7 +391,7 @@ echo "\n\n\ny\n" | perl configure \
          -rscout_dir=/opt/software/repeatmasker/RepeatScout \
          -trf_prgm=/opt/software/repeatmasker/bin/trf
 
-cd ..
+cd /opt/software
 
 # Gotoh's SPALN
 wget http://www.genome.ist.i.kyoto-u.ac.jp/~aln_user/archive/spaln2.4.0.linux64.tar.gz
