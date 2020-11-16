@@ -119,7 +119,7 @@ task PrepareAnnotations {
         GenomeAnnotation annotation
         String out_prefix = sub(basename(annotation.annotation_gff),  "\.[^/.]+$", "")
         Int min_cds_len = 20 # nts
-        String filters = "all"
+        Array[String] filters = "all"
     }
 
     output {
@@ -131,7 +131,7 @@ task PrepareAnnotations {
 
     command <<<
         set -euxo pipefail
-        xspecies_cleanup --merge --filters none --annotation ~{annotation.annotation_gff} -g ~{annotation.genome} --min_protein ~{min_cds_len} -x ~{out_prefix}.cdna.fa --bed ~{out_prefix}.bed -y ~{out_prefix}.proteins.fa -o ~{out_prefix}.clean.extra_attr.gff
+        xspecies_cleanup --merge --filters ~{sep=" " filters} --annotation ~{annotation.annotation_gff} -g ~{annotation.genome} --min_protein ~{min_cds_len} -x ~{out_prefix}.cdna.fa --bed ~{out_prefix}.bed -y ~{out_prefix}.proteins.fa -o ~{out_prefix}.clean.extra_attr.gff
     >>>
 }
 
@@ -144,7 +144,7 @@ task AlignProteins {
         Int min_exon_len = 20
         Int min_coverage = 80
         Int min_identity = 50
-        String filters = "none"
+        Array[String] filters = "none"
         RuntimeAttr? runtime_attr_override
     }
     Int cpus = 6
@@ -173,7 +173,7 @@ task AlignProteins {
         spaln -t~{task_cpus} -KP -O0,12 -Q7 ~{"-T"+species} -dgenome_to_annotate -o ~{out_prefix} -yL~{min_exon_len} ~{genome_proteins.protein_sequences}
         sortgrcd -O4 ~{out_prefix}.grd | tee ~{out_prefix}.s | spaln2gff --min_coverage ~{min_coverage} --min_identity ~{min_identity} -s "spaln" > ~{ref_prefix}.alignment.gff
 
-        xspecies_cleanup --filters none -g ~{genome_to_annotate} -A ~{ref_prefix}.alignment.gff --bed ~{ref_prefix}.alignment.bed -x ~{ref_prefix}.alignment.cdna.fa -o ~{ref_prefix}.alignment.stop_extended.extra_attr.gff
+        xspecies_cleanup --filters ~{sep=" " filters} -g ~{genome_to_annotate} -A ~{ref_prefix}.alignment.gff --bed ~{ref_prefix}.alignment.bed -x ~{ref_prefix}.alignment.cdna.fa -o ~{ref_prefix}.alignment.stop_extended.extra_attr.gff
     >>>
 
     runtime {
