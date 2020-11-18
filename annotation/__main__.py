@@ -129,7 +129,7 @@ def parse_arguments():
 
     reat_ap.add_argument("--computational_resources", type=argparse.FileType('r'),
                          help="Computational resources for REAT, please look at the template for more information",
-                        required=True)
+                         )  #required=True)
     reat_ap.add_argument("--output_parameters_file", type=str,
                          help="REAT parameters file, this file will be used as the input for REAT. "
                               "It provides the arguments for the workflow runtime.",
@@ -301,7 +301,9 @@ def parse_arguments():
 
 
 def combine_arguments(cli_arguments):
-    computational_resources = json.load(cli_arguments.computational_resources)
+    computational_resources = {}
+    if cli_arguments.computational_resources:
+        computational_resources = json.load(cli_arguments.computational_resources)
     cromwell_inputs = computational_resources
     for s in cli_arguments.samples:
         sample = json.load(s)
@@ -473,7 +475,9 @@ def transcriptome_module(cli_arguments):
 
 
 def combine_arguments_homology(cli_arguments):
-    computational_resources = json.load(cli_arguments.computational_resources)
+    computational_resources = {}
+    if cli_arguments.computational_resources:
+        computational_resources = json.load(cli_arguments.computational_resources)
     cromwell_inputs = computational_resources
     for s in cli_arguments.annotations:
         annotation = json.load(s)
