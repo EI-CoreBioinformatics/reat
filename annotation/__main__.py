@@ -127,6 +127,17 @@ def check_environment():
 def parse_arguments():
     reat_ap = argparse.ArgumentParser(add_help=True)
 
+    # runtime = reat_ap.add_mutually_exclusive_group(required=True)
+    #
+    # runtime.add_argument("--server", type=str,
+    #                      help="Run the workflow in a cromwell server. Address and port of the cromwell server to "
+    #                           "submit the workflow")
+    reat_ap.add_argument("--runtime_configuration", type=argparse.FileType('r'),
+                         help="Configuration file for the backend, please follow "
+                              "https://cromwell.readthedocs.io/en/stable/backends/HPC/ for more information.\n"
+                              "An example of this file can be found at ",
+                         required=True)
+
     reat_ap.add_argument("--computational_resources", type=argparse.FileType('r'),
                          help="Computational resources for REAT, please look at the template for more information",
                          )  #required=True)
@@ -137,16 +148,6 @@ def parse_arguments():
     reat_ap.add_argument("--workflow_options_file", type=argparse.FileType('r'),
                          help="Workflow execution options, includes cache usage and result directories "
                               "structure and location")
-
-    runtime = reat_ap.add_mutually_exclusive_group(required=True)
-
-    runtime.add_argument("--server", type=str,
-                         help="Run the workflow in a cromwell server. Address and port of the cromwell server to "
-                              "submit the workflow")
-    runtime.add_argument("--run", type=argparse.FileType('r'),
-                         help="Configuration file for the backend, please follow "
-                              "https://cromwell.readthedocs.io/en/stable/backends/HPC/ for more information.\n"
-                              "An example of this file can be found at ")
 
     subparsers = reat_ap.add_subparsers(help="sub-command help", dest="reat_module")
 
@@ -277,18 +278,20 @@ def parse_arguments():
     homology_ap = subparsers.add_parser('homology', help="Homology module")
 
     homology_ap.add_argument("--genome", type=argparse.FileType('r'),
-                             help="Fasta file of the genome to annotate")
+                             help="Fasta file of the genome to annotate",
+                             required=True)
+    homology_ap.add_argument("--alignment_species", type=str,
+                             help="Available aligner species, for more information, please look at URL",
+                             required=True)
     homology_ap.add_argument("--annotations", nargs='+', type=argparse.FileType('r'),
-                             help="Reference annotations to extract proteins/cdnas for spliced alignments")
+                             help="Reference annotations to extract proteins/cdnas for spliced alignments",
+                             required=True)
     homology_ap.add_argument("--annotation_filters",
                              choices=['all', 'none', 'intron_len', 'internal_stop', 'aa_len', 'splicing'], nargs='+',
                              help="Filter annotation coding genes by the filter types specified")
     homology_ap.add_argument("--annotation_min_cds", type=int,
                              help="If 'aa_len' filter is enabled for annotation coding features, any CDS smaller than"
                                   "this parameter will be filtered out")
-    homology_ap.add_argument("--alignment_species", type=str,
-                             help="Available aligner species, for more information, please look at URL",
-                             required=True)
     homology_ap.add_argument("--alignment_min_exon_len", type=int, help="Minimum exon length, alignment parameter")
     homology_ap.add_argument("--alignment_filters",
                              choices=['all', 'none', 'intron_len', 'internal_stop', 'aa_len', 'splicing'],
