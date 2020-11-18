@@ -262,12 +262,12 @@ cd mikado-2.0prc2
 #python3 setup.py test;
 python3 setup.py bdist_wheel;
 pip3 install dist/*whl
-cd /opt/software
 
 # ei-liftover
+cd /opt/software
 git clone https://github.com/lucventurini/ei-liftover
 pip3 install Cython parasail
-pip3 install ei-liftover
+pip3 install ./ei-liftover
 
 
 # Repeat Modeler dependencies
