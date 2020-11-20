@@ -35,6 +35,8 @@ from textwrap import wrap
 
 from jsonschema import ValidationError, validators, Draft7Validator
 
+from annotation import VERSION
+
 try:
     import importlib.resources as pkg_resources
 except ImportError:
@@ -126,7 +128,6 @@ def check_environment():
 
 def parse_arguments():
     reat_ap = argparse.ArgumentParser(add_help=True)
-
     # runtime = reat_ap.add_mutually_exclusive_group(required=True)
     #
     # runtime.add_argument("--server", type=str,
@@ -449,6 +450,8 @@ def cromwell_run(input_parameters_filepath, cromwell_configuration, workflow_opt
 
 
 def main():
+    print("Welcome to REAT")
+    print("version -", VERSION)
     start_time = time.time()
     cli_arguments = parse_arguments()
     check_environment()
