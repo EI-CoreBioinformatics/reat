@@ -2,3 +2,4 @@ setuptools~=45.2.0
 pyfaidx~=0.5.8
 jsonschema~=3.2.0
 pyyaml~=5.3
+biopython~=1.78
