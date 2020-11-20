@@ -3,7 +3,7 @@ import glob
 
 setup(
     name='reat',
-    version='0.2',
+    version='0.0.3',
     packages=find_packages('.'),
     url='github.com/ei-corebioinformatics/reat',
     classifiers=[
@@ -28,6 +28,7 @@ setup(
         "pyyaml~=5.3",
         "pyfaidx~=0.5.8",
         "jsonschema~=3.2.0",
+        "biopython~=1.78"
     ],
     package_data={
         "validation": ["transcriptome.schema", "homology.schema"],
