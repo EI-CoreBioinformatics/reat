@@ -374,10 +374,11 @@ def validate_transcriptome_inputs(cromwell_inputs):
 
 
 def execute_cromwell(cli_arguments, input_parameters_filepath, workflow_options_file, wdl_file):
-    if cli_arguments.run is None:
+    if cli_arguments.runtime_configuration is None:
         return cromwell_submit(cli_arguments, input_parameters_filepath, workflow_options_file, wdl_file)
     else:
-        return cromwell_run(input_parameters_filepath, cli_arguments.run.name, workflow_options_file, wdl_file)
+        return cromwell_run(input_parameters_filepath, cli_arguments.runtime_configuration.name,
+                            workflow_options_file, wdl_file)
 
 
 def cromwell_submit(cli_arguments, input_parameters_filepath, workflow_options_file, wdl_file):
