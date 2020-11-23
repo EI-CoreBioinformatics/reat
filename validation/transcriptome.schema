@@ -2,10 +2,6 @@
     "$schema": "http://json-schema.org/draft-07/schema#",
 
     "definitions": {
-        "Boolean": {
-            "enum": ["true", "false"]
-        },
-
         "strand": {
             "enum": ["fr-firststrand", "fr-unstranded", "fr-secondstrand"]
         },
@@ -66,7 +62,7 @@
                         "type": "number"
                     },
                     "merge": {
-                        "$ref": "#/definitions/Boolean"
+                        "type": "boolean"
                     },
                     "read_pair": {
                         "type": "array",
@@ -123,11 +119,8 @@
         "ei_annotation.wf_main_mikado.orf_calling_program": {
             "enum": ["prodigal", "transdecoder", "none"]
         },
-        "ei_annotation.wf_main_mikado.run_mikado_homology": {
-            "$ref": "#/definitions/Boolean"
-        },
         "ei_annotation.wf_main_mikado.separate_LQ": {
-            "$ref": "#/definitions/Boolean"
+            "type": "boolean"
         }
     },
     "required": ["ei_annotation.reference_genome"],
