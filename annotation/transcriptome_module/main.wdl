@@ -39,6 +39,7 @@ workflow ei_annotation {
         input:
         mikado_scoring_file = mikado_scoring_file,
         reference_genome = wf_align.clean_reference_index,
+        junctions_bed = wf_align.pass_filtered_bed,
         SR_assemblies = wf_align.SR_gff,
         LQ_assemblies = wf_align.LQ_gff,
         HQ_assemblies = wf_align.HQ_gff,

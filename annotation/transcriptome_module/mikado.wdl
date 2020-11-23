@@ -11,7 +11,7 @@ workflow wf_main_mikado {
         Array[AssembledSample]? LQ_assemblies
         Array[AssembledSample]? HQ_assemblies
         Array[AssembledSample]? SR_assemblies
-        File? annotation_bed
+        File? junctions_bed
         File? homology_proteins
         File? orf_calling_proteins
         Boolean separate_LQ = false
@@ -51,7 +51,7 @@ workflow wf_main_mikado {
             orf_caller = orf_calling_program,
             mikado_do_homology_assessment = run_mikado_homology,
             homology_proteins = homology_proteins,
-            junctions = annotation_bed,
+            junctions = junctions_bed,
             output_prefix = "Mikado_short_and_long_noLQ",
             orf_calling_resources = select_first([orf_calling_resources,default_runtime_attr]),
             orf_protein_index_resources = select_first([protein_index_resources,default_runtime_attr]),
@@ -69,7 +69,7 @@ workflow wf_main_mikado {
             orf_caller = orf_calling_program,
             mikado_do_homology_assessment = run_mikado_homology,
             homology_proteins = homology_proteins,
-            junctions = annotation_bed,
+            junctions = junctions_bed,
             output_prefix = "Mikado_longHQ",
             orf_calling_resources = select_first([orf_calling_resources,default_runtime_attr]),
             orf_protein_index_resources = select_first([protein_index_resources,default_runtime_attr]),
@@ -83,7 +83,7 @@ workflow wf_main_mikado {
             scoring_file = mikado_scoring_file,
             indexed_reference =  reference_genome,
             LQ_assemblies = LQ_assemblies,
-            junctions = annotation_bed,
+            junctions = junctions_bed,
             orf_calling_proteins = orf_calling_proteins,
             orf_caller = orf_calling_program,
             mikado_do_homology_assessment = run_mikado_homology,
@@ -105,7 +105,7 @@ workflow wf_main_mikado {
             SR_assemblies = SR_assemblies,
             LQ_assemblies = LQ_assemblies,
             HQ_assemblies = HQ_assemblies,
-            junctions = annotation_bed,
+            junctions = junctions_bed,
             orf_calling_proteins = orf_calling_proteins,
             orf_caller = orf_calling_program,
             mikado_do_homology_assessment = run_mikado_homology,
@@ -124,7 +124,7 @@ workflow wf_main_mikado {
             indexed_reference =  reference_genome,
             LQ_assemblies = LQ_assemblies,
             HQ_assemblies = HQ_assemblies,
-            junctions = annotation_bed,
+            junctions = junctions_bed,
             orf_calling_proteins = orf_calling_proteins,
             orf_caller = orf_calling_program,
             mikado_do_homology_assessment = run_mikado_homology,
