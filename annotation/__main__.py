@@ -357,9 +357,9 @@ def combine_arguments(cli_arguments):
         cromwell_inputs["ei_annotation.wf_main_mikado.orf_calling_program"] = cli_arguments.orf_caller
 
     if cli_arguments.separate_mikado_LQ:
-        cromwell_inputs["ei_annotation.wf_main_mikado.separate_LQ"] = "true"
+        cromwell_inputs["ei_annotation.wf_main_mikado.separate_LQ"] = True
     else:
-        cromwell_inputs["ei_annotation.wf_main_mikado.separate_LQ"] = "false"
+        cromwell_inputs["ei_annotation.wf_main_mikado.separate_LQ"] = False
 
     return cromwell_inputs
 

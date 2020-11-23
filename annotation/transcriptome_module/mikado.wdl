@@ -16,7 +16,11 @@ workflow wf_main_mikado {
         File? orf_calling_proteins
         Boolean separate_LQ = false
         String? orf_calling_program
-        Boolean run_mikado_homology = true
+
+        File? all_extra_config
+        File? long_extra_config
+        File? lq_extra_config
+
         RuntimeAttr? orf_calling_resources
         RuntimeAttr? protein_index_resources
         RuntimeAttr? protein_alignment_resources
@@ -38,6 +42,8 @@ workflow wf_main_mikado {
         max_retries: 1
     }
 
+    Boolean run_mikado_homology = defined(homology_proteins)
+
     # The user can choose to run the LQ-LR datasets separately
     if (separate_LQ)
     {
@@ -53,6 +59,7 @@ workflow wf_main_mikado {
             homology_proteins = homology_proteins,
             junctions = junctions_bed,
             output_prefix = "Mikado_short_and_long_noLQ",
+            extra_config = all_extra_config,
             orf_calling_resources = select_first([orf_calling_resources,default_runtime_attr]),
             orf_protein_index_resources = select_first([protein_index_resources,default_runtime_attr]),
             orf_protein_alignment_resources = select_first([protein_alignment_resources,default_runtime_attr]),
@@ -71,6 +78,7 @@ workflow wf_main_mikado {
             homology_proteins = homology_proteins,
             junctions = junctions_bed,
             output_prefix = "Mikado_longHQ",
+            extra_config = long_extra_config,
             orf_calling_resources = select_first([orf_calling_resources,default_runtime_attr]),
             orf_protein_index_resources = select_first([protein_index_resources,default_runtime_attr]),
             orf_protein_alignment_resources = select_first([protein_alignment_resources,default_runtime_attr]),
@@ -89,6 +97,7 @@ workflow wf_main_mikado {
             mikado_do_homology_assessment = run_mikado_homology,
             homology_proteins = homology_proteins,
             output_prefix = "Mikado_longLQ",
+            extra_config = lq_extra_config,
             orf_calling_resources = select_first([orf_calling_resources,default_runtime_attr]),
             orf_protein_index_resources = select_first([protein_index_resources,default_runtime_attr]),
             orf_protein_alignment_resources = select_first([protein_alignment_resources,default_runtime_attr]),
@@ -111,6 +120,7 @@ workflow wf_main_mikado {
             mikado_do_homology_assessment = run_mikado_homology,
             homology_proteins = homology_proteins,
             output_prefix = "Mikado_short_and_long",
+            extra_config = all_extra_config,
             orf_calling_resources = select_first([orf_calling_resources, default_runtime_attr]),
             orf_protein_index_resources = select_first([protein_index_resources, default_runtime_attr]),
             orf_protein_alignment_resources = select_first([protein_alignment_resources, default_runtime_attr]),
@@ -130,6 +140,7 @@ workflow wf_main_mikado {
             mikado_do_homology_assessment = run_mikado_homology,
             homology_proteins = homology_proteins,
             output_prefix = "Mikado_long",
+            extra_config = long_extra_config,
             orf_calling_resources = select_first([orf_calling_resources, default_runtime_attr]),
             orf_protein_index_resources = select_first([protein_index_resources, default_runtime_attr]),
             orf_protein_alignment_resources = select_first([protein_alignment_resources, default_runtime_attr]),
