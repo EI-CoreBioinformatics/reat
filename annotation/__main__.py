@@ -171,8 +171,12 @@ def parse_arguments():
 
     # Mikado arguments
     mikado_parameters = transcriptome_ap.add_argument_group("Mikado", "Parameters for Mikado runs")
-    mikado_parameters.add_argument("--run_mikado_homology", action="store_true",
-                                   help="Use the homology proteins provided for scoring transcripts")
+    mikado_parameters.add_argument("--all_extra_config", type=argparse.FileType('r'),
+                                   help="External configuration file for Paired and Long reads mikado")
+    mikado_parameters.add_argument("--long_extra_config", type=argparse.FileType('r'),
+                                   help="External configuration file for Long reads mikado run")
+    mikado_parameters.add_argument("--lq_extra_config", type=argparse.FileType('r'),
+                                   help="External configuration file for Low-quality only mikado run")
     mikado_parameters.add_argument("--mikado_scoring_file", type=argparse.FileType('r'),
                                    help="Mikado scoring file", required=True)
     mikado_parameters.add_argument("--homology_proteins", type=argparse.FileType('r'),
@@ -342,10 +346,12 @@ def combine_arguments(cli_arguments):
     cromwell_inputs["ei_annotation.wf_align.max_intron_len_middle"] = cli_arguments.max_intron_len_middle
     cromwell_inputs["ei_annotation.wf_align.min_identity"] = cli_arguments.min_identity
 
-    if cli_arguments.run_mikado_homology:
-        cromwell_inputs["ei_annotation.wf_main_mikado.run_mikado_homology"] = "true"
-    else:
-        cromwell_inputs["ei_annotation.wf_main_mikado.run_mikado_homology"] = "false"
+    if cli_arguments.all_extra_config is not None:
+        cromwell_inputs["ei_annotation.wf_main_mikado.all_extra_config"] = cli_arguments.all_extra_config.name
+    if cli_arguments.long_extra_config is not None:
+        cromwell_inputs["ei_annotation.wf_main_mikado.long_extra_config"] = cli_arguments.long_extra_config.name
+    if cli_arguments.lq_extra_config is not None:
+        cromwell_inputs["ei_annotation.wf_main_mikado.lq_extra_config"] = cli_arguments.lq_extra_config.name
 
     if cli_arguments.homology_proteins is not None:
         cromwell_inputs["ei_annotation.homology_proteins"] = cli_arguments.homology_proteins.name
