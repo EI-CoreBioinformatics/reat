@@ -403,10 +403,11 @@ def cromwell_submit(cli_arguments, input_parameters_filepath, workflow_options_f
 def cromwell_run(input_parameters_filepath, cromwell_configuration, workflow_options_file, wdl_file):
     if workflow_options_file:
         formatted_command_line = ["java", f"-Dconfig.file={cromwell_configuration}", "-jar", "cromwell.jar", "run",
-                                  "-i", str(input_parameters_filepath), "-o", str(workflow_options_file), str(wdl_file)]
+                                  "-i", str(input_parameters_filepath), "-o", str(workflow_options_file),
+                                  "-m", "run_details.json", str(wdl_file)]
     else:
         formatted_command_line = ["java", f"-Dconfig.file={cromwell_configuration}", "-jar", "cromwell.jar", "run",
-                                  "-i", str(input_parameters_filepath), str(wdl_file)]
+                                  "-i", str(input_parameters_filepath), "-m", "run_details.json", str(wdl_file)]
 
     print("Starting:")
     print(' '.join(formatted_command_line))
