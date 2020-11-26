@@ -7,7 +7,9 @@ import "subworkflows/mikado/wf_mikado.wdl" as mikado
 workflow wf_main_mikado {
     input {
         IndexedReference reference_genome
-        File mikado_scoring_file
+        File all_scoring_file
+        File long_scoring_file
+        File long_lq_scoring_file
         Array[AssembledSample]? LQ_assemblies
         Array[AssembledSample]? HQ_assemblies
         Array[AssembledSample]? SR_assemblies
@@ -20,6 +22,16 @@ workflow wf_main_mikado {
         File? all_extra_config
         File? long_extra_config
         File? lq_extra_config
+
+        File? all_prepare_cfg
+        File? all_serialise_cfg
+        File? all_pick_cfg
+        File? long_prepare_cfg
+        File? long_serialise_cfg
+        File? long_pick_cfg
+        File? long_lq_prepare_cfg
+        File? long_lq_serialise_cfg
+        File? long_lq_pick_cfg
 
         RuntimeAttr? orf_calling_resources
         RuntimeAttr? protein_index_resources
@@ -52,14 +64,16 @@ workflow wf_main_mikado {
             indexed_reference =  reference_genome,
             SR_assemblies = SR_assemblies,
             HQ_assemblies = HQ_assemblies,
-            scoring_file = mikado_scoring_file,
+            scoring_file = all_scoring_file,
             orf_calling_proteins = orf_calling_proteins,
             orf_caller = orf_calling_program,
             mikado_do_homology_assessment = run_mikado_homology,
             homology_proteins = homology_proteins,
             junctions = junctions_bed,
             output_prefix = "Mikado_short_and_long_noLQ",
-            extra_config = all_extra_config,
+            prepare_extra_config = all_prepare_cfg,
+            serialise_extra_config = all_serialise_cfg,
+            pick_extra_config = all_pick_cfg,
             orf_calling_resources = select_first([orf_calling_resources,default_runtime_attr]),
             orf_protein_index_resources = select_first([protein_index_resources,default_runtime_attr]),
             orf_protein_alignment_resources = select_first([protein_alignment_resources,default_runtime_attr]),
@@ -71,14 +85,16 @@ workflow wf_main_mikado {
             input:
             indexed_reference =  reference_genome,
             HQ_assemblies = HQ_assemblies,
-            scoring_file = mikado_scoring_file,
+            scoring_file = long_scoring_file,
             orf_calling_proteins = orf_calling_proteins,
             orf_caller = orf_calling_program,
             mikado_do_homology_assessment = run_mikado_homology,
             homology_proteins = homology_proteins,
             junctions = junctions_bed,
             output_prefix = "Mikado_longHQ",
-            extra_config = long_extra_config,
+            prepare_extra_config = long_prepare_cfg,
+            serialise_extra_config = long_serialise_cfg,
+            pick_extra_config = long_pick_cfg,
             orf_calling_resources = select_first([orf_calling_resources,default_runtime_attr]),
             orf_protein_index_resources = select_first([protein_index_resources,default_runtime_attr]),
             orf_protein_alignment_resources = select_first([protein_alignment_resources,default_runtime_attr]),
@@ -88,7 +104,7 @@ workflow wf_main_mikado {
 
         call mikado.wf_mikado as Mikado_longLQ {
             input:
-            scoring_file = mikado_scoring_file,
+            scoring_file = long_lq_scoring_file,
             indexed_reference =  reference_genome,
             LQ_assemblies = LQ_assemblies,
             junctions = junctions_bed,
@@ -97,7 +113,9 @@ workflow wf_main_mikado {
             mikado_do_homology_assessment = run_mikado_homology,
             homology_proteins = homology_proteins,
             output_prefix = "Mikado_longLQ",
-            extra_config = lq_extra_config,
+            prepare_extra_config = long_lq_prepare_cfg,
+            serialise_extra_config = long_lq_serialise_cfg,
+            pick_extra_config = long_lq_pick_cfg,
             orf_calling_resources = select_first([orf_calling_resources,default_runtime_attr]),
             orf_protein_index_resources = select_first([protein_index_resources,default_runtime_attr]),
             orf_protein_alignment_resources = select_first([protein_alignment_resources,default_runtime_attr]),
@@ -109,7 +127,7 @@ workflow wf_main_mikado {
     {
         call mikado.wf_mikado as Mikado_short_and_long {
             input:
-            scoring_file = mikado_scoring_file,
+            scoring_file = all_scoring_file,
             indexed_reference =  reference_genome,
             SR_assemblies = SR_assemblies,
             LQ_assemblies = LQ_assemblies,
@@ -120,7 +138,9 @@ workflow wf_main_mikado {
             mikado_do_homology_assessment = run_mikado_homology,
             homology_proteins = homology_proteins,
             output_prefix = "Mikado_short_and_long",
-            extra_config = all_extra_config,
+            prepare_extra_config = all_prepare_cfg,
+            serialise_extra_config = all_serialise_cfg,
+            pick_extra_config = all_pick_cfg,
             orf_calling_resources = select_first([orf_calling_resources, default_runtime_attr]),
             orf_protein_index_resources = select_first([protein_index_resources, default_runtime_attr]),
             orf_protein_alignment_resources = select_first([protein_alignment_resources, default_runtime_attr]),
@@ -130,7 +150,7 @@ workflow wf_main_mikado {
 
         call mikado.wf_mikado as Mikado_long {
             input:
-            scoring_file = mikado_scoring_file,
+            scoring_file = long_scoring_file,
             indexed_reference =  reference_genome,
             LQ_assemblies = LQ_assemblies,
             HQ_assemblies = HQ_assemblies,
@@ -140,7 +160,9 @@ workflow wf_main_mikado {
             mikado_do_homology_assessment = run_mikado_homology,
             homology_proteins = homology_proteins,
             output_prefix = "Mikado_long",
-            extra_config = long_extra_config,
+            prepare_extra_config = long_prepare_cfg,
+            serialise_extra_config = long_serialise_cfg,
+            pick_extra_config = long_pick_cfg,
             orf_calling_resources = select_first([orf_calling_resources, default_runtime_attr]),
             orf_protein_index_resources = select_first([protein_index_resources, default_runtime_attr]),
             orf_protein_alignment_resources = select_first([protein_alignment_resources, default_runtime_attr]),

@@ -12,7 +12,19 @@ workflow ei_annotation {
         Array[LRSample]? LQ_long_read_samples
         Array[LRSample]? HQ_long_read_samples
         File? annotation
-        File mikado_scoring_file
+        File all_scoring_file
+        File long_scoring_file
+        File long_lq_scoring_file
+        File? all_prepare_cfg
+        File? all_serialise_cfg
+        File? all_pick_cfg
+        File? long_prepare_cfg
+        File? long_serialise_cfg
+        File? long_pick_cfg
+        File? long_lq_prepare_cfg
+        File? long_lq_serialise_cfg
+        File? long_lq_pick_cfg
+
         File? orf_calling_proteins
         File? homology_proteins
     }
@@ -37,7 +49,18 @@ workflow ei_annotation {
 
     call wfm.wf_main_mikado {
         input:
-        mikado_scoring_file = mikado_scoring_file,
+        all_scoring_file = all_scoring_file,
+        long_scoring_file = long_scoring_file,
+        long_lq_scoring_file = long_lq_scoring_file,
+        all_prepare_cfg = all_prepare_cfg,
+        all_serialise_cfg = all_serialise_cfg,
+        all_pick_cfg = all_pick_cfg,
+        long_prepare_cfg = long_prepare_cfg,
+        long_serialise_cfg = long_serialise_cfg,
+        long_pick_cfg = long_pick_cfg,
+        long_lq_prepare_cfg = long_lq_prepare_cfg,
+        long_lq_serialise_cfg = long_lq_serialise_cfg,
+        long_lq_pick_cfg = long_lq_pick_cfg,
         reference_genome = wf_align.clean_reference_index,
         junctions_bed = wf_align.pass_filtered_bed,
         SR_assemblies = wf_align.SR_gff,

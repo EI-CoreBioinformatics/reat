@@ -1,41 +1,45 @@
 #!/usr/bin/env python3
 
-import sys
-import yaml
+from functools import reduce
+from yaml import load, dump
+try:
+    from yaml import CLoader as Loader, CDumper as Dumper
+except ImportError:
+    from yaml import Loader, Dumper
+import argparse
 
 
-def merge(file_list):
-    """
-    Takes a list of yaml files and loads them as a single yaml document.
-    Restrictions:
-    1) None of the files may have a yaml document marker (---)
-    2) All of the files must have the same top-level type (dictionary or list)
-    3) If any pointers cross between files, then the file in which they are defined (&) must be
-    earlier in the list than any uses (*).
-    """
-
-    if not file_list:
-        # if flist is the empty list, return an empty list. This is arbitrary, if it turns out that
-        # an empty dictionary is better, we can do something about that.
-        return []
-
-    string_list = []
-    for f in file_list:
-        with open(f, 'r') as stream:
-            string_list.append(stream.read())
-    file_string = ''
-    for s in string_list:
-        file_string = file_string + '\n' + s
-
-    y = yaml.safe_load(file_string)
-
-    return y
+def merge(a, b):
+    """Merge two dicts overriding only values whilst keeping the nested structure intact"""
+    for key in b:
+        if key in a:
+            if isinstance(a[key], dict) and isinstance(b[key], dict):  # Keep going until values
+                merge(a[key], b[key])
+            elif a[key] == b[key]:
+                pass  # same leaf value, no action required
+            else:
+                a[key] = b[key]  # Overwrite the value a's value
+        else:
+            a[key] = b[key]
+    return a
 
 
 def main():
-    y = merge(sys.argv[1:])
-    f = open(sys.argv[1], "w")
-    print(yaml.dump(y, default_flow_style=False), file=f)
+    parser = argparse.ArgumentParser("")
+    parser.add_argument("-o", "--output", type=argparse.FileType('w'), required=True,
+                        help="Path to the output file of the merged result")
+    parser.add_argument("-s", "--source", type=argparse.FileType('r'), required=True,
+                        help="Original yaml forming the base of the merge")
+    parser.add_argument("-m", "--merge", type=argparse.FileType('r'), nargs='+',
+                        help="Files to merge against the original 'source' yaml file")
+
+    cli_args = parser.parse_args()
+
+    files = [cli_args.source]
+    files.extend(cli_args.merge)
+    print([f.name for f in files])
+    yaml_result = reduce(merge, [load(f, Loader=Loader) for f in files])
+    print(dump(yaml_result, default_flow_style=False), file=cli_args.output)
 
 
 if __name__ == "__main__":

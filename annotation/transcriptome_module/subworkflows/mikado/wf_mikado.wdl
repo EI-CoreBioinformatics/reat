@@ -20,7 +20,9 @@ workflow wf_mikado {
         RuntimeAttr? orf_protein_alignment_resources
         RuntimeAttr? homology_alignment_resources
         RuntimeAttr? homology_index_resources
-        File? extra_config
+        File? prepare_extra_config
+        File? serialise_extra_config
+        File? pick_extra_config
         File? junctions
         Int prodigal_gencode = 1
         String transdecoder_genetic_code = "universal"
@@ -75,7 +77,7 @@ workflow wf_mikado {
         blast_targets = homology_proteins,
         models = WriteModelsFile.result,
         scoring_file = scoring_file,
-        extra_config = extra_config,
+        extra_config = prepare_extra_config,
         output_prefix = output_prefix
     }
 
@@ -141,12 +143,14 @@ workflow wf_mikado {
         orfs = maybe_orfs,
         transcripts = MikadoPrepare.prepared_fasta,
         indexed_reference = indexed_reference,
-        config = MikadoPrepare.mikado_config
+        config = MikadoPrepare.mikado_config,
+        extra_config = serialise_extra_config
     }
 
     call MikadoPick {
         input:
         config_file = MikadoPrepare.mikado_config,
+        extra_config = pick_extra_config,
         mikado_db = MikadoSerialise.mikado_db,
         transcripts = MikadoPrepare.prepared_gtf,
         output_prefix = output_prefix
@@ -202,6 +206,7 @@ task WriteModelsFile {
 task MikadoPick {
     input {
         File config_file
+        File? extra_config
         File transcripts
         File mikado_db
 #mode options = ("permissive", "stringent", "nosplit", "split", "lenient")
@@ -227,8 +232,9 @@ task MikadoPick {
     command <<<
     set -euxo pipefail
     export TMPDIR=/tmp
+    yaml-merge -s ~{config_file} -m ~{extra_config} -o pick_config.yaml
     mikado pick ~{"--source Mikado_" + mode} ~{"--mode " + mode} --procs=~{cpus} \
-    ~{"--flank " + flank} --start-method=spawn ~{"--json-conf=" + config_file} \
+    ~{"--flank " + flank} --start-method=spawn --json-conf=pick_config.yaml \
     --loci-out ~{output_prefix}-~{mode}.loci.gff3 -lv INFO ~{"-db " + mikado_db} \
     --subloci-out ~{output_prefix}-~{mode}.subloci.gff3 --monoloci-out ~{output_prefix}-~{mode}.monoloci.gff3 \
     ~{transcripts}
@@ -256,6 +262,7 @@ task MikadoSerialise {
     input {
         IndexedReference indexed_reference
         File config
+        File? extra_config
         File transcripts
         Array[File]? homology_alignments
         File? clean_seqs_db
@@ -281,9 +288,10 @@ task MikadoSerialise {
     
     ln -s ${fasta} .
     ln -s ${fai} .
+    yaml-merge -s ~{config} -m ~{extra_config} -o serialise_config.yaml
     mikado serialise ~{xml_prefix}~{sep="," homology_alignments} ~{"--blast_targets="+clean_seqs_db} ~{"--junctions="+junctions} ~{"--orfs="+orfs} \
     ~{"--transcripts=" + transcripts} --genome_fai=${fai} \
-    ~{"--json-conf=" + config} --force --start-method=spawn -od mikado_serialise --procs=~{cpus}
+    --json-conf=serialise_config.yaml --force --start-method=spawn -od mikado_serialise --procs=~{cpus}
     >>>
 
     RuntimeAttr default_attr = object {
@@ -404,8 +412,8 @@ task MikadoPrepare {
         ~{output_prefix}-mikado.yaml
 
         # Merge special configuration file for this run here
-        yaml-merge ~{output_prefix}-mikado.yaml ~{extra_config}
-        mikado prepare --procs=~{cpus} --json-conf=~{output_prefix}-mikado.yaml -od ~{output_prefix}-mikado_prepare --strip_cds
+        yaml-merge -s ~{output_prefix}-mikado.yaml -m ~{extra_config} -o prepare_config.yaml
+        mikado prepare --procs=~{cpus} --json-conf=prepare_config.yaml -od ~{output_prefix}-mikado_prepare --strip_cds
     >>>
 
     RuntimeAttr default_attr = object {
