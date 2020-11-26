@@ -14,7 +14,7 @@ workflow ei_annotation {
         File? annotation
         File all_scoring_file
         File long_scoring_file
-        File long_lq_scoring_file
+        File? long_lq_scoring_file
         File? all_prepare_cfg
         File? all_serialise_cfg
         File? all_pick_cfg

@@ -22,6 +22,9 @@
 
 # If the user wishes to 'cancel' the workflow, SIGTERM or SIGINT will be managed by cascading them to the cromwell
 # process, SIGINT should allow for 'happy' process termination.
+
+# Generates all required inputs and parses mikado's multiple runs extra configurations and places them in a reusable
+# location where they can be edited for the user's convenience
 import datetime
 import io
 import argparse
@@ -36,12 +39,18 @@ from textwrap import wrap
 from jsonschema import ValidationError, validators, Draft7Validator
 
 from annotation import VERSION
+from pathlib import Path
 
 try:
     import importlib.resources as pkg_resources
 except ImportError:
     # Try backported to PY<37 `importlib_resources`.
     import importlib_resources as pkg_resources
+from yaml import load, dump
+try:
+    from yaml import CLoader as Loader, CDumper as Dumper
+except ImportError:
+    from yaml import Loader, Dumper
 
 
 def is_valid_name(validator, value, instance, schema):
@@ -50,6 +59,28 @@ def is_valid_name(validator, value, instance, schema):
 
     if value and set(instance).intersection("][/?\\\'\" .*$)(}{"):
         yield ValidationError("%r is not alphanumeric" % (instance,))
+
+
+def separate_mikado_config(mikado_config, mikado_run):
+    # Check empty/None creates no files!
+    config = load(open(mikado_config, 'r'), Loader=Loader)
+    prepare = config.get('prepare', None)
+    serialise = config.get('serialise', None)
+    pick = config.get('pick', None)
+
+    prepare_path = Path(mikado_run).joinpath("prepare.yaml") if prepare else None
+    serialise_path = Path(mikado_run).joinpath("serialise.yaml") if serialise else None
+    pick_path = Path(mikado_run).joinpath("pick.yaml") if pick else None
+
+    if any((prepare_path, serialise_path, pick_path)):
+        Path(mikado_run).mkdir(exist_ok=True)
+        if prepare:
+            print(dump({'prepare': prepare}, default_flow_style=False), file=open(prepare_path, 'w'))
+        if serialise:
+            print(dump({'serialise': serialise}, default_flow_style=False), file=open(serialise_path, 'w'))
+        if pick:
+            print(dump({'pick': pick}, default_flow_style=False), file=open(pick_path, 'w'))
+    return prepare_path, serialise_path, pick_path
 
 
 def check_environment():
@@ -176,9 +207,14 @@ def parse_arguments():
     mikado_parameters.add_argument("--long_extra_config", type=argparse.FileType('r'),
                                    help="External configuration file for Long reads mikado run")
     mikado_parameters.add_argument("--lq_extra_config", type=argparse.FileType('r'),
-                                   help="External configuration file for Low-quality only mikado run")
-    mikado_parameters.add_argument("--mikado_scoring_file", type=argparse.FileType('r'),
-                                   help="Mikado scoring file", required=True)
+                                   help="External configuration file for Low-quality long reads only mikado run "
+                                        "(this is only applied when 'separate_mikado_LQ' is enabled)")
+    mikado_parameters.add_argument("--all_scoring_file", type=argparse.FileType('r'),
+                                   help="Mikado long and short scoring file", required=True)
+    mikado_parameters.add_argument("--long_scoring_file", type=argparse.FileType('r'),
+                                   help="Mikado long scoring file", required=True)
+    mikado_parameters.add_argument("--long_lq_scoring_file", type=argparse.FileType('r'),
+                                   help="Mikado low-quality long scoring file")
     mikado_parameters.add_argument("--homology_proteins", type=argparse.FileType('r'),
                                    help="Homology proteins database, used to score transcripts by Mikado")
     mikado_parameters.add_argument("--separate_mikado_LQ", type=bool,
@@ -305,6 +341,11 @@ def parse_arguments():
     homology_ap.add_argument("--alignment_min_coverage", type=int, help="Minimum coverage filter for alignments")
 
     args = reat_ap.parse_args()
+
+    if args.separate_mikado_LQ:
+        if not args.long_lq_scoring_file:
+            reat_ap.error("When '--separate_mikado_LQ' is enabled, --long_lq_scoring_file is required, please "
+                          "provide it.")
     return args
 
 
@@ -318,7 +359,10 @@ def combine_arguments(cli_arguments):
         cromwell_inputs.update(sample)
 
     cromwell_inputs["ei_annotation.reference_genome"] = cli_arguments.reference.name
-    cromwell_inputs["ei_annotation.mikado_scoring_file"] = cli_arguments.mikado_scoring_file.name
+    cromwell_inputs["ei_annotation.all_scoring_file"] = cli_arguments.all_scoring_file.name
+    cromwell_inputs["ei_annotation.long_scoring_file"] = cli_arguments.long_scoring_file.name
+    if cli_arguments.long_lq_scoring_file:
+        cromwell_inputs["ei_annotation.long_lq_scoring_file"] = cli_arguments.long_lq_scoring_file.name
 
     cromwell_inputs["ei_annotation.wf_align.PR_hisat_extra_parameters"] = cli_arguments.PR_hisat_extra_parameters
     cromwell_inputs["ei_annotation.wf_align.PR_star_extra_parameters"] = cli_arguments.PR_star_extra_parameters
@@ -346,12 +390,31 @@ def combine_arguments(cli_arguments):
     cromwell_inputs["ei_annotation.wf_align.max_intron_len_middle"] = cli_arguments.max_intron_len_middle
     cromwell_inputs["ei_annotation.wf_align.min_identity"] = cli_arguments.min_identity
 
+    # Separate these config files onto multiple files one for each mikado step and point the workflow to the files
     if cli_arguments.all_extra_config is not None:
-        cromwell_inputs["ei_annotation.wf_main_mikado.all_extra_config"] = cli_arguments.all_extra_config.name
+        prepare_cfg, serialise_cfg, pick_cfg = separate_mikado_config(cli_arguments.all_extra_config.name, "all")
+        if prepare_cfg:
+            cromwell_inputs["ei_annotation.all_prepare_cfg"] = str(prepare_cfg)
+        if serialise_cfg:
+            cromwell_inputs["ei_annotation.all_serialise_cfg"] = str(serialise_cfg)
+        if pick_cfg:
+            cromwell_inputs["ei_annotation.all_pick_cfg"] = str(pick_cfg)
     if cli_arguments.long_extra_config is not None:
-        cromwell_inputs["ei_annotation.wf_main_mikado.long_extra_config"] = cli_arguments.long_extra_config.name
+        prepare_cfg, serialise_cfg, pick_cfg = separate_mikado_config(cli_arguments.all_extra_config.name, "long")
+        if prepare_cfg:
+            cromwell_inputs["ei_annotation.long_prepare_cfg"] = str(prepare_cfg)
+        if serialise_cfg:
+            cromwell_inputs["ei_annotation.long_serialise_cfg"] = str(serialise_cfg)
+        if pick_cfg:
+            cromwell_inputs["ei_annotation.long_pick_cfg"] = str(pick_cfg)
     if cli_arguments.lq_extra_config is not None:
-        cromwell_inputs["ei_annotation.wf_main_mikado.lq_extra_config"] = cli_arguments.lq_extra_config.name
+        prepare_cfg, serialise_cfg, pick_cfg = separate_mikado_config(cli_arguments.all_extra_config.name, "long_lq")
+        if prepare_cfg:
+            cromwell_inputs["ei_annotation.long_lq_prepare_cfg"] = str(prepare_cfg)
+        if serialise_cfg:
+            cromwell_inputs["ei_annotation.long_lq_serialise_cfg"] = str(serialise_cfg)
+        if pick_cfg:
+            cromwell_inputs["ei_annotation.long_lq_pick_cfg"] = str(pick_cfg)
 
     if cli_arguments.homology_proteins is not None:
         cromwell_inputs["ei_annotation.homology_proteins"] = cli_arguments.homology_proteins.name

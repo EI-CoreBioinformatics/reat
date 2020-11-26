@@ -36,7 +36,8 @@ def main():
     cli_args = parser.parse_args()
 
     files = [cli_args.source]
-    files.extend(cli_args.merge)
+    if cli_args.merge:
+        files.extend(cli_args.merge)
     print([f.name for f in files])
     yaml_result = reduce(merge, [load(f, Loader=Loader) for f in files])
     print(dump(yaml_result, default_flow_style=False), file=cli_args.output)

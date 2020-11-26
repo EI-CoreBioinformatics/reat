@@ -9,7 +9,7 @@ workflow wf_main_mikado {
         IndexedReference reference_genome
         File all_scoring_file
         File long_scoring_file
-        File long_lq_scoring_file
+        File? long_lq_scoring_file
         Array[AssembledSample]? LQ_assemblies
         Array[AssembledSample]? HQ_assemblies
         Array[AssembledSample]? SR_assemblies
@@ -18,10 +18,6 @@ workflow wf_main_mikado {
         File? orf_calling_proteins
         Boolean separate_LQ = false
         String? orf_calling_program
-
-        File? all_extra_config
-        File? long_extra_config
-        File? lq_extra_config
 
         File? all_prepare_cfg
         File? all_serialise_cfg
@@ -104,7 +100,7 @@ workflow wf_main_mikado {
 
         call mikado.wf_mikado as Mikado_longLQ {
             input:
-            scoring_file = long_lq_scoring_file,
+            scoring_file = select_first([long_lq_scoring_file]),
             indexed_reference =  reference_genome,
             LQ_assemblies = LQ_assemblies,
             junctions = junctions_bed,
