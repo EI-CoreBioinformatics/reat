@@ -276,15 +276,27 @@ task GMapLong {
             in_pipe="gunzip -c ~{LR}"
         fi
 
+        strand_opt=""
+        if [ "~{strand}" == "fr-firststrand" ]
+        then
+            strand_opt="-z antisense_force"
+        fi
+
+        if [ "~{strand}" == "fr-secondstrand" ]
+        then
+            strand_opt="-z sense_force"
+        fi
+
         mkdir alignments
         cd alignments
 
         $in_pipe | $(determine_gmap.py ~{reference}) --dir="$(dirname ~{gmap_index[0]})" --db=test_genome \
-        ~{"--min-intronlength=" + min_intron_len} ~{"--max-intronlength-middle=" + max_intron_len_middle} ~{"--max-intronlength-ends=" + max_intron_len} --npaths=1 \
-        ~{"-m " + iit} \
+        ~{"--min-intronlength=" + min_intron_len} ~{"--max-intronlength-middle=" + max_intron_len_middle} \
+        ~{"--max-intronlength-ends=" + max_intron_len} --npaths=1 \
+        ~{"-m " + iit} ${strand_opt} \
         ~{"--min-trimmed-coverage=" + min_trimmed_coverage} \
         ~{"--min-identity=" + min_identity} \
-        --format=samse ~{extra_parameters}\
+        --format=samse ~{extra_parameters} \
         --nthreads="~{cpus}" | samtools view -F 4 -F 0x900 -bS - | samtools sort -@ 4 --reference ~{reference} -T gmap.sort -o gmap.~{name}.~{LR_basename}.bam -
     >>>
 
@@ -338,6 +350,12 @@ task Minimap2Long {
         then
             in_pipe="gunzip -c ~{LR}"
         fi
+
+        strand_opt="-ub"
+        if [ "~{strand}" == "fr-secondstrand" ]
+        then
+            strand_opt="-uf"
+        fi
         
         mkdir alignments
         cd alignments
@@ -347,7 +365,7 @@ task Minimap2Long {
         ~{"--junc-bed " + bed_junctions} \
         --cs=long \
         -G ~{max_intron_len} \
-        -u b \
+        ${strand_opt} \
         -t ~{cpus} \
         -L --MD \
         --eqx -2 \
