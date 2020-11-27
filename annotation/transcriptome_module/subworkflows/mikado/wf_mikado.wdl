@@ -76,7 +76,6 @@ workflow wf_mikado {
         reference_fasta = indexed_reference.fasta,
         blast_targets = homology_proteins,
         models = WriteModelsFile.result,
-        scoring_file = scoring_file,
         extra_config = prepare_extra_config,
         output_prefix = output_prefix
     }
@@ -151,6 +150,7 @@ workflow wf_mikado {
         input:
         config_file = MikadoPrepare.mikado_config,
         extra_config = pick_extra_config,
+        scoring_file = scoring_file,
         mikado_db = MikadoSerialise.mikado_db,
         transcripts = MikadoPrepare.prepared_gtf,
         output_prefix = output_prefix
@@ -207,6 +207,7 @@ task MikadoPick {
     input {
         File config_file
         File? extra_config
+        File scoring_file
         File transcripts
         File mikado_db
 #mode options = ("permissive", "stringent", "nosplit", "split", "lenient")
@@ -233,7 +234,7 @@ task MikadoPick {
     set -euxo pipefail
     export TMPDIR=/tmp
     yaml-merge -s ~{config_file} ~{"-m " + extra_config} -o pick_config.yaml
-    mikado pick ~{"--source Mikado_" + mode} ~{"--mode " + mode} --procs=~{cpus} \
+    mikado pick ~{"--source Mikado_" + mode} ~{"--mode " + mode} --procs=~{cpus} --scoring-file ~{scoring_file} \
     ~{"--flank " + flank} --start-method=spawn --json-conf=pick_config.yaml \
     --loci-out ~{output_prefix}-~{mode}.loci.gff3 -lv INFO ~{"-db " + mikado_db} \
     --subloci-out ~{output_prefix}-~{mode}.subloci.gff3 --monoloci-out ~{output_prefix}-~{mode}.monoloci.gff3 \
@@ -388,7 +389,6 @@ task MikadoPrepare {
         File models
         File reference_fasta
         File? blast_targets
-        File? scoring_file
         File? extra_config
         String output_prefix
         RuntimeAttr? runtime_attr_override
@@ -405,7 +405,6 @@ task MikadoPrepare {
     command <<<
         set -euxo pipefail
         mikado configure \
-        ~{"--scoring=" + scoring_file} \
         ~{"-bt " + blast_targets} \
         --list=~{models} \
         ~{"--reference=" + reference_fasta} \
