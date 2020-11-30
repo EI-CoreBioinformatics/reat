@@ -76,7 +76,12 @@ workflow wf_align_short {
                     runtime_attr_override = alignment_resources
                 }
             }
-            AlignedSample star_aligned_sample = object { bam: Star.aligned_pair, name: sample.name, strand: sample.strand, aligner: "star", merge: sample.merge }
+            AlignedSample star_aligned_sample = object { bam: Star.aligned_pair, name: sample.name,
+                                                    strand: sample.strand,
+                                                    aligner: "star", merge: sample.merge,
+                                                    score: select_first([sample.score, 0]),
+                                                    is_ref: select_first([sample.is_ref, false]),
+                                                    exclude_redundant: select_first([sample.exclude_redundant, false])}
         }
     }
 
@@ -103,7 +108,10 @@ workflow wf_align_short {
             strand: aligned_sample.strand, 
             merge: aligned_sample.merge, 
             aligner: aligned_sample.aligner, 
-            bam: aligned_file
+            bam: aligned_file,
+            score: select_first([aligned_sample.score, 0]),
+            is_ref: select_first([aligned_sample.is_ref, false]),
+            exclude_redundant: select_first([aligned_sample.exclude_redundant, false])
             }
     }
 

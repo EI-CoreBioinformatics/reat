@@ -6,7 +6,7 @@ struct LRSample {
     Array[File]+ LR
     Int? score
     Boolean? is_ref
-    Boolean? always_keep
+    Boolean? exclude_redundant
 }
 
 struct ReadPair {
@@ -21,7 +21,7 @@ struct PRSample {
     Boolean merge
     Int? score
     Boolean? is_ref
-    Boolean? always_keep
+    Boolean? exclude_redundant
 }
 
 struct SESample {
@@ -31,7 +31,7 @@ struct SESample {
     Boolean merge
     Int? score
     Boolean? is_ref
-    Boolean? always_keep
+    Boolean? exclude_redundant
 }
 
 struct AlignedSample {
@@ -40,6 +40,9 @@ struct AlignedSample {
     String aligner
     Boolean merge
     Array[File] bam
+    Int score
+    Boolean is_ref
+    Boolean exclude_redundant
 }
 
 struct IndexedBam{
@@ -57,6 +60,9 @@ struct AssembledSample {
     String name
     String strand
     File assembly
+    Int score
+    Boolean is_ref
+    Boolean exclude_redundant
 }
 
 struct IndexedReference {

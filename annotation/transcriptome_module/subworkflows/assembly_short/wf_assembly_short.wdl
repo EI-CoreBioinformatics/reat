@@ -60,9 +60,12 @@ workflow wf_assembly_short {
         }
 
         File def_stringtie_assembly = select_first([Merge.assembly, stringtie_assemblies[0]]) # Indexing the array is OK because we expect a single item in it
-        AssembledSample stringtie_assembly = object { 
+        AssembledSample stringtie_assembly = object {
             name: aligned_sample.name+"."+aligned_sample.aligner+".stringtie", 
             strand: aligned_sample.strand, 
+            score: aligned_sample.score,
+            is_ref: aligned_sample.is_ref,
+            exclude_redundant: aligned_sample.exclude_redundant,
             assembly: def_stringtie_assembly
             }
     }
@@ -74,8 +77,16 @@ workflow wf_assembly_short {
             output_directory = output_directory,
             runtime_attr_override = assembly_resources
         }
+        AssembledSample scallop_assembly = object {
+            name: aligned_sample.name+"."+aligned_sample.aligner+".scallop",
+            strand: aligned_sample.strand,
+            score: aligned_sample.score,
+            is_ref: aligned_sample.is_ref,
+            exclude_redundant: aligned_sample.exclude_redundant,
+            assembly: Scallop.assembled
+        }
     }
-    Array[AssembledSample] all_assemblies = flatten([stringtie_assembly, Scallop.assembly])
+    Array[AssembledSample] all_assemblies = flatten([stringtie_assembly, scallop_assembly])
 
     scatter (assembly in stringtie_assembly) {
         call tasks.TranscriptAssemblyStats as Stringtie_Stats{
@@ -85,7 +96,7 @@ workflow wf_assembly_short {
         }
     }
 
-    scatter (assembly in Scallop.assembly) {
+    scatter (assembly in scallop_assembly) {
         call tasks.TranscriptAssemblyStats as Scallop_Stats {
             input:
             gff = assembly.assembly,
@@ -218,10 +229,6 @@ task Scallop {
 
     output {
         File assembled = output_directory+"/"+aligned_sample.name+"."+aligned_sample.aligner+".scallop.gtf"
-        AssembledSample assembly = {
-            "name": aligned_sample.name+"."+aligned_sample.aligner+".scallop", 
-            "strand": aligned_sample.strand, 
-            "assembly": assembled}
     }
 
     command <<<

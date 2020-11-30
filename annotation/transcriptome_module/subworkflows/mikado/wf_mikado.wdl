@@ -380,7 +380,7 @@ task GenerateModelsList {
         if [ ~{assembly.strand} != "fr-unstranded" ]; then
             strand="True"
         fi
-        echo -e "~{assembly.assembly}\t~{assembly.name}\t${strand}\t~{long_score_bias}"
+        echo -e "~{assembly.assembly}\t~{assembly.name}\t${strand}\t~{assembly.score}\t~{assembly.is_ref}\t~{assembly.exclude_redundant}"
     >>>
 }
 

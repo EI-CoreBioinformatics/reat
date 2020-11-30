@@ -190,27 +190,27 @@ def parse_arguments():
     transcriptome_ap.add_argument("--samples", nargs='+', type=argparse.FileType('r'),
                                   help="Reads organised in the input specification for REAT, for more information "
                                        "please look at https://github.com/ei-corebioinformatics/reat for an example")
-    transcriptome_ap.add_argument("--csv_paired_samples", nargs='+', type=argparse.FileType('r'),
+    transcriptome_ap.add_argument("--csv_paired_samples", type=argparse.FileType('r'),
                                   help="CSV formatted input paired read samples, header required.\n"
                                        "The CSV fields are as follows sample_name, sample_strand, sample_files (because"
                                        " this is an array that can contain one or more pairs, this fields' values are "
                                        "separated by semi-colon and space. Semi-colon delimit each pair and files in a "
-                                       "pair are separated by a single space), merge, score, is_ref, always_keep\n\n"
+                                       "pair are separated by a single space), merge, score, is_ref, exclude_redundant\n\n"
                                        "sample_strand takes values \'fr-firststrand\', \'fr-unstranded\', "
                                        "\'fr-secondstrand\'\n"
                                        "quality takes values 'low', 'high'\n"
-                                       "merge, is_ref and always_keep are boolean and take values 'true', 'false'\n\n"
+                                       "merge, is_ref and exclude_redundant are boolean and take values 'true', 'false'\n\n"
                                        "Example:\n"
                                        "PR1,fr-secondstrand,A_R1.fq;A_R2.fq /samples/paired/B1.fq;/samples/paired/B2.fq"
                                        ",false,2")
-    transcriptome_ap.add_argument("--csv_long_samples", nargs='+', type=argparse.FileType('r'),
+    transcriptome_ap.add_argument("--csv_long_samples", type=argparse.FileType('r'),
                                   help="CSV formatted input long read samples, header required.\n"
                                        "The CSV fields are as follows sample_name, sample_strand, sample_files (space "
-                                       "separated if there is more than one), quality, score, is_ref, always_keep\n\n"
+                                       "separated if there is more than one), quality, score, is_ref, exclude_redundant\n\n"
                                        "sample_strand takes values \'fr-firststrand\', \'fr-unstranded\', "
                                        "\'fr-secondstrand\'\n"
                                        "quality takes values 'low', 'high'\n"
-                                       "is_ref and always_keep are booleans and take values 'true', 'false'\n\n"
+                                       "is_ref and exclude_redundant are booleans and take values 'true', 'false'\n\n"
                                        "Example:\n"
                                        "Sample1,fr-firststrand,A.fq /samples/long/B.fq ./inputs/C.fq,low,2")
     transcriptome_ap.add_argument("--reference", type=argparse.FileType('r'),
@@ -428,22 +428,22 @@ def validate_long_samples(samples):
             is_ref = False
 
         try:
-            always_keep = fields[6].lower()
-            if always_keep in ("true", "false"):
-                always_keep = True if always_keep == 'true' else False
+            exclude_redundant = fields[6].lower()
+            if exclude_redundant in ("true", "false"):
+                exclude_redundant = True if exclude_redundant == 'true' else False
             else:
                 errors[line].append(
-                    "always_keep field with value '{}' should be either 'true' or 'false'".format(always_keep))
+                    "exclude_redundant field with value '{}' should be either 'true' or 'false'".format(exclude_redundant))
         except IndexError:
-            always_keep = False
+            exclude_redundant = False
 
         if not errors:
             if quality == 'high':
                 hq_samples.append({'name': name, 'strand': strand, 'LR': out_files,
-                                   'score': score, 'is_ref': is_ref, 'always_keep': always_keep})
+                                   'score': score, 'is_ref': is_ref, 'exclude_redundant': exclude_redundant})
             if quality == 'low':
                 lq_samples.append({'name': name, 'strand': strand, 'LR': out_files,
-                                   'score': score, 'is_ref': is_ref, 'always_keep': always_keep})
+                                   'score': score, 'is_ref': is_ref, 'exclude_redundant': exclude_redundant})
 
     if errors:
         print(f"File {samples.name} parsing failed, errors found:\n", file=sys.stderr)
@@ -507,19 +507,19 @@ def validate_paired_samples(samples):
             is_ref = False
 
         try:
-            always_keep = fields[6].lower()
-            if always_keep in ("true", "false"):
-                always_keep = True if always_keep == 'true' else False
+            exclude_redundant = fields[6].lower()
+            if exclude_redundant in ("true", "false"):
+                exclude_redundant = True if exclude_redundant == 'true' else False
             else:
                 errors[line].append(
-                    "always_keep field with value '{}' should be either 'true' or 'false'".format(always_keep))
+                    "exclude_redundant field with value '{}' should be either 'true' or 'false'".format(exclude_redundant))
         except IndexError:
-            always_keep = False
+            exclude_redundant = False
 
         if not errors[line]:
             result['ei_annotation.paired_samples'].append(
                 {'name': name, 'strand': strand, 'read_pairs': out_files,
-                 'merge': merge, 'is_ref': is_ref, 'always_keep': always_keep}
+                 'merge': merge, 'is_ref': is_ref, 'exclude_redundant': exclude_redundant}
             )
 
     if errors:

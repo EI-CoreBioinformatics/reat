@@ -45,7 +45,9 @@ workflow wf_align_long {
                     runtime_attr_override = alignment_resources
                 }
             }
-            AlignedSample mm2_aligned_sample = object {name: sample.name, strand:sample.strand, aligner:"minimap2", bam: Minimap2Long.bam, merge:false}
+            AlignedSample mm2_aligned_sample = object {name: sample.name, strand:sample.strand, aligner:"minimap2", bam: Minimap2Long.bam, merge:false,
+                                               is_ref: select_first([sample.is_ref, false]), exclude_redundant: select_first([sample.exclude_redundant, false]),
+                                               score: select_first([sample.score, 0])}
         }
     }
 
@@ -72,7 +74,10 @@ workflow wf_align_long {
                     runtime_attr_override = alignment_resources
                 }
             }
-            AlignedSample gmap_aligned_sample = object {name: sample.name, strand:sample.strand, aligner:"gmap", bam: GMapLong.bam, merge:false}
+            AlignedSample gmap_aligned_sample = object {name: sample.name, strand:sample.strand, aligner:"gmap", bam: GMapLong.bam, merge:false,
+                                                score: select_first([sample.score, 1]),
+                                                is_ref: select_first([sample.is_ref, false]),
+                                                exclude_redundant: select_first([sample.exclude_redundant, false])}
         }
     }
 

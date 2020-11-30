@@ -35,8 +35,10 @@ workflow wf_Hisat{
             strand: sample.strand, 
             aligner: "hisat", 
             name: sample.name, 
-            merge: sample.merge
-            }
+            merge: sample.merge,
+            score: select_first([sample.score, 0]),
+            is_ref: select_first([sample.is_ref, false]),
+            exclude_redundant: select_first([sample.exclude_redundant, false])}
     }
 }
 
