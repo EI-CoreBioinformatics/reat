@@ -521,7 +521,8 @@ def validate_paired_samples(samples):
         if not errors[line]:
             result['ei_annotation.paired_samples'].append(
                 {'name': name, 'strand': strand, 'read_pair': out_files,
-                 'merge': merge, 'is_ref': is_ref, 'exclude_redundant': exclude_redundant}
+                 'merge': merge,
+                 'score': score, 'is_ref': is_ref, 'exclude_redundant': exclude_redundant}
             )
 
     if any([len(error_list) for error_list in errors.values()]):
