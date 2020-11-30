@@ -34,6 +34,7 @@ import signal
 import subprocess
 import sys
 import time
+from collections import defaultdict
 from textwrap import wrap
 
 from jsonschema import ValidationError, validators, Draft7Validator
@@ -164,16 +165,16 @@ def parse_arguments():
     # runtime.add_argument("--server", type=str,
     #                      help="Run the workflow in a cromwell server. Address and port of the cromwell server to "
     #                           "submit the workflow")
-    reat_ap.add_argument("--runtime_configuration", type=argparse.FileType('r'),
+    reat_ap.add_argument("-r", "--runtime_configuration", type=argparse.FileType('r'),
                          help="Configuration file for the backend, please follow "
                               "https://cromwell.readthedocs.io/en/stable/backends/HPC/ for more information.\n"
                               "An example of this file can be found at ",
                          required=True)
 
-    reat_ap.add_argument("--computational_resources", type=argparse.FileType('r'),
+    reat_ap.add_argument("-c", "--computational_resources", type=argparse.FileType('r'),
                          help="Computational resources for REAT, please look at the template for more information",
                          )  #required=True)
-    reat_ap.add_argument("--output_parameters_file", type=str,
+    reat_ap.add_argument("-o", "--output_parameters_file", type=str,
                          help="REAT parameters file, this file will be used as the input for REAT. "
                               "It provides the arguments for the workflow runtime.",
                          default="reat_input.json")
@@ -188,7 +189,30 @@ def parse_arguments():
     # General inputs
     transcriptome_ap.add_argument("--samples", nargs='+', type=argparse.FileType('r'),
                                   help="Reads organised in the input specification for REAT, for more information "
-                                       "please look at the template file", required=True)
+                                       "please look at https://github.com/ei-corebioinformatics/reat for an example")
+    transcriptome_ap.add_argument("--csv_paired_samples", nargs='+', type=argparse.FileType('r'),
+                                  help="CSV formatted input paired read samples, header required.\n"
+                                       "The CSV fields are as follows sample_name, sample_strand, sample_files (because"
+                                       " this is an array that can contain one or more pairs, this fields' values are "
+                                       "separated by semi-colon and space. Semi-colon delimit each pair and files in a "
+                                       "pair are separated by a single space), merge, score, is_ref, always_keep\n\n"
+                                       "sample_strand takes values \'fr-firststrand\', \'fr-unstranded\', "
+                                       "\'fr-secondstrand\'\n"
+                                       "quality takes values 'low', 'high'\n"
+                                       "merge, is_ref and always_keep are boolean and take values 'true', 'false'\n\n"
+                                       "Example:\n"
+                                       "PR1,fr-secondstrand,A_R1.fq;A_R2.fq /samples/paired/B1.fq;/samples/paired/B2.fq"
+                                       ",false,2")
+    transcriptome_ap.add_argument("--csv_long_samples", nargs='+', type=argparse.FileType('r'),
+                                  help="CSV formatted input long read samples, header required.\n"
+                                       "The CSV fields are as follows sample_name, sample_strand, sample_files (space "
+                                       "separated if there is more than one), quality, score, is_ref, always_keep\n\n"
+                                       "sample_strand takes values \'fr-firststrand\', \'fr-unstranded\', "
+                                       "\'fr-secondstrand\'\n"
+                                       "quality takes values 'low', 'high'\n"
+                                       "is_ref and always_keep are booleans and take values 'true', 'false'\n\n"
+                                       "Example:\n"
+                                       "Sample1,fr-firststrand,A.fq /samples/long/B.fq ./inputs/C.fq,low,2")
     transcriptome_ap.add_argument("--reference", type=argparse.FileType('r'),
                                   help="Reference FASTA to annotate", required=True)
     transcriptome_ap.add_argument("--annotation", type=argparse.FileType('r'),
@@ -346,7 +370,167 @@ def parse_arguments():
         if not args.long_lq_scoring_file:
             reat_ap.error("When '--separate_mikado_LQ' is enabled, --long_lq_scoring_file is required, please "
                           "provide it.")
+
+    if args.samples and (args.csv_paired_samples or args.csv_long_samples):
+        reat_ap.error("Conflicting arguments '--samples' and ['--csv_paired_samples' or '--csv_long_samples'] provided,"
+                      " please choose one of csv or json sample input format")
+    if not args.samples and not args.csv_paired_samples and not args.csv_long_samples:
+        reat_ap.error("Please provide at least one of --samples, --csv_paired_samples, --csv_long_samples")
     return args
+
+
+def validate_long_samples(samples):
+    result = {}
+    names = []
+    errors = defaultdict(list)
+    strands = ("fr-firststrand", "fr-secondstrand", "fr-unstranded")
+    quality_choices = ('high', 'low')
+    result['ei_annotation.HQ_long_read_samples'] = []
+    result['ei_annotation.LQ_long_read_samples'] = []
+    hq_samples = result['ei_annotation.HQ_long_read_samples']
+    lq_samples = result['ei_annotation.LQ_long_read_samples']
+
+    for line in samples:
+        out_files = []
+        fields = line.rstrip().split("\t")
+        name, quality, strand, files = fields[:4]
+        if name in names:
+            errors[line].append(
+                ("Non-unique name '{}' specified, please make sure sample names are unique".format(name)))
+
+        if quality.lower() not in quality_choices:
+            errors[line].append(
+                "Incorrect quality '{}' specification, please choose one of {}".format(quality, quality_choices))
+
+        for file in files.split(' '):
+            if not os.path.exists(file):
+                errors[line].append(("File not found: {}".format(file)))
+            out_files.append(file)
+        if strand.lower() not in strands:
+            errors[line].append(
+                ("Incorrect strand '{}' specification, please choose one of {}".format(strand, strands)))
+        names.append(name)
+
+        try:
+            score = float(fields[4])
+        except ValueError as e:
+            errors[line].append("Cannot parse score value '{}' as float".format(fields[4]))
+        except IndexError as e:
+            score = 0
+
+        try:
+            is_ref = fields[5].lower()
+            if is_ref in ("true", "false"):
+                is_ref = True if is_ref == 'true' else False
+            else:
+                errors[line].append("is_ref field with value '{}' should be either 'true' or 'false'".format(is_ref))
+        except IndexError:
+            is_ref = False
+
+        try:
+            always_keep = fields[6].lower()
+            if always_keep in ("true", "false"):
+                always_keep = True if always_keep == 'true' else False
+            else:
+                errors[line].append(
+                    "always_keep field with value '{}' should be either 'true' or 'false'".format(always_keep))
+        except IndexError:
+            always_keep = False
+
+        if not errors:
+            if quality == 'high':
+                hq_samples.append({'name': name, 'strand': strand, 'LR': out_files,
+                                   'score': score, 'is_ref': is_ref, 'always_keep': always_keep})
+            if quality == 'low':
+                lq_samples.append({'name': name, 'strand': strand, 'LR': out_files,
+                                   'score': score, 'is_ref': is_ref, 'always_keep': always_keep})
+
+    if errors:
+        print(f"File {samples.name} parsing failed, errors found:\n", file=sys.stderr)
+        for line, error_list in errors.items():
+            print("Line:", line, sep='\n', file=sys.stderr)
+            print("\nwas not parsed successfully, the following errors were found:", file=sys.stderr)
+            [print("\t-", e, file=sys.stderr) for e in error_list]
+        raise ValueError(f"Could not parse file {samples.name}")
+
+    return result
+
+
+def validate_paired_samples(samples):
+    names = []
+    errors = defaultdict(list)
+    strands = ("fr-firststrand", "fr-secondstrand", "fr-unstranded")
+    result = {'ei_annotation.paired_samples': []}
+    for line in open(samples, 'r'):
+        out_files = []
+        fields = line.rstrip().split("\t")
+        name, strand, files, merge = fields[:4]
+        for file in files.split(' '):
+            try:
+                r1, r2 = file.split(';')
+            except ValueError as e:
+                errors[line].append(
+                    "Unexpected input {}\n\t\tPlease make sure paired reads are correctly separated using ';'".format(
+                        file))
+            if os.path.exists(r1):
+                errors[line].append(("File not found: {}".format(r1)))
+            if os.path.exists(r2):
+                errors[line].append(("File not found: {}".format(r2)))
+            out_files.append({'R1': r1, 'R2': r2})
+        if name in names:
+            errors[line].append(("Non-unique label specified: {}".format(name)))
+        if strand.lower() not in strands:
+            errors[line].append(("Incorrect strand {} specification, please choose one of {}".format(strand, strands)))
+
+        merge = merge.lower()
+        if merge in ("true", "false"):
+            merge = True if merge == 'true' else False
+        else:
+            errors[line].append("merge field with value '{}' should be either 'true' or 'false'".format(merge))
+
+        names.append(name)
+
+        try:
+            score = float(fields[4])
+        except ValueError as e:
+            errors[line].append("Cannot parse score value {} as float".format(fields[4]))
+        except IndexError as e:
+            score = 0
+
+        try:
+            is_ref = fields[5].lower()
+            if is_ref in ("true", "false"):
+                is_ref = True if is_ref == 'true' else False
+            else:
+                errors[line].append("is_ref field with value '{}' should be either 'true' or 'false'".format(is_ref))
+        except IndexError:
+            is_ref = False
+
+        try:
+            always_keep = fields[6].lower()
+            if always_keep in ("true", "false"):
+                always_keep = True if always_keep == 'true' else False
+            else:
+                errors[line].append(
+                    "always_keep field with value '{}' should be either 'true' or 'false'".format(always_keep))
+        except IndexError:
+            always_keep = False
+
+        if not errors[line]:
+            result['ei_annotation.paired_samples'].append(
+                {'name': name, 'strand': strand, 'read_pairs': out_files,
+                 'merge': merge, 'is_ref': is_ref, 'always_keep': always_keep}
+            )
+
+    if errors:
+        print(f"File {samples} parsing failed, errors found:\n", file=sys.stderr)
+        for line, error_list in errors.items():
+            print("Line:", line, sep='\n', file=sys.stderr)
+            print("\nwas not parsed successfully, the following errors were found:", file=sys.stderr)
+            [print("\t-", e, file=sys.stderr) for e in errors]
+            raise ValueError(f"Could not parse file {samples}")
+
+    return result
 
 
 def combine_arguments(cli_arguments):
@@ -354,9 +538,17 @@ def combine_arguments(cli_arguments):
     if cli_arguments.computational_resources:
         computational_resources = json.load(cli_arguments.computational_resources)
     cromwell_inputs = computational_resources
-    for s in cli_arguments.samples:
-        sample = json.load(s)
-        cromwell_inputs.update(sample)
+
+    if cli_arguments.samples:
+        for s in cli_arguments.samples:
+            sample = json.load(s)
+            cromwell_inputs.update(sample)
+
+    if cli_arguments.csv_paired_samples:
+        cromwell_inputs.update(validate_paired_samples(cli_arguments.csv_paired_samples))
+
+    if cli_arguments.csv_long_samples:
+        cromwell_inputs.update(validate_long_samples(cli_arguments.csv_long_samples))
 
     cromwell_inputs["ei_annotation.reference_genome"] = cli_arguments.reference.name
     cromwell_inputs["ei_annotation.all_scoring_file"] = cli_arguments.all_scoring_file.name

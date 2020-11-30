@@ -6,6 +6,7 @@ struct LRSample {
     Array[File]+ LR
     Int? score
     Boolean? is_ref
+    Boolean? always_keep
 }
 
 struct ReadPair {
@@ -17,18 +18,20 @@ struct PRSample {
     String name
     String strand
     Array[ReadPair]+ read_pair
+    Boolean merge
     Int? score
     Boolean? is_ref
-    Boolean merge
+    Boolean? always_keep
 }
 
 struct SESample {
     String name
     String strand
     Array[File]+ SR
+    Boolean merge
     Int? score
     Boolean? is_ref
-    Boolean merge
+    Boolean? always_keep
 }
 
 struct AlignedSample {
