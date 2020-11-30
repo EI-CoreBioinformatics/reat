@@ -404,7 +404,7 @@ def validate_long_samples(samples):
 
         for file in files.split(' '):
             if not os.path.exists(file):
-                errors[line].append(("File not found: {}".format(file)))
+                errors[line].append(("File not found: '{}'".format(file)))
             out_files.append(file)
         if strand.lower() not in strands:
             errors[line].append(
@@ -445,11 +445,13 @@ def validate_long_samples(samples):
                 lq_samples.append({'name': name, 'strand': strand, 'LR': out_files,
                                    'score': score, 'is_ref': is_ref, 'exclude_redundant': exclude_redundant})
 
-    if errors:
+    if any([len(error_list) for error_list in errors.values()]):
         print(f"File {samples.name} parsing failed, errors found:\n", file=sys.stderr)
         for line, error_list in errors.items():
-            print("Line:", line, sep='\n', file=sys.stderr)
-            print("\nwas not parsed successfully, the following errors were found:", file=sys.stderr)
+            if not error_list:
+                continue
+            print("Line:", line, sep='\n\t', file=sys.stderr)
+            print("was not parsed successfully, the following errors were found:", file=sys.stderr)
             [print("\t-", e, file=sys.stderr) for e in error_list]
         raise ValueError(f"Could not parse file {samples.name}")
 
@@ -461,7 +463,7 @@ def validate_paired_samples(samples):
     errors = defaultdict(list)
     strands = ("fr-firststrand", "fr-secondstrand", "fr-unstranded")
     result = {'ei_annotation.paired_samples': []}
-    for line in open(samples, 'r'):
+    for line in samples:
         out_files = []
         fields = line.rstrip().split("\t")
         name, strand, files, merge = fields[:4]
@@ -470,17 +472,17 @@ def validate_paired_samples(samples):
                 r1, r2 = file.split(';')
             except ValueError as e:
                 errors[line].append(
-                    "Unexpected input {}\n\t\tPlease make sure paired reads are correctly separated using ';'".format(
+                    "Unexpected input '{}'\n\t\tPlease make sure paired reads are correctly separated using ';'".format(
                         file))
-            if os.path.exists(r1):
-                errors[line].append(("File not found: {}".format(r1)))
-            if os.path.exists(r2):
-                errors[line].append(("File not found: {}".format(r2)))
+            if not os.path.exists(r1):
+                errors[line].append(("File not found: '{}'".format(r1)))
+            if not os.path.exists(r2):
+                errors[line].append(("File not found: '{}'".format(r2)))
             out_files.append({'R1': r1, 'R2': r2})
         if name in names:
-            errors[line].append(("Non-unique label specified: {}".format(name)))
+            errors[line].append(("Non-unique label specified: '{}'".format(name)))
         if strand.lower() not in strands:
-            errors[line].append(("Incorrect strand {} specification, please choose one of {}".format(strand, strands)))
+            errors[line].append(("Incorrect strand '{}' specification, please choose one of {}".format(strand, strands)))
 
         merge = merge.lower()
         if merge in ("true", "false"):
@@ -493,7 +495,7 @@ def validate_paired_samples(samples):
         try:
             score = float(fields[4])
         except ValueError as e:
-            errors[line].append("Cannot parse score value {} as float".format(fields[4]))
+            errors[line].append("Cannot parse score value '{}' as float".format(fields[4]))
         except IndexError as e:
             score = 0
 
@@ -518,17 +520,19 @@ def validate_paired_samples(samples):
 
         if not errors[line]:
             result['ei_annotation.paired_samples'].append(
-                {'name': name, 'strand': strand, 'read_pairs': out_files,
+                {'name': name, 'strand': strand, 'read_pair': out_files,
                  'merge': merge, 'is_ref': is_ref, 'exclude_redundant': exclude_redundant}
             )
 
-    if errors:
-        print(f"File {samples} parsing failed, errors found:\n", file=sys.stderr)
+    if any([len(error_list) for error_list in errors.values()]):
+        print(f"File {samples.name} parsing failed, errors found:\n", file=sys.stderr)
         for line, error_list in errors.items():
-            print("Line:", line, sep='\n', file=sys.stderr)
-            print("\nwas not parsed successfully, the following errors were found:", file=sys.stderr)
-            [print("\t-", e, file=sys.stderr) for e in errors]
-            raise ValueError(f"Could not parse file {samples}")
+            if not error_list:
+                continue
+            print("Line:", line.strip(), sep='\n\t', file=sys.stderr)
+            print("was not parsed successfully, the following errors were found:", file=sys.stderr)
+            [print("\t-", e, file=sys.stderr) for e in error_list]
+        raise ValueError(f"Could not parse file {samples.name}")
 
     return result
 
