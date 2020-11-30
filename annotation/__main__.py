@@ -190,9 +190,9 @@ def parse_arguments():
     transcriptome_ap.add_argument("--samples", nargs='+', type=argparse.FileType('r'),
                                   help="Reads organised in the input specification for REAT, for more information "
                                        "please look at https://github.com/ei-corebioinformatics/reat for an example")
-    transcriptome_ap.add_argument("--csv_paired_samples", type=argparse.FileType('r'),
-                                  help="CSV formatted input paired read samples, header required.\n"
-                                       "The CSV fields are as follows sample_name, sample_strand, sample_files (because"
+    transcriptome_ap.add_argument("--tsv_paired_samples", type=argparse.FileType('r'),
+                                  help="TSV formatted input paired read samples, header required.\n"
+                                       "The TSV fields are as follows sample_name, sample_strand, sample_files (because"
                                        " this is an array that can contain one or more pairs, this fields' values are "
                                        "separated by semi-colon and space. Semi-colon delimit each pair and files in a "
                                        "pair are separated by a single space), merge, score, is_ref, exclude_redundant\n\n"
@@ -203,9 +203,9 @@ def parse_arguments():
                                        "Example:\n"
                                        "PR1,fr-secondstrand,A_R1.fq;A_R2.fq /samples/paired/B1.fq;/samples/paired/B2.fq"
                                        ",false,2")
-    transcriptome_ap.add_argument("--csv_long_samples", type=argparse.FileType('r'),
-                                  help="CSV formatted input long read samples, header required.\n"
-                                       "The CSV fields are as follows sample_name, sample_strand, sample_files (space "
+    transcriptome_ap.add_argument("--tsv_long_samples", type=argparse.FileType('r'),
+                                  help="TSV formatted input long read samples, header required.\n"
+                                       "The TSV fields are as follows sample_name, sample_strand, sample_files (space "
                                        "separated if there is more than one), quality, score, is_ref, exclude_redundant\n\n"
                                        "sample_strand takes values \'fr-firststrand\', \'fr-unstranded\', "
                                        "\'fr-secondstrand\'\n"
@@ -371,11 +371,11 @@ def parse_arguments():
             reat_ap.error("When '--separate_mikado_LQ' is enabled, --long_lq_scoring_file is required, please "
                           "provide it.")
 
-    if args.samples and (args.csv_paired_samples or args.csv_long_samples):
-        reat_ap.error("Conflicting arguments '--samples' and ['--csv_paired_samples' or '--csv_long_samples'] provided,"
-                      " please choose one of csv or json sample input format")
-    if not args.samples and not args.csv_paired_samples and not args.csv_long_samples:
-        reat_ap.error("Please provide at least one of --samples, --csv_paired_samples, --csv_long_samples")
+    if args.samples and (args.tsv_paired_samples or args.tsv_long_samples):
+        reat_ap.error("Conflicting arguments '--samples' and ['--tsv_paired_samples' or '--tsv_long_samples'] provided,"
+                      " please choose one of tsv or json sample input format")
+    if not args.samples and not args.tsv_paired_samples and not args.tsv_long_samples:
+        reat_ap.error("Please provide at least one of --samples, --tsv_paired_samples, --tsv_long_samples")
     return args
 
 
@@ -548,11 +548,11 @@ def combine_arguments(cli_arguments):
             sample = json.load(s)
             cromwell_inputs.update(sample)
 
-    if cli_arguments.csv_paired_samples:
-        cromwell_inputs.update(validate_paired_samples(cli_arguments.csv_paired_samples))
+    if cli_arguments.tsv_paired_samples:
+        cromwell_inputs.update(validate_paired_samples(cli_arguments.tsv_paired_samples))
 
-    if cli_arguments.csv_long_samples:
-        cromwell_inputs.update(validate_long_samples(cli_arguments.csv_long_samples))
+    if cli_arguments.tsv_long_samples:
+        cromwell_inputs.update(validate_long_samples(cli_arguments.tsv_long_samples))
 
     cromwell_inputs["ei_annotation.reference_genome"] = cli_arguments.reference.name
     cromwell_inputs["ei_annotation.all_scoring_file"] = cli_arguments.all_scoring_file.name
