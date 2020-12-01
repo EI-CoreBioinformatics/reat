@@ -201,18 +201,18 @@ def parse_arguments():
                                        "quality takes values 'low', 'high'\n"
                                        "merge, is_ref and exclude_redundant are boolean and take values 'true', 'false'\n\n"
                                        "Example:\n"
-                                       "PR1,fr-secondstrand,A_R1.fq;A_R2.fq /samples/paired/B1.fq;/samples/paired/B2.fq"
-                                       ",false,2")
+                                       "PR1	fr-secondstrand	A_R1.fq;A_R2.fq /samples/paired/B1.fq;/samples/paired/B2.fq"
+                                       "	false	2")
     transcriptome_ap.add_argument("--tsv_long_samples", type=argparse.FileType('r'),
                                   help="TSV formatted input long read samples, header required.\n"
-                                       "The TSV fields are as follows sample_name, sample_strand, sample_files (space "
-                                       "separated if there is more than one), quality, score, is_ref, exclude_redundant\n\n"
+                                       "The TSV fields are as follows name, quality, strand, files (space "
+                                       "separated if there is more than one), score, is_ref, exclude_redundant\n\n"
                                        "sample_strand takes values \'fr-firststrand\', \'fr-unstranded\', "
                                        "\'fr-secondstrand\'\n"
                                        "quality takes values 'low', 'high'\n"
                                        "is_ref and exclude_redundant are booleans and take values 'true', 'false'\n\n"
                                        "Example:\n"
-                                       "Sample1,fr-firststrand,A.fq /samples/long/B.fq ./inputs/C.fq,low,2")
+                                       "Sample1\tlow\tfr-firststrand\tA.fq /samples/long/B.fq ./inputs/C.fq\t2")
     transcriptome_ap.add_argument("--reference", type=argparse.FileType('r'),
                                   help="Reference FASTA to annotate", required=True)
     transcriptome_ap.add_argument("--annotation", type=argparse.FileType('r'),
