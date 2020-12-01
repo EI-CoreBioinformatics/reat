@@ -34,6 +34,18 @@ workflow wf_main_mikado {
         RuntimeAttr? protein_alignment_resources
         RuntimeAttr? homology_index_resources
         RuntimeAttr? homology_alignment_resources
+
+        RuntimeAttr? mikado_all_pick_resources
+        RuntimeAttr? mikado_all_serialise_resources
+        RuntimeAttr? mikado_all_prepare_resources
+
+        RuntimeAttr? mikado_long_pick_resources
+        RuntimeAttr? mikado_long_serialise_resources
+        RuntimeAttr? mikado_long_prepare_resources
+
+        RuntimeAttr? mikado_long_lq_pick_resources
+        RuntimeAttr? mikado_long_lq_serialise_resources
+        RuntimeAttr? mikado_long_lq_prepare_resources
     }
 
     parameter_meta {

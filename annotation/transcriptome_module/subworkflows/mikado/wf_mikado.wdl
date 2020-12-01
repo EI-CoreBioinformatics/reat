@@ -20,6 +20,9 @@ workflow wf_mikado {
         RuntimeAttr? orf_protein_alignment_resources
         RuntimeAttr? homology_alignment_resources
         RuntimeAttr? homology_index_resources
+        RuntimeAttr? mikado_pick_resources
+        RuntimeAttr? mikado_serialise_resources
+        RuntimeAttr? mikado_prepare_resources
         File? prepare_extra_config
         File? serialise_extra_config
         File? pick_extra_config
@@ -77,6 +80,7 @@ workflow wf_mikado {
         blast_targets = homology_proteins,
         models = WriteModelsFile.result,
         extra_config = prepare_extra_config,
+        runtime_attr_override = mikado_prepare_resources,
         output_prefix = output_prefix
     }
 
@@ -143,6 +147,7 @@ workflow wf_mikado {
         transcripts = MikadoPrepare.prepared_fasta,
         indexed_reference = indexed_reference,
         config = MikadoPrepare.mikado_config,
+        runtime_attr_override = mikado_serialise_resources,
         extra_config = serialise_extra_config
     }
 
@@ -153,6 +158,7 @@ workflow wf_mikado {
         scoring_file = scoring_file,
         mikado_db = MikadoSerialise.mikado_db,
         transcripts = MikadoPrepare.prepared_gtf,
+        runtime_attr_override = mikado_pick_resources,
         output_prefix = output_prefix
     }
 
