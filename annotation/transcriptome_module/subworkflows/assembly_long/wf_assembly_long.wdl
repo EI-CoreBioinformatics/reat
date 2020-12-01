@@ -119,6 +119,7 @@ task StringtieLong {
     }
 
     Int cpus = 8
+#    String strand = if (aligned_sample.strand == "fr-firststrand") then "-fr" else if (aligned_sample.strand == "fr-secondstrand") then "-rf" else ""
 
     output {
         File gff = output_directory + "/" + aligned_sample.name+"."+aligned_sample.aligner+".stringtie.gtf"
@@ -128,7 +129,7 @@ task StringtieLong {
         set -euxo pipefail
         mkdir ~{output_directory}
         cd ~{output_directory}
-        stringtie -p "~{cpus}" ~{"-G " + reference_annotation} ~{collapse_string} ~{sep=" " aligned_sample.bam} -o "~{aligned_sample.name}.~{aligned_sample.aligner}.stringtie.gtf"
+        stringtie -p "~{cpus}" ~{"-G " + reference_annotation} ~{collapse_string} <(samtools merge - ~{sep=" " aligned_sample.bam}) -o "~{aligned_sample.name}.~{aligned_sample.aligner}.stringtie.gtf"
     >>>
 
     RuntimeAttr default_attr = object {
