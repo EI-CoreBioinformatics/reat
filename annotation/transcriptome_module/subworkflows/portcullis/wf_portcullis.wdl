@@ -10,6 +10,7 @@ workflow portcullis {
         Object? group_to_samples # Consider applying "localization_optional" to the preparation task
         Array[AlignedSample] aligned_samples
         File? annotation
+        RuntimeAttr? portcullis_resources
     }
 
     parameter_meta {
@@ -38,7 +39,8 @@ workflow portcullis {
                 input:
                 reference = reference,
                 sample = object { name: basename(sample_files,'.sample'), strand: sub(basename(sample_files,'.sample'),'.+\_',''), aligner: "*", bam: read_lines(sample_files), merge:false},
-                reference_bed = PrepareRef.refbed
+                reference_bed = PrepareRef.refbed,
+                runtime_attr_override = portcullis_resources
             }
         }
         Array[File] def_grouped_pass = groupedFull.pass_tab

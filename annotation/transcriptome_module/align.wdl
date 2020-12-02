@@ -55,6 +55,7 @@ workflow wf_align {
         RuntimeAttr? long_read_indexing_resources
         RuntimeAttr? long_read_alignment_resources
         RuntimeAttr? long_read_assembly_resources
+        RuntimeAttr? portcullis_resources
     }
     
     parameter_meta {
@@ -100,7 +101,8 @@ workflow wf_align {
             annotation = wf_sanitise.annotation,
             merge_operator = portcullis_merge_operator,
             group_to_samples = group_to_samples,
-            aligned_samples = wf_align_short.aligned_samples
+            aligned_samples = wf_align_short.aligned_samples,
+            portcullis_resources = portcullis_resources
         }
     }
 
