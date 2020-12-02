@@ -8,7 +8,8 @@ workflow wf_assembly_short {
     input {
         Array[AlignedSample] aligned_samples
         File? reference_annotation
-        RuntimeAttr? assembly_resources
+        RuntimeAttr? stringtie_assembly_resources
+        RuntimeAttr? scallop_assembly_resources
     }
 
     String output_directory = "assembly_short"
@@ -26,7 +27,7 @@ workflow wf_assembly_short {
                     strand = aligned_sample.strand,
                     reference_annotation = reference_annotation,
                     output_directory = output_directory,
-                    runtime_attr_override = assembly_resources
+                    runtime_attr_override = stringtie_assembly_resources
                 }
             }
         }
@@ -38,7 +39,7 @@ workflow wf_assembly_short {
                     aligned_sample = bam,
                     strand = aligned_sample.strand,
                     output_directory = output_directory,
-                    runtime_attr_override = assembly_resources
+                    runtime_attr_override = scallop_assembly_resources
                 }
             }
         }
@@ -55,7 +56,7 @@ workflow wf_assembly_short {
                 aligner_name = aligned_sample.aligner,
                 assemblies = stringtie_assemblies,
                 output_directory = output_directory,
-                runtime_attr_override = assembly_resources
+                runtime_attr_override = stringtie_assembly_resources
             }
         }
 
@@ -75,7 +76,7 @@ workflow wf_assembly_short {
             input:
             aligned_sample = aligned_sample,
             output_directory = output_directory,
-            runtime_attr_override = assembly_resources
+            runtime_attr_override = scallop_assembly_resources
         }
         AssembledSample scallop_assembly = object {
             name: aligned_sample.name+"."+aligned_sample.aligner+".scallop",

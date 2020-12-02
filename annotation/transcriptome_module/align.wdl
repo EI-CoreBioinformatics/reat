@@ -51,7 +51,8 @@ workflow wf_align {
         RuntimeAttr? short_read_alignment_resources
         RuntimeAttr? short_read_alignment_sort_resources
         RuntimeAttr? short_read_stats_resources
-        RuntimeAttr? short_read_assembly_resources
+        RuntimeAttr? short_read_stringtie_assembly_resources
+        RuntimeAttr? short_read_scallop_assembly_resources
         RuntimeAttr? long_read_indexing_resources
         RuntimeAttr? long_read_alignment_resources
         RuntimeAttr? long_read_assembly_resources
@@ -92,7 +93,8 @@ workflow wf_align {
             input:
             aligned_samples = wf_align_short.aligned_samples,
             reference_annotation = wf_sanitise.annotation,
-            assembly_resources = short_read_assembly_resources
+            scallop_assembly_resources = short_read_scallop_assembly_resources,
+            stringtie_assembly_resources = short_read_stringtie_assembly_resources
         }
 
         call portcullis_s.portcullis {
