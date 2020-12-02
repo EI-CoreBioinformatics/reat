@@ -138,6 +138,21 @@ task Full {
     ~{"-r " + reference_bed} --canonical=C,S --min_cov=~{min_coverage} \
     ~{reference} ~{sep=" " sample.bam}
     >>>
+
+    RuntimeAttr default_attr = object {
+        cpu_cores: 1,
+        mem_gb: 32,
+        max_retries: 1
+    }
+
+    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
+
+    runtime {
+        cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
+        memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
+        maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+    }
+
 }
 
 task PrepareRef {
