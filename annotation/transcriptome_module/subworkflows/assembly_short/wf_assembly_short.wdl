@@ -157,6 +157,7 @@ task Stringtie {
         cd ~{output_directory}
         stringtie ~{aligned_sample} \
         -p "~{cpus}" \
+        -l "~{aligned_sample.name}_STRG"
         ${strandness} \
         ~{"-G " + reference_annotation} \
         -o "~{prefix}.stringtie.gtf"
@@ -256,6 +257,7 @@ task Scallop {
         cd ~{output_directory}
 
         scallop --verbose 0 -i ~{sep=" " aligned_sample.bam} -o "~{aligned_sample.name+"."+aligned_sample.aligner}.scallop.gtf" "${strandness}"
+        sed -i -e "s/\"gene./\"~{aligned_sample.name}_SCLP./g" "~{aligned_sample.name+"."+aligned_sample.aligner}.scallop.gtf"
     >>>
 
     RuntimeAttr default_attr = object {
