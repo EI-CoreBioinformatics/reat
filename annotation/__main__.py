@@ -198,7 +198,7 @@ def parse_arguments():
                                        "please look at https://github.com/ei-corebioinformatics/reat for an example")
     transcriptome_ap.add_argument("--tsv_paired_samples", type=argparse.FileType('r'),
                                   help="TSV formatted input paired read samples, header required.\n"
-                                       "The TSV fields are as follows sample_name, sample_strand, sample_files (because"
+                                       "The TSV fields are as follows name, strand, files (because"
                                        " this is an array that can contain one or more pairs, this fields' values are "
                                        "separated by semi-colon and space. Semi-colon delimit each pair and files in a "
                                        "pair are separated by a single space), merge, score, is_ref, "
