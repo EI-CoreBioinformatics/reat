@@ -157,7 +157,6 @@ task Stringtie {
         cd ~{output_directory}
         stringtie ~{aligned_sample} \
         -p "~{cpus}" \
-        -l "~{aligned_sample.name}_STRG"
         ${strandness} \
         ~{"-G " + reference_annotation} \
         -o "~{prefix}.stringtie.gtf"
@@ -200,6 +199,7 @@ task Merge {
         cd ~{output_directory}
         stringtie --merge \
         ~{"-G " + annotation} \
+        -l ~{name}"_STRG" \
         -o "~{name+"."+aligner_name}.stringtie.gtf" \
         ~{sep=" " assemblies}
     >>>

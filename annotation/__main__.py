@@ -659,7 +659,7 @@ def sample_validation(cromwell_inputs):
             paired_sample_names.add(sample['name'])
             if len(paired_sample_names) == l:
                 raise ValueError(f"Sample {sample['name']} is repeated, please make sure sample names are unique")
-    if cromwell_inputs["ei_annotation.wf_align.group_to_samples"]:
+    if cromwell_inputs.get("ei_annotation.wf_align.group_to_samples", None):
         samples_in_groups = defaultdict(list)
         group_names = set()
         for group_name, group_samples in cromwell_inputs["ei_annotation.wf_align.group_to_samples"].items():
