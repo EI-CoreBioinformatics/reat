@@ -20,8 +20,8 @@ workflow wf_align {
 
         Float min_identity = 0.9
         Int? min_intron_len = 20
-        Int? max_intron_len = 2000
-        Int? max_intron_len_middle = 2000
+        Int? max_intron_len = 200000
+        Int? max_intron_len_ends = 100000
 
         String portcullis_merge_operator = "max"
         String? portcullis_extra_parameters
@@ -83,7 +83,7 @@ workflow wf_align {
             hisat_extra_parameters = PR_hisat_extra_parameters,
             star_extra_parameters = PR_star_extra_parameters,
             min_intron_len = select_first([min_intron_len, 20]),
-            max_intron_len = select_first([max_intron_len, 2000]),
+            max_intron_len = select_first([max_intron_len, 200000]),
             alignment_resources = short_read_alignment_resources,
             sort_resources = short_read_alignment_sort_resources,
             stats_resources = short_read_stats_resources
@@ -118,8 +118,8 @@ workflow wf_align {
             long_samples = def_lq_long_sample,
             min_identity = min_identity,
             min_intron_len = select_first([min_intron_len, 20]),
-            max_intron_len = select_first([max_intron_len, 2000]),
-            max_intron_len_middle = select_first([max_intron_len_middle, 2000]),
+            max_intron_len = select_first([max_intron_len, 200000]),
+            max_intron_len_ends = select_first([max_intron_len_ends, 100000]),
             aligner_extra_parameters = select_first([LQ_aligner_extra_parameters, ""]),
             bed_junctions = portcullis.pass_bed,
             indexing_resources = long_read_indexing_resources,
@@ -149,7 +149,7 @@ workflow wf_align {
             min_identity = min_identity,
             min_intron_len = min_intron_len,
             max_intron_len = max_intron_len,
-            max_intron_len_middle = max_intron_len_middle,
+            max_intron_len_ends = max_intron_len_ends,
             aligner_extra_parameters = select_first([HQ_aligner_extra_parameters, ""]),
             bed_junctions = portcullis.pass_bed,
             indexing_resources = long_read_indexing_resources,

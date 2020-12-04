@@ -12,8 +12,8 @@ workflow wf_align_long {
         String? aligner_extra_parameters
         Float min_identity = 0.9
         Int? min_intron_len = 20
-        Int? max_intron_len = 2000
-        Int? max_intron_len_middle = 2000
+        Int? max_intron_len = 200000
+        Int? max_intron_len_ends = 100000
         RuntimeAttr? alignment_resources
         RuntimeAttr? indexing_resources
     }
@@ -40,7 +40,7 @@ workflow wf_align_long {
                     name = sample.name,
                     reference = reference,
                     bed_junctions = bed_junctions,
-                    max_intron_len = select_first([max_intron_len, 2000]),
+                    max_intron_len = select_first([max_intron_len, 200000]),
                     extra_parameters = aligner_extra_parameters,
                     runtime_attr_override = alignment_resources
                 }
@@ -69,7 +69,7 @@ workflow wf_align_long {
                     min_identity = min_identity,
                     min_intron_len = select_first([min_intron_len,20]),
                     max_intron_len = select_first([max_intron_len,2000]),
-                    max_intron_len_middle = select_first([max_intron_len_middle, 4000]),
+                    max_intron_len_ends = select_first([max_intron_len_ends, 4000]),
                     extra_parameters = aligner_extra_parameters,
                     runtime_attr_override = alignment_resources
                 }
@@ -254,7 +254,7 @@ task GMapLong {
         File? iit
         Int? min_trimmed_coverage
         Float min_identity
-        Int max_intron_len_middle
+        Int max_intron_len_ends
         Int max_intron_len
         Int min_intron_len
         RuntimeAttr? runtime_attr_override
@@ -295,8 +295,8 @@ task GMapLong {
         cd alignments
 
         $in_pipe | $(determine_gmap.py ~{reference}) --dir="$(dirname ~{gmap_index[0]})" --db=test_genome \
-        ~{"--min-intronlength=" + min_intron_len} ~{"--max-intronlength-middle=" + max_intron_len_middle} \
-        ~{"--max-intronlength-ends=" + max_intron_len} --npaths=1 \
+        ~{"--min-intronlength=" + min_intron_len} ~{"--max-intronlength-middle=" + max_intron_len} \
+        ~{"--max-intronlength-ends=" + max_intron_len_ends} --npaths=1 \
         ~{"-m " + iit} ${strand_opt} \
         ~{"--min-trimmed-coverage=" + min_trimmed_coverage} \
         ~{"--min-identity=" + min_identity} \

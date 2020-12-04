@@ -268,12 +268,13 @@ def parse_arguments():
                                            "the aligners", default=200)
     alignment_parameters.add_argument("--max_intron_len", type=int,
                                       help="Where available, the maximum intron length allowed will be specified for "
-                                           "the aligners", default=2000)
-    alignment_parameters.add_argument("--max_intron_len_middle", type=int,
-                                      help="Where available, the maximum *internal* intron length allowed will be "
-                                           "specified for the aligner, when specified this implies max_intron_length "
-                                           "only applies to the *ends* and this parameter to the *internal* introns",
-                                      default=4000)
+                                           "the aligners", default=200000)
+    alignment_parameters.add_argument("--max_intron_len_ends", type=int,
+                                      help="Where available, the maximum *boundary* intron length allowed will be "
+                                           "specified for the aligner, when specified this implies max_intron_len "
+                                           "only applies to the *internal* introns and this parameter to the *boundary*"
+                                           " introns",
+                                      default=100000)
 
     alignment_parameters.add_argument("--PR_hisat_extra_parameters", type=str,
                                       help="Extra command-line parameters for the selected short read aligner, please "
@@ -473,7 +474,12 @@ def validate_paired_samples(samples):
     for line in samples:
         out_files = []
         fields = line.rstrip().split("\t")
-        name, strand, files, merge = fields[:4]
+        try:
+            name, strand, files, merge = fields[:4]
+        except ValueError as e:
+            errors[line].append(f"Unexpected input '{fields}'\n\t\tPlease make sure this is a tsv file with at minimum"
+                                f"the following fields name, strand, files, merge")
+            break
         for file in files.split(' '):
             try:
                 r1, r2 = file.split(';')
@@ -548,24 +554,12 @@ def validate_paired_samples(samples):
 def combine_arguments(cli_arguments):
     computational_resources = {}
     if cli_arguments.computational_resources:
-        computational_resources = json.load(cli_arguments.computational_resources)
+        computational_resources = parse_json_input(cli_arguments.computational_resources)
     cromwell_inputs = computational_resources
 
     if cli_arguments.samples:
         for s in cli_arguments.samples:
-            try:
-                sample = json.load(s)
-            except JSONDecodeError as e:
-                lines = e.doc.split('\n')
-                eprint(e)
-                eprint(f"Please check '{s.name}' is a valid json file around this context:")
-                error_line = e.lineno-1
-                if 'Expecting \',\' delimiter' == e.msg:
-                    error_line = e.lineno
-                [eprint(l) for l in lines[max(0, error_line-3):error_line]]
-                eprint(' '*(len(lines[error_line-1])-1), '^', sep='')
-                [eprint(l) for l in lines[error_line:min(error_line+3, len(lines))]]
-                exit(1)
+            sample = parse_json_input(s)
             cromwell_inputs.update(sample)
 
     if cli_arguments.tsv_paired_samples:
@@ -603,7 +597,7 @@ def combine_arguments(cli_arguments):
 
     cromwell_inputs["ei_annotation.wf_align.min_intron_len"] = cli_arguments.min_intron_len
     cromwell_inputs["ei_annotation.wf_align.max_intron_len"] = cli_arguments.max_intron_len
-    cromwell_inputs["ei_annotation.wf_align.max_intron_len_middle"] = cli_arguments.max_intron_len_middle
+    cromwell_inputs["ei_annotation.wf_align.max_intron_len_ends"] = cli_arguments.max_intron_len_ends
     cromwell_inputs["ei_annotation.wf_align.min_identity"] = cli_arguments.min_identity
 
     # Separate these config files onto multiple files one for each mikado step and point the workflow to the files
@@ -649,6 +643,23 @@ def combine_arguments(cli_arguments):
     sample_validation(cromwell_inputs)
 
     return cromwell_inputs
+
+
+def parse_json_input(s):
+    try:
+        result = json.load(s)
+    except JSONDecodeError as e:
+        lines = e.doc.split('\n')
+        eprint(e)
+        eprint(f"Please check '{s.name}' is a valid json file around this context:")
+        error_line = e.lineno - 1
+        if 'Expecting \',\' delimiter' == e.msg:
+            error_line = e.lineno
+        [eprint(l) for l in lines[max(0, error_line - 3):error_line]]
+        eprint(' ' * (len(lines[error_line - 1]) - 1), '^', sep='')
+        [eprint(l) for l in lines[error_line:min(error_line + 3, len(lines))]]
+        exit(1)
+    return result
 
 
 def sample_validation(cromwell_inputs):
@@ -746,7 +757,7 @@ def cromwell_run(input_parameters_filepath, cromwell_configuration, workflow_opt
     rc = sp_cromwell.poll()
     if rc != 0:
         if rc == 130:
-            print("Cromwell stopped by user request")
+            print("REAT stopped by user request")
         else:
             sentinel = "Check the content of stderr for potential additional information: "
             cromwell_sp_output_str = cromwell_sp_output.getvalue()
@@ -756,13 +767,20 @@ def cromwell_run(input_parameters_filepath, cromwell_configuration, workflow_opt
             if error_file_start_pos < 0:
                 # FIXME Unhandled error
                 print("Unhandled errors, please report this as an issue to add support for improved messages and "
-                      "user friendly actions on how to resolve it")
+                      "suggestions for actions on how to resolve it")
                 print(cromwell_sp_output_str)
             else:
                 error_file = cromwell_sp_output_str[error_file_start_pos + len(sentinel):].split("\n")[0][:-1]
+                print("\n\n\nREAT Failed, the following file contains might contain information with the reasons behind"
+                      " the failure")
                 print(error_file)
-                with open(error_file, 'r') as failed_job_stderr_file:
-                    print(failed_job_stderr_file.read())
+                if os.path.exists(error_file):
+                    with open(error_file, 'r') as failed_job_stderr_file:
+                        print(failed_job_stderr_file.read())
+                else:
+                    print("The stderr file for the process that failed was not found, this can happen when the job was "
+                          "killed outside REAT i.e when there was an out-of-memory issue, please check the logs for "
+                          "failed jobs and provide the necessary resources for these to complete")
     return rc
 
 
