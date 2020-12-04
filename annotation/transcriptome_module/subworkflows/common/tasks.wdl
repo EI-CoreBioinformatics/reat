@@ -71,6 +71,10 @@ task CountSequences {
         set -euxo pipefail
         grep -c "^>" ~{sequences_file}
     >>>
+
+    runtime {
+        continueOnReturnCode: [0, 1]
+    }
 }
 
 task MergeFiles {
