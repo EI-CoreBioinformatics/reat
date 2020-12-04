@@ -196,9 +196,9 @@ def parse_arguments():
     transcriptome_ap.add_argument("--samples", nargs='+', type=argparse.FileType('r'),
                                   help="Reads organised in the input specification for REAT, for more information "
                                        "please look at https://github.com/ei-corebioinformatics/reat for an example")
-    transcriptome_ap.add_argument("--tsv_paired_samples", type=argparse.FileType('r'),
-                                  help="TSV formatted input paired read samples, header required.\n"
-                                       "The TSV fields are as follows name, strand, files (because"
+    transcriptome_ap.add_argument("--csv_paired_samples", type=argparse.FileType('r'),
+                                  help="CSV formatted input paired read samples. Without headers.\n"
+                                       "The CSV fields are as follows name, strand, files (because"
                                        " this is an array that can contain one or more pairs, this fields' values are "
                                        "separated by semi-colon and space. Files in a pair are separated by semi-colon"
                                        "pairs are separated by a single space), merge, score, is_ref, "
@@ -207,11 +207,11 @@ def parse_arguments():
                                        "\'fr-secondstrand\'\n"
                                        "merge, is_ref and exclude_redundant are boolean and take values 'true', 'false'\n\n"
                                        "Example:\n"
-                                       "PR1	fr-secondstrand	A_R1.fq;A_R2.fq /samples/paired/B1.fq;/samples/paired/B2.fq"
-                                       "	false	2")
-    transcriptome_ap.add_argument("--tsv_long_samples", type=argparse.FileType('r'),
-                                  help="TSV formatted input long read samples, header required.\n"
-                                       "The TSV fields are as follows name, strand, files (space "
+                                       "PR1,fr-secondstrand,A_R1.fq;A_R2.fq /samples/paired/B1.fq;/samples/paired/B2.fq"
+                                       ",false,2")
+    transcriptome_ap.add_argument("--csv_long_samples", type=argparse.FileType('r'),
+                                  help="CSV formatted input long read samples. Without headers.\n"
+                                       "The CSV fields are as follows name, strand, files (space "
                                        "separated if there is more than one), quality, score, is_ref, "
                                        "exclude_redundant\n\n"
                                        "sample_strand takes values \'fr-firststrand\', \'fr-unstranded\', "
@@ -219,7 +219,7 @@ def parse_arguments():
                                        "quality takes values 'low', 'high'\n"
                                        "is_ref and exclude_redundant are booleans and take values 'true', 'false'\n\n"
                                        "Example:\n"
-                                       "Sample1\tlow\tfr-firststrand\tA.fq /samples/long/B.fq ./inputs/C.fq\t2")
+                                       "Sample1,fr-firststrand,A.fq /samples/long/B.fq ./inputs/C.fq,low,2")
     transcriptome_ap.add_argument("--reference", type=argparse.FileType('r'),
                                   help="Reference FASTA to annotate", required=True)
     transcriptome_ap.add_argument("--annotation", type=argparse.FileType('r'),
@@ -261,12 +261,12 @@ def parse_arguments():
     alignment_parameters.add_argument("--HQ_aligner", choices=['minimap2', 'gmap'],
                                       help="Choice of aligner for high-quality long reads", default='gmap')
     alignment_parameters.add_argument("--LQ_aligner", choices=['minimap2', 'gmap'],
-                                      help="Choice of aligner for low-quality long reads", default='gmap')
+                                      help="Choice of aligner for low-quality long reads", default='minimap2')
     alignment_parameters.add_argument("--min_identity", type=float,
                                       help="Minimum alignment identity to retain transcript", default=0.9)
     alignment_parameters.add_argument("--min_intron_len", type=int,
                                       help="Where available, the minimum intron length allowed will be specified for "
-                                           "the aligners", default=200)
+                                           "the aligners", default=20)
     alignment_parameters.add_argument("--max_intron_len", type=int,
                                       help="Where available, the maximum intron length allowed will be specified for "
                                            "the aligners", default=200000)
@@ -307,7 +307,7 @@ def parse_arguments():
                                           "transcripts"
                                           "- stringtie: Assembles the long reads alignments into transcripts"
                                           "- stringtie_collapse: Cleans and collapses long reads but does not "
-                                          "assemble them", default='merge')
+                                          "assemble them", default='filter')
     assembly_parameters.add_argument("--LQ_assembler",
                                      choices=["filter", "merge", "stringtie", "stringtie_collapse"],
                                      help="Choice of long read assembler."
@@ -318,7 +318,7 @@ def parse_arguments():
                                           "transcripts"
                                           "- stringtie: Assembles the long reads alignments into transcripts"
                                           "- stringtie_collapse: Cleans and collapses long reads but does not "
-                                          "assembles them", default='stringtie')
+                                          "assembles them", default='stringtie_collapse')
     assembly_parameters.add_argument("--HQ_assembler_extra_parameters",
                                      help="Extra parameters for the long reads assembler, please note that extra "
                                           "parameters are not validated and will have to match the parameters "
@@ -380,11 +380,11 @@ def parse_arguments():
             reat_ap.error("When '--separate_mikado_LQ' is enabled, --long_lq_scoring_file is required, please "
                           "provide it.")
 
-    if args.samples and (args.tsv_paired_samples or args.tsv_long_samples):
-        reat_ap.error("Conflicting arguments '--samples' and ['--tsv_paired_samples' or '--tsv_long_samples'] provided,"
-                      " please choose one of tsv or json sample input format")
-    if not args.samples and not args.tsv_paired_samples and not args.tsv_long_samples:
-        reat_ap.error("Please provide at least one of --samples, --tsv_paired_samples, --tsv_long_samples")
+    if args.samples and (args.csv_paired_samples or args.csv_long_samples):
+        reat_ap.error("Conflicting arguments '--samples' and ['--csv_paired_samples' or '--csv_long_samples'] provided,"
+                      " please choose one of csv or json sample input format")
+    if not args.samples and not args.csv_paired_samples and not args.csv_long_samples:
+        reat_ap.error("Please provide at least one of --samples, --csv_paired_samples, --csv_long_samples")
     return args
 
 
@@ -401,11 +401,11 @@ def validate_long_samples(samples):
 
     for line in samples:
         out_files = []
-        fields = line.rstrip().split("\t")
+        fields = line.rstrip().split(",")
         try:
             name, strand, files, quality = fields[:4]
         except ValueError as e:
-            errors[line].append(f"Unexpected input '{fields}'\n\t\tPlease make sure this is a tsv file with at minimum"
+            errors[line].append(f"Unexpected input '{fields}'\n\t\tPlease make sure this is a csv file with at minimum"
                                 f"the following fields name, quality, strand, files")
         if name in names:
             errors[line].append(
@@ -478,12 +478,12 @@ def validate_paired_samples(samples):
     result = {'ei_annotation.paired_samples': []}
     for line in samples:
         out_files = []
-        fields = line.rstrip().split("\t")
+        fields = line.rstrip().split(",")
         try:
             name, strand, files, merge = fields[:4]
         except ValueError as e:
-            errors[line].append(f"Unexpected input '{fields}'\n\t\tPlease make sure this is a tsv file with at minimum"
-                                f"the following fields name, strand, files, merge")
+            errors[line].append(f"Unexpected input '{fields}'\n\t\tPlease make sure this is a csv file with at minimum"
+                                f" the following fields name, strand, files, merge")
             break
         for file in files.split(' '):
             try:
@@ -567,11 +567,11 @@ def combine_arguments(cli_arguments):
             sample = parse_json_input(s)
             cromwell_inputs.update(sample)
 
-    if cli_arguments.tsv_paired_samples:
-        cromwell_inputs.update(validate_paired_samples(cli_arguments.tsv_paired_samples))
+    if cli_arguments.csv_paired_samples:
+        cromwell_inputs.update(validate_paired_samples(cli_arguments.csv_paired_samples))
 
-    if cli_arguments.tsv_long_samples:
-        cromwell_inputs.update(validate_long_samples(cli_arguments.tsv_long_samples))
+    if cli_arguments.csv_long_samples:
+        cromwell_inputs.update(validate_long_samples(cli_arguments.csv_long_samples))
 
     cromwell_inputs["ei_annotation.reference_genome"] = cli_arguments.reference.name
     cromwell_inputs["ei_annotation.all_scoring_file"] = cli_arguments.all_scoring_file.name
