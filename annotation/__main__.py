@@ -35,6 +35,7 @@ import subprocess
 import sys
 import time
 from collections import defaultdict
+from json.decoder import JSONDecodeError
 from textwrap import wrap
 
 from jsonschema import ValidationError, validators, Draft7Validator
@@ -52,6 +53,10 @@ try:
     from yaml import CLoader as Loader, CDumper as Dumper
 except ImportError:
     from yaml import Loader, Dumper
+
+
+def eprint(*args, **kwargs):
+    print(*args, **kwargs, file=sys.stderr)
 
 
 def is_valid_name(validator, value, instance, schema):
@@ -128,10 +133,10 @@ def check_environment():
         if key == "seqtk":
             if "Version" in output:
                 item["rc"] = 0
-        if key == "spaln":
+        elif key == "spaln":
             if "No input seq file !" in output:
                 item["rc"] = 0
-        if key == "sortgrcd":
+        elif key == "sortgrcd":
             if output != "":
                 item["rc"] = 0
         if item["result"] not in output:
@@ -548,7 +553,19 @@ def combine_arguments(cli_arguments):
 
     if cli_arguments.samples:
         for s in cli_arguments.samples:
-            sample = json.load(s)
+            try:
+                sample = json.load(s)
+            except JSONDecodeError as e:
+                lines = e.doc.split('\n')
+                eprint(e)
+                eprint(f"Please check '{s.name}' is a valid json file around this context:")
+                error_line = e.lineno-1
+                if 'Expecting \',\' delimiter' == e.msg:
+                    error_line = e.lineno
+                [eprint(l) for l in lines[max(0, error_line-3):error_line]]
+                eprint(' '*(len(lines[error_line-1])-1), '^', sep='')
+                [eprint(l) for l in lines[error_line:min(error_line+3, len(lines))]]
+                exit(1)
             cromwell_inputs.update(sample)
 
     if cli_arguments.tsv_paired_samples:
