@@ -201,18 +201,19 @@ def parse_arguments():
                                        "The TSV fields are as follows sample_name, sample_strand, sample_files (because"
                                        " this is an array that can contain one or more pairs, this fields' values are "
                                        "separated by semi-colon and space. Semi-colon delimit each pair and files in a "
-                                       "pair are separated by a single space), merge, score, is_ref, exclude_redundant\n\n"
+                                       "pair are separated by a single space), merge, score, is_ref, "
+                                       "exclude_redundant\n\n"
                                        "sample_strand takes values \'fr-firststrand\', \'fr-unstranded\', "
                                        "\'fr-secondstrand\'\n"
-                                       "quality takes values 'low', 'high'\n"
                                        "merge, is_ref and exclude_redundant are boolean and take values 'true', 'false'\n\n"
                                        "Example:\n"
                                        "PR1	fr-secondstrand	A_R1.fq;A_R2.fq /samples/paired/B1.fq;/samples/paired/B2.fq"
                                        "	false	2")
     transcriptome_ap.add_argument("--tsv_long_samples", type=argparse.FileType('r'),
                                   help="TSV formatted input long read samples, header required.\n"
-                                       "The TSV fields are as follows name, quality, strand, files (space "
-                                       "separated if there is more than one), score, is_ref, exclude_redundant\n\n"
+                                       "The TSV fields are as follows name, strand, files (space "
+                                       "separated if there is more than one), quality, score, is_ref, "
+                                       "exclude_redundant\n\n"
                                        "sample_strand takes values \'fr-firststrand\', \'fr-unstranded\', "
                                        "\'fr-secondstrand\'\n"
                                        "quality takes values 'low', 'high'\n"
@@ -401,7 +402,11 @@ def validate_long_samples(samples):
     for line in samples:
         out_files = []
         fields = line.rstrip().split("\t")
-        name, quality, strand, files = fields[:4]
+        try:
+            name, strand, files, quality = fields[:4]
+        except ValueError as e:
+            errors[line].append(f"Unexpected input '{fields}'\n\t\tPlease make sure this is a tsv file with at minimum"
+                                f"the following fields name, quality, strand, files")
         if name in names:
             errors[line].append(
                 ("Non-unique name '{}' specified, please make sure sample names are unique".format(name)))
