@@ -58,7 +58,15 @@ task Hisat {
     }
 
     Int cpus = 8
-    
+    RuntimeAttr default_attr = object {
+        cpu_cores: "~{cpus}",
+        mem_gb: 8,
+        max_retries: 1
+    }
+
+    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
+    Int task_cpus = runtime_attr.cpu_cores
+
     output {
         File bam = rp_name + ".hisat.bam"
     }
@@ -80,22 +88,13 @@ task Hisat {
             strandness="--rna-strandness=R"
             ;;
         esac
-    hisat2 -p ~{cpus} -x ~{sub(index[0], "\\.\\d\\.ht2l?", "")} \
+    hisat2 -p ~{task_cpus} -x ~{sub(index[0], "\\.\\d\\.ht2l?", "")} \
     ${strandness} ~{extra_parameters} \
     --min-intronlen=~{min_intron_len} \
     --max-intronlen=~{max_intron_len} \
     ~{"--known-splicesite-infile " + sites} \
     -1 ~{sample.R1} ~{"-2 " + sample.R2} | samtools sort -@ 4 - > "~{rp_name}.hisat.bam"
     >>>
-
-    RuntimeAttr default_attr = object {
-        cpu_cores: "~{cpus}",
-        mem_gb: 16,
-        max_retries: 1
-    }
-    
-    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
-
 
     runtime {
         cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])

@@ -232,7 +232,15 @@ task StarIndex {
     }
 
     Int cpus = 4
-    
+    RuntimeAttr default_attr = object {
+        cpu_cores: "~{cpus}",
+        mem_gb: 8,
+        max_retries: 1
+    }
+
+    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
+    Int task_cpus = runtime_attr.cpu_cores
+
     output {
         Array[File] index = glob('starIndex/*')
     }
@@ -240,18 +248,9 @@ task StarIndex {
     command <<<
         set -euxo pipefail
         mkdir StarIndex
-        STAR --runThreadN ~{cpus} --runMode genomeGenerate --genomeDir starIndex \
+        STAR --runThreadN ~{task_cpus} --runMode genomeGenerate --genomeDir starIndex \
         --genomeFastaFiles ~{reference}
     >>>
-
-    RuntimeAttr default_attr = object {
-        cpu_cores: "~{cpus}",
-        mem_gb: 16,
-        max_retries: 1
-    }
-    
-    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
-
 
   runtime {
     cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
@@ -267,24 +266,23 @@ task TophatIndex {
     }
 
     Int cpus = 4
-    
+    RuntimeAttr default_attr = object {
+        cpu_cores: "~{cpus}",
+        mem_gb: 8,
+        max_retries: 1
+    }
+
+    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
+    Int task_cpus = runtime_attr.cpu_cores
+
     output {
         Array[File] index = glob('ref*')
     }
 
     command <<<
         set -euxo pipefail
-        bowtie2-build --threads ~{cpus} ~{reference} "ref"
+        bowtie2-build --threads ~{task_cpus} ~{reference} "ref"
     >>>
-
-    RuntimeAttr default_attr = object {
-        cpu_cores: "~{cpus}",
-        mem_gb: 16,
-        max_retries: 1
-    }
-    
-    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
-
 
     runtime {
         cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])

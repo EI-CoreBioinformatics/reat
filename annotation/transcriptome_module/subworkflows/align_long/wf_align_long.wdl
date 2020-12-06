@@ -261,6 +261,14 @@ task GMapLong {
     }
 
     Int cpus = 16
+    RuntimeAttr default_attr = object {
+        cpu_cores: "~{cpus}",
+        mem_gb: 8,
+        max_retries: 1
+    }
+
+    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
+    Int task_cpus = runtime_attr.cpu_cores
 
     output {
         File bam = "alignments/gmap."+name+"."+LR_basename+".bam"
@@ -301,16 +309,8 @@ task GMapLong {
         ~{"--min-trimmed-coverage=" + min_trimmed_coverage} \
         ~{"--min-identity=" + min_identity} \
         --format=samse ~{extra_parameters} \
-        --nthreads="~{cpus}" | samtools view -F 4 -F 0x900 -bS - | samtools sort -@ 4 --reference ~{reference} -T gmap.sort -o gmap.~{name}.~{LR_basename}.bam -
+        --nthreads="~{task_cpus}" | samtools view -F 4 -F 0x900 -bS - | samtools sort -@ 4 --reference ~{reference} -T gmap.sort -o gmap.~{name}.~{LR_basename}.bam -
     >>>
-
-    RuntimeAttr default_attr = object {
-        cpu_cores: "~{cpus}",
-        mem_gb: 16,
-        max_retries: 1
-    }
-    
-    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
 
     runtime {
         cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
@@ -335,6 +335,14 @@ task Minimap2Long {
     }
 
     Int cpus = 16
+    RuntimeAttr default_attr = object {
+        cpu_cores: "~{cpus}",
+        mem_gb: 8,
+        max_retries: 1
+    }
+
+    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
+    Int task_cpus = runtime_attr.cpu_cores
 
     output {
         File bam = "alignments/minimap2."+name+"."+LR_basename+".bam"
@@ -370,20 +378,13 @@ task Minimap2Long {
         --cs=long \
         -G ~{max_intron_len} \
         ${strand_opt} \
-        -t ~{cpus} \
+        -t ~{task_cpus} \
         -L --MD \
         --eqx -2 \
         --secondary=no \
-        ~{reference} - | samtools view -F 4 -F 0x900 -bS - | samtools sort -@ 4 --reference ~{reference} -T minimap2.sort -o minimap2.~{name}.~{LR_basename}.bam -
+        ~{reference} - | samtools view -F 4 -F 0x900 -bS - | samtools sort -@ ~{task_cpus/2} --reference ~{reference} -T minimap2.sort -o minimap2.~{name}.~{LR_basename}.bam -
     >>>
 
-    RuntimeAttr default_attr = object {
-        cpu_cores: "~{cpus}",
-        mem_gb: 16,
-        max_retries: 1
-    }
-    
-    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
     runtime {
         cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
         memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"

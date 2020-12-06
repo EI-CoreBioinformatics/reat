@@ -238,6 +238,14 @@ task Sort {
     }
 
     Int cpus = 8
+    RuntimeAttr default_attr = object {
+        cpu_cores: "~{cpus}",
+        mem_gb: 8,
+        max_retries: 1
+    }
+
+    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
+    Int task_cpus = runtime_attr.cpu_cores
 
     output {
         IndexedBam indexed_bam = object { bam: "alignments/" + name + ".sorted.bam", index: "alignments/" + name + ".sorted.bam.bai" }
@@ -248,18 +256,9 @@ task Sort {
         set -euxo pipefail
         mkdir alignments
         cd alignments
-        samtools sort -@~{cpus} ~{bam} > ~{name + ".sorted.bam"}
+        samtools sort -@~{task_cpus} ~{bam} > ~{name + ".sorted.bam"}
         samtools index ~{name + ".sorted.bam"}
     >>>
-
-    RuntimeAttr default_attr = object {
-        cpu_cores: "~{cpus}",
-        mem_gb: 16,
-        max_retries: 1
-    }
-    
-    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
-
 
     runtime {
         cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
@@ -346,7 +345,15 @@ task Star {
     }
 
     Int cpus = 8
-    
+    RuntimeAttr default_attr = object {
+        cpu_cores: "~{cpus}",
+        mem_gb: 8,
+        max_retries: 1
+    }
+
+    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
+    Int task_cpus = runtime_attr.cpu_cores
+
     output {
         File aligned_pair = rp_name + ".star.bam"
     }
@@ -366,7 +373,7 @@ task Star {
         esac
 
             STAR --genomeDir "$(dirname ~{index[0]})" ~{star_extra_parameters} \
-    --runThreadN ~{cpus} \
+    --runThreadN ~{task_cpus} \
     "${compression}" \
     --runMode alignReads \
     --outSAMtype BAM Unsorted \
@@ -377,15 +384,6 @@ task Star {
     ~{"--sjdbGTFfile " + reference_annotation} \
     --readFilesIn ~{sample.R1} ~{sample.R2} && ln -s Aligned.out.bam "~{rp_name}.star.bam"
     >>>
-
-    RuntimeAttr default_attr = object {
-        cpu_cores: "~{cpus}",
-        mem_gb: 16,
-        max_retries: 1
-    }
-    
-    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
-
 
     runtime {
         cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])

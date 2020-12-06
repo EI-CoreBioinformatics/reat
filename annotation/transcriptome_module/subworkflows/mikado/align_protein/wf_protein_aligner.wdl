@@ -76,19 +76,19 @@ task BlastAlign {
         String output_filename
         RuntimeAttr? runtime_attr_override
     }
-    
+
+    Int cpus = 4
     RuntimeAttr default_attr = object {
-        cpu_cores: 1,
-        mem_gb: 4,
+        cpu_cores: "~{cpus}",
+        mem_gb: 8,
         max_retries: 1
     }
-    
-    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
 
-    Int cpus = select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
+    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
+    Int task_cpus = runtime_attr.cpu_cores
 
     runtime {
-        cpu: cpus
+        cpu: task_cpus
         memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
         maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
     }
@@ -99,7 +99,7 @@ task BlastAlign {
 
     command <<<
         set -euxo pipefail
-        ~{blast_type} ~{extra} -db ~{sub(index[0], "\.[^.]+$", "")} -num_threads ~{cpus} -query ~{query} ~{"-matrix " + matrix} -outfmt "~{outfmt}" > ~{output_filename}
+        ~{blast_type} ~{extra} -db ~{sub(index[0], "\.[^.]+$", "")} -num_threads ~{task_cpus} -query ~{query} ~{"-matrix " + matrix} -outfmt "~{outfmt}" > ~{output_filename}
     >>>
 }
 

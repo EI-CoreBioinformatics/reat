@@ -224,6 +224,14 @@ task MikadoPick {
     }
 
     Int cpus = 8
+    RuntimeAttr default_attr = object {
+        cpu_cores: "~{cpus}",
+        mem_gb: 8,
+        max_retries: 1
+    }
+
+    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
+    Int task_cpus = runtime_attr.cpu_cores
 
     output {
         File index_log  = output_prefix + "-index_loci.log"
@@ -240,7 +248,7 @@ task MikadoPick {
     set -euxo pipefail
     export TMPDIR=/tmp
     yaml-merge -s ~{config_file} ~{"-m " + extra_config} -o pick_config.yaml
-    mikado pick ~{"--source Mikado_" + mode} ~{"--mode " + mode} --procs=~{cpus} --scoring-file ~{scoring_file} \
+    mikado pick ~{"--source Mikado_" + mode} ~{"--mode " + mode} --procs=~{task_cpus} --scoring-file ~{scoring_file} \
     ~{"--flank " + flank} --start-method=spawn --json-conf=pick_config.yaml \
     --loci-out ~{output_prefix}-~{mode}.loci.gff3 -lv INFO ~{"-db " + mikado_db} \
     --subloci-out ~{output_prefix}-~{mode}.subloci.gff3 --monoloci-out ~{output_prefix}-~{mode}.monoloci.gff3 \
@@ -248,15 +256,6 @@ task MikadoPick {
     mikado compare -r ~{output_prefix}-~{mode}.loci.gff3 -l ~{output_prefix}-index_loci.log --index
     mikado util stats  ~{output_prefix}-~{mode}.loci.gff3 ~{output_prefix}-~{mode}.loci.gff3.stats
     >>>
-
-    RuntimeAttr default_attr = object {
-        cpu_cores: "~{cpus}",
-        mem_gb: 16,
-        max_retries: 1
-    }
-
-    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
-
 
     runtime {
         cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
@@ -278,6 +277,14 @@ task MikadoSerialise {
         RuntimeAttr? runtime_attr_override
     }
     Int cpus = 8
+    RuntimeAttr default_attr = object {
+        cpu_cores: "~{cpus}",
+        mem_gb: 8,
+        max_retries: 1
+    }
+
+    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
+    Int task_cpus = runtime_attr.cpu_cores
 
     output {
         Array[File] out = glob("mikado_serialise/*")
@@ -298,17 +305,8 @@ task MikadoSerialise {
     yaml-merge -s ~{config} ~{"-m " + extra_config} -o serialise_config.yaml
     mikado serialise ~{xml_prefix}~{sep="," homology_alignments} ~{"--blast_targets="+clean_seqs_db} ~{"--junctions="+junctions} ~{"--orfs="+orfs} \
     ~{"--transcripts=" + transcripts} --genome_fai=${fai} \
-    --json-conf=serialise_config.yaml --force --start-method=spawn -od mikado_serialise --procs=~{cpus}
+    --json-conf=serialise_config.yaml --force --start-method=spawn -od mikado_serialise --procs=~{task_cpus}
     >>>
-
-    RuntimeAttr default_attr = object {
-        cpu_cores: "~{cpus}",
-        mem_gb: 8,
-        max_retries: 1
-    }
-
-    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
-
 
     runtime {
         cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
@@ -401,6 +399,14 @@ task MikadoPrepare {
     }
 
     Int cpus = 8
+    RuntimeAttr default_attr = object {
+        cpu_cores: "~{cpus}",
+        mem_gb: 8,
+        max_retries: 1
+    }
+
+    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
+    Int task_cpus = runtime_attr.cpu_cores
 
     output {
         File mikado_config = output_prefix+"-mikado.yaml"
@@ -418,16 +424,8 @@ task MikadoPrepare {
 
         # Merge special configuration file for this run here
         yaml-merge -s ~{output_prefix}-mikado.yaml ~{"-m " + extra_config} -o prepare_config.yaml
-        mikado prepare --procs=~{cpus} --json-conf=prepare_config.yaml -od ~{output_prefix}-mikado_prepare --strip_cds
+        mikado prepare --procs=~{task_cpus} --json-conf=prepare_config.yaml -od ~{output_prefix}-mikado_prepare --strip_cds
     >>>
-
-    RuntimeAttr default_attr = object {
-        cpu_cores: "~{cpus}",
-        mem_gb: 8,
-        max_retries: 1
-    }
-
-    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
 
 
     runtime {
