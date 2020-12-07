@@ -375,16 +375,17 @@ def parse_arguments():
 
     args = reat_ap.parse_args()
 
-    if args.separate_mikado_LQ:
-        if not args.long_lq_scoring_file:
-            reat_ap.error("When '--separate_mikado_LQ' is enabled, --long_lq_scoring_file is required, please "
-                          "provide it.")
+    if args.reat_module == 'transcriptome':
+        if args.separate_mikado_LQ:
+            if not args.long_lq_scoring_file:
+                reat_ap.error("When '--separate_mikado_LQ' is enabled, --long_lq_scoring_file is required, please "
+                              "provide it.")
 
-    if args.samples and (args.csv_paired_samples or args.csv_long_samples):
-        reat_ap.error("Conflicting arguments '--samples' and ['--csv_paired_samples' or '--csv_long_samples'] provided,"
-                      " please choose one of csv or json sample input format")
-    if not args.samples and not args.csv_paired_samples and not args.csv_long_samples:
-        reat_ap.error("Please provide at least one of --samples, --csv_paired_samples, --csv_long_samples")
+        if args.samples and (args.csv_paired_samples or args.csv_long_samples):
+            reat_ap.error("Conflicting arguments '--samples' and ['--csv_paired_samples' or '--csv_long_samples'] "
+                          "provided, please choose one of csv or json sample input format")
+        if not args.samples and not args.csv_paired_samples and not args.csv_long_samples:
+            reat_ap.error("Please provide at least one of --samples, --csv_paired_samples, --csv_long_samples")
     return args
 
 
