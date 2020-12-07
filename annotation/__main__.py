@@ -366,6 +366,9 @@ def parse_arguments():
     homology_ap.add_argument("--annotation_min_cds", type=int,
                              help="If 'aa_len' filter is enabled for annotation coding features, any CDS smaller than"
                                   "this parameter will be filtered out")
+    homology_ap.add_argument("--annotation_max_intron", type=int,
+                             help="If 'intron_len' filter is enabled for annotation coding features, any features with"
+                                  "introns longer than this parameter will be filtered out")
     homology_ap.add_argument("--alignment_min_exon_len", type=int, help="Minimum exon length, alignment parameter")
     homology_ap.add_argument("--alignment_filters",
                              choices=['all', 'none', 'intron_len', 'internal_stop', 'aa_len', 'splicing'],
@@ -846,6 +849,8 @@ def combine_arguments_homology(cli_arguments):
         cromwell_inputs["ei_homology.PrepareAnnotations.filters"] = cli_arguments.annotation_filters
     if cli_arguments.annotation_min_cds:
         cromwell_inputs["ei_homology.PrepareAnnotations.min_cds_len"] = cli_arguments.annotation_min_cds
+    if cli_arguments.annotation_max_intron:
+        cromwell_inputs["ei_homology.PrepareAnnotations.max_intron_len"] = cli_arguments.annotation_max_intron
     if cli_arguments.alignment_min_exon_len:
         cromwell_inputs["ei_homology.AlignProteins.min_exon_len"] = cli_arguments.alignment_min_exon_len
     if cli_arguments.alignment_filters:

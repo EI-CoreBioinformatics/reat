@@ -119,6 +119,7 @@ task PrepareAnnotations {
         GenomeAnnotation annotation
         String out_prefix = sub(basename(annotation.annotation_gff),  "\.[^/.]+$", "")
         Int min_cds_len = 20 # nts
+        Int max_intron_len = 200000
         Array[String] filters = "all"
     }
 
@@ -131,7 +132,7 @@ task PrepareAnnotations {
 
     command <<<
         set -euxo pipefail
-        xspecies_cleanup --merge --filters ~{sep=" " filters} --annotation ~{annotation.annotation_gff} -g ~{annotation.genome} --min_protein ~{min_cds_len} -x ~{out_prefix}.cdna.fa --bed ~{out_prefix}.bed -y ~{out_prefix}.proteins.fa -o ~{out_prefix}.clean.extra_attr.gff
+        xspecies_cleanup --merge --filters ~{sep=" " filters} --annotation ~{annotation.annotation_gff} -g ~{annotation.genome} --max_intron ~{max_intron_len} --min_protein ~{min_cds_len} -x ~{out_prefix}.cdna.fa --bed ~{out_prefix}.bed -y ~{out_prefix}.proteins.fa -o ~{out_prefix}.clean.extra_attr.gff
     >>>
 }
 
