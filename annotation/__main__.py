@@ -394,10 +394,8 @@ def validate_long_samples(samples):
     errors = defaultdict(list)
     strands = ("fr-firststrand", "fr-secondstrand", "fr-unstranded")
     quality_choices = ('high', 'low')
-    result['ei_annotation.HQ_long_read_samples'] = []
-    result['ei_annotation.LQ_long_read_samples'] = []
-    hq_samples = result['ei_annotation.HQ_long_read_samples']
-    lq_samples = result['ei_annotation.LQ_long_read_samples']
+    hq_samples = []
+    lq_samples = []
 
     for line in samples:
         out_files = []
@@ -467,6 +465,11 @@ def validate_long_samples(samples):
             print("was not parsed successfully, the following errors were found:", file=sys.stderr)
             [print("\t-", e, file=sys.stderr) for e in error_list]
         raise ValueError(f"Could not parse file {samples.name}")
+
+    if hq_samples:
+        result['ei_annotation.HQ_long_read_samples'] = hq_samples
+    if lq_samples:
+        result['ei_annotation.LQ_long_read_samples'] = lq_samples
 
     return result
 
