@@ -156,7 +156,7 @@ task CollectAlignmentStats {
     }
 
     command <<<
-    short_read_summary_stats_table ~{sep=" " summary_stats} > align_short.SR_read_samples.summary.stats.tsv
+    short_read_summary_stats_table --stats_tsv ~{sep=" " summary_stats} > align_short.SR_read_samples.summary.stats.tsv
     >>>
 }
 
