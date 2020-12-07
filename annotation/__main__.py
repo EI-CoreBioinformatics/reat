@@ -792,6 +792,10 @@ def cromwell_run(input_parameters_filepath, cromwell_configuration, workflow_opt
 def main():
     print("Welcome to REAT")
     print("version -", VERSION)
+    print("\nCommand-line call:")
+    print(' '.join(sys.argv))
+    print("\n")
+
     start_time = time.time()
     cli_arguments = parse_arguments()
     check_environment()
