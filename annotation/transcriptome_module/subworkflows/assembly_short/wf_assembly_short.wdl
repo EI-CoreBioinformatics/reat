@@ -39,7 +39,7 @@ workflow wf_assembly_short {
                     aligned_sample = bam,
                     strand = aligned_sample.strand,
                     output_directory = output_directory,
-                    runtime_attr_override = scallop_assembly_resources
+                    runtime_attr_override = stringtie_assembly_resources
                 }
             }
         }
@@ -75,9 +75,9 @@ workflow wf_assembly_short {
         call Scallop {
             input:
             aligned_sample = aligned_sample,
-            output_directory = output_directory,
-            runtime_attr_override = scallop_assembly_resources
+            output_directory = output_directory
         }
+
         AssembledSample scallop_assembly = object {
             name: aligned_sample.name+"."+aligned_sample.aligner+".scallop",
             strand: aligned_sample.strand,
@@ -136,6 +136,14 @@ task Stringtie {
     }
 
     Int cpus = 8
+    RuntimeAttr default_attr = object {
+        cpu_cores: "~{cpus}",
+        mem_gb: 16,
+        max_retries: 1
+    }
+
+    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
+    Int task_cpus = runtime_attr.cpu_cores
 
     output {
         File assembled = output_directory + "/"+prefix+".stringtie.gtf"
@@ -156,19 +164,11 @@ task Stringtie {
         mkdir ~{output_directory}
         cd ~{output_directory}
         stringtie ~{aligned_sample} \
-        -p "~{cpus}" \
+        -p "~{task_cpus}" \
         ${strandness} \
         ~{"-G " + reference_annotation} \
         -o "~{prefix}.stringtie.gtf"
     >>>
-
-    RuntimeAttr default_attr = object {
-        cpu_cores: "~{cpus}",
-        mem_gb: 16,
-        max_retries: 1
-    }
-    
-    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
 
     runtime {
         cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
@@ -187,7 +187,7 @@ task Merge {
         RuntimeAttr? runtime_attr_override
     }
 
-    Int cpus = 8
+    Int cpus = 1
 
     output {
         File assembly = output_directory + "/" + name+"."+aligner_name+".stringtie.gtf"
@@ -227,7 +227,7 @@ task Scallop {
         RuntimeAttr? runtime_attr_override
     }
     
-    Int cpus = 2
+    Int cpus = 1
 
     output {
         File assembled = output_directory+"/"+aligned_sample.name+"."+aligned_sample.aligner+".scallop.gtf"
