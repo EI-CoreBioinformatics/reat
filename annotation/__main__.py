@@ -357,7 +357,7 @@ def parse_arguments():
     homology_ap.add_argument("--alignment_species", type=str,
                              help="Available aligner species, for more information, please look at URL",
                              required=True)
-    homology_ap.add_argument("--annotations_csv", nargs='+', type=argparse.FileType('r'),
+    homology_ap.add_argument("--annotations_csv", type=argparse.FileType('r'),
                              help="CSV file with reference annotations to extract proteins/cdnas for spliced alignments"
                                   " in csv format. The CSV fields are as follows genome_fasta,annotation_gff  "
                                   "e.g Athaliana.fa,Athaliana.gff",
