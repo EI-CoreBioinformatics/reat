@@ -357,8 +357,10 @@ def parse_arguments():
     homology_ap.add_argument("--alignment_species", type=str,
                              help="Available aligner species, for more information, please look at URL",
                              required=True)
-    homology_ap.add_argument("--annotations", nargs='+', type=argparse.FileType('r'),
-                             help="Reference annotations to extract proteins/cdnas for spliced alignments",
+    homology_ap.add_argument("--annotations_csv", nargs='+', type=argparse.FileType('r'),
+                             help="CSV file with reference annotations to extract proteins/cdnas for spliced alignments"
+                                  " in csv format. The CSV fields are as follows genome_fasta,annotation_gff  "
+                                  "e.g Athaliana.fa,Athaliana.gff",
                              required=True)
     homology_ap.add_argument("--annotation_filters",
                              choices=['all', 'none', 'intron_len', 'internal_stop', 'aa_len', 'splicing'], nargs='+',
@@ -839,13 +841,43 @@ def transcriptome_module(cli_arguments):
                                 workflow_options_file, wdl_file)
 
 
+def validate_annotations(csv_annotation_file):
+    result = {'ei_homology.annotations': []}
+    errors = defaultdict(list)
+    for line in csv_annotation_file:
+        try:
+            fasta, gff = line.strip().split(',')
+        except ValueError as e:
+            errors[line].append(f"Unexpected input '{line}', please make sure this is a comma-separated file with"
+                                f" 2 values per line. A fasta file followed by a gff file for the associated genome")
+        if not os.path.exists(fasta):
+            errors[line].append(f"The fasta file '{fasta}' does not exist, please make sure this is the correct path")
+        if not os.path.exists(gff):
+            errors[line].append(f"The gff file '{gff}' does not exist, please make sure this is the correct path")
+
+        if not errors[line]:
+            result['ei_homology.annotations'].append({'genome': fasta, 'annotation_gff': gff})
+
+    if any([len(error_list) for error_list in errors.values()]):
+        print(f"File {csv_annotation_file.name} parsing failed, errors found:\n", file=sys.stderr)
+        for line, error_list in errors.items():
+            if not error_list:
+                continue
+            print("Line:", line.strip(), sep='\n\t', file=sys.stderr)
+            print("was not parsed successfully, the following errors were found:", file=sys.stderr)
+            [print("\t-", e, file=sys.stderr) for e in error_list]
+        raise ValueError(f"Could not parse file {csv_annotation_file.name}")
+
+    return result
+
+
 def combine_arguments_homology(cli_arguments):
     computational_resources = {}
     if cli_arguments.computational_resources:
         computational_resources = json.load(cli_arguments.computational_resources)
     cromwell_inputs = computational_resources
-    for s in cli_arguments.annotations:
-        annotation = json.load(s)
+    for a in cli_arguments.annotations_csv:
+        annotation = validate_annotations(a)
         cromwell_inputs.update(annotation)
 
     cromwell_inputs["ei_homology.genome_to_annotate"] = cli_arguments.genome.name
