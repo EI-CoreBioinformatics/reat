@@ -364,19 +364,27 @@ def parse_arguments():
                              required=True)
     homology_ap.add_argument("--annotation_filters",
                              choices=['all', 'none', 'intron_len', 'internal_stop', 'aa_len', 'splicing'], nargs='+',
-                             help="Filter annotation coding genes by the filter types specified")
-    homology_ap.add_argument("--annotation_min_cds", type=int,
+                             help="Filter annotation coding genes by the filter types specified",
+                             default=['none'])
+    homology_ap.add_argument("--filter_min_cds", type=int,
                              help="If 'aa_len' filter is enabled for annotation coding features, any CDS smaller than"
-                                  "this parameter will be filtered out")
-    homology_ap.add_argument("--annotation_max_intron", type=int,
+                                  "this parameter will be filtered out",
+                             default=20)
+    homology_ap.add_argument("--filter_max_intron", type=int,
                              help="If 'intron_len' filter is enabled for annotation coding features, any features with"
-                                  "introns longer than this parameter will be filtered out")
-    homology_ap.add_argument("--alignment_min_exon_len", type=int, help="Minimum exon length, alignment parameter")
+                                  "introns longer than this parameter will be filtered out",
+                             default=200000)
+    homology_ap.add_argument("--alignment_min_exon_len", type=int, help="Minimum exon length, alignment parameter",
+                             default=20)
     homology_ap.add_argument("--alignment_filters",
                              choices=['all', 'none', 'intron_len', 'internal_stop', 'aa_len', 'splicing'],
-                             help="Filter alignment results by the filter types specified", nargs='+')
-    homology_ap.add_argument("--alignment_min_identity", type=int, help="Minimum identity filter for alignments")
-    homology_ap.add_argument("--alignment_min_coverage", type=int, help="Minimum coverage filter for alignments")
+                             help="Filter alignment results by the filter types specified", nargs='+', default=['none'])
+    homology_ap.add_argument("--alignment_min_identity", type=int, help="Minimum identity filter for alignments",
+                             default=50)
+    homology_ap.add_argument("--alignment_min_coverage", type=int, help="Minimum coverage filter for alignments",
+                             default=80)
+    homology_ap.add_argument("--alignment_max_per_query", type=int, default=4,
+                             help="Maximum number of alignments per input query protein")
 
     args = reat_ap.parse_args()
 
@@ -850,6 +858,7 @@ def validate_annotations(csv_annotation_file):
         except ValueError as e:
             errors[line].append(f"Unexpected input '{line}', please make sure this is a comma-separated file with"
                                 f" 2 values per line. A fasta file followed by a gff file for the associated genome")
+            continue
         if not os.path.exists(fasta):
             errors[line].append(f"The fasta file '{fasta}' does not exist, please make sure this is the correct path")
         if not os.path.exists(gff):
@@ -876,9 +885,8 @@ def combine_arguments_homology(cli_arguments):
     if cli_arguments.computational_resources:
         computational_resources = json.load(cli_arguments.computational_resources)
     cromwell_inputs = computational_resources
-    for a in cli_arguments.annotations_csv:
-        annotation = validate_annotations(a)
-        cromwell_inputs.update(annotation)
+    annotation = validate_annotations(cli_arguments.annotations_csv)
+    cromwell_inputs.update(annotation)
 
     cromwell_inputs["ei_homology.genome_to_annotate"] = cli_arguments.genome.name
     cromwell_inputs["ei_homology.AlignProteins.species"] = cli_arguments.alignment_species
@@ -886,18 +894,24 @@ def combine_arguments_homology(cli_arguments):
     # Optional extra parameters
     if cli_arguments.annotation_filters:
         cromwell_inputs["ei_homology.PrepareAnnotations.filters"] = cli_arguments.annotation_filters
-    if cli_arguments.annotation_min_cds:
-        cromwell_inputs["ei_homology.PrepareAnnotations.min_cds_len"] = cli_arguments.annotation_min_cds
-    if cli_arguments.annotation_max_intron:
-        cromwell_inputs["ei_homology.PrepareAnnotations.max_intron_len"] = cli_arguments.annotation_max_intron
+    if cli_arguments.filter_min_cds:
+        cromwell_inputs["ei_homology.PrepareAnnotations.min_cds_len"] = cli_arguments.filter_min_cds
+    if cli_arguments.filter_max_intron:
+        cromwell_inputs["ei_homology.PrepareAnnotations.max_intron_len"] = cli_arguments.filter_max_intron
     if cli_arguments.alignment_min_exon_len:
         cromwell_inputs["ei_homology.AlignProteins.min_exon_len"] = cli_arguments.alignment_min_exon_len
     if cli_arguments.alignment_filters:
         cromwell_inputs["ei_homology.AlignProteins.filters"] = cli_arguments.alignment_filters
+    if cli_arguments.filter_min_cds:
+        cromwell_inputs["ei_homology.AlignProteins.min_cds_len"] = cli_arguments.filter_min_cds
+    if cli_arguments.filter_max_intron:
+        cromwell_inputs["ei_homology.AlignProteins.max_intron_len"] = cli_arguments.filter_max_intron
     if cli_arguments.alignment_min_identity:
         cromwell_inputs["ei_homology.AlignProteins.min_identity"] = cli_arguments.alignment_min_identity
     if cli_arguments.alignment_min_coverage:
         cromwell_inputs["ei_homology.AlignProteins.min_coverage"] = cli_arguments.alignment_min_coverage
+    if cli_arguments.alignment_max_per_query:
+        cromwell_inputs["ei_homology.AlignProteins.max_per_query"] = cli_arguments.alignment_max_per_query
 
     return cromwell_inputs
 

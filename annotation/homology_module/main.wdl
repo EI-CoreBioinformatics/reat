@@ -88,7 +88,7 @@ task IndexGenome {
         Array[File] genome_index = glob("genome_to_annotate.*")
     }
 
-    Int cpus = 12
+    Int cpus = 6
     RuntimeAttr default_attr = object {
         cpu_cores: "~{cpus}",
         mem_gb: 16,
@@ -145,10 +145,13 @@ task AlignProteins {
         Int min_exon_len = 20
         Int min_coverage = 80
         Int min_identity = 50
+        Int max_intron_len = 200000
+        Int min_cds_len = 20
+        Int max_per_query = 4
         Array[String] filters = "none"
         RuntimeAttr? runtime_attr_override
     }
-    Int cpus = 6
+    Int cpus = 2
     RuntimeAttr default_attr = object {
         cpu_cores: "~{cpus}",
         mem_gb: 32,
@@ -171,10 +174,10 @@ task AlignProteins {
     command <<<
         set -euxo pipefail
         ln ~{sub(genome_index[0], "\.[^/.]+$", "")}.* .
-        spaln -t~{task_cpus} -KP -O0,12 -Q7 ~{"-T"+species} -dgenome_to_annotate -o ~{out_prefix} -yL~{min_exon_len} ~{genome_proteins.protein_sequences}
+        spaln -t~{task_cpus} -KP -O0,12 -Q7 -M~{max_per_query}.~{max_per_query} ~{"-T"+species} -dgenome_to_annotate -o ~{out_prefix} -yL~{min_exon_len} ~{genome_proteins.protein_sequences}
         sortgrcd -O4 ~{out_prefix}.grd | tee ~{out_prefix}.s | spaln2gff --min_coverage ~{min_coverage} --min_identity ~{min_identity} -s "spaln" > ~{ref_prefix}.alignment.gff
 
-        xspecies_cleanup --filters ~{sep=" " filters} -g ~{genome_to_annotate} -A ~{ref_prefix}.alignment.gff --bed ~{ref_prefix}.alignment.bed -x ~{ref_prefix}.alignment.cdna.fa -o ~{ref_prefix}.alignment.stop_extended.extra_attr.gff
+        xspecies_cleanup --filters ~{sep=" " filters} --max_intron ~{max_intron_len} --min_protein ~{min_cds_len} -g ~{genome_to_annotate} -A ~{ref_prefix}.alignment.gff --bed ~{ref_prefix}.alignment.bed -x ~{ref_prefix}.alignment.cdna.fa -o ~{ref_prefix}.alignment.stop_extended.extra_attr.gff
     >>>
 
     runtime {
@@ -232,7 +235,7 @@ task ScoreAlignments {
         File alignment_compare_detail = "comp_"+aln_prefix+"_"+ref_prefix+"_detail.tab"
     }
 
-    Int cpus = 6
+    Int cpus = 2
     RuntimeAttr default_attr = object {
         cpu_cores: "~{cpus}",
         mem_gb: 32,

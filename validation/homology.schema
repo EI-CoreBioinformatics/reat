@@ -42,13 +42,13 @@
             }
         },
         "ei_homology.AlignProteins.min_identity": {
-            "type": "int"
+            "type": "integer"
         },
         "ei_homology.AlignProteins.min_coverage": {
-            "type": "int"
+            "type": "integer"
         },
         "ei_homology.PrepareAnnotations.min_cds_len": {
-            "type": "int"
+            "type": "integer"
         }
     },
     "required": ["ei_homology.genome_to_annotate", "ei_homology.annotations", "ei_homology.AlignProteins.species"]
