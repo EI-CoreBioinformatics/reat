@@ -483,6 +483,7 @@ def validate_paired_samples(samples):
     errors = defaultdict(list)
     strands = ("fr-firststrand", "fr-secondstrand", "fr-unstranded")
     result = {'ei_annotation.paired_samples': []}
+    first_line = True
     for line in samples:
         out_files = []
         fields = line.rstrip().split(",")
@@ -496,9 +497,14 @@ def validate_paired_samples(samples):
             try:
                 r1, r2 = file.split(';')
             except ValueError as e:
-                errors[line].append(
-                    "Unexpected input '{}'\n\t\tPlease make sure paired reads are correctly separated using ';'".format(
-                        file))
+                if first_line:
+                    errors[line].append("Unexpected input '{}'\n\t\tPlease remove this line if it is a header"
+                                        ", otherwise, make sure paired reads are separated using ';'".format(file))
+                else:
+                    errors[line].append(
+                        "Unexpected input '{}'\n\t\tPlease make sure paired reads are correctly separated using "
+                        "';'".format(file))
+                break
             if not os.path.exists(r1):
                 errors[line].append(("File not found: '{}'".format(r1)))
             if not os.path.exists(r2):
@@ -549,6 +555,7 @@ def validate_paired_samples(samples):
                  'merge': merge,
                  'score': score, 'is_ref': is_ref, 'exclude_redundant': exclude_redundant}
             )
+        first_line = False
 
     if any([len(error_list) for error_list in errors.values()]):
         print(f"File {samples.name} parsing failed, errors found:\n", file=sys.stderr)
