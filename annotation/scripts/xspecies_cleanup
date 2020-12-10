@@ -140,7 +140,7 @@ def main():
                 cds_exons_seq_len = sum([e.end - e.start + 1 for e in mrna.cds_exons])
                 cds_exons_seq_len -= int(mrna.cds_exons[0].phase)
                 aa_seq = translate(cds_seq)
-                bed_line = mrna.to_bed(coding=True)
+                bed_line = mrna.to_bed(cds_only=True)
                 mexons = 0
                 mcds = 0
                 if merge:
@@ -291,7 +291,7 @@ def main():
 
                 if bed_file:
                     if is_alignment:
-                        bed_line = mrna.to_bed(coding=True)
+                        bed_line = mrna.to_bed(cds_only=True)
                     print(bed_line, file=bed_file)
 
             if num_valid_transcripts > 0:
