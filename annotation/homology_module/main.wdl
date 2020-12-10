@@ -75,6 +75,8 @@ workflow ei_homology {
         Array[File] alignments = CombineResults.augmented_alignments_gff
         Array[File] mgc_evaluation = ScoreAlignments.alignment_compare
         Array[File] mgc_evaluation_detail = ScoreAlignments.alignment_compare_detail
+        Array[File] annotation_filter_stats = PrepareAnnotations.stats
+        Array[File] alignment_filter_stats = AlignProteins.stats
     }
 }
 
@@ -124,15 +126,22 @@ task PrepareAnnotations {
     }
 
     output {
-        File cleaned_up_gff = out_prefix + ".clean.extra_attr.gff"
-        File proteins = out_prefix + ".proteins.fa"
-        File cdnas = out_prefix + ".cdna.fa"
-        File bed = out_prefix + ".bed"
+        File cleaned_up_gff = 'Annotations/' + out_prefix + ".clean.extra_attr.gff"
+        File stats = 'Annotations/' + out_prefix + ".stats"
+        File proteins = 'Annotations/' + out_prefix + ".proteins.fa"
+        File cdnas = 'Annotations/' + out_prefix + ".cdna.fa"
+        File bed = 'Annotations/' + out_prefix + ".bed"
     }
 
     command <<<
         set -euxo pipefail
-        xspecies_cleanup --merge --filters ~{sep=" " filters} --annotation ~{annotation.annotation_gff} -g ~{annotation.genome} --max_intron ~{max_intron_len} --min_protein ~{min_cds_len} -x ~{out_prefix}.cdna.fa --bed ~{out_prefix}.bed -y ~{out_prefix}.proteins.fa -o ~{out_prefix}.clean.extra_attr.gff
+        mkdir Annotations/
+        cd Annotations
+        xspecies_cleanup --merge --filters ~{sep=" " filters} \
+        --annotation ~{annotation.annotation_gff} -g ~{annotation.genome} \
+        --max_intron ~{max_intron_len} --min_protein ~{min_cds_len} \
+        -x ~{out_prefix}.cdna.fa --bed ~{out_prefix}.bed \
+        -y ~{out_prefix}.proteins.fa -o ~{out_prefix}.clean.extra_attr.gff > ~{out_prefix}.stats
     >>>
 }
 
@@ -166,6 +175,7 @@ task AlignProteins {
     String ref_prefix = sub(basename(genome_proteins.genome), "\.[^/.]+$", "")
 
     output {
+        File stats = ref_prefix + ".stats"
         File alignments = ref_prefix+".alignment.stop_extended.extra_attr.gff"
         File cdnas = ref_prefix + ".alignment.cdna.fa"
         File bed = ref_prefix + ".alignment.bed"
@@ -177,7 +187,10 @@ task AlignProteins {
         spaln -t~{task_cpus} -KP -O0,12 -Q7 -M~{max_per_query}.~{max_per_query} ~{"-T"+species} -dgenome_to_annotate -o ~{out_prefix} -yL~{min_exon_len} ~{genome_proteins.protein_sequences}
         sortgrcd -O4 ~{out_prefix}.grd | tee ~{out_prefix}.s | spaln2gff --min_coverage ~{min_coverage} --min_identity ~{min_identity} -s "spaln" > ~{ref_prefix}.alignment.gff
 
-        xspecies_cleanup --filters ~{sep=" " filters} --max_intron ~{max_intron_len} --min_protein ~{min_cds_len} -g ~{genome_to_annotate} -A ~{ref_prefix}.alignment.gff --bed ~{ref_prefix}.alignment.bed -x ~{ref_prefix}.alignment.cdna.fa -o ~{ref_prefix}.alignment.stop_extended.extra_attr.gff
+        xspecies_cleanup --filters ~{sep=" " filters} --max_intron ~{max_intron_len} --min_protein ~{min_cds_len} \
+        -g ~{genome_to_annotate} -A ~{ref_prefix}.alignment.gff --bed ~{ref_prefix}.alignment.bed \
+        -x ~{ref_prefix}.alignment.cdna.fa \
+        -o ~{ref_prefix}.alignment.stop_extended.extra_attr.gff > ~{ref_prefix}.stats
     >>>
 
     runtime {
@@ -231,8 +244,8 @@ task ScoreAlignments {
 
 
     output {
-        File alignment_compare = "comp_"+aln_prefix+"_"+ref_prefix+".tab"
-        File alignment_compare_detail = "comp_"+aln_prefix+"_"+ref_prefix+"_detail.tab"
+        File alignment_compare = 'ScoreAlignments/' + "comp_"+aln_prefix+"_"+ref_prefix+".tab"
+        File alignment_compare_detail = 'ScoreAlignments/' + "comp_"+aln_prefix+"_"+ref_prefix+"_detail.tab"
     }
 
     Int cpus = 2
@@ -248,7 +261,11 @@ task ScoreAlignments {
 
     command <<<
         set -euxo pipefail
-        multi_genome_compare.py -t ~{task_cpus} --groups ~{groups} --cdnas ~{cdnas} --bed12 ~{bed} -o comp_~{aln_prefix}_~{ref_prefix}.tab -d comp_~{aln_prefix}_~{ref_prefix}_detail.tab
+        mkdir ScoreAlignments/
+        cd ScoreAlignments
+        multi_genome_compare.py -t ~{task_cpus} --groups ~{groups} \
+        --cdnas ~{cdnas} --bed12 ~{bed} \
+        -o comp_~{aln_prefix}_~{ref_prefix}.tab -d comp_~{aln_prefix}_~{ref_prefix}_detail.tab
     >>>
 
     runtime {
