@@ -126,7 +126,9 @@ def main():
             first = True
             for mrna_id, mrna in sorted(gene.mrnas.items(), key=lambda x: x[0]):  # Sorted by name
                 total_exons += len(mrna.exons)
-                longest_intron = max([i[1] - i[0] for i in mrna.introns])
+                longest_intron = None
+                if mrna.introns:
+                    longest_intron = max([i[1] - i[0] for i in mrna.introns])
                 if len(mrna.cds_exons) == 0:
                     print(f"Non coding mrna: {mrna_id}", file=error_file)
                     total_non_coding_rna += 1
@@ -267,7 +269,7 @@ def main():
                     except KeyError:
                         mrna.attr['Note'] = 'ref_missing_stop=true'
 
-                if show_intron_len:
+                if show_intron_len and longest_intron:
                     try:
                         mrna.attr['Note'] += f'|max_intron_len={longest_intron}'
                     except KeyError:
