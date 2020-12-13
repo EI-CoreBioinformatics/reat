@@ -75,7 +75,7 @@ workflow ei_homology {
         call CombineXspecies {
             input:
             alignment = alignment,
-            alignments = CombineResults.augmented_alignments.gff
+            alignments = CombineResults.augmented_alignments_gff
         }
     }
 
