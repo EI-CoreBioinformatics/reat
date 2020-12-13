@@ -70,13 +70,67 @@ workflow ei_homology {
             alignment_gff = AlignProteins.alignments
         }
     }
+
+    scatter (alignment in CombineResults.augmented_alignments_gff) {
+        call CombineXspecies {
+            input:
+            alignment = alignment,
+            alignments = CombineResults.augmented_alignments.gff
+        }
+    }
+
     output {
+        Array[File] xspecies_combined_alignments = CombineXspecies.xspecies_scored_alignment
         Array[File] clean_annotations = PrepareAnnotations.cleaned_up_gff
         Array[File] alignments = CombineResults.augmented_alignments_gff
         Array[File] mgc_evaluation = ScoreAlignments.alignment_compare
         Array[File] mgc_evaluation_detail = ScoreAlignments.alignment_compare_detail
         Array[File] annotation_filter_stats = PrepareAnnotations.stats
         Array[File] alignment_filter_stats = AlignProteins.stats
+    }
+}
+
+task CombineXspecies {
+    input {
+        File alignment
+        Array[File] alignments
+        RuntimeAttr? runtime_attr_override
+    }
+
+    String out_prefix = sub(basename(alignment), "\.[^/.]+$", "")
+
+    output {
+        File xspecies_scored_alignment = out_prefix + ".xspecies_scores.gff"
+    }
+
+    Int cpus = 6
+    RuntimeAttr default_attr = object {
+        cpu_cores: "~{cpus}",
+        mem_gb: 16,
+        max_retries: 1
+    }
+
+    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
+
+    Int task_cpus = runtime_attr.cpu_cores
+
+    command <<<
+        set -euxo pipefail
+        for o in ~{sep=' ' alignments};
+        do
+            if [ "~{alignment}" neq "${o}" ] then
+                mikado compare --processes ~{task_cpus} -r ~{alignment} -p $o -o ~{out_prefix}_vs_${o}
+            fi
+        done
+
+        combine_alignment_with_compare --alignment ~{alignment} --compare ~{out_prefix}_vs_*.refmap > ~{out_prefix}.xspecies_scores.gff
+    >>>
+
+    runtime {
+        continueOnReturnCode: [0]
+        cpu: task_cpus
+        memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
+        maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
     }
 }
 

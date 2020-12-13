@@ -1,0 +1,60 @@
+#!/usr/bin/env python
+
+import argparse
+from collections import defaultdict
+from eicore2.parsers.GFF import GFFReader
+
+
+def main():
+    parser = argparse.ArgumentParser('Script to augment a gff file with scores from mikado compare')
+    parser.add_argument("--alignment", type=argparse.FileType('r'), help="Input alignment file (gff)")
+    parser.add_argument("--compare", type=argparse.FileType('r'), nargs='+',
+                        help="Compare results of 'alignment' vs other gff files")
+
+    args = parser.parse_args()
+    # Collect all transcript names and all scores onto lists
+    compare_exon = defaultdict(list)
+    compare_junc = defaultdict(list)
+    for compare_file in args.compare:
+        header = compare_file.readline()
+        for line in compare_file:
+            fields = line.strip().split('\t')
+            alignment_name = fields[0]
+            try:
+                cds_exon_f1 = float(fields[5])
+                cds_junc_f1 = float(fields[6])
+                compare_exon[alignment_name].append(cds_exon_f1)
+                compare_junc[alignment_name].append(cds_junc_f1)
+            except ValueError:
+                pass
+    # Collate min,max,avg and add to the alignment gff attr
+    for alignment in GFFReader(args.alignment):
+        for mrna_id, transcript in alignment.mrnas.items():
+            data = compare_exon[mrna_id]
+            if not data:
+                continue
+            min_exon_f1 = min(data)
+            max_exon_f1 = max(data)
+            avg_exon_f1 = sum(data) / len(data)
+
+            data = compare_junc[mrna_id]
+            if not data:
+                continue
+            min_junc_f1 = min(data)
+            max_junc_f1 = max(data)
+            avg_junc_f1 = sum(data) / len(data)
+            transcript.attr['Note'] += f'|min_ef1:{min_exon_f1}|max_ef1:{max_exon_f1}|avg_ef1:{avg_exon_f1}' \
+                                       f'|min_jf1:{min_junc_f1}|max_jf1:{max_junc_f1}|avg_jf1:{avg_junc_f1}'
+            transcript.attr['min_ef1'] = min_exon_f1
+            transcript.attr['max_ef1'] = max_exon_f1
+            transcript.attr['avg_ef1'] = avg_exon_f1
+
+            transcript.attr['min_jf1'] = min_junc_f1
+            transcript.attr['max_jf1'] = max_junc_f1
+            transcript.attr['avg_jf1'] = avg_junc_f1
+
+        alignment.print_gff()
+
+
+if __name__ == '__main__':
+    main()
