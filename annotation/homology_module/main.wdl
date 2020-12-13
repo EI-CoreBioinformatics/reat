@@ -190,7 +190,7 @@ task PrepareAnnotations {
         set -euxo pipefail
         mkdir Annotations/
         cd Annotations
-        gffread -E ~{annotation.annotation_gff} -o sorted_annotation.gff > ~{annotation.annotation_gff}.gffread.out 2> ~{annotation.annotation_gff}.gffread.err
+        gffread --keep-genes -E ~{annotation.annotation_gff} -o sorted_annotation.gff > ~{annotation.annotation_gff}.gffread.out 2> ~{annotation.annotation_gff}.gffread.err
         xspecies_cleanup --merge --filters ~{sep=" " filters} \
         --annotation sorted_annotation.gff -g ~{annotation.genome} \
         --max_intron ~{max_intron_len} --min_protein ~{min_cds_len} \
