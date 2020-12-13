@@ -113,7 +113,6 @@ task IndexGenome {
         memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
         maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
     }
-
 }
 
 task PrepareAnnotations {
@@ -137,8 +136,9 @@ task PrepareAnnotations {
         set -euxo pipefail
         mkdir Annotations/
         cd Annotations
+        gffread -E ~{annotation.annotation_gff} -o sorted_annotation.gff > ~{annotation.annotation_gff}.gffread.out 2> ~{annotation.annotation_gff}.gffread.err
         xspecies_cleanup --merge --filters ~{sep=" " filters} \
-        --annotation ~{annotation.annotation_gff} -g ~{annotation.genome} \
+        --annotation sorted_annotation.gff -g ~{annotation.genome} \
         --max_intron ~{max_intron_len} --min_protein ~{min_cds_len} \
         -x ~{out_prefix}.cdna.fa --bed ~{out_prefix}.bed \
         -y ~{out_prefix}.proteins.fa -o ~{out_prefix}.clean.extra_attr.gff > ~{out_prefix}.stats

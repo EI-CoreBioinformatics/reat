@@ -32,6 +32,7 @@ def parse_args():
     p.set_defaults(merge=False)
     p.add_argument("-y", "--proteins", type=argparse.FileType('w'))
     p.add_argument("-x", "--cds", type=argparse.FileType('w'))
+    p.add_argument("--show_intron_len", dest='show_intron_len', action='store_true')
     p.add_argument("--bed", type=argparse.FileType('w'))
     p.add_argument("-o", "--output", type=argparse.FileType('w'))
     args = p.parse_args()
@@ -59,6 +60,7 @@ def main():
     min_length = args.min_protein
     max_intron = args.max_intron
     merge = args.merge
+    show_intron_len = args.show_intron_len
 
     output_file = sys.stdout
     if args.output:
@@ -124,6 +126,7 @@ def main():
             first = True
             for mrna_id, mrna in sorted(gene.mrnas.items(), key=lambda x: x[0]):  # Sorted by name
                 total_exons += len(mrna.exons)
+                max_intron = max(mrna.introns)
                 if len(mrna.cds_exons) == 0:
                     print(f"Non coding mrna: {mrna_id}", file=error_file)
                     total_non_coding_rna += 1
@@ -263,6 +266,12 @@ def main():
                         mrna.attr['Note'] += '|ref_missing_stop=true'
                     except KeyError:
                         mrna.attr['Note'] = 'ref_missing_stop=true'
+
+                if show_intron_len:
+                    try:
+                        mrna.attr['Note'] += f'|max_intron_len={max_intron}'
+                    except KeyError:
+                        mrna.attr['Note'] = f'max_intron_len={max_intron}'
 
                 if first:
                     print_gff_line(gene, "gene", gene, output_file)
