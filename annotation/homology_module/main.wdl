@@ -103,7 +103,7 @@ task CombineXspecies {
         File xspecies_scored_alignment = out_prefix + ".xspecies_scores.gff"
     }
 
-    Int cpus = 6
+    Int cpus = 1
     RuntimeAttr default_attr = object {
         cpu_cores: "~{cpus}",
         mem_gb: 16,
@@ -121,7 +121,7 @@ task CombineXspecies {
             if [ "~{alignment}" != "${o}" ]
             then
                 o_name=$(basename $o)
-                mikado compare --processes ~{task_cpus} -r ~{alignment} -p $o -o ~{out_prefix}_vs_${o_name%.*}
+                mikado compare --processes 1 -r ~{alignment} -p $o -o ~{out_prefix}_vs_${o_name%.*}
             fi
         done
 
