@@ -102,7 +102,7 @@ def check_environment():
         "blastx": {"command": "blastx -version".split(' '), "result": "blastx: 2.7.1+"},
         "samtools": {"command": "samtools --version".split(' '), "result": "samtools 1.9"},
         "bamtools": {"command": "bamtools --version".split(' '), "result": "bamtools 2.5.1"},
-        "gffread": {"command": "gffread --version".split(' '), "result": "0.10.1"},
+        "gffread": {"command": "gffread --version".split(' '), "result": "0.12.2"},
         "gmap": {"command": "gmap --version".split(' '), "result": "version 2019-02-15"},
         "minimap2": {"command": "minimap2 --version".split(' '), "result": "2.17-r941"},
         "genometools": {"command": "gt --version".split(' '), "result": "gt (GenomeTools) 1.5.10"},
