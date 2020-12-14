@@ -120,7 +120,8 @@ task CombineXspecies {
         do
             if [ "~{alignment}" != "${o}" ]
             then
-                mikado compare --processes ~{task_cpus} -r ~{alignment} -p $o -o ~{out_prefix}_vs_${o}
+                o_name=$(basename $o)
+                mikado compare --processes ~{task_cpus} -r ~{alignment} -p $o -o ~{out_prefix}_vs_${o_name%.*}
             fi
         done
 
