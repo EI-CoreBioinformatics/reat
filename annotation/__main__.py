@@ -749,6 +749,9 @@ def cromwell_submit(cli_arguments, input_parameters_filepath, workflow_options_f
     # FIXME return the code of the request or some mapping to useful error codes
     return 0
 
+def kill_cromwell():
+    raise KeyboardInterrupt
+
 
 def cromwell_run(input_parameters_filepath, cromwell_configuration, workflow_options_file, wdl_file):
     if workflow_options_file:
@@ -769,6 +772,8 @@ def cromwell_run(input_parameters_filepath, cromwell_configuration, workflow_opt
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE
         )
+        signal.signal(signal.SIGINT, kill_cromwell)
+        signal.signal(signal.SIGTERM, kill_cromwell)
         while True:
             output = sp_cromwell.stdout.readline()
             if sp_cromwell.poll() is not None:
