@@ -118,7 +118,8 @@ task CombineXspecies {
         set -euxo pipefail
         for o in ~{sep=' ' alignments};
         do
-            if [ "~{alignment}" neq "${o}" ] then
+            if [ "~{alignment}" != "${o}" ]
+            then
                 mikado compare --processes ~{task_cpus} -r ~{alignment} -p $o -o ~{out_prefix}_vs_${o}
             fi
         done
