@@ -76,6 +76,7 @@ class Gene:
 class SpalnReader(object):
     def __init__(self, fp):
         self.file = fp
+        self.lineno = 0
         self.cur = 0
         self.line = ""
         self.raw = []
@@ -140,11 +141,12 @@ class SpalnReader(object):
             except StopIteration as _:
                 raise StopIteration("EOF")
             except Exception as e:
-                raise Exception("Unexpected input:\n {0}".format(self.line)) from e
+                print(f"Unexpected input at line {self.lineno}:\n {self.line}", file=sys.stderr)
             self.advance()
 
     def advance(self):
         self.line = self.file.readline()
+        self.lineno += 1
         self.raw = self.line.strip().split()
         if len(self.raw) == 0 or self.raw[0] == '':
             raise StopIteration("EOF")
