@@ -124,17 +124,16 @@ bamtools --help 2>&1 | head
 cd ../../
 rm -rf bamtools-v2.5.1.tar.gz
 
-# gclib - 54917d0
-# gffread - ba7535f 
+# gffread - tags/v0.12.2
 ## Install gffread - this has to be *after* cufflinks as it supercedes it
 cd /opt/software/
 git clone https://github.com/gpertea/gclib.git
 cd gclib
-git checkout 54917d0
+git checkout tags/v0.12.2
 cd ../
 git clone https://github.com/gpertea/gffread.git
 cd gffread
-git checkout ba7535f
+git checkout tags/v0.12.2
 make
 cp gffread /usr/local/bin/
 cd /opt/software/
