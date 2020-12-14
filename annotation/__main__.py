@@ -749,7 +749,8 @@ def cromwell_submit(cli_arguments, input_parameters_filepath, workflow_options_f
     # FIXME return the code of the request or some mapping to useful error codes
     return 0
 
-def kill_cromwell():
+
+def kill_cromwell(sig, frame):
     raise KeyboardInterrupt
 
 
