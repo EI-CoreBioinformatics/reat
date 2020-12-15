@@ -337,6 +337,8 @@ task CombineResults {
     input {
         File alignment_compare_detail
         File alignment_gff
+        Int? exon_f1_filter
+        Int? junction_f1_filter
     }
 
     String aln_prefix = sub(basename(alignment_gff), "\.[^/.]+$", "")
@@ -347,6 +349,7 @@ task CombineResults {
 
     command <<<
         set -euxo pipefail
-        combine_alignments_with_mgc --detail ~{alignment_compare_detail} --gff ~{alignment_gff} -o ~{aln_prefix}.mgc.gff
+        combine_alignments_with_mgc --detail ~{alignment_compare_detail} ~{'--exon_f1_filter ' + exon_f1_filter} \
+        ~{'--junction_f1_filter ' + junction_f1_filter} --gff ~{alignment_gff} -o ~{aln_prefix}.mgc.gff
     >>>
 }

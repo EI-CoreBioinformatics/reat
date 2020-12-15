@@ -385,6 +385,12 @@ def parse_arguments():
                              default=80)
     homology_ap.add_argument("--alignment_max_per_query", type=int, default=4,
                              help="Maximum number of alignments per input query protein")
+    homology_ap.add_argument("--exon_f1_filter", type=int,
+                             help="Filter alignments scored against its original structure with a CDS exon f1 "
+                                  "lower than this value")
+    homology_ap.add_argument("--junction_f1_filter", type=int,
+                             help="Filter alignments scored against its original structure with a CDS junction f1 "
+                                  "lower than this value")
 
     args = reat_ap.parse_args()
 
@@ -898,6 +904,10 @@ def combine_arguments_homology(cli_arguments):
     cromwell_inputs["ei_homology.AlignProteins.species"] = cli_arguments.alignment_species
 
     # Optional extra parameters
+    if cli_arguments.junction_f1_filter:
+        cromwell_inputs["ei_homology.CombineResults.junction_f1_filter"] = cli_arguments.junction_f1_filter
+    if cli_arguments.exon_f1_filter:
+        cromwell_inputs["ei_homology.CombineResults.exon_f1_filter"] = cli_arguments.exon_f1_filter
     if cli_arguments.annotation_filters:
         cromwell_inputs["ei_homology.PrepareAnnotations.filters"] = cli_arguments.annotation_filters
     if cli_arguments.filter_min_cds:
