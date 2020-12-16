@@ -22,11 +22,14 @@ def main():
             alignment_name = fields[0]
             try:
                 cds_exon_f1 = float(fields[5])
-                cds_junc_f1 = float(fields[6])
                 compare_exon[alignment_name].append(cds_exon_f1)
+            except ValueError:
+                compare_exon[alignment_name].append(0.0)
+            try:
+                cds_junc_f1 = float(fields[6])
                 compare_junc[alignment_name].append(cds_junc_f1)
             except ValueError:
-                pass
+                compare_junc[alignment_name].append(0.0)
     # Collate min,max,avg and add to the alignment gff attr
     for alignment in GFFReader(args.alignment):
         for mrna_id, transcript in alignment.mrnas.items():
