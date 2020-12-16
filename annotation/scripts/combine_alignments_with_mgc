@@ -47,7 +47,10 @@ def main():
             for k, v in details.items():
                 mrna.attr[k] = v
                 extra_note.append(f"{k}:{v}")
-            mrna.attr['Note'] += '|'.join(extra_note)
+            try:
+                mrna.attr['Note'] += '|' + '|'.join(extra_note)
+            except KeyError:
+                mrna.attr['Note'] = '|'.join(extra_note)
         if len(valid_mrnas) > 0:
             gene.print_gff_line(file=output_file)
             for mrna in valid_mrnas:
