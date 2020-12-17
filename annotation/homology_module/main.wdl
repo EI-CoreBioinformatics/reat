@@ -182,7 +182,7 @@ task PrepareAnnotations {
 
     output {
         File cleaned_up_gff = 'Annotations/' + out_prefix + ".clean.extra_attr.gff"
-        File stats = 'Annotations/' + out_prefix + ".stats"
+        File stats = 'Annotations/' + out_prefix + ".annotation.stats"
         File proteins = 'Annotations/' + out_prefix + ".proteins.fa"
         File cdnas = 'Annotations/' + out_prefix + ".cdna.fa"
         File bed = 'Annotations/' + out_prefix + ".bed"
@@ -197,7 +197,7 @@ task PrepareAnnotations {
         --annotation sorted_annotation.gff -g ~{annotation.genome} \
         --max_intron ~{max_intron_len} --min_protein ~{min_cds_len} \
         -x ~{out_prefix}.cdna.fa --bed ~{out_prefix}.bed \
-        -y ~{out_prefix}.proteins.fa -o ~{out_prefix}.clean.extra_attr.gff > ~{out_prefix}.stats
+        -y ~{out_prefix}.proteins.fa -o ~{out_prefix}.clean.extra_attr.gff > ~{out_prefix}.annotation.stats
     >>>
 }
 
@@ -213,6 +213,7 @@ task AlignProteins {
         Int max_intron_len = 200000
         Int min_cds_len = 20
         Int max_per_query = 4
+        Boolean show_intron_len = false
         Array[String] filters = "none"
         RuntimeAttr? runtime_attr_override
     }
@@ -231,7 +232,7 @@ task AlignProteins {
     String ref_prefix = sub(basename(genome_proteins.genome), "\.[^/.]+$", "")
 
     output {
-        File stats = ref_prefix + ".stats"
+        File stats = ref_prefix + ".alignment.stats"
         File alignments = ref_prefix+".alignment.stop_extended.extra_attr.gff"
         File cdnas = ref_prefix + ".alignment.cdna.fa"
         File bed = ref_prefix + ".alignment.bed"
@@ -243,10 +244,10 @@ task AlignProteins {
         spaln -t~{task_cpus} -KP -O0,12 -Q7 -M~{max_per_query}.~{max_per_query} ~{"-T"+species} -dgenome_to_annotate -o ~{out_prefix} -yL~{min_exon_len} ~{genome_proteins.protein_sequences}
         sortgrcd -O4 ~{out_prefix}.grd | tee ~{out_prefix}.s | spaln2gff --min_coverage ~{min_coverage} --min_identity ~{min_identity} -s "spaln" > ~{ref_prefix}.alignment.gff
 
-        xspecies_cleanup --filters ~{sep=" " filters} --max_intron ~{max_intron_len} --min_protein ~{min_cds_len} \
+        xspecies_cleanup ~{if show_intron_len then "--show_intron_len" else ""} --filters ~{sep=" " filters} --max_intron ~{max_intron_len} --min_protein ~{min_cds_len} \
         -g ~{genome_to_annotate} -A ~{ref_prefix}.alignment.gff --bed ~{ref_prefix}.alignment.bed \
         -x ~{ref_prefix}.alignment.cdna.fa \
-        -o ~{ref_prefix}.alignment.stop_extended.extra_attr.gff > ~{ref_prefix}.stats
+        -o ~{ref_prefix}.alignment.stop_extended.extra_attr.gff > ~{ref_prefix}.alignment.stats
     >>>
 
     runtime {

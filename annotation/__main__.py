@@ -385,6 +385,8 @@ def parse_arguments():
                              default=80)
     homology_ap.add_argument("--alignment_max_per_query", type=int, default=4,
                              help="Maximum number of alignments per input query protein")
+    homology_ap.add_argument("--alignment_show_intron_length", action='store_true',
+                             help="Add an attribute to the alignment gff with the maximum intron len for each mRNA")
     homology_ap.add_argument("--exon_f1_filter", type=int,
                              help="Filter alignments scored against its original structure with a CDS exon f1 "
                                   "lower than this value")
@@ -928,6 +930,8 @@ def combine_arguments_homology(cli_arguments):
         cromwell_inputs["ei_homology.AlignProteins.min_coverage"] = cli_arguments.alignment_min_coverage
     if cli_arguments.alignment_max_per_query:
         cromwell_inputs["ei_homology.AlignProteins.max_per_query"] = cli_arguments.alignment_max_per_query
+    if cli_arguments.alignment_show_intron_length:
+        cromwell_inputs["ei_homology.AlignProteins.show_intron_len"] = cli_arguments.alignment_show_intron_length
 
     return cromwell_inputs
 
