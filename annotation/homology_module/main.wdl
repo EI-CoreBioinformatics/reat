@@ -82,7 +82,6 @@ workflow ei_homology {
     output {
         Array[File] xspecies_combined_alignments = CombineXspecies.xspecies_scored_alignment
         Array[File] clean_annotations = PrepareAnnotations.cleaned_up_gff
-        Array[File] alignments = CombineResults.augmented_alignments_gff
         Array[File] mgc_evaluation = ScoreAlignments.alignment_compare
         Array[File] mgc_evaluation_detail = ScoreAlignments.alignment_compare_detail
         Array[File] annotation_filter_stats = PrepareAnnotations.stats
