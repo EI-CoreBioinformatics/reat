@@ -46,8 +46,13 @@ def main():
             min_junc_f1 = min(data)
             max_junc_f1 = max(data)
             avg_junc_f1 = sum(data) / len(data)
+
+            xscore = sum([ef1 >= 100 and jf1 >= 100 for ef1, jf1 in zip(compare_exon[mrna_id], compare_junc[mrna_id])])
+            xscore *= 100. / len(data)
+
             transcript.attr['Note'] += f'|min_ef1:{min_exon_f1:.2f}|max_ef1:{max_exon_f1:.2f}|avg_ef1:{avg_exon_f1:.2f}' \
-                                       f'|min_jf1:{min_junc_f1:.2f}|max_jf1:{max_junc_f1:.2f}|avg_jf1:{avg_junc_f1:.2f}'
+                                       f'|min_jf1:{min_junc_f1:.2f}|max_jf1:{max_junc_f1:.2f}|avg_jf1:{avg_junc_f1:.2f}' \
+                                       f'|xscore:{xscore:.2f}'
             transcript.attr['min_ef1'] = f'{min_exon_f1:.2f}'
             transcript.attr['max_ef1'] = f'{max_exon_f1:.2f}'
             transcript.attr['avg_ef1'] = f'{avg_exon_f1:.2f}'
@@ -55,6 +60,7 @@ def main():
             transcript.attr['min_jf1'] = f'{min_junc_f1:.2f}'
             transcript.attr['max_jf1'] = f'{max_junc_f1:.2f}'
             transcript.attr['avg_jf1'] = f'{avg_junc_f1:.2f}'
+            transcript.attr['xscore'] = f'{xscore:.2f}'
 
         alignment.print_gff()
 
