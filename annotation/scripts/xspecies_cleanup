@@ -9,7 +9,7 @@ import pyfaidx
 
 from eicore2.models.Codon import translate
 from eicore2.models.RefSeq import get_spliced_cds_seq, check_splicing_sites
-from eicore2.parsers.GFF import GFFReader
+from eicore2.parsers.GFF import GFFReader, EmptyFileError
 
 
 def parse_args():
@@ -131,223 +131,226 @@ def main():
         total_intergenic_distance = 0
         last_gene_chrom = ""
         last_gene_start = 0
-        for gene in GFFReader(gff_file.name):
-            num_valid_transcripts = 0
-            first = True
-            for mrna_id, mrna in sorted(gene.mrnas.items(), key=lambda x: x[0]):  # Sorted by name
-                total_exons += len(mrna.exons)
-                longest_intron = None
-                if mrna.introns:
-                    longest_intron = max([i[1] - i[0] for i in mrna.introns])
-                if len(mrna.cds_exons) == 0:
-                    print(f"Non coding mrna: {mrna_id}", file=error_file)
-                    total_non_coding_rna += 1
-                    continue
-
-                # Discard any possible mitochondrial or chloropastic genes that "wrap around" the circle
-                fasta_len = len(genome[mrna.chrom])
-                if mrna.exons[-1].end > fasta_len:
-                    total_circular += 1
-                    continue
-
-                # Get translated seq before merging any short introns, this is for when the references have been
-                # deliberately made to have small introns as a workaround for internal stop codons
-                cds_seq, cds_length, cds_intron_len, last_codon = get_spliced_cds_seq(genome, mrna, is_alignment)
-                cds_exons_seq_len = sum([e.end - e.start + 1 for e in mrna.cds_exons])
-                cds_exons_seq_len -= int(mrna.cds_exons[0].phase)
-                aa_seq = translate(cds_seq)
-                bed_line = mrna.to_bed(cds_only=True)
-                mexons = 0
-                mcds = 0
-                if merge:
-                    # Merges introns < 4bp by default
-                    (mexons, mcds) = mrna.merge_exons()
-                    if mexons > 0 or mcds > 0:
-                        print(f"Merged exons and CDS: {mrna_id} - {mexons},{mcds}", file=error_file)
-                # Check for canonical splice sites
-                if len(mrna.exons) > 1:
-                    long_introns, short_introns, noncanonical_splicing, intron_length = \
-                        check_splicing_sites(genome, mrna, max_intron)
-                    if noncanonical_splicing > 0:
-                        print(f"Non-canonical splicing: {mrna_id} {mrna.strand}", file=error_file)
-                        total_non_canonical_splicing += 1
-                        if is_alignment:
-                            mrna.attr['aln_non_canonical_splice_sites'] = noncanonical_splicing
-                            try:
-                                mrna.attr['Note'] += f"|aln_non_canonical={noncanonical_splicing}"
-                            except KeyError:
-                                mrna.attr['Note'] = f"aln_non_canonical={noncanonical_splicing}"
-                        else:
-                            mrna.attr['ref_non_canonical_splice_sites'] = noncanonical_splicing
-                            try:
-                                mrna.attr['Note'] += f"|ref_non_canonical={noncanonical_splicing}"
-                            except KeyError:
-                                mrna.attr['Note'] = f"ref_non_canonical={noncanonical_splicing}"
-                        if filter_by_canonical_splicing:
-                            continue
-                    if long_introns > 0:
-                        total_long_introns += 1
-                        if is_alignment:
-                            mrna.attr['aln_long_introns'] = long_introns
-                            try:
-                                mrna.attr['Note'] += f"|aln_long_introns={long_introns}"
-                            except KeyError:
-                                mrna.attr['Note'] = f"aln_long_introns={long_introns}"
-                        else:
-                            mrna.attr['ref_long_introns'] = long_introns
-                            try:
-                                mrna.attr['Note'] += f"|ref_long_introns={long_introns}"
-                            except KeyError:
-                                mrna.attr['Note'] = f"ref_long_introns={long_introns}"
-                        print(f"Long intron: {mrna_id}", file=error_file)
-                        if filter_by_long_intron:
-                            continue
-
-                    short_exons = sum([e.end - e.start + 1 < min_exon for e in mrna.exons])
-                    if short_exons > 0:
-                        total_short_exons += 1
-                        if is_alignment:
-                            mrna.attr['aln_short_exons'] = short_exons
-                            try:
-                                mrna.attr['Note'] += f"|aln_short_exons={short_exons}"
-                            except KeyError:
-                                mrna.attr['Note'] = f"aln_short_exons={short_exons}"
-                        else:
-                            mrna.attr['ref_short_exons'] = short_exons
-                            try:
-                                mrna.attr['Note'] += f"|ref_short_exons={short_exons}"
-                            except KeyError:
-                                mrna.attr['Note'] = f"ref_short_exons={short_exons}"
-                        print(f"Short exon: {mrna_id}", file=error_file)
-                        if filter_by_short_exon:
-                            continue
-
-                    total_intron_length += intron_length
-                    total_intronic_transcripts += 1
-                    total_cds_len += cds_length
-                    total_cds_intron_length += cds_intron_len
-                # Check CDS translated length
-                if len(aa_seq) < min_length:
-                    print(f"Protein < {min_length}: {mrna_id}", file=error_file)
-                    if is_alignment:
-                        mrna.attr['aln_short_protein'] = 'true'
-                        try:
-                            mrna.attr['Note'] += '|aln_short_protein=true'
-                        except KeyError:
-                            mrna.attr['Note'] = 'aln_short_protein=true'
-                    else:
-                        mrna.attr['ref_short_protein'] = 'true'
-                        try:
-                            mrna.attr['Note'] += '|ref_short_protein=true'
-                        except KeyError:
-                            mrna.attr['Note'] = 'ref_short_protein=true'
-                    total_short_proteins += 1
-                    if filter_short_proteins:
-                        continue
-                # Check for internal codon
-                has_internal_stop = '*' in aa_seq[:-1]
-                if has_internal_stop:
-                    print(f"Internal stop: {mrna_id}", file=error_file)
-                    if is_alignment:
-                        mrna.attr['aln_internal_stop'] = 'true'
-                        try:
-                            mrna.attr['Note'] += '|aln_internal_stop=true'
-                        except KeyError:
-                            mrna.attr['Note'] = 'aln_internal_stop=true'
-                    else:
-                        mrna.attr['ref_internal_stop'] = 'true'
-                        try:
-                            mrna.attr['Note'] += '|ref_internal_stop=true'
-                        except KeyError:
-                            mrna.attr['Note'] = 'ref_internal_stop=true'
-                    total_internal_stop += 1
-                    if filter_by_internal_stop:
+        try:
+            for gene in GFFReader(gff_file.name):
+                num_valid_transcripts = 0
+                first = True
+                for mrna_id, mrna in sorted(gene.mrnas.items(), key=lambda x: x[0]):  # Sorted by name
+                    total_exons += len(mrna.exons)
+                    longest_intron = None
+                    if mrna.introns:
+                        longest_intron = max([i[1] - i[0] for i in mrna.introns])
+                    if len(mrna.cds_exons) == 0:
+                        print(f"Non coding mrna: {mrna_id}", file=error_file)
+                        total_non_coding_rna += 1
                         continue
 
-                num_valid_transcripts += 1
-                if len(mrna.exons) == 1:
-                    total_monoexonic_transcripts += 1
+                    # Discard any possible mitochondrial or chloropastic genes that "wrap around" the circle
+                    fasta_len = len(genome[mrna.chrom])
+                    if mrna.exons[-1].end > fasta_len:
+                        total_circular += 1
+                        continue
 
-                if cds_seq[:3] not in start_codons():
-                    if is_alignment:
-                        mrna.attr['aln_missing_start'] = 'true'
-                        try:
-                            mrna.attr['Note'] += '|aln_missing_start=true'
-                        except KeyError:
-                            mrna.attr['Note'] = 'aln_missing_start=true'
-                    else:
-                        mrna.attr['ref_missing_start'] = 'true'
-                        try:
-                            mrna.attr['Note'] += '|ref_missing_start=true'
-                        except KeyError:
-                            mrna.attr['Note'] = 'ref_missing_start=true'
+                    # Get translated seq before merging any short introns, this is for when the references have been
+                    # deliberately made to have small introns as a workaround for internal stop codons
+                    cds_seq, cds_length, cds_intron_len, last_codon = get_spliced_cds_seq(genome, mrna, is_alignment)
+                    cds_exons_seq_len = sum([e.end - e.start + 1 for e in mrna.cds_exons])
+                    cds_exons_seq_len -= int(mrna.cds_exons[0].phase)
+                    aa_seq = translate(cds_seq)
+                    bed_line = mrna.to_bed(cds_only=True)
+                    mexons = 0
+                    mcds = 0
+                    if merge:
+                        # Merges introns < 4bp by default
+                        (mexons, mcds) = mrna.merge_exons()
+                        if mexons > 0 or mcds > 0:
+                            print(f"Merged exons and CDS: {mrna_id} - {mexons},{mcds}", file=error_file)
+                    # Check for canonical splice sites
+                    if len(mrna.exons) > 1:
+                        long_introns, short_introns, noncanonical_splicing, intron_length = \
+                            check_splicing_sites(genome, mrna, max_intron)
+                        if noncanonical_splicing > 0:
+                            print(f"Non-canonical splicing: {mrna_id} {mrna.strand}", file=error_file)
+                            total_non_canonical_splicing += 1
+                            if is_alignment:
+                                mrna.attr['aln_non_canonical_splice_sites'] = noncanonical_splicing
+                                try:
+                                    mrna.attr['Note'] += f"|aln_non_canonical={noncanonical_splicing}"
+                                except KeyError:
+                                    mrna.attr['Note'] = f"aln_non_canonical={noncanonical_splicing}"
+                            else:
+                                mrna.attr['ref_non_canonical_splice_sites'] = noncanonical_splicing
+                                try:
+                                    mrna.attr['Note'] += f"|ref_non_canonical={noncanonical_splicing}"
+                                except KeyError:
+                                    mrna.attr['Note'] = f"ref_non_canonical={noncanonical_splicing}"
+                            if filter_by_canonical_splicing:
+                                continue
+                        if long_introns > 0:
+                            total_long_introns += 1
+                            if is_alignment:
+                                mrna.attr['aln_long_introns'] = long_introns
+                                try:
+                                    mrna.attr['Note'] += f"|aln_long_introns={long_introns}"
+                                except KeyError:
+                                    mrna.attr['Note'] = f"aln_long_introns={long_introns}"
+                            else:
+                                mrna.attr['ref_long_introns'] = long_introns
+                                try:
+                                    mrna.attr['Note'] += f"|ref_long_introns={long_introns}"
+                                except KeyError:
+                                    mrna.attr['Note'] = f"ref_long_introns={long_introns}"
+                            print(f"Long intron: {mrna_id}", file=error_file)
+                            if filter_by_long_intron:
+                                continue
 
-                if is_alignment:
-                    if aa_seq[-1] != '*':
-                        if last_codon not in stop_codons():
-                            mrna.attr['aln_missing_stop'] = 'true'
+                        short_exons = sum([e.end - e.start + 1 < min_exon for e in mrna.exons])
+                        if short_exons > 0:
+                            total_short_exons += 1
+                            if is_alignment:
+                                mrna.attr['aln_short_exons'] = short_exons
+                                try:
+                                    mrna.attr['Note'] += f"|aln_short_exons={short_exons}"
+                                except KeyError:
+                                    mrna.attr['Note'] = f"aln_short_exons={short_exons}"
+                            else:
+                                mrna.attr['ref_short_exons'] = short_exons
+                                try:
+                                    mrna.attr['Note'] += f"|ref_short_exons={short_exons}"
+                                except KeyError:
+                                    mrna.attr['Note'] = f"ref_short_exons={short_exons}"
+                            print(f"Short exon: {mrna_id}", file=error_file)
+                            if filter_by_short_exon:
+                                continue
+
+                        total_intron_length += intron_length
+                        total_intronic_transcripts += 1
+                        total_cds_len += cds_length
+                        total_cds_intron_length += cds_intron_len
+                    # Check CDS translated length
+                    if len(aa_seq) < min_length:
+                        print(f"Protein < {min_length}: {mrna_id}", file=error_file)
+                        if is_alignment:
+                            mrna.attr['aln_short_protein'] = 'true'
                             try:
-                                mrna.attr['Note'] += '|aln_missing_stop=true'
+                                mrna.attr['Note'] += '|aln_short_protein=true'
                             except KeyError:
-                                mrna.attr['Note'] = 'aln_missing_stop=true'
-                        else:  # Extend the last exon and cds_exon coordinates to include the stop codon
-                            cds_seq += last_codon
-                            cds_exons_seq_len += 3
-                            gene.extend_three_prime_end_cds(mrna_id, 3)
-                elif cds_seq[-3:] not in stop_codons():
-                    mrna.attr['ref_missing_stop'] = 'true'
-                    try:
-                        mrna.attr['Note'] += '|ref_missing_stop=true'
-                    except KeyError:
-                        mrna.attr['Note'] = 'ref_missing_stop=true'
+                                mrna.attr['Note'] = 'aln_short_protein=true'
+                        else:
+                            mrna.attr['ref_short_protein'] = 'true'
+                            try:
+                                mrna.attr['Note'] += '|ref_short_protein=true'
+                            except KeyError:
+                                mrna.attr['Note'] = 'ref_short_protein=true'
+                        total_short_proteins += 1
+                        if filter_short_proteins:
+                            continue
+                    # Check for internal codon
+                    has_internal_stop = '*' in aa_seq[:-1]
+                    if has_internal_stop:
+                        print(f"Internal stop: {mrna_id}", file=error_file)
+                        if is_alignment:
+                            mrna.attr['aln_internal_stop'] = 'true'
+                            try:
+                                mrna.attr['Note'] += '|aln_internal_stop=true'
+                            except KeyError:
+                                mrna.attr['Note'] = 'aln_internal_stop=true'
+                        else:
+                            mrna.attr['ref_internal_stop'] = 'true'
+                            try:
+                                mrna.attr['Note'] += '|ref_internal_stop=true'
+                            except KeyError:
+                                mrna.attr['Note'] = 'ref_internal_stop=true'
+                        total_internal_stop += 1
+                        if filter_by_internal_stop:
+                            continue
 
-                if show_intron_len and longest_intron:
-                    try:
-                        mrna.attr['Note'] += f'|max_intron_len={longest_intron}'
-                    except KeyError:
-                        mrna.attr['Note'] = f'max_intron_len={longest_intron}'
+                    num_valid_transcripts += 1
+                    if len(mrna.exons) == 1:
+                        total_monoexonic_transcripts += 1
 
-                if first:
-                    print_gff_line(gene, "gene", gene, output_file)
-                    first = False
-                print_gff_line(mrna, "mRNA", mrna, output_file)
+                    if cds_seq[:3] not in start_codons():
+                        if is_alignment:
+                            mrna.attr['aln_missing_start'] = 'true'
+                            try:
+                                mrna.attr['Note'] += '|aln_missing_start=true'
+                            except KeyError:
+                                mrna.attr['Note'] = 'aln_missing_start=true'
+                        else:
+                            mrna.attr['ref_missing_start'] = 'true'
+                            try:
+                                mrna.attr['Note'] += '|ref_missing_start=true'
+                            except KeyError:
+                                mrna.attr['Note'] = 'ref_missing_start=true'
 
-                for e in mrna.exons:
-                    total_exon_lengths += e.end - e.start
-                    print_gff_line(e, "exon", mrna, output_file)
-
-                for c in mrna.cds_exons:
-                    print_gff_line(c, "CDS", mrna, output_file)
-
-                if protein_file:
-                    print(">", mrna_id, sep='', file=protein_file)
-                    if aa_seq[-1] == '*':
-                        print('\n'.join(wrap(aa_seq[:-1])), file=protein_file)
-                    else:
-                        print('\n'.join(wrap(aa_seq)), file=protein_file)
-                if cds_file:
-                    if mexons == 0:
-                        assert len(cds_seq) == cds_exons_seq_len + int(mrna.cds_exons[0].phase), \
-                            f"{mrna_id} processing failed the assertion, {len(cds_seq)} != {cds_exons_seq_len}"
-                    print(">", mrna_id, sep='', file=cds_file)
-                    print('\n'.join(wrap(cds_seq)), file=cds_file)
-
-                if bed_file:
                     if is_alignment:
-                        bed_line = mrna.to_bed(cds_only=True)
-                    print(bed_line, file=bed_file)
+                        if aa_seq[-1] != '*':
+                            if last_codon not in stop_codons():
+                                mrna.attr['aln_missing_stop'] = 'true'
+                                try:
+                                    mrna.attr['Note'] += '|aln_missing_stop=true'
+                                except KeyError:
+                                    mrna.attr['Note'] = 'aln_missing_stop=true'
+                            else:  # Extend the last exon and cds_exon coordinates to include the stop codon
+                                cds_seq += last_codon
+                                cds_exons_seq_len += 3
+                                gene.extend_three_prime_end_cds(mrna_id, 3)
+                    elif cds_seq[-3:] not in stop_codons():
+                        mrna.attr['ref_missing_stop'] = 'true'
+                        try:
+                            mrna.attr['Note'] += '|ref_missing_stop=true'
+                        except KeyError:
+                            mrna.attr['Note'] = 'ref_missing_stop=true'
 
-            if num_valid_transcripts > 0:
-                total_valid_genes += 1
-                total_valid_transcripts += num_valid_transcripts
+                    if show_intron_len and longest_intron:
+                        try:
+                            mrna.attr['Note'] += f'|max_intron_len={longest_intron}'
+                        except KeyError:
+                            mrna.attr['Note'] = f'max_intron_len={longest_intron}'
 
-            total_genes += 1
-            if last_gene_chrom == gene.chrom:
-                total_intergenic_distance += gene.start - last_gene_start
-            last_gene_chrom = gene.chrom
-            last_gene_start = gene.start
-            total_transcripts += len(gene.mrnas.items())
-            del gene
+                    if first:
+                        print_gff_line(gene, "gene", gene, output_file)
+                        first = False
+                    print_gff_line(mrna, "mRNA", mrna, output_file)
+
+                    for e in mrna.exons:
+                        total_exon_lengths += e.end - e.start
+                        print_gff_line(e, "exon", mrna, output_file)
+
+                    for c in mrna.cds_exons:
+                        print_gff_line(c, "CDS", mrna, output_file)
+
+                    if protein_file:
+                        print(">", mrna_id, sep='', file=protein_file)
+                        if aa_seq[-1] == '*':
+                            print('\n'.join(wrap(aa_seq[:-1])), file=protein_file)
+                        else:
+                            print('\n'.join(wrap(aa_seq)), file=protein_file)
+                    if cds_file:
+                        if mexons == 0:
+                            assert len(cds_seq) == cds_exons_seq_len + int(mrna.cds_exons[0].phase), \
+                                f"{mrna_id} processing failed the assertion, {len(cds_seq)} != {cds_exons_seq_len}"
+                        print(">", mrna_id, sep='', file=cds_file)
+                        print('\n'.join(wrap(cds_seq)), file=cds_file)
+
+                    if bed_file:
+                        if is_alignment:
+                            bed_line = mrna.to_bed(cds_only=True)
+                        print(bed_line, file=bed_file)
+
+                if num_valid_transcripts > 0:
+                    total_valid_genes += 1
+                    total_valid_transcripts += num_valid_transcripts
+
+                total_genes += 1
+                if last_gene_chrom == gene.chrom:
+                    total_intergenic_distance += gene.start - last_gene_start
+                last_gene_chrom = gene.chrom
+                last_gene_start = gene.start
+                total_transcripts += len(gene.mrnas.items())
+                del gene
+        except EmptyFileError as e:
+            print(e, file=error_file)
 
         print(f'Total genes: {total_genes}')
         print(f'Total transcripts: {total_transcripts}')
