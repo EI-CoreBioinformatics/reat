@@ -23,9 +23,12 @@ def parse_args():
                    help="FASTA file of the reference to the annotated species to extract proteins from")
     p.add_argument("-l", "--min_protein", type=int, default=2,
                    help="Check the length of the translated CDS protein is longer than min_protein")
-    p.add_argument("-m", "--max_intron", type=int, default=200000,
+    p.add_argument("-M", "--max_intron", type=int, default=200000,
                    help="Check introns are shorter than max_intron")
-    p.add_argument("-f", "--filters", choices=['all', 'none', 'intron_len', 'internal_stop', 'aa_len', 'splicing'],
+    p.add_argument("-m", "--min_exon", type=int, default=20,
+                   help="Check exons are longer than min_exon")
+    p.add_argument("-f", "--filters", choices=['all', 'none', 'exon_len', 'intron_len', 'internal_stop',
+                                               'aa_len', 'splicing'],
                    help="Select which filters to activate", nargs='+', default='none')
     p.add_argument('--merge', dest='merge', action='store_true')
     p.add_argument('--no-merge', dest='merge', action='store_false')
@@ -59,6 +62,7 @@ def main():
         gff_file = args.annotation
     min_length = args.min_protein
     max_intron = args.max_intron
+    min_exon = args.min_exon
     merge = args.merge
     show_intron_len = args.show_intron_len
 
@@ -76,11 +80,13 @@ def main():
     filter_by_long_intron = False
     filter_short_proteins = False
     filter_by_internal_stop = False
+    filter_by_short_exon = False
 
     for _filter in args.filters:
         if _filter == "all":
             filter_by_canonical_splicing = True
             filter_by_long_intron = True
+            filter_by_short_exon = True
             filter_short_proteins = True
             filter_by_internal_stop = True
         if _filter == "none":
@@ -90,6 +96,8 @@ def main():
             filter_by_internal_stop = False
         if _filter == "intron_len":
             filter_by_long_intron = True
+        if _filter == "exon_len":
+            filter_by_short_exon = True
         if _filter == "internal_stop":
             filter_by_internal_stop = True
         if _filter == "aa_len":
@@ -111,6 +119,8 @@ def main():
         total_exon_lengths = 0
         total_short_proteins = 0
         total_long_introns = 0
+        total_short_exons = 0
+        total_circular = 0
         total_intron_length = 0
         total_cds_intron_length = 0
         total_cds_len = 0
@@ -137,6 +147,7 @@ def main():
                 # Discard any possible mitochondrial or chloropastic genes that "wrap around" the circle
                 fasta_len = len(genome[mrna.chrom])
                 if mrna.exons[-1].end > fasta_len:
+                    total_circular += 1
                     continue
 
                 # Get translated seq before merging any short introns, this is for when the references have been
@@ -155,7 +166,8 @@ def main():
                         print(f"Merged exons and CDS: {mrna_id} - {mexons},{mcds}", file=error_file)
                 # Check for canonical splice sites
                 if len(mrna.exons) > 1:
-                    long_introns, noncanonical_splicing, intron_length = check_splicing_sites(genome, mrna, max_intron)
+                    long_introns, short_introns, noncanonical_splicing, intron_length = \
+                        check_splicing_sites(genome, mrna, max_intron)
                     if noncanonical_splicing > 0:
                         print(f"Non-canonical splicing: {mrna_id} {mrna.strand}", file=error_file)
                         total_non_canonical_splicing += 1
@@ -190,6 +202,26 @@ def main():
                         print(f"Long intron: {mrna_id}", file=error_file)
                         if filter_by_long_intron:
                             continue
+
+                    short_exons = sum([e.end - e.start + 1 < min_exon for e in mrna.exons])
+                    if short_exons > 0:
+                        total_short_exons += 1
+                        if is_alignment:
+                            mrna.attr['aln_short_exons'] = short_exons
+                            try:
+                                mrna.attr['Note'] += f"|aln_short_exons={short_exons}"
+                            except KeyError:
+                                mrna.attr['Note'] = f"aln_short_exons={short_exons}"
+                        else:
+                            mrna.attr['ref_short_exons'] = short_exons
+                            try:
+                                mrna.attr['Note'] += f"|ref_short_exons={short_exons}"
+                            except KeyError:
+                                mrna.attr['Note'] = f"ref_short_exons={short_exons}"
+                        print(f"Short exon: {mrna_id}", file=error_file)
+                        if filter_by_short_exon:
+                            continue
+
                     total_intron_length += intron_length
                     total_intronic_transcripts += 1
                     total_cds_len += cds_length
@@ -330,6 +362,7 @@ def main():
         print(f'Average exon length: {total_exon_lengths / max(1, total_exons):.2f}')
         print(f'Transcripts with non-canonical splicing: {total_non_canonical_splicing}')
         print(f'Transcripts with introns > {max_intron}: {total_long_introns}')
+        print(f'Transcripts with exons < {min_exon}: {total_short_exons}')
         print(f'Transcripts with internal stop codons: {total_internal_stop}')
         print(f'Transcripts with proteins < {min_length}: {total_short_proteins}')
         print(f'Average intron length: {total_intron_length / max(1, total_intronic_transcripts):.2f}')

@@ -363,7 +363,9 @@ def parse_arguments():
                                   "e.g Athaliana.fa,Athaliana.gff",
                              required=True)
     homology_ap.add_argument("--annotation_filters",
-                             choices=['all', 'none', 'intron_len', 'internal_stop', 'aa_len', 'splicing'], nargs='+',
+                             choices=['all', 'none', 'exon_len', 'intron_len', 'internal_stop', 'aa_len',
+                                      'splicing'],
+                             nargs='+',
                              help="Filter annotation coding genes by the filter types specified",
                              default=['none'])
     homology_ap.add_argument("--filter_min_cds", type=int,
@@ -371,13 +373,18 @@ def parse_arguments():
                                   "this parameter will be filtered out",
                              default=20)
     homology_ap.add_argument("--filter_max_intron", type=int,
-                             help="If 'intron_len' filter is enabled for annotation coding features, any features with"
-                                  "introns longer than this parameter will be filtered out",
+                             help="If 'intron_len' filter is enabled, any features "
+                                  "with introns longer than this parameter will be filtered out",
                              default=200000)
+    homology_ap.add_argument("--filter_min_exon", type=int,
+                             help="If 'exon_len' filter is enabled, any features "
+                                  "with exons shorter than this parameter will be filtered out",
+                             default=20)
     homology_ap.add_argument("--alignment_min_exon_len", type=int, help="Minimum exon length, alignment parameter",
                              default=20)
     homology_ap.add_argument("--alignment_filters",
-                             choices=['all', 'none', 'intron_len', 'internal_stop', 'aa_len', 'splicing'],
+                             choices=['all', 'none', 'exon_len', 'intron_len', 'internal_stop', 'aa_len',
+                                      'splicing'],
                              help="Filter alignment results by the filter types specified", nargs='+', default=['none'])
     homology_ap.add_argument("--alignment_min_identity", type=int, help="Minimum identity filter for alignments",
                              default=50)
@@ -916,6 +923,8 @@ def combine_arguments_homology(cli_arguments):
         cromwell_inputs["ei_homology.PrepareAnnotations.min_cds_len"] = cli_arguments.filter_min_cds
     if cli_arguments.filter_max_intron:
         cromwell_inputs["ei_homology.PrepareAnnotations.max_intron_len"] = cli_arguments.filter_max_intron
+    if cli_arguments.filter_min_exon:
+        cromwell_inputs["ei_homology.PrepareAnnotations.min_intron_len"] = cli_arguments.filter_min_exon
     if cli_arguments.alignment_min_exon_len:
         cromwell_inputs["ei_homology.AlignProteins.min_exon_len"] = cli_arguments.alignment_min_exon_len
     if cli_arguments.alignment_filters:
@@ -924,6 +933,8 @@ def combine_arguments_homology(cli_arguments):
         cromwell_inputs["ei_homology.AlignProteins.min_cds_len"] = cli_arguments.filter_min_cds
     if cli_arguments.filter_max_intron:
         cromwell_inputs["ei_homology.AlignProteins.max_intron_len"] = cli_arguments.filter_max_intron
+    if cli_arguments.filter_min_exon:
+        cromwell_inputs["ei_homology.AlignProteins.min_exon_len"] = cli_arguments.filter_min_exon
     if cli_arguments.alignment_min_identity:
         cromwell_inputs["ei_homology.AlignProteins.min_identity"] = cli_arguments.alignment_min_identity
     if cli_arguments.alignment_min_coverage:
