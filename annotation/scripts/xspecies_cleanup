@@ -251,17 +251,17 @@ def main():
                             mrna.attr['Note'] = 'ref_missing_start=true'
 
                 if is_alignment:
-                    if last_codon not in stop_codons():
-                        mrna.attr['aln_missing_stop'] = 'true'
-                        try:
-                            mrna.attr['Note'] += '|aln_missing_stop=true'
-                        except KeyError:
-                            mrna.attr['Note'] = 'aln_missing_stop=true'
-                    else:  # Extend the last exon and cds_exon coordinates to include the stop codon
-                        cds_seq += last_codon
-                        cds_exons_seq_len += 3
-                        gene.extend_three_prime_end_cds(mrna_id, 3)
-
+                    if aa_seq[-1] != '*':
+                        if last_codon not in stop_codons():
+                            mrna.attr['aln_missing_stop'] = 'true'
+                            try:
+                                mrna.attr['Note'] += '|aln_missing_stop=true'
+                            except KeyError:
+                                mrna.attr['Note'] = 'aln_missing_stop=true'
+                        else:  # Extend the last exon and cds_exon coordinates to include the stop codon
+                            cds_seq += last_codon
+                            cds_exons_seq_len += 3
+                            gene.extend_three_prime_end_cds(mrna_id, 3)
                 elif cds_seq[-3:] not in stop_codons():
                     mrna.attr['ref_missing_stop'] = 'true'
                     try:
