@@ -3,7 +3,7 @@
 
     "definitions": {
         "filters": {
-            "enum": ["all", "none", "intron_len", "internal_stop", "aa_len", "splicing"]
+            "enum": ["all", "none", "exon_len", "intron_len", "internal_stop", "aa_len", "splicing"]
         }
     },
     "type": "object",
