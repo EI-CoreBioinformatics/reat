@@ -175,7 +175,7 @@ def main():
 
     print("##gff-version 3", file=output_gff3)
     for g in SpalnReader(spaln_file):
-        if g.coverage > min_coverage and g.identity > min_identity:
+        if g.coverage >= min_coverage and g.identity >= min_identity:
             if all([g.gstart <= e.gstart <= g.gend and
                     g.gstart <= e.gend <= g.gend for e in g.exons]):
                 g.to_gff(output_gff3)
