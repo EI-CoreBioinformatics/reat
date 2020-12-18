@@ -924,7 +924,7 @@ def combine_arguments_homology(cli_arguments):
     if cli_arguments.filter_max_intron:
         cromwell_inputs["ei_homology.PrepareAnnotations.max_intron_len"] = cli_arguments.filter_max_intron
     if cli_arguments.filter_min_exon:
-        cromwell_inputs["ei_homology.PrepareAnnotations.min_intron_len"] = cli_arguments.filter_min_exon
+        cromwell_inputs["ei_homology.PrepareAnnotations.min_exon_len"] = cli_arguments.filter_min_exon
     if cli_arguments.alignment_min_exon_len:
         cromwell_inputs["ei_homology.AlignProteins.min_exon_len"] = cli_arguments.alignment_min_exon_len
     if cli_arguments.alignment_filters:
