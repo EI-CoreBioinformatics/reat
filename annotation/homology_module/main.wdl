@@ -192,7 +192,10 @@ task PrepareAnnotations {
         set -euxo pipefail
         mkdir Annotations/
         cd Annotations
-        gffread --keep-genes -E ~{annotation.annotation_gff} -o sorted_annotation.gff > ~{annotation.annotation_gff}.gffread.out 2> ~{annotation.annotation_gff}.gffread.err
+        case ~{annotation.annotation_gff} in
+            *.gz) gunzip <~{annotation.annotation_gff};;
+            *)    cat ~{annotation.annotation_gff};;
+        esac | gffread --keep-genes -E -o sorted_annotation.gff > ~{annotation.annotation_gff}.gffread.out 2> ~{annotation.annotation_gff}.gffread.err
         xspecies_cleanup --merge --filters ~{sep=" " filters} \
         --annotation sorted_annotation.gff -g ~{annotation.genome} \
         --max_intron ~{max_intron_len} --min_exon ~{min_exon_len} --min_protein ~{min_cds_len} \
@@ -207,11 +210,11 @@ task AlignProteins {
         File genome_to_annotate
         GenomeProteins genome_proteins
         String species = "Eudicoty" # TODO: Need a lookup table from the original file
-        Int min_exon_len = 20
+        Int min_spaln_exon_len = 20
         Int min_coverage = 80
         Int min_identity = 50
         Int max_intron_len = 200000
-        Int min_exon_len = 20
+        Int min_filter_exon_len = 20
         Int min_cds_len = 20
         Int max_per_query = 4
         Boolean show_intron_len = false
@@ -242,11 +245,11 @@ task AlignProteins {
     command <<<
         set -euxo pipefail
         ln ~{sub(genome_index[0], "\.[^/.]+$", "")}.* .
-        spaln -t~{task_cpus} -KP -O0,12 -Q7 -M~{max_per_query}.~{max_per_query} ~{"-T"+species} -dgenome_to_annotate -o ~{out_prefix} -yL~{min_exon_len} ~{genome_proteins.protein_sequences}
+        spaln -t~{task_cpus} -KP -O0,12 -Q7 -M~{max_per_query}.~{max_per_query} ~{"-T"+species} -dgenome_to_annotate -o ~{out_prefix} -yL~{min_spaln_exon_len} ~{genome_proteins.protein_sequences}
         sortgrcd -O4 ~{out_prefix}.grd | tee ~{out_prefix}.s | spaln2gff --min_coverage ~{min_coverage} --min_identity ~{min_identity} -s "spaln" > ~{ref_prefix}.alignment.gff
 
         xspecies_cleanup ~{if show_intron_len then "--show_intron_len" else ""} \
-        --filters ~{sep=" " filters} --max_intron ~{max_intron_len} --min_exon ~{min_exon_len} --min_protein ~{min_cds_len} \
+        --filters ~{sep=" " filters} --max_intron ~{max_intron_len} --min_exon ~{min_filter_exon_len} --min_protein ~{min_cds_len} \
         -g ~{genome_to_annotate} -A ~{ref_prefix}.alignment.gff --bed ~{ref_prefix}.alignment.bed \
         -x ~{ref_prefix}.alignment.cdna.fa \
         -o ~{ref_prefix}.alignment.stop_extended.extra_attr.gff > ~{ref_prefix}.alignment.stats
