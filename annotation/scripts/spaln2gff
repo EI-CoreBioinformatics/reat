@@ -34,7 +34,7 @@ class Gene:
         self.strand = strand
         self.score = score
         self.identity = identity
-        self.coverage = coverage
+        self.coverage = coverage  # SPALN reported coverage
         self.target_length = target_length
         self.exons = exons
         if '-' == strand:
@@ -46,17 +46,20 @@ class Gene:
 
         self.gstart = self.exons[0].gstart
 
+        alignment_len = self.exons[-1].tend - self.exons[0].tstart + 1
+        if '-' == self.strand:
+            alignment_len = self.exons[0].tstart - self.exons[-1].tend + 1
+
+        self.qcoverage = 100. * alignment_len / self.target_length  # Query coverage
+
     def to_gff(self, file=sys.stdout):
         print("{0}\tALN\tgene\t{1}\t{2}\t{3}\t{4}\t.\tID={5}.g{6};Name={5}.g{6}"
               .format(self.genome, self.gstart, self.gend, self.score, self.strand, self.target, self.uid),
               file=file)
-        alignment_len = self.exons[-1].tend - self.exons[0].tstart + 1
-        if '-' == self.strand:
-            alignment_len = self.exons[0].tstart - self.exons[-1].tend + 1
         print("{0}\tALN\tmRNA\t{1}\t{2}\t{3}\t{4}\t.\tID={5}.m{6};Parent={5}.g{6};Name={5}.m{6};"
               "Note={5}|cov:{7:.2f}|id:{8:.2f}"
               .format(self.genome, self.gstart, self.gend, self.score, self.strand, self.target, self.uid,
-                      100*alignment_len/self.target_length, self.identity),
+                      self.qcoverage, self.identity),
               file=file)
 
         for e, exon in enumerate(self.exons, 1):
@@ -175,7 +178,7 @@ def main():
 
     print("##gff-version 3", file=output_gff3)
     for g in SpalnReader(spaln_file):
-        if g.coverage >= min_coverage and g.identity >= min_identity:
+        if g.qcoverage >= min_coverage and g.identity >= min_identity:
             if all([g.gstart <= e.gstart <= g.gend and
                     g.gstart <= e.gend <= g.gend for e in g.exons]):
                 g.to_gff(output_gff3)
