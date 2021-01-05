@@ -75,7 +75,8 @@ workflow wf_assembly_short {
         call Scallop {
             input:
             aligned_sample = aligned_sample,
-            output_directory = output_directory
+            output_directory = output_directory,
+            runtime_attr_override = scallop_assembly_resources
         }
 
         AssembledSample scallop_assembly = object {
