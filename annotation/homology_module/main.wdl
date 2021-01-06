@@ -71,6 +71,11 @@ workflow ei_homology {
         }
     }
 
+    call ScoreSummary {
+        input:
+        alignments = ScoreAlignments.alignment_compare
+    }
+
     scatter (alignment in CombineResults.augmented_alignments_gff) {
         call CombineXspecies {
             input:
@@ -86,7 +91,61 @@ workflow ei_homology {
         Array[File] mgc_evaluation_detail = ScoreAlignments.alignment_compare_detail
         Array[File] annotation_filter_stats = PrepareAnnotations.stats
         Array[File] alignment_filter_stats = AlignProteins.stats
+        File        mgc_score_summary = ScoreSummary.summary_table
     }
+}
+
+task ScoreSummary {
+    input {
+        Array[File] alignments
+    }
+
+    output {
+        File summary_table = "ScoreAlignments/all_avgF1.bin.txt"
+    }
+
+    command <<<
+        set -euxo pipefail
+        mkdir ScoreAlignments
+        cd ScoreAlignments
+        for i in ../comp*[^detail].tab; do
+            echo $i;
+            cat $i |awk -vOFS=" " 'NR > 1 {print $11,$13}' |awk '{sum = 0; for (i = 1; i <= NF; i++) sum += $i; sum /= NF; print sum}' | \
+            awk 'BEGIN { delta = (delta == "" ? 0.1 : delta) }
+{bucketNr = int(($0+delta) / delta); cnt[bucketNr]++; numBuckets = (numBuckets > bucketNr ? numBuckets : bucketNr)}
+END { for (bucketNr=1; bucketNr<=numBuckets; bucketNr++) {
+        end = beg + delta
+        printf "%0.1f-%0.1f,%d\n", beg, end, cnt[bucketNr]
+        beg = end
+    }
+}' > `basename $i`_avgF1.tbin.txt;
+        done;
+
+        cat <<COL1 > col1
+bin
+0.0-0.1
+0.1-0.2
+0.2-0.3
+0.3-0.4
+0.4-0.5
+0.5-0.6
+0.6-0.7
+0.7-0.8
+0.8-0.9
+0.9-1.0
+1.0-1.1
+COL1
+        for i in comp*avgF1.tbin.txt; do
+            file=$(echo `basename $i` |cut -d . -f1);
+            printf ",$file\n" > temp;
+            cat $i >> temp;
+            cut -d , -f2 temp > ${file}_temp;
+        done;
+        paste -d , col1 comp*temp > all_avgF1.bin.txt;
+        rm *temp*;
+        rm col1;
+        rm *_avgF1.tbin.txt;
+    >>>
 }
 
 task CombineXspecies {
