@@ -216,8 +216,6 @@ task MikadoPick {
         File scoring_file
         File transcripts
         File mikado_db
-#mode options = ("permissive", "stringent", "nosplit", "split", "lenient")
-        String mode = "permissive"
         Int flank = 200
         String output_prefix
         RuntimeAttr? runtime_attr_override
@@ -235,26 +233,26 @@ task MikadoPick {
 
     output {
         File index_log  = output_prefix + "-index_loci.log"
-        File loci_index = output_prefix + "-" +mode+".loci.gff3.midx"
-        File loci       = output_prefix + "-" + mode + ".loci.gff3"
-        File scores     = output_prefix + "-" + mode + ".loci.scores.tsv"
-        File metrics    = output_prefix + "-" + mode + ".loci.metrics.tsv"
-        File stats      = output_prefix + "-" + mode + ".loci.gff3.stats"
-        File subloci    = output_prefix + "-" + mode + ".subloci.gff3"
-        File monoloci   = output_prefix + "-" + mode + ".monoloci.gff3"
+        File loci_index = output_prefix + ".loci.gff3.midx"
+        File loci       = output_prefix + ".loci.gff3"
+        File scores     = output_prefix + ".loci.scores.tsv"
+        File metrics    = output_prefix + ".loci.metrics.tsv"
+        File stats      = output_prefix + ".loci.gff3.stats"
+        File subloci    = output_prefix + ".subloci.gff3"
+        File monoloci   = output_prefix + ".monoloci.gff3"
     }
 
     command <<<
     set -euxo pipefail
     export TMPDIR=/tmp
     yaml-merge -s ~{config_file} ~{"-m " + extra_config} -o pick_config.yaml
-    mikado pick ~{"--source Mikado_" + mode} ~{"--mode " + mode} --procs=~{task_cpus} --scoring-file ~{scoring_file} \
+    mikado pick --source Mikado_~{output_prefix} --procs=~{task_cpus} --scoring-file ~{scoring_file} \
     ~{"--flank " + flank} --start-method=spawn --json-conf=pick_config.yaml \
-    --loci-out ~{output_prefix}-~{mode}.loci.gff3 -lv INFO ~{"-db " + mikado_db} \
-    --subloci-out ~{output_prefix}-~{mode}.subloci.gff3 --monoloci-out ~{output_prefix}-~{mode}.monoloci.gff3 \
+    --loci-out ~{output_prefix}.loci.gff3 -lv INFO ~{"-db " + mikado_db} \
+    --subloci-out ~{output_prefix}.subloci.gff3 --monoloci-out ~{output_prefix}.monoloci.gff3 \
     ~{transcripts}
-    mikado compare -r ~{output_prefix}-~{mode}.loci.gff3 -l ~{output_prefix}-index_loci.log --index
-    mikado util stats  ~{output_prefix}-~{mode}.loci.gff3 ~{output_prefix}-~{mode}.loci.gff3.stats
+    mikado compare -r ~{output_prefix}.loci.gff3 -l ~{output_prefix}-index_loci.log --index
+    mikado util stats  ~{output_prefix}.loci.gff3 ~{output_prefix}.loci.gff3.stats
     >>>
 
     runtime {

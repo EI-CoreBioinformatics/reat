@@ -78,7 +78,7 @@ workflow wf_main_mikado {
             mikado_do_homology_assessment = run_mikado_homology,
             homology_proteins = homology_proteins,
             junctions = junctions_bed,
-            output_prefix = "Mikado_short_and_long_noLQ",
+            output_prefix = "mikado_all_noLQ",
             prepare_extra_config = all_prepare_cfg,
             serialise_extra_config = all_serialise_cfg,
             pick_extra_config = all_pick_cfg,
@@ -100,7 +100,7 @@ workflow wf_main_mikado {
                 mikado_do_homology_assessment = run_mikado_homology,
                 homology_proteins = homology_proteins,
                 junctions = junctions_bed,
-                output_prefix = "Mikado_longHQ",
+                output_prefix = "mikado_longHQ",
                 prepare_extra_config = long_prepare_cfg,
                 serialise_extra_config = long_serialise_cfg,
                 pick_extra_config = long_pick_cfg,
@@ -123,7 +123,7 @@ workflow wf_main_mikado {
                 orf_caller = orf_calling_program,
                 mikado_do_homology_assessment = run_mikado_homology,
                 homology_proteins = homology_proteins,
-                output_prefix = "Mikado_longLQ",
+                output_prefix = "mikado_longLQ",
                 prepare_extra_config = long_lq_prepare_cfg,
                 serialise_extra_config = long_lq_serialise_cfg,
                 pick_extra_config = long_lq_pick_cfg,
@@ -137,6 +137,7 @@ workflow wf_main_mikado {
     }
     if (!separate_LQ)
     {
+        # TODO: Check if we need a conditional for having short read datasets here
         call mikado.wf_mikado as Mikado_short_and_long {
             input:
             scoring_file = all_scoring_file,
@@ -149,7 +150,7 @@ workflow wf_main_mikado {
             orf_caller = orf_calling_program,
             mikado_do_homology_assessment = run_mikado_homology,
             homology_proteins = homology_proteins,
-            output_prefix = "Mikado_short_and_long",
+            output_prefix = "mikado_all",
             prepare_extra_config = all_prepare_cfg,
             serialise_extra_config = all_serialise_cfg,
             pick_extra_config = all_pick_cfg,
@@ -172,7 +173,7 @@ workflow wf_main_mikado {
                 orf_caller = orf_calling_program,
                 mikado_do_homology_assessment = run_mikado_homology,
                 homology_proteins = homology_proteins,
-                output_prefix = "Mikado_long",
+                output_prefix = "mikado_long",
                 prepare_extra_config = long_prepare_cfg,
                 serialise_extra_config = long_serialise_cfg,
                 pick_extra_config = long_pick_cfg,
