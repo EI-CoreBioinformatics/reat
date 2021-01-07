@@ -256,8 +256,8 @@ cd /opt/software
 
 # Mikado - 2.0
 git clone https://github.com/EI-CoreBioinformatics/mikado
-git checkout d6edd6f
 cd mikado
+git checkout d6edd6f
 #python3 setup.py test;
 python3 setup.py bdist_wheel;
 pip3 install dist/*whl
