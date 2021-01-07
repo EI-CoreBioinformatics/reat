@@ -108,7 +108,7 @@ def check_environment():
         "genometools": {"command": "gt --version".split(' '), "result": "gt (GenomeTools) 1.5.10"},
         "hisat2": {"command": "hisat2 --version".split(' '), "result": "version 2.1.0"},
         "star": {"command": "STAR --version".split(' '), "result": "2.7.3a"},
-        "seqtk": {"command": ["seqtk"], "result": "Version: 1.3-r115-dirty"},
+        "seqtk": {"command": ["seqtk"], "result": "Version: 1.3-r116-dirty"},
         "stringtie": {"command": "stringtie --version".split(' '), "result": "2.1.1"},
         "scallop": {"command": "scallop --version".split(' '), "result": "v0.10.4"},
         "scallop-lr": {"command": "scallop-lr --version".split(' '), "result": "v0.9.2"},
