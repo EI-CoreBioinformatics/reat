@@ -255,9 +255,9 @@ make install
 cd /opt/software
 
 # Mikado - 2.0
-wget https://github.com/EI-CoreBioinformatics/mikado/archive/2.0prc2.tar.gz
-tar xf 2.0prc2.tar.gz
-cd mikado-2.0prc2
+git clone https://github.com/EI-CoreBioinformatics/mikado
+git checkout d6edd6f
+cd mikado
 #python3 setup.py test;
 python3 setup.py bdist_wheel;
 pip3 install dist/*whl

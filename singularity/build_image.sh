@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -euxo
-version=0.0.1
+version=0.0.4
 rundir=${PWD}
 cd $(mktemp -d)
 sudo singularity build reat.img ${rundir}/reat_singularity.def
