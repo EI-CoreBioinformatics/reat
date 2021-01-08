@@ -1,8 +1,6 @@
 {
     "write_to_cache": true,
     "read_from_cache": true,
-    "final_workflow_outputs_dir": "reat/outputs",
-    "use_relative_output_paths": true,
-    "final_workflow_log_dir": "reat/wf_logs",
-    "final_call_logs_dir": "reat/call_logs"
+    "final_workflow_outputs_dir": "final_outputs",
+    "use_relative_output_paths": true
 }
