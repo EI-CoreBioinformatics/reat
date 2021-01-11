@@ -140,7 +140,19 @@ workflow wf_align_short {
     output {
         Array[AlignedSample] aligned_samples = sorted_aligned_sample
         Array[Array[File]] stats = AlignmentStats.stats
-        Array[Array[Array[File]]] plots = AlignmentStats.plots
+        Array[Array[File]] actg_cycles_plots = AlignmentStats.cycles_png
+        Array[Array[File]] coverage_plots = AlignmentStats.coverage_png
+        Array[Array[File]] gc_content_plots = AlignmentStats.gc_content_png
+        Array[Array[File]] gc_depth_plots = AlignmentStats.gc_depth_png
+        Array[Array[File]] htmls = AlignmentStats.html
+        Array[Array[File]] indel_cycles_plots = AlignmentStats.indel_cycles_png
+        Array[Array[File]] indel_dist_plots = AlignmentStats.indel_dist_png
+        Array[Array[File]] insert_size_plots = AlignmentStats.insert_size_png
+        Array[Array[File]] quals_plots = AlignmentStats.quals_png
+        Array[Array[File]] quals2_plots = AlignmentStats.quals2_png
+        Array[Array[File]] quals3_plots = AlignmentStats.quals3_png
+        Array[Array[File]] quals_hm_plots = AlignmentStats.quals_hm_png
+#        Array[Array[Array[File]]] plots = AlignmentStats.plots
         Array[File] summary_stats = summary_alignment_stats
         File summary_stats_table = CollectAlignmentStats.stats_table
     }
@@ -186,7 +198,19 @@ task AlignmentStats {
 
     output {
         File stats = "align_short_stats/" + name + ".stats"
-        Array[File] plots = glob("align_short_stats/plot/*")
+#        Array[File] plots = glob("align_short_stats/plot/*")
+        File cycles_png = "align_short_stats/" + name + "/acgt-cycles.png"
+        File coverage_png = "align_short_stats/" + name + "/coverage.png"
+        File gc_content_png = "align_short_stats/" + name + "/gc-content.png"
+        File gc_depth_png = "align_short_stats/" + name + "/gc-depth.png"
+        File html = "align_short_stats/" + name + "/index.html"
+        File indel_cycles_png = "align_short_stats/" + name + "/indel-cycles.png"
+        File indel_dist_png = "align_short_stats/" + name + "/indel-dist.png"
+        File insert_size_png = "align_short_stats/" + name + "/insert-size.png"
+        File quals2_png = "align_short_stats/" + name + "/quals2.png"
+        File quals3_png = "align_short_stats/" + name + "/quals3.png"
+        File quals_hm_png = "align_short_stats/" + name + "/quals-hm.png"
+        File quals_png = "align_short_stats/" + name + "/quals.png"
     }
 
     command <<<
@@ -194,7 +218,7 @@ task AlignmentStats {
         mkdir align_short_stats
         cd align_short_stats
         samtools stats ~{bam} > ~{name + ".stats"} && \
-        plot-bamstats -p "plot/~{name}" ~{name + ".stats"}
+        plot-bamstats -p "~{name}/" ~{name + ".stats"}
     >>>
     
     RuntimeAttr default_attr = object {

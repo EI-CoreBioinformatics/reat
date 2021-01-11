@@ -189,7 +189,20 @@ workflow wf_align {
         Array[AssembledSample]? HQ_gff = HQ_assembly.gff
 
         Array[Array[File]]? stats = wf_align_short.stats
-        Array[Array[Array[File]]]? plots = wf_align_short.plots
+#        Array[Array[Array[File]]]? plots = wf_align_short.plots
+        Array[Array[File]]? stats = wf_align_short.stats
+        Array[Array[File]]? actg_cycles_plots = wf_align_short.actg_cycles_plots
+        Array[Array[File]]? coverage_plots = wf_align_short.coverage_plots
+        Array[Array[File]]? gc_content_plots = wf_align_short.gc_content_plots
+        Array[Array[File]]? gc_depth_plots = wf_align_short.gc_depth_plots
+        Array[Array[File]]? htmls = wf_align_short.htmls
+        Array[Array[File]]? indel_cycles_plots = wf_align_short.indel_cycles_plots
+        Array[Array[File]]? indel_dist_plots = wf_align_short.indel_dist_plots
+        Array[Array[File]]? insert_size_plots = wf_align_short.insert_size_plots
+        Array[Array[File]]? quals_plots = wf_align_short.quals_plots
+        Array[Array[File]]? quals2_plots = wf_align_short.quals2_plots
+        Array[Array[File]]? quals3_plots = wf_align_short.quals3_plots
+        Array[Array[File]]? quals_hm_plots = wf_align_short.quals_hm_plots
 
         Array[File]? SR_summary_stats = wf_align_short.summary_stats
         Array[File]? LQ_summary_stats = LQ_align.summary_stats

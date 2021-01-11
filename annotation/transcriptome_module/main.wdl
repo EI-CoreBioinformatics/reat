@@ -107,7 +107,20 @@ workflow ei_annotation {
         File? LQ_alignment_summary_stats_table = wf_align.LQ_summary_stats_table
         File? HQ_alignment_summary_stats_table = wf_align.HQ_summary_stats_table
 
-        Array[Array[Array[File]]]? plots = wf_align.plots
+#        Array[Array[Array[File]]]? plots = wf_align.plots
+        Array[Array[File]]? stats = wf_align.stats
+        Array[Array[File]]? actg_cycles_plots = wf_align.actg_cycles_plots
+        Array[Array[File]]? coverage_plots = wf_align.coverage_plots
+        Array[Array[File]]? gc_content_plots = wf_align.gc_content_plots
+        Array[Array[File]]? gc_depth_plots = wf_align.gc_depth_plots
+        Array[Array[File]]? htmls = wf_align.htmls
+        Array[Array[File]]? indel_cycles_plots = wf_align.indel_cycles_plots
+        Array[Array[File]]? indel_dist_plots = wf_align.indel_dist_plots
+        Array[Array[File]]? insert_size_plots = wf_align.insert_size_plots
+        Array[Array[File]]? quals_plots = wf_align.quals_plots
+        Array[Array[File]]? quals2_plots = wf_align.quals2_plots
+        Array[Array[File]]? quals3_plots = wf_align.quals3_plots
+        Array[Array[File]]? quals_hm_plots = wf_align.quals_hm_plots
 
         File? mikado_long_loci = wf_main_mikado.long_loci
         File? mikado_long_scores = wf_main_mikado.long_scores
