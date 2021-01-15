@@ -16,6 +16,11 @@ workflow ei_homology {
     input {
         Array[GenomeAnnotation] annotations
         File genome_to_annotate
+        File mikado_scoring
+        File mikado_config
+        File? mikado_pick_extra_config
+        File? mikado_junctions
+        Array[File]? mikado_utr
         RuntimeAttr? index_attr
         RuntimeAttr? score_attr
         RuntimeAttr? aln_attr
@@ -84,6 +89,30 @@ workflow ei_homology {
         }
     }
 
+    # With the results so far and some optional inputs such as assemblies and junctions
+    # consolidate them in a mikado run that should incorporate UTRs and add junctions to the scoring
+
+    call Mikado {
+        input:
+        reference = genome_to_annotate,
+        xspecies = CombineXspecies.xspecies_scored_alignment,
+        utrs = mikado_utr,
+        junctions = mikado_junctions,
+        config = mikado_config,
+        output_prefix = "xspecies"
+    }
+
+    call MikadoPick {
+        input:
+        config_file = Mikado.mikado_config,
+        extra_config = mikado_pick_extra_config,
+        scoring_file = mikado_scoring,
+        mikado_db = Mikado.mikado_db,
+        transcripts = Mikado.prepared_gtf,
+        output_prefix = "xspecies"
+    }
+
+
     output {
         Array[File] xspecies_combined_alignments = CombineXspecies.xspecies_scored_alignment
         Array[File] clean_annotations = PrepareAnnotations.cleaned_up_gff
@@ -93,6 +122,91 @@ workflow ei_homology {
         Array[File] alignment_filter_stats = AlignProteins.stats
         File        mgc_score_summary = ScoreSummary.summary_table
     }
+}
+
+task Mikado {
+    input {
+        File reference
+        Array[File] xspecies
+        File config
+        Array[File]? utrs
+        File? junctions
+        String output_prefix
+    }
+
+    output {
+        File mikado_config = output_prefix+"-mikado.yaml"
+        File prepared_fasta = output_prefix+"-mikado/mikado_prepared.fasta"
+        File prepared_gtf = output_prefix+"-mikado/mikado_prepared.gtf"
+    }
+
+    Int task_cpus = 8
+
+    command <<<
+        set -euxo pipefail
+        # Create the lists file
+        for i in ~{sep=" " xspecies} do
+            label = echo ${i} | cut -d. -f1
+            echo -e "${i}\t${label}\tTrue\t1\tTrue" >> list.txt
+        done
+
+        if [ "" != "~{sep=" " utrs}" ]
+        then
+            for i in ~{sep=" " utrs} do
+                label = "UTRs"
+                echo -e "${i}\t${label}\tTrue\t0\tFalse" >> list.txt
+            done
+        fi
+
+        # mikado configure
+        mikado configure --reference ~{reference} --list=list.txt --copy-scoring plant.yaml ~{output_prefix}-mikado.yaml
+
+        # mikado prepare
+        mikado prepare --procs=~{task_cpus} --json-conf=prepare_config.yaml -od ~{output_prefix}-mikado
+
+        # mikado serialise
+        mikado serialise ~{"--junctions="+junctions} --transcripts ~{output_prefix}-mikado/mikado_prepared.fasta
+        --json-conf=~{output_prefix}-mikado.yaml --start-method=spawn -od mikado --procs=~{task_cpus}
+
+    >>>
+}
+
+task MikadoPick {
+    input{
+        File config_file
+        File? extra_config
+        File scoring_file
+        File transcripts
+        File mikado_db
+        String output_prefix
+    }
+
+    Int task_cpus = 8
+
+    output {
+        File index_log  = output_prefix + "-index_loci.log"
+        File loci_index = output_prefix + ".loci.gff3.midx"
+        File loci       = output_prefix + ".loci.gff3"
+        File scores     = output_prefix + ".loci.scores.tsv"
+        File metrics    = output_prefix + ".loci.metrics.tsv"
+        File stats      = output_prefix + ".loci.gff3.stats"
+        File subloci    = output_prefix + ".subloci.gff3"
+        File monoloci   = output_prefix + ".monoloci.gff3"
+    }
+
+    command <<<
+    set -euxo pipefail
+    export TMPDIR=/tmp
+    yaml-merge -s ~{config_file} ~{"-m " + extra_config} -o pick_config.yaml
+    mikado pick --source Mikado_~{output_prefix} --procs=~{task_cpus} --scoring-file ~{scoring_file} \
+    --start-method=spawn --json-conf=pick_config.yaml \
+    --loci-out ~{output_prefix}.loci.gff3 -lv INFO ~{"-db " + mikado_db} \
+    --subloci-out ~{output_prefix}.subloci.gff3 --monoloci-out ~{output_prefix}.monoloci.gff3 \
+    ~{transcripts}
+    mikado compare -r ~{output_prefix}.loci.gff3 -l ~{output_prefix}-index_loci.log --index
+    mikado util stats  ~{output_prefix}.loci.gff3 ~{output_prefix}.loci.gff3.stats
+    >>>
+
 }
 
 task ScoreSummary {
