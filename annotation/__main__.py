@@ -368,6 +368,13 @@ def parse_arguments():
                              nargs='+',
                              help="Filter annotation coding genes by the filter types specified",
                              default=['none'])
+    homology_ap.add_argument("--junctions", type=argparse.FileType('r'),
+                             help="Validated junctions BED file for use in Mikado consolidation stage.")
+    homology_ap.add_argument("--utrs", type=argparse.FileType('r'),
+                             help="Gene models that may provide UTR extensions to the homology based models at the "
+                                  "mikado stage")
+    homology_ap.add_argument("--pick_extra_config", type=argparse.FileType('r'),
+                             help="Extra configuration for Mikado pick stage")
     homology_ap.add_argument("--filter_min_cds", type=int,
                              help="If 'aa_len' filter is enabled for annotation coding features, any CDS smaller than"
                                   "this parameter will be filtered out",
@@ -913,6 +920,13 @@ def combine_arguments_homology(cli_arguments):
     cromwell_inputs["ei_homology.AlignProteins.species"] = cli_arguments.alignment_species
 
     # Optional extra parameters
+    if cli_arguments.pick_extra_config:
+        cromwell_inputs['ei_homology.MikadoPick.extra_config'] = cli_arguments.pick_extra_config
+    if cli_arguments.junctions:
+        cromwell_inputs['ei_homology.Mikado.junctions'] = cli_arguments.junctions
+    if cli_arguments.utrs:
+        cromwell_inputs['ei_homology.Mikado.utrs'] = cli_arguments.utrs
+
     if cli_arguments.junction_f1_filter:
         cromwell_inputs["ei_homology.CombineResults.junction_f1_filter"] = cli_arguments.junction_f1_filter
     if cli_arguments.exon_f1_filter:

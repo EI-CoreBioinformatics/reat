@@ -17,10 +17,6 @@ workflow ei_homology {
         Array[GenomeAnnotation] annotations
         File genome_to_annotate
         File mikado_scoring
-        File mikado_config
-        File? mikado_pick_extra_config
-        File? mikado_junctions
-        Array[File]? mikado_utr
         RuntimeAttr? index_attr
         RuntimeAttr? score_attr
         RuntimeAttr? aln_attr
@@ -96,16 +92,12 @@ workflow ei_homology {
         input:
         reference = genome_to_annotate,
         xspecies = CombineXspecies.xspecies_scored_alignment,
-        utrs = mikado_utr,
-        junctions = mikado_junctions,
-        config = mikado_config,
         output_prefix = "xspecies"
     }
 
     call MikadoPick {
         input:
         config_file = Mikado.mikado_config,
-        extra_config = mikado_pick_extra_config,
         scoring_file = mikado_scoring,
         mikado_db = Mikado.mikado_db,
         transcripts = Mikado.prepared_gtf,
@@ -128,7 +120,6 @@ task Mikado {
     input {
         File reference
         Array[File] xspecies
-        File config
         Array[File]? utrs
         File? junctions
         String output_prefix
