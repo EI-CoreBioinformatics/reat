@@ -368,6 +368,12 @@ def parse_arguments():
                              nargs='+',
                              help="Filter annotation coding genes by the filter types specified",
                              default=['none'])
+    homology_ap.add_argument("--mikado_config", type=argparse.FileType('r'),
+                             help="Base configuration for Mikado consolidation stage.",
+                             required=True)
+    homology_ap.add_argument("--mikado_scoring", type=argparse.FileType('r'),
+                             help="Scoring file for Mikado pick at consolidation stage.",
+                             required=True)
     homology_ap.add_argument("--junctions", type=argparse.FileType('r'),
                              help="Validated junctions BED file for use in Mikado consolidation stage.")
     homology_ap.add_argument("--utrs", type=argparse.FileType('r'),
@@ -375,6 +381,10 @@ def parse_arguments():
                                   "mikado stage")
     homology_ap.add_argument("--pick_extra_config", type=argparse.FileType('r'),
                              help="Extra configuration for Mikado pick stage")
+    homology_ap.add_argument("--min_cdna_length", type=int, default=100,
+                             help="Minimum cdna length for models to consider in Mikado consolidation stage")
+    homology_ap.add_argument("--max_intron_length", type=int, default=1000000,
+                             help="Maximum intron length for models to consider in Mikado consolidation stage")
     homology_ap.add_argument("--filter_min_cds", type=int,
                              help="If 'aa_len' filter is enabled for annotation coding features, any CDS smaller than"
                                   "this parameter will be filtered out",
@@ -918,6 +928,8 @@ def combine_arguments_homology(cli_arguments):
 
     cromwell_inputs["ei_homology.genome_to_annotate"] = cli_arguments.genome.name
     cromwell_inputs["ei_homology.AlignProteins.species"] = cli_arguments.alignment_species
+    cromwell_inputs["ei_homology.mikado_config"] = cli_arguments.mikado_config
+    cromwell_inputs["ei_homology.mikado_scoring"] = cli_arguments.mikado_scoring
 
     # Optional extra parameters
     if cli_arguments.pick_extra_config:
@@ -926,6 +938,10 @@ def combine_arguments_homology(cli_arguments):
         cromwell_inputs['ei_homology.Mikado.junctions'] = cli_arguments.junctions
     if cli_arguments.utrs:
         cromwell_inputs['ei_homology.Mikado.utrs'] = cli_arguments.utrs
+    if cli_arguments.min_cdna_length:
+        cromwell_inputs["ei_homology.Mikado.min_cdna_length"] = cli_arguments.min_cdna_length
+    if cli_arguments.max_intron_length:
+        cromwell_inputs["ei_homology.Mikado.max_intron_length"] = cli_arguments.max_intron_length
 
     if cli_arguments.junction_f1_filter:
         cromwell_inputs["ei_homology.CombineResults.junction_f1_filter"] = cli_arguments.junction_f1_filter

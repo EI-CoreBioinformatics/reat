@@ -17,6 +17,7 @@ workflow ei_homology {
         Array[GenomeAnnotation] annotations
         File genome_to_annotate
         File mikado_scoring
+        File mikado_config
         RuntimeAttr? index_attr
         RuntimeAttr? score_attr
         RuntimeAttr? aln_attr
@@ -91,6 +92,7 @@ workflow ei_homology {
     call Mikado {
         input:
         reference = genome_to_annotate,
+        extra_config = mikado_config,
         xspecies = CombineXspecies.xspecies_scored_alignment,
         output_prefix = "xspecies"
     }
@@ -119,6 +121,9 @@ workflow ei_homology {
 task Mikado {
     input {
         File reference
+        File extra_config
+        Int min_cdna_length = 100
+        Int max_intron_length = 1000000
         Array[File] xspecies
         Array[File]? utrs
         File? junctions
@@ -129,6 +134,7 @@ task Mikado {
         File mikado_config = output_prefix+"-mikado.yaml"
         File prepared_fasta = output_prefix+"-mikado/mikado_prepared.fasta"
         File prepared_gtf = output_prefix+"-mikado/mikado_prepared.gtf"
+        File mikado_db = output_prefix+"-mikado/mikado.db"
     }
 
     Int task_cpus = 8
@@ -150,13 +156,16 @@ task Mikado {
         fi
 
         # mikado configure
-        mikado configure --reference ~{reference} --list=list.txt --copy-scoring plant.yaml ~{output_prefix}-mikado.yaml
+        mikado configure --max-intron-length ~{max_intron_length} --minimum-cdna-length ~{min_cdna_length} \
+        --reference ~{reference} --list=list.txt --copy-scoring plant.yaml original-mikado.yaml
+
+        yaml-merge -s original-mikado.yaml ~{"-m " + extra_config} -o ~{output_prefix}-mikado.yaml
 
         # mikado prepare
-        mikado prepare --procs=~{task_cpus} --json-conf=prepare_config.yaml -od ~{output_prefix}-mikado
+        mikado prepare --procs=~{task_cpus} --json-conf ~{output_prefix}-mikado.yaml -od ~{output_prefix}-mikado
 
         # mikado serialise
-        mikado serialise ~{"--junctions="+junctions} --transcripts ~{output_prefix}-mikado/mikado_prepared.fasta
+        mikado serialise ~{"--junctions " + junctions} --transcripts ~{output_prefix}-mikado/mikado_prepared.fasta
         --json-conf=~{output_prefix}-mikado.yaml --start-method=spawn -od mikado --procs=~{task_cpus}
 
     >>>
