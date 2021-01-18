@@ -928,16 +928,16 @@ def combine_arguments_homology(cli_arguments):
 
     cromwell_inputs["ei_homology.genome_to_annotate"] = cli_arguments.genome.name
     cromwell_inputs["ei_homology.AlignProteins.species"] = cli_arguments.alignment_species
-    cromwell_inputs["ei_homology.mikado_config"] = cli_arguments.mikado_config
-    cromwell_inputs["ei_homology.mikado_scoring"] = cli_arguments.mikado_scoring
+    cromwell_inputs["ei_homology.mikado_config"] = cli_arguments.mikado_config.name
+    cromwell_inputs["ei_homology.mikado_scoring"] = cli_arguments.mikado_scoring.name
 
     # Optional extra parameters
     if cli_arguments.pick_extra_config:
-        cromwell_inputs['ei_homology.MikadoPick.extra_config'] = cli_arguments.pick_extra_config
+        cromwell_inputs['ei_homology.MikadoPick.extra_config'] = cli_arguments.pick_extra_config.name
     if cli_arguments.junctions:
-        cromwell_inputs['ei_homology.Mikado.junctions'] = cli_arguments.junctions
+        cromwell_inputs['ei_homology.Mikado.junctions'] = cli_arguments.junctions.name
     if cli_arguments.utrs:
-        cromwell_inputs['ei_homology.Mikado.utrs'] = cli_arguments.utrs
+        cromwell_inputs['ei_homology.Mikado.utrs'] = cli_arguments.utrs.name
     if cli_arguments.min_cdna_length:
         cromwell_inputs["ei_homology.Mikado.min_cdna_length"] = cli_arguments.min_cdna_length
     if cli_arguments.max_intron_length:
