@@ -75,7 +75,7 @@ workflow ei_homology {
 
     call ScoreSummary {
         input:
-        alignments = ScoreAlignments.alignment_compare
+        alignments_detail = ScoreAlignments.alignment_compare_detail
     }
 
     scatter (alignment in CombineResults.augmented_alignments_gff) {
@@ -211,7 +211,7 @@ task MikadoPick {
 
 task ScoreSummary {
     input {
-        Array[File] alignments
+        Array[File] alignments_detail
     }
 
     output {
@@ -222,7 +222,7 @@ task ScoreSummary {
         set -euxo pipefail
         mkdir ScoreAlignments
         cd ScoreAlignments
-        for i in ../comp*[^detail].tab; do
+        for i in ~{sep=" " alignments_detail}; do
             echo $i;
             cat $i |awk -vOFS=" " 'NR > 1 {print $11,$13}' |awk '{sum = 0; for (i = 1; i <= NF; i++) sum += $i; sum /= NF; print sum}' | \
             awk 'BEGIN { delta = (delta == "" ? 0.1 : delta) }
