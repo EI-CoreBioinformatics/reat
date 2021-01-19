@@ -142,14 +142,17 @@ task Mikado {
     command <<<
         set -euxo pipefail
         # Create the lists file
-        for i in ~{sep=" " xspecies} do
-            label=`basename ${i} | cut -d. -f1`
-            echo -e "${i}\t${label}\tTrue\t1\tTrue" >> list.txt
+        for i in ~{sep=" " xspecies}
+        do
+        bname=basename ${i}
+        label=${bname%%.*}
+        echo -e "${i}\t${label}\tTrue\t1\tTrue" >> list.txt
         done
 
         if [ "" != "~{sep=" " utrs}" ]
         then
-            for i in ~{sep=" " utrs} do
+            for i in ~{sep=" " utrs}
+            do
                 label="UTRs"
                 echo -e "${i}\t${label}\tTrue\t0\tFalse" >> list.txt
             done
@@ -165,8 +168,8 @@ task Mikado {
         mikado prepare --procs=~{task_cpus} --json-conf ~{output_prefix}-mikado.yaml -od ~{output_prefix}-mikado
 
         # mikado serialise
-        mikado serialise ~{"--junctions " + junctions} --transcripts ~{output_prefix}-mikado/mikado_prepared.fasta
-        --json-conf=~{output_prefix}-mikado.yaml --start-method=spawn -od mikado --procs=~{task_cpus}
+        mikado serialise ~{"--junctions " + junctions} --transcripts ~{output_prefix}-mikado/mikado_prepared.fasta \
+        --json-conf=~{output_prefix}-mikado.yaml --start-method=spawn -od ~{output_prefix}-mikado --procs=~{task_cpus}
 
     >>>
 }
