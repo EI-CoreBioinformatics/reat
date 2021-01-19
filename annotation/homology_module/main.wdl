@@ -168,7 +168,7 @@ task Mikado {
         mikado prepare --procs=~{task_cpus} --json-conf ~{output_prefix}-mikado.yaml -od ~{output_prefix}-mikado
 
         # mikado serialise
-        mikado serialise ~{"--junctions " + junctions} --transcripts ~{output_prefix}-mikado/mikado_prepared.fasta \
+        mikado serialise --force ~{"--junctions " + junctions} --transcripts ~{output_prefix}-mikado/mikado_prepared.fasta \
         --json-conf=~{output_prefix}-mikado.yaml --start-method=spawn -od ~{output_prefix}-mikado --procs=~{task_cpus}
 
     >>>
