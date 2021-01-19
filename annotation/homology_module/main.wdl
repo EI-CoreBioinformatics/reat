@@ -144,7 +144,7 @@ task Mikado {
         # Create the lists file
         for i in ~{sep=" " xspecies}
         do
-        bname=basename ${i}
+        bname=$(basename ${i})
         label=${bname%%.*}
         echo -e "${i}\t${label}\tTrue\t1\tTrue" >> list.txt
         done
