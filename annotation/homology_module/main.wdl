@@ -143,14 +143,14 @@ task Mikado {
         set -euxo pipefail
         # Create the lists file
         for i in ~{sep=" " xspecies} do
-            label = echo ${i} | cut -d. -f1
+            label=`basename ${i} | cut -d. -f1`
             echo -e "${i}\t${label}\tTrue\t1\tTrue" >> list.txt
         done
 
         if [ "" != "~{sep=" " utrs}" ]
         then
             for i in ~{sep=" " utrs} do
-                label = "UTRs"
+                label="UTRs"
                 echo -e "${i}\t${label}\tTrue\t0\tFalse" >> list.txt
             done
         fi
