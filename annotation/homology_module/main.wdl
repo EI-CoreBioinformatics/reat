@@ -115,6 +115,10 @@ workflow ei_homology {
         Array[File] annotation_filter_stats = PrepareAnnotations.stats
         Array[File] alignment_filter_stats = AlignProteins.stats
         File        mgc_score_summary = ScoreSummary.summary_table
+        File loci = MikadoPick.loci
+        File scores = MikadoPick.scores
+        File metrics = MikadoPick.metrics
+        File stats = MikadoPick.stats
     }
 }
 
