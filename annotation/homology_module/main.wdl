@@ -129,7 +129,7 @@ task Mikado {
         Int min_cdna_length = 100
         Int max_intron_length = 1000000
         Array[File] xspecies
-        Array[File]? utrs
+        File? utrs
         File? junctions
         String output_prefix
     }
@@ -153,13 +153,13 @@ task Mikado {
         echo -e "${i}\t${label}\tTrue\t1\tTrue" >> list.txt
         done
 
-        if [ "" != "~{sep=" " utrs}" ]
+        if [ "" != "~{utrs}" ]
         then
-            for i in ~{sep=" " utrs}
-            do
+#            for i in ~{sep=" " utrs}
+#            do
                 label="UTRs"
-                echo -e "${i}\t${label}\tTrue\t0\tFalse" >> list.txt
-            done
+                echo -e "~{utrs}\t${label}\tTrue\t0\tFalse" >> list.txt
+#            done
         fi
 
         # mikado configure
