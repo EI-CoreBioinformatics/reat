@@ -153,8 +153,11 @@ task Mikado {
         echo -e "${i}\t${label}\tTrue\t1\tTrue" >> list.txt
         done
 
+        apply_pad="--no-pad "
+
         if [ "" != "~{utrs}" ]
         then
+             apply_pad=""
 #            for i in ~{sep=" " utrs}
 #            do
                 label="UTRs"
@@ -163,7 +166,7 @@ task Mikado {
         fi
 
         # mikado configure
-        mikado configure --only-reference-update --check-references --reference-update \
+        mikado configure $apply_pad --only-reference-update --check-references --reference-update \
         --max-intron-length ~{max_intron_length} --minimum-cdna-length ~{min_cdna_length} \
         --reference ~{reference} --list=list.txt --copy-scoring plant.yaml original-mikado.yaml
 
