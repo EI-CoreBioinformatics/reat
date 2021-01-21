@@ -163,7 +163,8 @@ task Mikado {
         fi
 
         # mikado configure
-        mikado configure --max-intron-length ~{max_intron_length} --minimum-cdna-length ~{min_cdna_length} \
+        mikado configure --only-reference-update --check-references --reference-update \
+        --max-intron-length ~{max_intron_length} --minimum-cdna-length ~{min_cdna_length} \
         --reference ~{reference} --list=list.txt --copy-scoring plant.yaml original-mikado.yaml
 
         yaml-merge -s original-mikado.yaml ~{"-m " + extra_config} -o ~{output_prefix}-mikado.yaml
