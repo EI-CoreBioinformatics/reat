@@ -16,6 +16,8 @@ workflow ei_homology {
     input {
         Array[GenomeAnnotation] annotations
         File genome_to_annotate
+        File mikado_scoring
+        File mikado_config
         RuntimeAttr? index_attr
         RuntimeAttr? score_attr
         RuntimeAttr? aln_attr
@@ -73,7 +75,7 @@ workflow ei_homology {
 
     call ScoreSummary {
         input:
-        alignments = ScoreAlignments.alignment_compare
+        alignments_detail = ScoreAlignments.alignment_compare_detail
     }
 
     scatter (alignment in CombineResults.augmented_alignments_gff) {
@@ -84,6 +86,27 @@ workflow ei_homology {
         }
     }
 
+    # With the results so far and some optional inputs such as assemblies and junctions
+    # consolidate them in a mikado run that should incorporate UTRs and add junctions to the scoring
+
+    call Mikado {
+        input:
+        reference = genome_to_annotate,
+        extra_config = mikado_config,
+        xspecies = CombineXspecies.xspecies_scored_alignment,
+        output_prefix = "xspecies"
+    }
+
+    call MikadoPick {
+        input:
+        config_file = Mikado.mikado_config,
+        scoring_file = mikado_scoring,
+        mikado_db = Mikado.mikado_db,
+        transcripts = Mikado.prepared_gtf,
+        output_prefix = "xspecies"
+    }
+
+
     output {
         Array[File] xspecies_combined_alignments = CombineXspecies.xspecies_scored_alignment
         Array[File] clean_annotations = PrepareAnnotations.cleaned_up_gff
@@ -92,12 +115,114 @@ workflow ei_homology {
         Array[File] annotation_filter_stats = PrepareAnnotations.stats
         Array[File] alignment_filter_stats = AlignProteins.stats
         File        mgc_score_summary = ScoreSummary.summary_table
+        File loci = MikadoPick.loci
+        File scores = MikadoPick.scores
+        File metrics = MikadoPick.metrics
+        File stats = MikadoPick.stats
     }
+}
+
+task Mikado {
+    input {
+        File reference
+        File extra_config
+        Int min_cdna_length = 100
+        Int max_intron_length = 1000000
+        Array[File] xspecies
+        File? utrs
+        File? junctions
+        String output_prefix
+    }
+
+    output {
+        File mikado_config = output_prefix+"-mikado.yaml"
+        File prepared_fasta = output_prefix+"-mikado/mikado_prepared.fasta"
+        File prepared_gtf = output_prefix+"-mikado/mikado_prepared.gtf"
+        File mikado_db = output_prefix+"-mikado/mikado.db"
+    }
+
+    Int task_cpus = 8
+
+    command <<<
+        set -euxo pipefail
+        # Create the lists file
+        for i in ~{sep=" " xspecies}
+        do
+        bname=$(basename ${i})
+        label=${bname%%.*}
+        echo -e "${i}\t${label}\tTrue\t1\tTrue" >> list.txt
+        done
+
+        apply_pad="--no-pad "
+
+        if [ "" != "~{utrs}" ]
+        then
+             apply_pad=""
+#            for i in ~{sep=" " utrs}
+#            do
+                label="UTRs"
+                echo -e "~{utrs}\t${label}\tTrue\t0\tFalse" >> list.txt
+#            done
+        fi
+
+        # mikado configure
+        mikado configure $apply_pad --only-reference-update --check-references --reference-update \
+        --max-intron-length ~{max_intron_length} --minimum-cdna-length ~{min_cdna_length} \
+        --reference ~{reference} --list=list.txt --copy-scoring plant.yaml original-mikado.yaml
+
+        yaml-merge -s original-mikado.yaml ~{"-m " + extra_config} -o ~{output_prefix}-mikado.yaml
+
+        # mikado prepare
+        mikado prepare --procs=~{task_cpus} --json-conf ~{output_prefix}-mikado.yaml -od ~{output_prefix}-mikado
+
+        # mikado serialise
+        mikado serialise --force ~{"--junctions " + junctions} --transcripts ~{output_prefix}-mikado/mikado_prepared.fasta \
+        --json-conf=~{output_prefix}-mikado.yaml --start-method=spawn -od ~{output_prefix}-mikado --procs=~{task_cpus}
+
+    >>>
+}
+
+task MikadoPick {
+    input{
+        File config_file
+        File? extra_config
+        File scoring_file
+        File transcripts
+        File mikado_db
+        String output_prefix
+    }
+
+    Int task_cpus = 8
+
+    output {
+        File index_log  = output_prefix + "-index_loci.log"
+        File loci_index = output_prefix + ".loci.gff3.midx"
+        File loci       = output_prefix + ".loci.gff3"
+        File scores     = output_prefix + ".loci.scores.tsv"
+        File metrics    = output_prefix + ".loci.metrics.tsv"
+        File stats      = output_prefix + ".loci.gff3.stats"
+        File subloci    = output_prefix + ".subloci.gff3"
+        File monoloci   = output_prefix + ".monoloci.gff3"
+    }
+
+    command <<<
+    set -euxo pipefail
+    export TMPDIR=/tmp
+    yaml-merge -s ~{config_file} ~{"-m " + extra_config} -o pick_config.yaml
+    mikado pick --source Mikado_~{output_prefix} --procs=~{task_cpus} --scoring-file ~{scoring_file} \
+    --start-method=spawn --json-conf=pick_config.yaml \
+    --loci-out ~{output_prefix}.loci.gff3 -lv INFO ~{"-db " + mikado_db} \
+    --subloci-out ~{output_prefix}.subloci.gff3 --monoloci-out ~{output_prefix}.monoloci.gff3 \
+    ~{transcripts}
+    mikado compare -r ~{output_prefix}.loci.gff3 -l ~{output_prefix}-index_loci.log --index
+    mikado util stats  ~{output_prefix}.loci.gff3 ~{output_prefix}.loci.gff3.stats
+    >>>
+
 }
 
 task ScoreSummary {
     input {
-        Array[File] alignments
+        Array[File] alignments_detail
     }
 
     output {
@@ -108,7 +233,7 @@ task ScoreSummary {
         set -euxo pipefail
         mkdir ScoreAlignments
         cd ScoreAlignments
-        for i in ../comp*[^detail].tab; do
+        for i in ~{sep=" " alignments_detail}; do
             echo $i;
             cat $i |awk -vOFS=" " 'NR > 1 {print $11,$13}' |awk '{sum = 0; for (i = 1; i <= NF; i++) sum += $i; sum /= NF; print sum}' | \
             awk 'BEGIN { delta = (delta == "" ? 0.1 : delta) }
