@@ -38,7 +38,15 @@ workflow portcullis {
             call Full as groupedFull{
                 input:
                 reference = reference,
-                sample = object { name: basename(sample_files,'.sample'), strand: sub(basename(sample_files,'.sample'),'.+\_',''), aligner: "*", bam: read_lines(sample_files), merge:false},
+                sample = object {
+                             name: basename(sample_files,'.sample'),
+                             strand: sub(basename(sample_files,'.sample'),'.+\_',''),
+                             aligner: "*", bam: read_lines(sample_files),
+                             merge:false,
+                             score:false,
+                             is_ref:false,
+                             exclude_redundant:false,
+                         },
                 reference_bed = PrepareRef.refbed,
                 runtime_attr_override = portcullis_resources
             }
