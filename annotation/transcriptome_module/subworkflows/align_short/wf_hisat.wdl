@@ -88,7 +88,7 @@ task Hisat {
             strandness="--rna-strandness=R"
             ;;
         esac
-    hisat2 -p ~{task_cpus} -x ~{sub(index[0], "\\.\\d\\.ht2l?", "")} \
+    hisat2 -p ~{task_cpus} --dta -x ~{sub(index[0], "\\.\\d\\.ht2l?", "")} \
     ${strandness} ~{extra_parameters} \
     --min-intronlen=~{min_intron_len} \
     --max-intronlen=~{max_intron_len} \
