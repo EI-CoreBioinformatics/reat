@@ -243,7 +243,7 @@ def parse_arguments():
     mikado_parameters.add_argument("--all_scoring_file", type=argparse.FileType('r'),
                                    help="Mikado long and short scoring file", required=True)
     mikado_parameters.add_argument("--long_scoring_file", type=argparse.FileType('r'),
-                                   help="Mikado long scoring file", required=True)
+                                   help="Mikado long scoring file")
     mikado_parameters.add_argument("--long_lq_scoring_file", type=argparse.FileType('r'),
                                    help="Mikado low-quality long scoring file")
     mikado_parameters.add_argument("--homology_proteins", type=argparse.FileType('r'),
@@ -631,7 +631,11 @@ def combine_arguments(cli_arguments):
 
     cromwell_inputs["ei_annotation.reference_genome"] = cli_arguments.reference.name
     cromwell_inputs["ei_annotation.all_scoring_file"] = cli_arguments.all_scoring_file.name
-    cromwell_inputs["ei_annotation.long_scoring_file"] = cli_arguments.long_scoring_file.name
+
+    if cli_arguments.long_scoring_file:
+        cromwell_inputs["ei_annotation.long_scoring_file"] = cli_arguments.long_scoring_file.name
+    else:
+        cromwell_inputs["ei_annotation.long_scoring_file"] = cli_arguments.all_scoring_file.name
     if cli_arguments.long_lq_scoring_file:
         cromwell_inputs["ei_annotation.long_lq_scoring_file"] = cli_arguments.long_lq_scoring_file.name
 
