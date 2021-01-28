@@ -38,7 +38,16 @@ workflow portcullis {
             call Full as groupedFull{
                 input:
                 reference = reference,
-                sample = object { name: basename(sample_files,'.sample'), strand: sub(basename(sample_files,'.sample'),'.+\_',''), aligner: "*", bam: read_lines(sample_files), merge:false},
+                sample = object {
+                             name: basename(sample_files,'.sample'),
+                             strand: sub(basename(sample_files,'.sample'),'.+\_',''),
+                             aligner: "*",
+                             bam: read_lines(sample_files),
+                             merge: false,
+                             score: 0,
+                             is_ref: false,
+                             exclude_redundant: false
+                         },
                 reference_bed = PrepareRef.refbed,
                 runtime_attr_override = portcullis_resources
             }
@@ -128,7 +137,7 @@ task Full {
     }
 
     RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
-    Int task_cpus = runtime_attr.cpu_cores
+    Int task_cpus = select_first([runtime_attr.cpu_cores, cpus])
 
     command <<<
     set -euxo pipefail
