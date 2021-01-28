@@ -229,7 +229,7 @@ task MikadoPick {
     }
 
     RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
-    Int task_cpus = runtime_attr.cpu_cores
+    Int task_cpus = select_first([runtime_attr.cpu_cores, cpus])
 
     output {
         File index_log  = output_prefix + "-index_loci.log"
@@ -282,7 +282,7 @@ task MikadoSerialise {
     }
 
     RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
-    Int task_cpus = runtime_attr.cpu_cores
+    Int task_cpus = select_first([runtime_attr.cpu_cores, cpus])
 
     output {
         Array[File] out = glob("mikado_serialise/*")
@@ -404,7 +404,7 @@ task MikadoPrepare {
     }
 
     RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
-    Int task_cpus = runtime_attr.cpu_cores
+    Int task_cpus = select_first([runtime_attr.cpu_cores, cpus])
 
     output {
         File mikado_config = output_prefix+"-mikado.yaml"

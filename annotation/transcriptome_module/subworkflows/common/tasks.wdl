@@ -239,7 +239,7 @@ task StarIndex {
     }
 
     RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
-    Int task_cpus = runtime_attr.cpu_cores
+    Int task_cpus = select_first([runtime_attr.cpu_cores, cpus])
 
     output {
         Array[File] index = glob('starIndex/*')
@@ -273,7 +273,7 @@ task TophatIndex {
     }
 
     RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
-    Int task_cpus = runtime_attr.cpu_cores
+    Int task_cpus = select_first([runtime_attr.cpu_cores, cpus])
 
     output {
         Array[File] index = glob('ref*')

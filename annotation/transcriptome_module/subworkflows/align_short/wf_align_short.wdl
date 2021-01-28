@@ -269,7 +269,7 @@ task Sort {
     }
 
     RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
-    Int task_cpus = runtime_attr.cpu_cores
+    Int task_cpus = select_first([runtime_attr.cpu_cores, cpus])
 
     output {
         IndexedBam indexed_bam = object { bam: "alignments/" + name + ".sorted.bam", index: "alignments/" + name + ".sorted.bam.bai" }
@@ -376,7 +376,7 @@ task Star {
     }
 
     RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
-    Int task_cpus = runtime_attr.cpu_cores
+    Int task_cpus = select_first([runtime_attr.cpu_cores, cpus])
 
     output {
         File aligned_pair = rp_name + ".star.bam"

@@ -295,7 +295,7 @@ task CombineXspecies {
 
     RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
 
-    Int task_cpus = runtime_attr.cpu_cores
+    Int task_cpus = select_first([runtime_attr.cpu_cores, cpus])
 
     command <<<
         set -euxo pipefail
@@ -338,7 +338,7 @@ task IndexGenome {
 
     RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
 
-    Int task_cpus = runtime_attr.cpu_cores
+    Int task_cpus = select_first([runtime_attr.cpu_cores, cpus])
 
     command <<<
         set -euxo pipefail
@@ -414,7 +414,7 @@ task AlignProteins {
 
     RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
 
-    Int task_cpus = runtime_attr.cpu_cores
+    Int task_cpus = select_first([runtime_attr.cpu_cores, cpus])
 #    String out_prefix = sub(basename(genome_index[0]), "\.[^/.]+$", "")
     String out_prefix = sub(basename(genome_proteins.annotation_gff), "\.[^/.]+$", "")
     String ref_prefix = sub(basename(genome_proteins.genome), "\.[^/.]+$", "")
@@ -503,7 +503,7 @@ task ScoreAlignments {
 
     RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
 
-    Int task_cpus = runtime_attr.cpu_cores
+    Int task_cpus = select_first([runtime_attr.cpu_cores, cpus])
 
     command <<<
         set -euxo pipefail

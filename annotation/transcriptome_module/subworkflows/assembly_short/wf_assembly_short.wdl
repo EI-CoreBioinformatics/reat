@@ -144,7 +144,7 @@ task Stringtie {
     }
 
     RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
-    Int task_cpus = runtime_attr.cpu_cores
+    Int task_cpus = select_first([runtime_attr.cpu_cores, cpus])
 
     output {
         File assembled = output_directory + "/"+prefix+".stringtie.gtf"
