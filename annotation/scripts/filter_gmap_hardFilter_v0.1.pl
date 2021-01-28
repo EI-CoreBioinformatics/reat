@@ -9,7 +9,6 @@ use strict;
 use warnings;
 use Getopt::Long;
 use File::Basename;
-use Bio::SeqIO;
 
 my $prog = basename($0);
 my $usage = "
