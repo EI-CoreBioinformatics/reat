@@ -183,7 +183,8 @@ task WriteModelsFile {
     RuntimeAttr default_attr = object {
         cpu_cores: 1,
         mem_gb: 4,
-        max_retries: 1
+        max_retries: 1,
+        queue: ""
     }
 
     RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
@@ -192,6 +193,7 @@ task WriteModelsFile {
         cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
         memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
         maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+        queue: select_first([runtime_attr.queue, default_attr.queue])
     }
 
     output {
@@ -225,7 +227,8 @@ task MikadoPick {
     RuntimeAttr default_attr = object {
         cpu_cores: "~{cpus}",
         mem_gb: 8,
-        max_retries: 1
+        max_retries: 1,
+        queue: ""
     }
 
     RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
@@ -259,6 +262,7 @@ task MikadoPick {
         cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
         memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
         maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+        queue: select_first([runtime_attr.queue, default_attr.queue])
     }
 }
 
@@ -278,7 +282,8 @@ task MikadoSerialise {
     RuntimeAttr default_attr = object {
         cpu_cores: "~{cpus}",
         mem_gb: 8,
-        max_retries: 1
+        max_retries: 1,
+        queue: ""
     }
 
     RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
@@ -310,6 +315,7 @@ task MikadoSerialise {
         cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
         memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
         maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+        queue: select_first([runtime_attr.queue, default_attr.queue])
     }
 }
 
@@ -337,7 +343,8 @@ task GTCDS {
     RuntimeAttr default_attr = object {
         cpu_cores: 1,
         mem_gb: 4,
-        max_retries: 1
+        max_retries: 1,
+        queue: ""
     }
 
     RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
@@ -346,6 +353,7 @@ task GTCDS {
         cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
         memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
         maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+        queue: select_first([runtime_attr.queue, default_attr.queue])
     }
 
 }
@@ -360,7 +368,8 @@ task GenerateModelsList {
     RuntimeAttr default_attr = object {
         cpu_cores: 1,
         mem_gb: 4,
-        max_retries: 1
+        max_retries: 1,
+        queue: ""
     }
     
     RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
@@ -400,7 +409,8 @@ task MikadoPrepare {
     RuntimeAttr default_attr = object {
         cpu_cores: "~{cpus}",
         mem_gb: 8,
-        max_retries: 1
+        max_retries: 1,
+        queue: ""
     }
 
     RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
@@ -430,5 +440,6 @@ task MikadoPrepare {
         cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
         memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
         maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+        queue: select_first([runtime_attr.queue, default_attr.queue])
     }
 }

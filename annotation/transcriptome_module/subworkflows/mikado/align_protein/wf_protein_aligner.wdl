@@ -11,7 +11,8 @@ task SanitiseProteinBlastDB {
     RuntimeAttr default_attr = object {
         cpu_cores: 1,
         mem_gb: 4,
-        max_retries: 1
+        max_retries: 1,
+        queue: ""
     }
     
     RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
@@ -43,7 +44,8 @@ task BlastIndex {
     RuntimeAttr default_attr = object {
         cpu_cores: 1,
         mem_gb: 4,
-        max_retries: 1
+        max_retries: 1,
+        queue: ""
     }
     
     RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
@@ -81,7 +83,8 @@ task BlastAlign {
     RuntimeAttr default_attr = object {
         cpu_cores: "~{cpus}",
         mem_gb: 8,
-        max_retries: 1
+        max_retries: 1,
+        queue: ""
     }
 
     RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
@@ -91,6 +94,7 @@ task BlastAlign {
         cpu: task_cpus
         memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
         maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+        queue: select_first([runtime_attr.queue, default_attr.queue])
     }
 
     output {
@@ -112,7 +116,8 @@ task DiamondIndex {
     RuntimeAttr default_attr = object {
         cpu_cores: 1,
         mem_gb: 4,
-        max_retries: 1
+        max_retries: 1,
+        queue: ""
     }
     
     RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
@@ -122,6 +127,7 @@ task DiamondIndex {
         cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
         memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
         maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+        queue: select_first([runtime_attr.queue, default_attr.queue])
     }
 
     output {
@@ -150,7 +156,8 @@ task DiamondAlign {
         constraints: "avx|avx2|sse4",
         cpu_cores: 1,
         mem_gb: 4,
-        max_retries: 1
+        max_retries: 1,
+        queue: ""
     }
     
     RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
@@ -162,6 +169,7 @@ task DiamondAlign {
         memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
         constraints: select_first([runtime_attr.constraints, default_attr.constraints])
         maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+        queue: select_first([runtime_attr.queue, default_attr.queue])
     }
 
     output {

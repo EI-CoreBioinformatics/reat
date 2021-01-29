@@ -290,7 +290,8 @@ task CombineXspecies {
     RuntimeAttr default_attr = object {
         cpu_cores: "~{cpus}",
         mem_gb: 16,
-        max_retries: 1
+        max_retries: 1,
+        queue: ""
     }
 
     RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
@@ -316,6 +317,7 @@ task CombineXspecies {
         cpu: task_cpus
         memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
         maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+        queue: select_first([runtime_attr.queue, default_attr.queue])
     }
 }
 
@@ -333,7 +335,8 @@ task IndexGenome {
     RuntimeAttr default_attr = object {
         cpu_cores: "~{cpus}",
         mem_gb: 16,
-        max_retries: 1
+        max_retries: 1,
+        queue: ""
     }
 
     RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
@@ -351,6 +354,7 @@ task IndexGenome {
         cpu: task_cpus
         memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
         maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+        queue: select_first([runtime_attr.queue, default_attr.queue])
     }
 }
 
@@ -409,7 +413,8 @@ task AlignProteins {
     RuntimeAttr default_attr = object {
         cpu_cores: "~{cpus}",
         mem_gb: 32,
-        max_retries: 1
+        max_retries: 1,
+        queue: ""
     }
 
     RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
@@ -443,6 +448,7 @@ task AlignProteins {
         cpu: task_cpus
         memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
         maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+        queue: select_first([runtime_attr.queue, default_attr.queue])
     }
 
 }
@@ -498,7 +504,8 @@ task ScoreAlignments {
     RuntimeAttr default_attr = object {
         cpu_cores: "~{cpus}",
         mem_gb: 32,
-        max_retries: 1
+        max_retries: 1,
+        queue: ""
     }
 
     RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
@@ -518,6 +525,7 @@ task ScoreAlignments {
         cpu: task_cpus
         memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
         maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+        queue: select_first([runtime_attr.queue, default_attr.queue])
     }
 
 }

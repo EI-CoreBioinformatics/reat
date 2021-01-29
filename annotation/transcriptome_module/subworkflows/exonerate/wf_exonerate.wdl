@@ -55,7 +55,8 @@ task ExonerateDatabase {
     RuntimeAttr default_attr = object {
         cpu_cores: 1,
         mem_gb: 4,
-        max_retries: 1
+        max_retries: 1,
+        queue: ""
     }
     
     RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
@@ -90,7 +91,8 @@ task Exonerate {
     RuntimeAttr default_attr = object {
         cpu_cores: 1,
         mem_gb: 4,
-        max_retries: 1
+        max_retries: 1,
+        queue: ""
     }
     
     RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])

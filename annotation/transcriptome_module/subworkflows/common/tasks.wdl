@@ -13,7 +13,8 @@ task SanitiseAnnotation {
     RuntimeAttr default_attr = object {
         cpu_cores: 1,
         mem_gb: 4,
-        max_retries: 1
+        max_retries: 1,
+        queue: ""
     }
     
     RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
@@ -118,7 +119,8 @@ task IndexFasta {
     RuntimeAttr default_attr = object {
         cpu_cores: 1,
         mem_gb: 4,
-        max_retries: 1
+        max_retries: 1,
+        queue: ""
     }
     
     RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
@@ -128,6 +130,7 @@ task IndexFasta {
         cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
         memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
         maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+        queue: select_first([runtime_attr.queue, default_attr.queue])
     }
 }
 
@@ -149,7 +152,8 @@ task SanitiseFasta {
     RuntimeAttr default_attr = object {
         cpu_cores: 1,
         mem_gb: 4,
-        max_retries: 1
+        max_retries: 1,
+        queue: ""
     }
     
     RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
@@ -159,6 +163,8 @@ task SanitiseFasta {
         cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
         memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
         maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+        queue: select_first([runtime_attr.queue, default_attr.queue])
+        continueOnReturnCode: [-1, 0]
     }
 }
 
@@ -171,7 +177,8 @@ task GSnapIndex {
     RuntimeAttr default_attr = object {
         cpu_cores: 1,
         mem_gb: 8,
-        max_retries: 1
+        max_retries: 1,
+        queue: ""
     }
     
     RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
@@ -203,7 +210,8 @@ task Hisat2Index {
     RuntimeAttr default_attr = object {
         cpu_cores: 1,
         mem_gb: 8,
-        max_retries: 1
+        max_retries: 1,
+        queue: ""
     }
     
     RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
@@ -235,7 +243,8 @@ task StarIndex {
     RuntimeAttr default_attr = object {
         cpu_cores: "~{cpus}",
         mem_gb: 8,
-        max_retries: 1
+        max_retries: 1,
+        queue: ""
     }
 
     RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
@@ -269,7 +278,8 @@ task TophatIndex {
     RuntimeAttr default_attr = object {
         cpu_cores: "~{cpus}",
         mem_gb: 8,
-        max_retries: 1
+        max_retries: 1,
+        queue: ""
     }
 
     RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
@@ -288,6 +298,7 @@ task TophatIndex {
         cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
         memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
         maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+        queue: select_first([runtime_attr.queue, default_attr.queue])
     }
 }
 

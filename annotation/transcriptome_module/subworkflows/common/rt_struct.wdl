@@ -2,6 +2,7 @@ version 1.0
 
 struct RuntimeAttr {
     String? constraints
+    String? queue
     Float? mem_gb
     Int? cpu_cores
     Int? disk_gb
