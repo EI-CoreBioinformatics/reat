@@ -62,7 +62,8 @@ workflow portcullis {
                 input:
                 reference = reference,
                 sample = aligned_sample,
-                reference_bed = PrepareRef.refbed
+                reference_bed = PrepareRef.refbed,
+                runtime_attr_override = portcullis_resources
             }
         }
         Array[File] def_ungrouped_pass = Full.pass_tab
