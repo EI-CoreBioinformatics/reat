@@ -306,6 +306,7 @@ task MikadoSerialise {
     ln -s ${fasta} .
     ln -s ${fai} .
     yaml-merge -s ~{config} ~{"-m " + extra_config} -o serialise_config.yaml
+    export TMPDIR=/tmp
     mikado serialise ~{xml_prefix}~{sep="," homology_alignments} ~{"--blast_targets="+clean_seqs_db} ~{"--junctions="+junctions} ~{"--orfs="+orfs} \
     ~{"--transcripts=" + transcripts} --genome_fai=${fai} \
     --json-conf=serialise_config.yaml --force --start-method=spawn -od mikado_serialise --procs=~{task_cpus}
@@ -424,6 +425,7 @@ task MikadoPrepare {
 
     command <<<
         set -euxo pipefail
+        export TMPDIR=/tmp
         mikado configure \
         ~{"-bt " + blast_targets} \
         --list=~{models} \

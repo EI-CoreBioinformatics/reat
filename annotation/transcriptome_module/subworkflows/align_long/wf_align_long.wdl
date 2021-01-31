@@ -52,12 +52,12 @@ workflow wf_align_long {
     }
 
     if (aligner == "gmap") {
+        call GMapIndex {
+            input:
+            reference = reference,
+            runtime_attr_override = indexing_resources
+        }
         scatter (sample in long_samples) {
-            call GMapIndex {
-                input:
-                reference = reference,
-                runtime_attr_override = indexing_resources
-            }
             scatter (LR in sample.LR) {
                 call GMapLong {
                     input:

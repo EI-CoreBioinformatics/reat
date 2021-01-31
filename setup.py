@@ -4,8 +4,8 @@ import glob
 setup(
     name='reat',
     version='0.0.7',
-    packages=find_packages('.'),
-    url='github.com/ei-corebioinformatics/reat',
+    packages=find_packages('.', exclude=["tests"]),
+    url='https://github.com/ei-corebioinformatics/reat',
     classifiers=[
         "Development Status :: 4 - Beta",
         "Topic :: Scientific Engineering :: Bio/Informatics",
@@ -18,7 +18,7 @@ setup(
     license='MIT',
     author='Luis Yanes',
     author_email='luis.yanes@earlham.ac.uk',
-    description='Robust and Extendable Eukaryotic Annotation Toolkit',
+    description='Robust Eukaryotic Annotation Toolkit',
     zip_safe=False,
     keywords="gene annotation WDL pipeline workflow",
     scripts=[
