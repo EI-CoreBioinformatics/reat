@@ -47,6 +47,8 @@ class UniquelyIdentifiableSegment(GenomicSegment):
         if self.uid:
             print(f"ID={self.uid}", file=output_file, end=';')
         attrl = list(self.attr.items())
+        if len(attrl) == 0:
+            return
         for k, v in attrl[:-1]:
             print(f"{k}=", file=output_file, end='')
             if isinstance(v, list):
