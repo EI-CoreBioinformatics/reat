@@ -407,6 +407,7 @@ def print_attributes(item, output_file):
 
     k, v = attrl[-1]
     print(f"{k}=", file=output_file, end='')
+
     if isinstance(v, list):
         print(f"{','.join(v)}", file=output_file)
     else:
