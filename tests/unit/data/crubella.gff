@@ -1,0 +1,57 @@
+#gff-version 3
+#annot-version v1.1
+#species Capsella rubella
+Crubella_scaffold_1	BMAPv1	gene	1663	3133	.	-	.	ID=Carub.0001s0001.v1.1;Name=Carub.0001s0001;ancestorIdentifier=Carubv10010485m.g.v1.0
+Crubella_scaffold_1	BMAPv1	mRNA	1663	3133	.	-	.	ID=Carub.0001s0001.1.v1.1;Name=Carub.0001s0001.1;pacid=39227901;longest=1;Parent=Carub.0001s0001.v1.1
+Crubella_scaffold_1	BMAPv1	exon	2914	3133	.	-	.	ID=Carub.0001s0001.1.v1.1.exon.1;Parent=Carub.0001s0001.1.v1.1;pacid=39227901
+Crubella_scaffold_1	BMAPv1	CDS	2914	3129	.	-	0	ID=Carub.0001s0001.1.v1.1.CDS.1;Parent=Carub.0001s0001.1.v1.1;pacid=39227901
+# Crubella_scaffold_1	BMAPv1	five_prime_UTR	3130	3133	.	-	.	ID=Carub.0001s0001.1.v1.1.five_prime_UTR.1;Parent=Carub.0001s0001.1.v1.1;pacid=39227901
+Crubella_scaffold_1	BMAPv1	exon	2400	2576	.	-	.	ID=Carub.0001s0001.1.v1.1.exon.2;Parent=Carub.0001s0001.1.v1.1;pacid=39227901
+Crubella_scaffold_1	BMAPv1	CDS	2400	2576	.	-	0	ID=Carub.0001s0001.1.v1.1.CDS.2;Parent=Carub.0001s0001.1.v1.1;pacid=39227901
+Crubella_scaffold_1	BMAPv1	exon	1663	2124	.	-	.	ID=Carub.0001s0001.1.v1.1.exon.3;Parent=Carub.0001s0001.1.v1.1;pacid=39227901
+# Crubella_scaffold_1	BMAPv1	three_prime_UTR	1663	2064	.	-	.	ID=Carub.0001s0001.1.v1.1.three_prime_UTR.1;Parent=Carub.0001s0001.1.v1.1;pacid=39227901
+Crubella_scaffold_1	BMAPv1	CDS	2065	2124	.	-	0	ID=Carub.0001s0001.1.v1.1.CDS.3;Parent=Carub.0001s0001.1.v1.1;pacid=39227901
+Crubella_scaffold_1	BMAPv1	gene	3338	7431	.	+	.	ID=Carub.0001s0002.v1.1;Name=Carub.0001s0002;ancestorIdentifier=Carubv10011809m.g.v1.0
+Crubella_scaffold_1	BMAPv1	mRNA	3338	7431	.	+	.	ID=Carub.0001s0002.1.v1.1;Name=Carub.0001s0002.1;pacid=39228588;longest=1;ancestorIdentifier=Carubv10011809m.v1.0;Parent=Carub.0001s0002.v1.1
+Crubella_scaffold_1	BMAPv1	exon	3338	3411	.	+	.	ID=Carub.0001s0002.1.v1.1.exon.1;Parent=Carub.0001s0002.1.v1.1;pacid=39228588
+# Crubella_scaffold_1	BMAPv1	five_prime_UTR	3338	3368	.	+	.	ID=Carub.0001s0002.1.v1.1.five_prime_UTR.1;Parent=Carub.0001s0002.1.v1.1;pacid=39228588
+Crubella_scaffold_1	BMAPv1	CDS	3369	3411	.	+	0	ID=Carub.0001s0002.1.v1.1.CDS.1;Parent=Carub.0001s0002.1.v1.1;pacid=39228588
+Crubella_scaffold_1	BMAPv1	exon	3524	3609	.	+	.	ID=Carub.0001s0002.1.v1.1.exon.2;Parent=Carub.0001s0002.1.v1.1;pacid=39228588
+Crubella_scaffold_1	BMAPv1	CDS	3524	3609	.	+	2	ID=Carub.0001s0002.1.v1.1.CDS.2;Parent=Carub.0001s0002.1.v1.1;pacid=39228588
+Crubella_scaffold_1	BMAPv1	exon	3696	3737	.	+	.	ID=Carub.0001s0002.1.v1.1.exon.3;Parent=Carub.0001s0002.1.v1.1;pacid=39228588
+Crubella_scaffold_1	BMAPv1	CDS	3696	3737	.	+	0	ID=Carub.0001s0002.1.v1.1.CDS.3;Parent=Carub.0001s0002.1.v1.1;pacid=39228588
+Crubella_scaffold_1	BMAPv1	exon	3841	3886	.	+	.	ID=Carub.0001s0002.1.v1.1.exon.4;Parent=Carub.0001s0002.1.v1.1;pacid=39228588
+Crubella_scaffold_1	BMAPv1	CDS	3841	3886	.	+	0	ID=Carub.0001s0002.1.v1.1.CDS.4;Parent=Carub.0001s0002.1.v1.1;pacid=39228588
+Crubella_scaffold_1	BMAPv1	exon	3980	4066	.	+	.	ID=Carub.0001s0002.1.v1.1.exon.5;Parent=Carub.0001s0002.1.v1.1;pacid=39228588
+Crubella_scaffold_1	BMAPv1	CDS	3980	4066	.	+	2	ID=Carub.0001s0002.1.v1.1.CDS.5;Parent=Carub.0001s0002.1.v1.1;pacid=39228588
+Crubella_scaffold_1	BMAPv1	exon	4156	4211	.	+	.	ID=Carub.0001s0002.1.v1.1.exon.6;Parent=Carub.0001s0002.1.v1.1;pacid=39228588
+Crubella_scaffold_1	BMAPv1	CDS	4156	4211	.	+	2	ID=Carub.0001s0002.1.v1.1.CDS.6;Parent=Carub.0001s0002.1.v1.1;pacid=39228588
+Crubella_scaffold_1	BMAPv1	exon	4377	4494	.	+	.	ID=Carub.0001s0002.1.v1.1.exon.7;Parent=Carub.0001s0002.1.v1.1;pacid=39228588
+Crubella_scaffold_1	BMAPv1	CDS	4377	4494	.	+	0	ID=Carub.0001s0002.1.v1.1.CDS.7;Parent=Carub.0001s0002.1.v1.1;pacid=39228588
+Crubella_scaffold_1	BMAPv1	exon	4610	4668	.	+	.	ID=Carub.0001s0002.1.v1.1.exon.8;Parent=Carub.0001s0002.1.v1.1;pacid=39228588
+Crubella_scaffold_1	BMAPv1	CDS	4610	4668	.	+	2	ID=Carub.0001s0002.1.v1.1.CDS.8;Parent=Carub.0001s0002.1.v1.1;pacid=39228588
+Crubella_scaffold_1	BMAPv1	exon	4768	4839	.	+	.	ID=Carub.0001s0002.1.v1.1.exon.9;Parent=Carub.0001s0002.1.v1.1;pacid=39228588
+Crubella_scaffold_1	BMAPv1	CDS	4768	4839	.	+	0	ID=Carub.0001s0002.1.v1.1.CDS.9;Parent=Carub.0001s0002.1.v1.1;pacid=39228588
+Crubella_scaffold_1	BMAPv1	exon	4955	5018	.	+	.	ID=Carub.0001s0002.1.v1.1.exon.10;Parent=Carub.0001s0002.1.v1.1;pacid=39228588
+Crubella_scaffold_1	BMAPv1	CDS	4955	5018	.	+	0	ID=Carub.0001s0002.1.v1.1.CDS.10;Parent=Carub.0001s0002.1.v1.1;pacid=39228588
+Crubella_scaffold_1	BMAPv1	exon	5122	5225	.	+	.	ID=Carub.0001s0002.1.v1.1.exon.11;Parent=Carub.0001s0002.1.v1.1;pacid=39228588
+Crubella_scaffold_1	BMAPv1	CDS	5122	5225	.	+	2	ID=Carub.0001s0002.1.v1.1.CDS.11;Parent=Carub.0001s0002.1.v1.1;pacid=39228588
+Crubella_scaffold_1	BMAPv1	exon	5408	5479	.	+	.	ID=Carub.0001s0002.1.v1.1.exon.12;Parent=Carub.0001s0002.1.v1.1;pacid=39228588
+Crubella_scaffold_1	BMAPv1	CDS	5408	5479	.	+	0	ID=Carub.0001s0002.1.v1.1.CDS.12;Parent=Carub.0001s0002.1.v1.1;pacid=39228588
+Crubella_scaffold_1	BMAPv1	exon	5586	5672	.	+	.	ID=Carub.0001s0002.1.v1.1.exon.13;Parent=Carub.0001s0002.1.v1.1;pacid=39228588
+Crubella_scaffold_1	BMAPv1	CDS	5586	5672	.	+	0	ID=Carub.0001s0002.1.v1.1.CDS.13;Parent=Carub.0001s0002.1.v1.1;pacid=39228588
+Crubella_scaffold_1	BMAPv1	exon	5755	5822	.	+	.	ID=Carub.0001s0002.1.v1.1.exon.14;Parent=Carub.0001s0002.1.v1.1;pacid=39228588
+Crubella_scaffold_1	BMAPv1	CDS	5755	5822	.	+	0	ID=Carub.0001s0002.1.v1.1.CDS.14;Parent=Carub.0001s0002.1.v1.1;pacid=39228588
+Crubella_scaffold_1	BMAPv1	exon	5987	6055	.	+	.	ID=Carub.0001s0002.1.v1.1.exon.15;Parent=Carub.0001s0002.1.v1.1;pacid=39228588
+Crubella_scaffold_1	BMAPv1	CDS	5987	6055	.	+	1	ID=Carub.0001s0002.1.v1.1.CDS.15;Parent=Carub.0001s0002.1.v1.1;pacid=39228588
+Crubella_scaffold_1	BMAPv1	exon	6130	6212	.	+	.	ID=Carub.0001s0002.1.v1.1.exon.16;Parent=Carub.0001s0002.1.v1.1;pacid=39228588
+Crubella_scaffold_1	BMAPv1	CDS	6130	6212	.	+	1	ID=Carub.0001s0002.1.v1.1.CDS.16;Parent=Carub.0001s0002.1.v1.1;pacid=39228588
+Crubella_scaffold_1	BMAPv1	exon	6408	6507	.	+	.	ID=Carub.0001s0002.1.v1.1.exon.17;Parent=Carub.0001s0002.1.v1.1;pacid=39228588
+Crubella_scaffold_1	BMAPv1	CDS	6408	6507	.	+	2	ID=Carub.0001s0002.1.v1.1.CDS.17;Parent=Carub.0001s0002.1.v1.1;pacid=39228588
+Crubella_scaffold_1	BMAPv1	exon	6783	6848	.	+	.	ID=Carub.0001s0002.1.v1.1.exon.18;Parent=Carub.0001s0002.1.v1.1;pacid=39228588
+Crubella_scaffold_1	BMAPv1	CDS	6783	6848	.	+	1	ID=Carub.0001s0002.1.v1.1.CDS.18;Parent=Carub.0001s0002.1.v1.1;pacid=39228588
+Crubella_scaffold_1	BMAPv1	exon	6946	7039	.	+	.	ID=Carub.0001s0002.1.v1.1.exon.19;Parent=Carub.0001s0002.1.v1.1;pacid=39228588
+Crubella_scaffold_1	BMAPv1	CDS	6946	7039	.	+	1	ID=Carub.0001s0002.1.v1.1.CDS.19;Parent=Carub.0001s0002.1.v1.1;pacid=39228588
+Crubella_scaffold_1	BMAPv1	exon	7122	7431	.	+	.	ID=Carub.0001s0002.1.v1.1.exon.20;Parent=Carub.0001s0002.1.v1.1;pacid=39228588
+Crubella_scaffold_1	BMAPv1	CDS	7122	7199	.	+	0	ID=Carub.0001s0002.1.v1.1.CDS.20;Parent=Carub.0001s0002.1.v1.1;pacid=39228588
+# Crubella_scaffold_1	BMAPv1	three_prime_UTR	7200	7431	.	+	.	ID=Carub.0001s0002.1.v1.1.three_prime_UTR.1;Parent=Carub.0001s0002.1.v1.1;pacid=39228588

@@ -83,6 +83,7 @@ def check_environment(force_quit=True):
         "transdecoder": {"command": "TransDecoder.LongOrfs --version".split(' '),
                          "result": "TransDecoder.LongOrfs 5.5.0"},
         "portcullis": {"command": "portcullis --version".split(' '), "result": "portcullis 1.2.0"},
+        "junctools": {"command": "junctools --version".split(' '), "result": "1.2.0"},
     }
 
     programs_not_found = set()

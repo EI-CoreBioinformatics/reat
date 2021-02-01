@@ -74,7 +74,7 @@ task CountSequences {
     >>>
 
     runtime {
-        continueOnReturnCode: [0, 1]
+        continueOnReturnCode: [-1, 0, 1]
     }
 }
 
@@ -146,7 +146,7 @@ task SanitiseFasta {
 
     command <<<
         set -euxo pipefail
-        sanitize_sequence_db.py -o "reference.san.fasta" ~{reference}
+        sanitize_sequence_db -o "reference.san.fasta" ~{reference}
     >>>
     
     RuntimeAttr default_attr = object {

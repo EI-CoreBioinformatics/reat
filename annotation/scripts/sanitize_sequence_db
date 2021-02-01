@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import gzip
 
 import Bio.SeqIO
 import Bio.Seq
@@ -59,17 +60,27 @@ def main():
             prefix = "{}_".format(chr(starter))
         else:
             prefix = ""
-        for record in Bio.SeqIO.parse(fasta, "fasta"):
-            if record.id in found_ids:
-                logger.warning("ID found other {} time{} in the input files!".format(
-                    found_ids[record.id], "s" if found_ids[record.id] > 1 else ""))
-            record.id = "{}{}".format(prefix, re.sub("\|", "_", record.id))
-            record.description = ""
-            if '.' in record.seq:
-                record.seq = Bio.Seq.Seq(re.sub('\.', '*', str(record.seq)))
-
-            Bio.SeqIO.write(record, args.out, "fasta")
+        if fasta.name.endswith(".gz"):
+            with gzip.open(fasta.name, "rt") as handle:
+                parse_fasta(args, found_ids, handle, logger, prefix)
+        else:
+            parse_fasta(args, found_ids, fasta, logger, prefix)
 
     args.out.close()
 
-main()
+
+def parse_fasta(args, found_ids, handle, logger, prefix):
+    for record in Bio.SeqIO.parse(handle, "fasta"):
+        if record.id in found_ids:
+            logger.warning("ID found other {} time{} in the input files!".format(
+                found_ids[record.id], "s" if found_ids[record.id] > 1 else ""))
+        record.id = "{}{}".format(prefix, re.sub("\|", "_", record.id))
+        record.description = ""
+        if '.' in record.seq:
+            record.seq = Bio.Seq.Seq(re.sub('\.', '*', str(record.seq)))
+
+        Bio.SeqIO.write(record, args.out, "fasta")
+
+
+if __name__ == "__main__":
+    main()

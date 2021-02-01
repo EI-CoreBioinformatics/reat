@@ -29,8 +29,10 @@ prodigal_name_to_genetic_code = {
     "Balanophoraceae Plastid": 32
 }
 
+
 def main(program, genetic_code):
     pass
+
 
 if __name__ == "__main__":
     from argparse import ArgumentParser

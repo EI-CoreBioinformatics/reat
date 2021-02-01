@@ -1,0 +1,10 @@
+mstrand_nc	ALN	gene	500	17219	72.7	-	.	ID=mstrand_nc.g;Name=rna-XM_026443867.1.g1
+mstrand_nc	ALN	mrna	500	17219	72.7	-	.	ID=rna-XM_026443867.1.m1;Parent=mstrand_nc.g;Name=rna-XM_026443867.1.m1;Note=rna-XM_026443867.1|cov:100.00|id:53.60
+mstrand_nc	ALN	exon	17198	17219	42.86	-	0	ID=rna-XM_026443867.1.exon4;Parent=rna-XM_026443867.1.m1
+mstrand_nc	ALN	exon	14766	14877	52.94	-	2	ID=rna-XM_026443867.1.exon3;Parent=rna-XM_026443867.1.m1
+mstrand_nc	ALN	exon	1448	1517	69.57	-	2	ID=rna-XM_026443867.1.exon2;Parent=rna-XM_026443867.1.m1
+mstrand_nc	ALN	exon	500	647	44.9	-	1	ID=rna-XM_026443867.1.exon1;Parent=rna-XM_026443867.1.m1
+mstrand_nc	ALN	CDS	17198	17219	42.86	-	0	ID=rna-XM_026443867.1.cds4;Parent=rna-XM_026443867.1.m1
+mstrand_nc	ALN	CDS	14766	14877	52.94	-	2	ID=rna-XM_026443867.1.cds3;Parent=rna-XM_026443867.1.m1
+mstrand_nc	ALN	CDS	1448	1517	69.57	-	2	ID=rna-XM_026443867.1.cds2;Parent=rna-XM_026443867.1.m1
+mstrand_nc	ALN	CDS	500	647	44.9	-	1	ID=rna-XM_026443867.1.cds1;Parent=rna-XM_026443867.1.m1

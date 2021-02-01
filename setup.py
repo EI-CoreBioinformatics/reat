@@ -20,7 +20,7 @@ setup(
     author_email='luis.yanes@earlham.ac.uk',
     description='Robust Eukaryotic Annotation Toolkit',
     zip_safe=False,
-    keywords="gene annotation WDL pipeline workflow",
+    keywords="gene annotation WDL pipeline workflow cromwell transcriptome homology",
     scripts=[
         script for script in glob.glob("annotation/scripts/*")
     ],
@@ -28,10 +28,11 @@ setup(
         "pyyaml~=5.3",
         "pyfaidx~=0.5.8",
         "jsonschema~=3.2.0",
-        "biopython~=1.78"
+        "biopython~=1.78",
+        "mikado>=2.0"
     ],
     package_data={
-        "validation": ["transcriptome.schema", "homology.schema"],
+        "validation": ["transcriptome.schema.json", "homology.schema.json"],
         "annotation": ["transcriptome_module/*.wdl",
                        "transcriptome_module/*/**/*.wdl",
                        "transcriptome_module/*/**/**/*.wdl",

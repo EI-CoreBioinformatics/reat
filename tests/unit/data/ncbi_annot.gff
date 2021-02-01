@@ -1,0 +1,63 @@
+##gff-version 3
+#!gff-spec-version 1.21
+#!processor NCBI annotwriter
+#!genome-build Aflo_1.1
+#!genome-build-accession NCBI_Assembly:GCF_000184785.3
+#!annotation-source NCBI Apis florea Annotation Release 102
+##sequence-region NW_003789104.1 1 4900
+##species https://www.ncbi.nlm.nih.gov/Taxonomy/Browser/wwwtax.cgi?id=7463
+NW_003789104.1	RefSeq	region	1	4900	.	+	.	ID=NW_003789104.1:1..4900;Dbxref=taxon:7463;Name=Unknown;chromosome=Unknown;gbkey=Src;genome=genomic;mol_type=genomic DNA;note=haploid drones;sex=male
+##sequence-region NW_003789105.1 1 2968
+##species https://www.ncbi.nlm.nih.gov/Taxonomy/Browser/wwwtax.cgi?id=7463
+NW_003789105.1	RefSeq	region	1	2968	.	+	.	ID=NW_003789105.1:1..2968;Dbxref=taxon:7463;Name=Unknown;chromosome=Unknown;gbkey=Src;genome=genomic;mol_type=genomic DNA;note=haploid drones;sex=male
+##sequence-region NW_003789106.1 1 3590
+##species https://www.ncbi.nlm.nih.gov/Taxonomy/Browser/wwwtax.cgi?id=7463
+NW_003789106.1	RefSeq	region	1	3590	.	+	.	ID=NW_003789106.1:1..3590;Dbxref=taxon:7463;Name=Unknown;chromosome=Unknown;gbkey=Src;genome=genomic;mol_type=genomic DNA;note=haploid drones;sex=male
+NW_003789106.1	Gnomon	gene	125	490	.	-	.	ID=gene-LOC105734758;Dbxref=GeneID:105734758;Name=LOC105734758;gbkey=Gene;gene=LOC105734758;gene_biotype=protein_coding;partial=true;start_range=.,125
+NW_003789106.1	Gnomon	mRNA	125	490	.	-	.	ID=rna-XM_012486024.2;Parent=gene-LOC105734758;Dbxref=GeneID:105734758,Genbank:XM_012486024.2;Name=XM_012486024.2;gbkey=mRNA;gene=LOC105734758;model_evidence=Supporting evidence includes similarity to: 1 Protein%2C and 96%25 coverage of the annotated genomic feature by RNAseq alignments;partial=true;product=uncharacterized LOC105734758;start_range=.,125;transcript_id=XM_012486024.2
+NW_003789106.1	Gnomon	exon	125	490	.	-	.	ID=exon-XM_012486024.2-1;Parent=rna-XM_012486024.2;Dbxref=GeneID:105734758,Genbank:XM_012486024.2;gbkey=mRNA;gene=LOC105734758;partial=true;product=uncharacterized LOC105734758;start_range=.,125;transcript_id=XM_012486024.2
+NW_003789106.1	Gnomon	CDS	125	416	.	-	0	ID=cds-XP_012341478.1;Parent=rna-XM_012486024.2;Dbxref=GeneID:105734758,Genbank:XP_012341478.1;Name=XP_012341478.1;gbkey=CDS;gene=LOC105734758;partial=true;product=uncharacterized protein LOC105734758;protein_id=XP_012341478.1;start_range=.,125
+##sequence-region NW_003789107.1 1 3301
+##species https://www.ncbi.nlm.nih.gov/Taxonomy/Browser/wwwtax.cgi?id=7463
+NW_003789107.1	RefSeq	region	1	3301	.	+	.	ID=NW_003789107.1:1..3301;Dbxref=taxon:7463;Name=Unknown;chromosome=Unknown;gbkey=Src;genome=genomic;mol_type=genomic DNA;note=haploid drones;sex=male
+##sequence-region NW_003789108.1 1 2371
+##species https://www.ncbi.nlm.nih.gov/Taxonomy/Browser/wwwtax.cgi?id=7463
+NW_003789108.1	RefSeq	region	1	2371	.	+	.	ID=NW_003789108.1:1..2371;Dbxref=taxon:7463;Name=Unknown;chromosome=Unknown;gbkey=Src;genome=genomic;mol_type=genomic DNA;note=haploid drones;sex=male
+NW_003789108.1	Gnomon	pseudogene	114	492	.	-	.	ID=gene-LOC116414917;Dbxref=GeneID:116414917;Name=LOC116414917;gbkey=Gene;gene=LOC116414917;gene_biotype=pseudogene;pseudo=true
+NW_003789108.1	Gnomon	exon	114	492	.	-	.	ID=id-LOC116414917;Parent=gene-LOC116414917;Dbxref=GeneID:116414917;gbkey=exon;gene=LOC116414917;model_evidence=Supporting evidence includes similarity to: 100%25 coverage of the annotated genomic feature by RNAseq alignments
+##sequence-region NW_003789109.1 1 2193
+##species https://www.ncbi.nlm.nih.gov/Taxonomy/Browser/wwwtax.cgi?id=7463
+NW_003789109.1	RefSeq	region	1	2193	.	+	.	ID=NW_003789109.1:1..2193;Dbxref=taxon:7463;Name=Unknown;chromosome=Unknown;gbkey=Src;genome=genomic;mol_type=genomic DNA;note=haploid drones;sex=male
+##sequence-region NW_003789110.1 1 2219
+##species https://www.ncbi.nlm.nih.gov/Taxonomy/Browser/wwwtax.cgi?id=7463
+NW_003789110.1	RefSeq	region	1	2219	.	+	.	ID=NW_003789110.1:1..2219;Dbxref=taxon:7463;Name=Unknown;chromosome=Unknown;gbkey=Src;genome=genomic;mol_type=genomic DNA;note=haploid drones;sex=male
+##sequence-region NW_003789111.1 1 2641
+##species https://www.ncbi.nlm.nih.gov/Taxonomy/Browser/wwwtax.cgi?id=7463
+NW_003789111.1	RefSeq	region	1	2641	.	+	.	ID=NW_003789111.1:1..2641;Dbxref=taxon:7463;Name=Unknown;chromosome=Unknown;gbkey=Src;genome=genomic;mol_type=genomic DNA;note=haploid drones;sex=male
+NW_003789111.1	Gnomon	gene	170	668	.	+	.	ID=gene-LOC105736513;Dbxref=GeneID:105736513;Name=LOC105736513;end_range=668,.;gbkey=Gene;gene=LOC105736513;gene_biotype=protein_coding;partial=true
+NW_003789111.1	Gnomon	mRNA	170	668	.	+	.	ID=rna-XM_012494237.1;Parent=gene-LOC105736513;Dbxref=GeneID:105736513,Genbank:XM_012494237.1;Name=XM_012494237.1;end_range=668,.;gbkey=mRNA;gene=LOC105736513;model_evidence=Supporting evidence includes similarity to: 1 Protein;partial=true;product=nuclear transcription factor Y subunit alpha-like;transcript_id=XM_012494237.1
+NW_003789111.1	Gnomon	exon	170	668	.	+	.	ID=exon-XM_012494237.1-1;Parent=rna-XM_012494237.1;Dbxref=GeneID:105736513,Genbank:XM_012494237.1;end_range=668,.;gbkey=mRNA;gene=LOC105736513;partial=true;product=nuclear transcription factor Y subunit alpha-like;transcript_id=XM_012494237.1
+NW_003789111.1	Gnomon	CDS	170	668	.	+	0	ID=cds-XP_012349691.1;Parent=rna-XM_012494237.1;Dbxref=GeneID:105736513,Genbank:XP_012349691.1;Name=XP_012349691.1;end_range=668,.;gbkey=CDS;gene=LOC105736513;partial=true;product=nuclear transcription factor Y subunit alpha-like;protein_id=XP_012349691.1
+##sequence-region NW_003789112.1 1 469063
+##species https://www.ncbi.nlm.nih.gov/Taxonomy/Browser/wwwtax.cgi?id=7463
+NW_003789112.1	RefSeq	region	1	469063	.	+	.	ID=NW_003789112.1:1..469063;Dbxref=taxon:7463;Name=Unknown;chromosome=Unknown;gbkey=Src;genome=genomic;mol_type=genomic DNA;note=haploid drones;sex=male
+NW_003789112.1	Gnomon	gene	4549	25766	.	-	.	ID=gene-LOC100863245;Dbxref=GeneID:100863245;Name=LOC100863245;gbkey=Gene;gene=LOC100863245;gene_biotype=protein_coding
+NW_003789112.1	Gnomon	mRNA	4549	25766	.	-	.	ID=rna-XM_003689506.3;Parent=gene-LOC100863245;Dbxref=GeneID:100863245,Genbank:XM_003689506.3;Name=XM_003689506.3;gbkey=mRNA;gene=LOC100863245;model_evidence=Supporting evidence includes similarity to: 18 Proteins%2C and 100%25 coverage of the annotated genomic feature by RNAseq alignments%2C including 7 samples with support for all annotated introns;product=cholecystokinin receptor-like;transcript_id=XM_003689506.3
+NW_003789112.1	Gnomon	exon	25238	25766	.	-	.	ID=exon-XM_003689506.3-1;Parent=rna-XM_003689506.3;Dbxref=GeneID:100863245,Genbank:XM_003689506.3;gbkey=mRNA;gene=LOC100863245;product=cholecystokinin receptor-like;transcript_id=XM_003689506.3
+NW_003789112.1	Gnomon	exon	21244	21358	.	-	.	ID=exon-XM_003689506.3-2;Parent=rna-XM_003689506.3;Dbxref=GeneID:100863245,Genbank:XM_003689506.3;gbkey=mRNA;gene=LOC100863245;product=cholecystokinin receptor-like;transcript_id=XM_003689506.3
+NW_003789112.1	Gnomon	exon	11883	12080	.	-	.	ID=exon-XM_003689506.3-3;Parent=rna-XM_003689506.3;Dbxref=GeneID:100863245,Genbank:XM_003689506.3;gbkey=mRNA;gene=LOC100863245;product=cholecystokinin receptor-like;transcript_id=XM_003689506.3
+NW_003789112.1	Gnomon	exon	11210	11395	.	-	.	ID=exon-XM_003689506.3-4;Parent=rna-XM_003689506.3;Dbxref=GeneID:100863245,Genbank:XM_003689506.3;gbkey=mRNA;gene=LOC100863245;product=cholecystokinin receptor-like;transcript_id=XM_003689506.3
+NW_003789112.1	Gnomon	exon	10603	10787	.	-	.	ID=exon-XM_003689506.3-5;Parent=rna-XM_003689506.3;Dbxref=GeneID:100863245,Genbank:XM_003689506.3;gbkey=mRNA;gene=LOC100863245;product=cholecystokinin receptor-like;transcript_id=XM_003689506.3
+NW_003789112.1	Gnomon	exon	8122	8349	.	-	.	ID=exon-XM_003689506.3-6;Parent=rna-XM_003689506.3;Dbxref=GeneID:100863245,Genbank:XM_003689506.3;gbkey=mRNA;gene=LOC100863245;product=cholecystokinin receptor-like;transcript_id=XM_003689506.3
+NW_003789112.1	Gnomon	exon	6333	6577	.	-	.	ID=exon-XM_003689506.3-7;Parent=rna-XM_003689506.3;Dbxref=GeneID:100863245,Genbank:XM_003689506.3;gbkey=mRNA;gene=LOC100863245;product=cholecystokinin receptor-like;transcript_id=XM_003689506.3
+NW_003789112.1	Gnomon	exon	5395	5525	.	-	.	ID=exon-XM_003689506.3-8;Parent=rna-XM_003689506.3;Dbxref=GeneID:100863245,Genbank:XM_003689506.3;gbkey=mRNA;gene=LOC100863245;product=cholecystokinin receptor-like;transcript_id=XM_003689506.3
+NW_003789112.1	Gnomon	exon	4549	4884	.	-	.	ID=exon-XM_003689506.3-9;Parent=rna-XM_003689506.3;Dbxref=GeneID:100863245,Genbank:XM_003689506.3;gbkey=mRNA;gene=LOC100863245;product=cholecystokinin receptor-like;transcript_id=XM_003689506.3
+NW_003789112.1	Gnomon	CDS	25238	25552	.	-	0	ID=cds-XP_003689554.2;Parent=rna-XM_003689506.3;Dbxref=GeneID:100863245,Genbank:XP_003689554.2;Name=XP_003689554.2;gbkey=CDS;gene=LOC100863245;product=cholecystokinin receptor-like;protein_id=XP_003689554.2
+NW_003789112.1	Gnomon	CDS	21244	21358	.	-	0	ID=cds-XP_003689554.2;Parent=rna-XM_003689506.3;Dbxref=GeneID:100863245,Genbank:XP_003689554.2;Name=XP_003689554.2;gbkey=CDS;gene=LOC100863245;product=cholecystokinin receptor-like;protein_id=XP_003689554.2
+NW_003789112.1	Gnomon	CDS	11883	12080	.	-	2	ID=cds-XP_003689554.2;Parent=rna-XM_003689506.3;Dbxref=GeneID:100863245,Genbank:XP_003689554.2;Name=XP_003689554.2;gbkey=CDS;gene=LOC100863245;product=cholecystokinin receptor-like;protein_id=XP_003689554.2
+NW_003789112.1	Gnomon	CDS	11210	11395	.	-	2	ID=cds-XP_003689554.2;Parent=rna-XM_003689506.3;Dbxref=GeneID:100863245,Genbank:XP_003689554.2;Name=XP_003689554.2;gbkey=CDS;gene=LOC100863245;product=cholecystokinin receptor-like;protein_id=XP_003689554.2
+NW_003789112.1	Gnomon	CDS	10603	10787	.	-	2	ID=cds-XP_003689554.2;Parent=rna-XM_003689506.3;Dbxref=GeneID:100863245,Genbank:XP_003689554.2;Name=XP_003689554.2;gbkey=CDS;gene=LOC100863245;product=cholecystokinin receptor-like;protein_id=XP_003689554.2
+NW_003789112.1	Gnomon	CDS	8122	8349	.	-	0	ID=cds-XP_003689554.2;Parent=rna-XM_003689506.3;Dbxref=GeneID:100863245,Genbank:XP_003689554.2;Name=XP_003689554.2;gbkey=CDS;gene=LOC100863245;product=cholecystokinin receptor-like;protein_id=XP_003689554.2
+NW_003789112.1	Gnomon	CDS	6333	6577	.	-	0	ID=cds-XP_003689554.2;Parent=rna-XM_003689506.3;Dbxref=GeneID:100863245,Genbank:XP_003689554.2;Name=XP_003689554.2;gbkey=CDS;gene=LOC100863245;product=cholecystokinin receptor-like;protein_id=XP_003689554.2
+NW_003789112.1	Gnomon	CDS	5395	5525	.	-	1	ID=cds-XP_003689554.2;Parent=rna-XM_003689506.3;Dbxref=GeneID:100863245,Genbank:XP_003689554.2;Name=XP_003689554.2;gbkey=CDS;gene=LOC100863245;product=cholecystokinin receptor-like;protein_id=XP_003689554.2
+NW_003789112.1	Gnomon	CDS	4847	4884	.	-	2	ID=cds-XP_003689554.2;Parent=rna-XM_003689506.3;Dbxref=GeneID:100863245,Genbank:XP_003689554.2;Name=XP_003689554.2;gbkey=CDS;gene=LOC100863245;product=cholecystokinin receptor-like;protein_id=XP_003689554.2
