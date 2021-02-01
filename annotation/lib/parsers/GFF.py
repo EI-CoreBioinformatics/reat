@@ -90,7 +90,6 @@ class GFFReader(object):
         Entries need to be delimited by '###' or closed when encountering a feature without a parent attribute
         """
         self.skip_comments()
-
         assert 'Parent' not in self.raw[8]
         gene_chr = sys.intern(self.raw[0])
         gene_source = sys.intern(self.raw[1])
@@ -130,9 +129,13 @@ class GFFReader(object):
             if 'Parent' not in entry_attr:
                 return Gene(gene_uid, gene_source, gene_chr, gene_start, gene_end, gene_strand,
                             gene_score, gene_mrnas, gene_features, gene_attr)
-            self.collect_gene_entries(cur, entry_attr, entry_type, entry_uid, gene_features, gene_mrnas)
+
+            # Here we are passing in the 'raw' entry_type to store it in the Transcript object for printing
+            self.collect_gene_entries(cur, entry_attr, self.raw[2], entry_uid, gene_features, gene_mrnas)
 
     def collect_gene_entries(self, cur, entry_attr, entry_type, entry_uid, gene_features, gene_mrnas):
+        # Get the lowercase version of the entry_type for checking against
+        entry_type_lc = entry_type.lower()
         entry_chr = self.raw[0]
         entry_source = sys.intern(self.raw[1])
         entry_start = int(self.raw[3])
@@ -145,33 +148,33 @@ class GFFReader(object):
         entry_strand = self.raw[6]
         entry_score = 0 if self.raw[5] == '.' else float(self.raw[5])
         entry_phase = self.raw[7]
-        if entry_type == 'exon':
+        if entry_type_lc == 'exon':
             for parent in entry_attr['Parent']:
                 if parent not in gene_mrnas:
-                    gene_mrnas[parent] = Transcript(entry_uid, entry_source, entry_chr, entry_start, entry_end,
+                    gene_mrnas[parent] = Transcript(entry_uid, entry_type, entry_source, entry_chr, entry_start, entry_end,
                                                     entry_strand, entry_score, [], [], None, None,
                                                     entry_attr)
                 gene_mrnas[parent].exons.append(
                     Exon(entry_uid, entry_chr, entry_start, entry_end,
                          entry_score, entry_phase, entry_strand, entry_attr)
                 )
-        elif entry_type == 'cds':
+        elif entry_type_lc == 'cds':
             for parent in entry_attr['Parent']:
                 if parent not in gene_mrnas:
-                    gene_mrnas[parent] = Transcript(entry_uid, entry_source, entry_chr, entry_start, entry_end,
+                    gene_mrnas[parent] = Transcript(entry_uid, entry_type, entry_source, entry_chr, entry_start, entry_end,
                                                     entry_strand, entry_score, [], [], None, None,
                                                     entry_attr)
                 gene_mrnas[parent].cds_exons.append(
                     Exon(entry_uid, entry_chr, entry_start, entry_end,
                          entry_score, entry_phase, entry_strand, entry_attr)
                 )
-        elif entry_type == 'five_prime_utr' or entry_type == '5\'utr':
+        elif entry_type_lc == 'five_prime_utr' or entry_type_lc == '5\'utr':
             pass
-        elif entry_type == 'three_prime_utr' or entry_type == '3\'utr':
+        elif entry_type_lc == 'three_prime_utr' or entry_type_lc == '3\'utr':
             pass
-        elif entry_type == 'mrna':
+        elif entry_type_lc == 'mrna' or entry_type_lc.endswith("_gene_segment"):
             score = 0 if self.raw[5] == '.' else float(self.raw[5])
-            gene_mrnas[entry_uid] = Transcript(entry_uid, entry_source, entry_chr, entry_start,
+            gene_mrnas[entry_uid] = Transcript(entry_uid, entry_type, entry_source, entry_chr, entry_start,
                                                entry_end, entry_strand, score, [], [], None, None,
                                                entry_attr)
         else:
@@ -213,8 +216,11 @@ class GFFReader(object):
                 attr_order.append('Note')
             else:
                 parts = blob.split('=', 1)
-                attr[sys.intern(parts[0])] = parts[1]
-                attr_order.append(parts[0])
+                # Handle trailing semi-colons and attributes with no values
+                parts_len = len(parts)
+                if parts_len > 1:
+                    attr[sys.intern(parts[0])] = parts[1]
+                    attr_order.append(parts[0])
 
         if uid not in self.uids:
             self.uids.add(uid)

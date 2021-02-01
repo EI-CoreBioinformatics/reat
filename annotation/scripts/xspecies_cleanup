@@ -387,9 +387,17 @@ def print_gff_line(item, ftype, mrna, output_file):
 
 
 def print_attributes(item, output_file):
+    attrl = list(item.attr.items())
+
+    # If there are no attributes, just print the ID without a trailing colon
+    if len(attrl) == 0:
+        if item.uid:
+            print(f"ID={item.uid}", file=output_file)
+            return
+
+    # Otherwise print the trailing colon and then print all the attributes
     if item.uid:
         print(f"ID={item.uid}", file=output_file, end=';')
-    attrl = list(item.attr.items())
     for k, v in attrl[:-1]:
         print(f"{k}=", file=output_file, end='')
         if isinstance(v, list):

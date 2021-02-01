@@ -99,7 +99,7 @@ class Exon(UniquelyIdentifiableSegment):
 
 
 class Transcript(UniquelyIdentifiableSegment):
-    def __init__(self, uid, source, chrom, gstart, gend, strand, score, exons: list, cds_exons: list,
+    def __init__(self, uid, type, source, chrom, gstart, gend, strand, score, exons: list, cds_exons: list,
                  css, ces, attr: dict):
         super().__init__(uid, chrom, gstart, gend, strand, attr)
 
@@ -107,6 +107,7 @@ class Transcript(UniquelyIdentifiableSegment):
         # See test_gene.py:test_translate_to:214, without the following it would fail
         if exons is cds_exons:
             cds_exons = deepcopy(exons)
+        self.type = type
         self.score = score
         self.source = sys.intern(source)
         self.exons = exons
@@ -236,7 +237,7 @@ class Transcript(UniquelyIdentifiableSegment):
             c.print_gff_line(self.source, 'CDS', file=file)
 
     def print_gff_line(self, file=sys.stdout):
-        print(f"{self.chrom}\t{self.source}\tmRNA\t{self.start}\t{self.end}\t"
+        print(f"{self.chrom}\t{self.source}\t{self.type}\t{self.start}\t{self.end}\t"
               f"{self.score if self.score else '.'}\t"
               f"{self.strand if self.strand else '.'}\t"
               f".\t",

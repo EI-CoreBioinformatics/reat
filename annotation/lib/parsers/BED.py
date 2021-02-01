@@ -155,4 +155,4 @@ class BEDReader:
             else:
                 fp_utr += 1
 
-        return Transcript(name, "bed", chrom, cstart + 1, cend, strand, score, exons, [], fp_utr, tp_utr, attr)
+        return Transcript(name, "bed", "mRNA", chrom, cstart + 1, cend, strand, score, exons, [], fp_utr, tp_utr, attr)

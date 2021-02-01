@@ -116,9 +116,39 @@ def test_eden():
     assert _.mrnas[next(iter(_.mrnas.keys()))].cds_exons[0].uid == "cds00001"
 
 
+def test_eden_integer_chr():
+    with tempfile.NamedTemporaryFile("wt", suffix=".gff") as gff_temp:
+        print(gff_file_eden_integerableChr, file=gff_temp)
+        gff_temp.flush()
+        gene_count = 0
+        for _ in GFFReader(gff_temp.name):
+            gene_count += 1
+    assert gene_count == 1
+    assert _.uid == "gene00001"
+    assert len(_.mrnas) == 3
+    assert _.mrnas[next(iter(_.mrnas.keys()))].cds_exons[0].uid == "cds00001"
+    _.print_gff()
+    for mrna in _.mrnas.values():
+        print(mrna.to_bed(cds_only=True))
+
+
 def test_eden_noattr():
     with tempfile.NamedTemporaryFile("wt", suffix=".gff") as gff_temp:
         print(gff_file_eden_noattr, file=gff_temp)
+        gff_temp.flush()
+        gene_count = 0
+        for _ in GFFReader(gff_temp.name):
+            gene_count += 1
+    assert gene_count == 1
+    assert _.uid == "gene00001"
+    assert len(_.mrnas) == 3
+    assert _.mrnas[next(iter(_.mrnas.keys()))].cds_exons[0].uid == "cds00001"
+    _.print_gff()
+
+
+def test_eden_noattr_trailingsemicolon():
+    with tempfile.NamedTemporaryFile("wt", suffix=".gff") as gff_temp:
+        print(gff_file_eden_noattr_trailingsemicolon, file=gff_temp)
         gff_temp.flush()
         gene_count = 0
         for _ in GFFReader(gff_temp.name):
@@ -386,6 +416,34 @@ ctg123\t.\tCDS\t7000\t7600\t.\t+\t1\tID=cds00003;Parent=mRNA00003;Name=edenprote
 ctg123\t.\tCDS\t3391\t3902\t.\t+\t0\tID=cds00004;Parent=mRNA00003;Name=edenprotein.4
 ctg123\t.\tCDS\t5000\t5500\t.\t+\t1\tID=cds00004;Parent=mRNA00003;Name=edenprotein.4
 ctg123\t.\tCDS\t7000\t7600\t.\t+\t1\tID=cds00004;Parent=mRNA00003;Name=edenprotein.4
+"""
+
+
+gff_file_eden_integerableChr = """##gff-version 3.1.26
+##sequence-region ctg123 1 1497228
+1\t.\tgene\t1000\t9000\t.\t+\t.\tID=gene00001;Name=EDEN
+1\t.\tTF_binding_site\t1000\t1012\t.\t+\t.\tID=tfbs00001;Parent=gene00001
+1\t.\tmRNA\t1050\t9000\t.\t+\t.\tID=mRNA00001;Parent=gene00001;Name=EDEN.1
+1\t.\tmRNA\t1050\t9000\t.\t+\t.\tID=mRNA00002;Parent=gene00001;Name=EDEN.2
+1\t.\tmRNA\t1300\t9000\t.\t+\t.\tID=mRNA00003;Parent=gene00001;Name=EDEN.3
+1\t.\texon\t1300\t1500\t.\t+\t.\tID=exon00001;Parent=mRNA00003
+1\t.\texon\t1050\t1500\t.\t+\t.\tID=exon00002;Parent=mRNA00001,mRNA00002
+1\t.\texon\t3000\t3902\t.\t+\t.\tID=exon00003;Parent=mRNA00001,mRNA00003
+1\t.\texon\t5000\t5500\t.\t+\t.\tID=exon00004;Parent=mRNA00001,mRNA00002,mRNA00003
+1\t.\texon\t7000\t9000\t.\t+\t.\tID=exon00005;Parent=mRNA00001,mRNA00002,mRNA00003
+1\t.\tCDS\t1201\t1500\t.\t+\t0\tID=cds00001;Parent=mRNA00001;Name=edenprotein.1
+1\t.\tCDS\t3000\t3902\t.\t+\t0\tID=cds00001;Parent=mRNA00001;Name=edenprotein.1
+1\t.\tCDS\t5000\t5500\t.\t+\t0\tID=cds00001;Parent=mRNA00001;Name=edenprotein.1
+1\t.\tCDS\t7000\t7600\t.\t+\t0\tID=cds00001;Parent=mRNA00001;Name=edenprotein.1
+1\t.\tCDS\t1201\t1500\t.\t+\t0\tID=cds00002;Parent=mRNA00002;Name=edenprotein.2
+1\t.\tCDS\t5000\t5500\t.\t+\t0\tID=cds00002;Parent=mRNA00002;Name=edenprotein.2
+1\t.\tCDS\t7000\t7600\t.\t+\t0\tID=cds00002;Parent=mRNA00002;Name=edenprotein.2
+1\t.\tCDS\t3301\t3902\t.\t+\t0\tID=cds00003;Parent=mRNA00003;Name=edenprotein.3
+1\t.\tCDS\t5000\t5500\t.\t+\t1\tID=cds00003;Parent=mRNA00003;Name=edenprotein.3
+1\t.\tCDS\t7000\t7600\t.\t+\t1\tID=cds00003;Parent=mRNA00003;Name=edenprotein.3
+1\t.\tCDS\t3391\t3902\t.\t+\t0\tID=cds00004;Parent=mRNA00003;Name=edenprotein.4
+1\t.\tCDS\t5000\t5500\t.\t+\t1\tID=cds00004;Parent=mRNA00003;Name=edenprotein.4
+1\t.\tCDS\t7000\t7600\t.\t+\t1\tID=cds00004;Parent=mRNA00003;Name=edenprotein.4
 """
 
 

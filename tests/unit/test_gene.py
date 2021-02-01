@@ -11,23 +11,23 @@ def test_segment_hashable():
 
 def test_identity():
     attr = {'identity': 20}
-    g = Transcript("uid", "source", "chr1", 0, 10, '+', 0, [], [], None, None, attr)
+    g = Transcript("uid", "source", "mRNA", "chr1", 0, 10, '+', 0, [], [], None, None, attr)
     assert g.identity == 20
 
 
 def test_coverage():
     attr = {'coverage': 20}
-    g = Transcript("uid", "source", "chr1", 0, 10, '+', 0, [], [], None, None, attr)
+    g = Transcript("uid", "source", "mRNA", "chr1", 0, 10, '+', 0, [], [], None, None, attr)
     assert g.coverage == 20
 
 
 def test_missing_identity():
-    g = Transcript("uid", "source", "chr1", 0, 10, '+', 0, [], [], None, None, dict())
+    g = Transcript("uid", "source", "mRNA", "chr1", 0, 10, '+', 0, [], [], None, None, dict())
     assert g.identity == 0
 
 
 def test_missing_coverge():
-    g = Transcript("uid", "source", "chr1", 0, 10, '+', 0, [], [], None, None, dict())
+    g = Transcript("uid", "source", "mRNA", "chr1", 0, 10, '+', 0, [], [], None, None, dict())
     assert g.coverage == 0
 
 
@@ -59,7 +59,7 @@ def test_gene_equality():
     for i, pair in enumerate([(5, 10), (20, 30), (50, 80)]):
         exons.append(Exon(f"e{i}", "chr1", pair[0], pair[1], 0, 0, '-', None))
     t = dict()
-    t["muid"] = Transcript("muid", "source", "chr1", 5, 80, '-', 0, exons, exons, None, None, dict())
+    t["muid"] = Transcript("muid", "source", "mRNA", "chr1", 5, 80, '-', 0, exons, exons, None, None, dict())
 
     assert g != Gene("uid", "source", "chr1", 0, 10, '+', 0, t, dict(), dict())
 
@@ -67,7 +67,7 @@ def test_gene_equality():
     for i, pair in enumerate([(5, 10), (20, 30), (50, 82)]):
         exons.append(Exon(f"e{i}", "chr1", pair[0], pair[1], 0, 0, '-', None))
     t2 = dict()
-    t2["muid2"] = Transcript("muid2", "source", "chr1", 5, 82, '-', 0, exons, exons, None, None, dict())
+    t2["muid2"] = Transcript("muid2", "source", "mRNA", "chr1", 5, 82, '-', 0, exons, exons, None, None, dict())
 
     assert Gene("uid", "source", "chr1", 0, 10, '+', 0, t, dict(), dict()) != Gene("uid", "source", "chr1",
                                                                                    0, 10, '+', 0,
@@ -88,7 +88,7 @@ def test_intron_plus_strand():
     exons = []
     for i, pair in enumerate([(5, 10), (20, 30), (50, 80)]):
         exons.append(Exon(f"e{i}", "chr1", pair[0], pair[1], 0, 0, '+', None))
-    t = Transcript("uid", "source", "chr1", 5, 80, '+', 0, exons, [], None, None, dict())
+    t = Transcript("uid", "source", "mRNA", "chr1", 5, 80, '+', 0, exons, [], None, None, dict())
 
     assert t.introns == [(11, 19), (31, 49)]
 
@@ -97,7 +97,7 @@ def test_intron_minus_strand():
     exons = []
     for i, pair in enumerate([(5, 10), (20, 30), (50, 80)]):
         exons.append(Exon(f"e{i}", "chr1", pair[0], pair[1], 0, 0, '-', None))
-    t = Transcript("uid", "source", "chr1", 5, 80, '-', 0, exons, [], None, None, dict())
+    t = Transcript("uid", "source", "mRNA", "chr1", 5, 80, '-', 0, exons, [], None, None, dict())
 
     assert t.introns == [(31, 49), (11, 19)]
 
@@ -107,7 +107,7 @@ def test_extending_three_prime_end():
     for i, pair in enumerate([(5, 10), (20, 30), (50, 80)]):
         exons.append(Exon(f"e{i}", "chr1", pair[0], pair[1], 0, 0, '-', None))
     t = dict()
-    t["muid"] = Transcript("muid", "source", "chr1", 5, 80, '-', 0, exons, exons, None, None, dict())
+    t["muid"] = Transcript("muid", "source", "mRNA", "chr1", 5, 80, '-', 0, exons, exons, None, None, dict())
     g = Gene("guid", "source", "chr1", t["muid"].start, t["muid"].end, t["muid"].strand, t["muid"].score, t, [], dict())
 
     assert g.start == 5
@@ -125,7 +125,7 @@ def test_extending_three_prime_end():
     for i, pair in enumerate([(5, 10), (20, 30), (50, 80)]):
         exons.append(Exon(f"e{i}", "chr1", pair[0], pair[1], 0, 0, '+', None))
     t = dict()
-    t["muid"] = Transcript("muid", "source", "chr1", 5, 80, '+', 0, exons, exons, None, None, dict())
+    t["muid"] = Transcript("muid", "source", "mRNA", "chr1", 5, 80, '+', 0, exons, exons, None, None, dict())
     g = Gene("guid", "source", "chr1", t["muid"].start, t["muid"].end, t["muid"].strand, t["muid"].score, t, [], dict())
 
     assert g.end == 80
@@ -145,7 +145,7 @@ def test_extending_five_prime_end():
     for i, pair in enumerate([(5, 10), (20, 30), (50, 80)]):
         exons.append(Exon(f"e{i}", "chr1", pair[0], pair[1], 0, 0, '-', None))
     t = dict()
-    t["muid"] = Transcript("muid", "source", "chr1", 5, 80, '-', 0, exons, exons, None, None, dict())
+    t["muid"] = Transcript("muid", "source", "mRNA", "chr1", 5, 80, '-', 0, exons, exons, None, None, dict())
     g = Gene("guid", "source", "chr1", t["muid"].start, t["muid"].end, t["muid"].strand, t["muid"].score, t, [], dict())
 
     assert g.end == 80
@@ -163,7 +163,7 @@ def test_extending_five_prime_end():
     for i, pair in enumerate([(5, 10), (20, 30), (50, 80)]):
         exons.append(Exon(f"e{i}", "chr1", pair[0], pair[1], 0, 0, '+', None))
     t = dict()
-    t["muid"] = Transcript("muid", "source", "chr1", 5, 80, '+', 0, exons, exons, None, None, dict())
+    t["muid"] = Transcript("muid", "source", "mRNA", "chr1", 5, 80, '+', 0, exons, exons, None, None, dict())
     g = Gene("guid", "source", "chr1", t["muid"].start, t["muid"].end, t["muid"].strand, t["muid"].score, t, [], dict())
 
     assert g.start == 5
@@ -183,7 +183,7 @@ def test_merge_exons():
     for i, pair in enumerate([(5, 10), (12, 30), (50, 80)]):
         exons.append(Exon(f"e{i}", "chr1", pair[0], pair[1], 0, 0, '-', None))
     t = dict()
-    t["muid"] = Transcript("muid", "source", "chr1", 5, 80, '-', 0, exons, exons, None, None, dict())
+    t["muid"] = Transcript("muid", "source", "mRNA", "chr1", 5, 80, '-', 0, exons, exons, None, None, dict())
     g = Gene("guid", "source", "chr1", t["muid"].start, t["muid"].end, t["muid"].strand, t["muid"].score, t, [], dict())
 
     for e, p in zip(t['muid'].exons, reversed([(5, 10), (12, 30), (50, 80)])):
@@ -200,7 +200,7 @@ def test_merge_exons():
     for i, pair in enumerate([(5, 10), (20, 48), (50, 80)]):
         exons.append(Exon(f"e{i}", "chr1", pair[0], pair[1], 0, 0, '+', None))
     t = dict()
-    t["muid"] = Transcript("muid", "source", "chr1", 5, 80, '+', 0, exons, exons, None, None, dict())
+    t["muid"] = Transcript("muid", "source", "mRNA", "chr1", 5, 80, '+', 0, exons, exons, None, None, dict())
     g = Gene("guid", "source", "chr1", t["muid"].start, t["muid"].end, t["muid"].strand, t["muid"].score, t, [], dict())
 
     assert len(g.mrnas["muid"].exons) == 3
@@ -214,7 +214,7 @@ def test_merge_exons():
     for i, pair in enumerate([(5, 15), (16, 48), (50, 80), (83, 95)]):
         exons.append(Exon(f"e{i}", "chr1", pair[0], pair[1], 0, 0, '+', None))
     t = dict()
-    t["muid"] = Transcript("muid", "source", "chr1", 5, 80, '+', 0, exons, exons, None, None, dict())
+    t["muid"] = Transcript("muid", "source", "mRNA", "chr1", 5, 80, '+', 0, exons, exons, None, None, dict())
     g = Gene("guid", "source", "chr1", t["muid"].start, t["muid"].end, t["muid"].strand, t["muid"].score, t, [], dict())
 
     assert len(t['muid'].exons) == 4
@@ -228,7 +228,7 @@ def test_translate_to():
     for i, pair in enumerate([(5, 10), (20, 30), (50, 80)]):
         exons.append(Exon(f"e{i}", "chr1", pair[0], pair[1], 0, 0, '-', None))
     t = dict()
-    t["muid"] = Transcript("muid", "source", "chr1", 5, 80, '-', 0, exons, exons, None, None, dict())
+    t["muid"] = Transcript("muid", "source", "mRNA", "chr1", 5, 80, '-', 0, exons, exons, None, None, dict())
     g = Gene("guid", "source", "chr1", t["muid"].start, t["muid"].end, t["muid"].strand, t["muid"].score, t, [], dict())
 
     new_start = 1000
@@ -259,7 +259,7 @@ def test_translate_to():
     for i, pair in enumerate([(5, 10), (20, 30), (50, 80)]):
         exons.append(Exon(f"e{i}", "chr1", pair[0], pair[1], 0, 0, '+', None))
     t = dict()
-    t["muid"] = Transcript("muid", "source", "chr1", 5, 80, '+', 0, exons, exons, None, None, dict())
+    t["muid"] = Transcript("muid", "source", "mRNA", "chr1", 5, 80, '+', 0, exons, exons, None, None, dict())
     g = Gene("guid", "source", "chr1", t["muid"].start, t["muid"].end, t["muid"].strand, t["muid"].score, t, [], dict())
 
     new_start = 1000
@@ -284,7 +284,7 @@ def test_change_id():
     for i, pair in enumerate([(5, 10), (20, 30), (50, 80)]):
         exons.append(Exon(f"e{i}", "chr1", pair[0], pair[1], 0, 0, '-', None))
     t = dict()
-    t["muid"] = Transcript("muid", "source", "chr1", 5, 80, '-', 0, exons, exons, None, None, {"Parent": ["guid"]})
+    t["muid"] = Transcript("muid", "source", "mRNA", "chr1", 5, 80, '-', 0, exons, exons, None, None, {"Parent": ["guid"]})
     g = Gene("guid", "source", "chr1", t["muid"].start, t["muid"].end, t["muid"].strand, t["muid"].score, t, [], dict())
 
     assert g.uid == "guid"
