@@ -6,5 +6,5 @@ dependencies.zip
 .idea
 reat.iml
 *.pyc
-tests/data
 *.egg-info/
+tests/integration
