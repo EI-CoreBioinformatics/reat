@@ -9,6 +9,7 @@ workflow wf_prodigal {
         RuntimeAttr? prodigal_runtime_attr
     }
 
+    # TODO: Chunk input, train first then subdivide transcripts for parallel processing
     call Prodigal {
         input:
         prepared_transcripts = prepared_transcripts,
