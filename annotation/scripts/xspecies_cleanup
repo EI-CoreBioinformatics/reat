@@ -390,6 +390,8 @@ def print_attributes(item, output_file):
     if item.uid:
         print(f"ID={item.uid}", file=output_file, end=';')
     attrl = list(item.attr.items())
+    if len(attrl) == 0:
+        return
     for k, v in attrl[:-1]:
         print(f"{k}=", file=output_file, end='')
         if isinstance(v, list):
