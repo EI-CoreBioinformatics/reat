@@ -401,3 +401,5 @@ wget https://github.com/ogotoh/spaln/archive/Ver.2.4.2.tar.gz
 tar xf Ver.2.4.2.tar.gz
 cd spaln-Ver.2.4.2/src
 ./configure -e /opt/software/spaln/bin -t /opt/software/spaln/table -d /opt/software/spaln/seqdbs
+make -j 4
+make install
