@@ -265,6 +265,8 @@ def combine_arguments(cli_arguments):
         "ei_annotation.wf_align.PR_stringtie_extra_parameters"] = cli_arguments.PR_stringtie_extra_parameters
     cromwell_inputs["ei_annotation.wf_align.PR_scallop_extra_parameters"] = cli_arguments.PR_scallop_extra_parameters
 
+    cromwell_inputs["ei_annotation.wf_align.skip_scallop"] = cli_arguments.skip_scallop
+
     cromwell_inputs["ei_annotation.wf_align.HQ_assembler"] = cli_arguments.HQ_assembler
     cromwell_inputs["ei_annotation.wf_align.LQ_assembler"] = cli_arguments.LQ_assembler
 

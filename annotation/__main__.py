@@ -272,6 +272,7 @@ def parse_arguments():
     # Assembler choices
     assembly_parameters = transcriptome_ap.add_argument_group("Assembly",
                                                               "Parameters for assembly of short and long reads")
+    assembly_parameters.add_argument("--skip_scallop", action='store_true', default=False)
     assembly_parameters.add_argument("--HQ_assembler",
                                      choices=["filter", "merge", "stringtie", "stringtie_collapse"],
                                      help="Choice of long read assembler."
