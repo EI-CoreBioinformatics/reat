@@ -8,4 +8,5 @@ struct RuntimeAttr {
     Int? boot_disk_gb
     Int? preemptible_tries
     Int? max_retries
+    String? queue
 }
