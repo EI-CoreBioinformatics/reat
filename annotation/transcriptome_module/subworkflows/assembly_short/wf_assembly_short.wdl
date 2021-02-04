@@ -133,7 +133,8 @@ workflow wf_assembly_short {
     }
 
     if (defined(scallop_assembly)) {
-        Array[File] all_stats = flatten([Stringtie_Stats.stats, select_all([Scallop_Stats.stats])])
+        Array[File] def_scallop_stats = select_first([Scallop_Stats.stats])
+        Array[File] all_stats = flatten([Stringtie_Stats.stats, def_scallop_stats])
     }
 
     if (! defined(scallop_assembly)) {
