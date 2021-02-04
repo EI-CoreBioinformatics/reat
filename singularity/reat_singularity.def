@@ -8,6 +8,8 @@ export PATH=$PATH:/opt/software/repeatmasker/RepeatMasker:/opt/software/repeatma
 export PATH=$PATH:/opt/software/spaln/bin
 export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
 export PYTHONPATH=$PYTHONPATH:/usr/local/lib/python3.6/dist-packages/
+export ALN_DBS=/opt/software/spaln/seqdb
+export ALN_TAB=/opt/software/spaln/table
 
 %post
 mkdir /jic
