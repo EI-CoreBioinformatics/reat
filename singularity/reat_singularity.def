@@ -5,11 +5,11 @@ From: ubuntu:18.04
 export PATH=$PATH:/opt/software/hisat2-2.1.0
 export PATH=$PATH:/opt/software/TransDecoder-TransDecoder-v5.5.0:/opt/software/TransDecoder-TransDecoder-v5.5.0/util
 export PATH=$PATH:/opt/software/repeatmasker/RepeatMasker:/opt/software/repeatmasker/RepeatModeler
-export PATH=$PATH:/opt/software/spaln2.4.0.linux64/bin
+export PATH=$PATH:/opt/software/spaln/bin
 export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
 export PYTHONPATH=$PYTHONPATH:/usr/local/lib/python3.6/dist-packages/
-export ALN_DBS=/opt/software/spaln2.4.0.linux64/seqdb
-export ALN_TAB=/opt/software/spaln2.4.0.linux64/table
+export ALN_DBS=/opt/software/spaln/seqdb
+export ALN_TAB=/opt/software/spaln/table
 
 %post
 mkdir /jic
@@ -271,132 +271,137 @@ pip3 install ./ei-liftover
 
 # Repeat Modeler dependencies
 
-mkdir repeatmasker
-cd repeatmasker
+# mkdir repeatmasker
+# cd repeatmasker
 
 # Repeat Scout
-wget http://www.repeatmasker.org/RepeatScout-1.0.6.tar.gz
-tar xf RepeatScout-1.0.6.tar.gz
-cd RepeatScout-1.0.6
-sed -i 's#^INSTDIR =.*#INSTDIR = /opt/software/repeatmasker/RepeatScout#' Makefile
-make && make install && make clean
-cd ..
-rm -rf RepeatScout-1.0.6.tar.gz RepeatScout-1.0.6
+# wget http://www.repeatmasker.org/RepeatScout-1.0.6.tar.gz
+# tar xf RepeatScout-1.0.6.tar.gz
+# cd RepeatScout-1.0.6
+# sed -i 's#^INSTDIR =.*#INSTDIR = /opt/software/repeatmasker/RepeatScout#' Makefile
+# make && make install && make clean
+# cd ..
+# rm -rf RepeatScout-1.0.6.tar.gz RepeatScout-1.0.6
 
 # RMBlast binaries
-wget http://www.repeatmasker.org/rmblast-2.10.0+-x64-linux.tar.gz
-tar xf rmblast-2.10.0+-x64-linux.tar.gz
-rm rmblast-2.10.0+-x64-linux.tar.gz
+# wget http://www.repeatmasker.org/rmblast-2.10.0+-x64-linux.tar.gz
+# tar xf rmblast-2.10.0+-x64-linux.tar.gz
+# rm rmblast-2.10.0+-x64-linux.tar.gz
 
 # HMMER
-wget http://eddylab.org/software/hmmer/hmmer-3.3.tar.gz
-tar xf hmmer-3.3.tar.gz
-cd hmmer-3.3
-./configure --prefix=/opt/software/repeatmasker && make && make install
-make clean
-cd ..
-rm -rf hmmer-3.3 hmmer-3.3.tar.gz
+# wget http://eddylab.org/software/hmmer/hmmer-3.3.tar.gz
+# tar xf hmmer-3.3.tar.gz
+# cd hmmer-3.3
+# ./configure --prefix=/opt/software/repeatmasker && make && make install
+# make clean
+# cd ..
+# rm -rf hmmer-3.3 hmmer-3.3.tar.gz
 
 # RECON
-wget http://www.repeatmasker.org/RepeatModeler/RECON-1.08.tar.gz
-tar xf RECON-1.08.tar.gz
-cd RECON-1.08
-sed -i 's#^BINDIR  = .*#BINDIR  =  ../../bin#g' src/Makefile
-make -C src && make -C src install
-cp 00README ../bin/
-cd ..
-rm -rf RECON-1.08 RECON-1.08.tar.gz
+# wget http://www.repeatmasker.org/RepeatModeler/RECON-1.08.tar.gz
+# tar xf RECON-1.08.tar.gz
+# cd RECON-1.08
+# sed -i 's#^BINDIR  = .*#BINDIR  =  ../../bin#g' src/Makefile
+# make -C src && make -C src install
+# cp 00README ../bin/
+# cd ..
+# rm -rf RECON-1.08 RECON-1.08.tar.gz
 
 # CD-HIT
-wget https://github.com/weizhongli/cdhit/releases/download/V4.8.1/cd-hit-v4.8.1-2019-0228.tar.gz
-tar xf cd-hit-v4.8.1-2019-0228.tar.gz
-cd cd-hit-v4.8.1-2019-0228
-make && PREFIX=../bin make install
-cd ..
-rm -rf cd-hit-v4.8.1-2019-0228 cd-hit-v4.8.1-2019-0228.tar.gz
+# wget https://github.com/weizhongli/cdhit/releases/download/V4.8.1/cd-hit-v4.8.1-2019-0228.tar.gz
+# tar xf cd-hit-v4.8.1-2019-0228.tar.gz
+# cd cd-hit-v4.8.1-2019-0228
+# make && PREFIX=../bin make install
+# cd ..
+# rm -rf cd-hit-v4.8.1-2019-0228 cd-hit-v4.8.1-2019-0228.tar.gz
 
 # Genome tools is already installed in /opt/software
 
 # LTR Retriever - TODO: Check that this one is installed properly!
-wget https://github.com/oushujun/LTR_retriever/archive/v2.8.tar.gz -O LTR_retriever-2.8.tar.gz
-tar xf LTR_retriever-2.8.tar.gz
-cd LTR_retriever-2.8
-ln -s /opt/software/repeatmasker/LTR_retriever-2.8/bin/trf409.legacylinux64 /opt/software/repeatmasker/bin/trf
-sed -i \
-        -e 's#BLAST+=#BLAST+=/opt/software/repeatmasker/bin#' \
-        -e 's#RepeatMasker=#RepeatMasker=/opt/software/repeatmasker/bin#' \
-        -e 's#HMMER=#HMMER=/opt/software/repeatmasker/bin#' \
-        -e 's#CDHIT=#CDHIT=/opt/software/repeatmasker/bin#' \
-paths
-cd ..
+# wget https://github.com/oushujun/LTR_retriever/archive/v2.8.tar.gz -O LTR_retriever-2.8.tar.gz
+# tar xf LTR_retriever-2.8.tar.gz
+# cd LTR_retriever-2.8
+# ln -s /opt/software/repeatmasker/LTR_retriever-2.8/bin/trf409.legacylinux64 /opt/software/repeatmasker/bin/trf
+# sed -i \
+#         -e 's#BLAST+=#BLAST+=/opt/software/repeatmasker/bin#' \
+#         -e 's#RepeatMasker=#RepeatMasker=/opt/software/repeatmasker/bin#' \
+#         -e 's#HMMER=#HMMER=/opt/software/repeatmasker/bin#' \
+#         -e 's#CDHIT=#CDHIT=/opt/software/repeatmasker/bin#' \
+# paths
+# cd ..
 
 
 # MAFFT
-wget https://mafft.cbrc.jp/alignment/software/mafft-7.471-without-extensions-src.tgz
-tar xf mafft-7.471-without-extensions-src.tgz
-cd mafft-7.471-without-extensions/core
-sed -i 's#^PREFIX =.*#PREFIX = /opt/software/repeatmasker#' Makefile
-make clean && make -j && make install && make clean
-cd ../../
-rm -rf mafft-7.471-without-extensions*
+# wget https://mafft.cbrc.jp/alignment/software/mafft-7.471-without-extensions-src.tgz
+# tar xf mafft-7.471-without-extensions-src.tgz
+# cd mafft-7.471-without-extensions/core
+# sed -i 's#^PREFIX =.*#PREFIX = /opt/software/repeatmasker#' Makefile
+# make clean && make -j && make install && make clean
+# cd ../../
+# rm -rf mafft-7.471-without-extensions*
 
 # NINJA
-wget https://github.com/TravisWheelerLab/NINJA/archive/0.97-cluster_only.tar.gz -O NINJA-cluster.tar.gz
-tar xf NINJA-cluster.tar.gz
-cd NINJA-0.97-cluster_only/NINJA
-make clean && make all
-mv Ninja /opt/software/repeatmasker/bin
-cd ../../
-rm -rf NINJA-*
+# wget https://github.com/TravisWheelerLab/NINJA/archive/0.97-cluster_only.tar.gz -O NINJA-cluster.tar.gz
+# tar xf NINJA-cluster.tar.gz
+# cd NINJA-0.97-cluster_only/NINJA
+# make clean && make all
+# mv Ninja /opt/software/repeatmasker/bin
+# cd ../../
+# rm -rf NINJA-*
 
 # COSEG
-wget http://www.repeatmasker.org/coseg-0.2.2.tar.gz
-tar xf coseg-0.2.2.tar.gz
-cd coseg
-sed -i 's#use lib "/usr/local/RepeatMasker";#use lib "/opt/software/repeatmasker/RepeatMasker";#' preprocessAlignments.pl
-sed -i 's#INSTALLDIR=/usr/local/coseg-${VERSION}#INSTALLDIR=/opt/software/repeatmasker/bin#' Makefile
-sed -i 's/${CC} version.o coseg.o -o coseg/${CC} version.o coseg.o -o coseg -lm/' Makefile
-sed -i 's/mkdir/mkdir -p/' Makefile
-make
-make install
-cd ..
-rm -rf coseg-0.2.2.tar.gz coseg
+# wget http://www.repeatmasker.org/coseg-0.2.2.tar.gz
+# tar xf coseg-0.2.2.tar.gz
+# cd coseg
+# sed -i 's#use lib "/usr/local/RepeatMasker";#use lib "/opt/software/repeatmasker/RepeatMasker";#' preprocessAlignments.pl
+# sed -i 's#INSTALLDIR=/usr/local/coseg-${VERSION}#INSTALLDIR=/opt/software/repeatmasker/bin#' Makefile
+# sed -i 's/${CC} version.o coseg.o -o coseg/${CC} version.o coseg.o -o coseg -lm/' Makefile
+# sed -i 's/mkdir/mkdir -p/' Makefile
+# make
+# make install
+# cd ..
+# rm -rf coseg-0.2.2.tar.gz coseg
 
 # Repeat Masker
-wget http://www.repeatmasker.org/RepeatMasker-4.1.0.tar.gz
-tar xf RepeatMasker-4.1.0.tar.gz
-cd RepeatMasker
-chmod a+x Libraries
-perl configure \
-        -hmmer_dir=/opt/software/repeatmasker/bin \
-        -rmblast_dir=/opt/software/repeatmasker/rmblast-2.10.0/bin \
-        -libdir=/opt/software/repeatmasker/RepeatMasker/Libraries \
-        -trf_prgm=/opt/software/repeatmasker/bin/trf \
-        -default_search_engine=rmblast
-wget http://www.repeatmasker.org/dupliconlib-20080314.tar.gz
-tar xf dupliconlib-20080314.tar.gz
-rm dupliconlib-20080314.tar.gz
-cd ..
+# wget http://www.repeatmasker.org/RepeatMasker-4.1.0.tar.gz
+# tar xf RepeatMasker-4.1.0.tar.gz
+# cd RepeatMasker
+# chmod a+x Libraries
+# perl configure \
+#         -hmmer_dir=/opt/software/repeatmasker/bin \
+#         -rmblast_dir=/opt/software/repeatmasker/rmblast-2.10.0/bin \
+#         -libdir=/opt/software/repeatmasker/RepeatMasker/Libraries \
+#         -trf_prgm=/opt/software/repeatmasker/bin/trf \
+#         -default_search_engine=rmblast
+# wget http://www.repeatmasker.org/dupliconlib-20080314.tar.gz
+# tar xf dupliconlib-20080314.tar.gz
+# rm dupliconlib-20080314.tar.gz
+# cd ..
 
 # Repeat Modeler
-wget https://github.com/Dfam-consortium/RepeatModeler/archive/2.0.1.tar.gz -O RepeatModeler-2.0.1.tar.gz
-tar xf RepeatModeler-2.0.1.tar.gz
-mv RepeatModeler-2.0.1 RepeatModeler
-cd RepeatModeler
-echo "\n\n\ny\n" | perl configure \
-         -cdhit_dir=/opt/software/repeatmasker/bin \
-         -genometools_dir=/opt/software/repeatmasker/bin \
-         -ltr_retriever_dir=/opt/software/repeatmasker/LTR_retriever \
-         -mafft_dir=/opt/software/repeatmasker/bin \
-         -ninja_dir=/opt/software/repeatmasker/bin \
-         -recon_dir=/opt/software/repeatmasker/bin \
-         -repeatmasker_dir=/opt/software/repeatmasker/RepeatMasker \
-         -rmblast_dir=/opt/software/repeatmasker/rmblast-2.10.0/bin \
-         -rscout_dir=/opt/software/repeatmasker/RepeatScout \
-         -trf_prgm=/opt/software/repeatmasker/bin/trf
+# wget https://github.com/Dfam-consortium/RepeatModeler/archive/2.0.1.tar.gz -O RepeatModeler-2.0.1.tar.gz
+# tar xf RepeatModeler-2.0.1.tar.gz
+# mv RepeatModeler-2.0.1 RepeatModeler
+# cd RepeatModeler
+# echo "\n\n\ny\n" | perl configure \
+#          -cdhit_dir=/opt/software/repeatmasker/bin \
+#          -genometools_dir=/opt/software/repeatmasker/bin \
+#          -ltr_retriever_dir=/opt/software/repeatmasker/LTR_retriever \
+#          -mafft_dir=/opt/software/repeatmasker/bin \
+#          -ninja_dir=/opt/software/repeatmasker/bin \
+#          -recon_dir=/opt/software/repeatmasker/bin \
+#          -repeatmasker_dir=/opt/software/repeatmasker/RepeatMasker \
+#          -rmblast_dir=/opt/software/repeatmasker/rmblast-2.10.0/bin \
+#          -rscout_dir=/opt/software/repeatmasker/RepeatScout \
+#          -trf_prgm=/opt/software/repeatmasker/bin/trf
 
 cd /opt/software
 
 # Gotoh's SPALN
-wget http://www.genome.ist.i.kyoto-u.ac.jp/~aln_user/archive/spaln2.4.0.linux64.tar.gz
-tar xf spaln2.4.0.linux64.tar.gz
+
+wget https://github.com/ogotoh/spaln/archive/Ver.2.4.2.tar.gz
+tar xf Ver.2.4.2.tar.gz
+cd spaln-Ver.2.4.2/src
+./configure -e /opt/software/spaln/bin -t /opt/software/spaln/table -d /opt/software/spaln/seqdbs
+make -j 4
+make install

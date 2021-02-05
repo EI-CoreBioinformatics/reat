@@ -7,9 +7,9 @@ from textwrap import wrap
 
 import pyfaidx
 
-from eicore2.models.Codon import translate
-from eicore2.models.RefSeq import get_spliced_cds_seq, check_splicing_sites
-from eicore2.parsers.GFF import GFFReader, EmptyFileError
+from annotation.lib.sequence.Codon import translate
+from annotation.lib.sequence.RefSeq import get_spliced_cds_seq, check_splicing_sites
+from annotation.lib.parsers.GFF import GFFReader, EmptyFileError
 
 
 def parse_args():

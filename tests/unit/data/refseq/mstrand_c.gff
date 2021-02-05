@@ -1,0 +1,10 @@
+mstrand_c	ALN	gene	500	1540	1371.0	-	.	ID=mstrand_c.g;Name=rna-XM_392640.7.g1
+mstrand_c	ALN	mrna	500	1540	1371.0	-	.	ID=rna-XM_392640.7.m1;Parent=mstrand_c.g;Name=rna-XM_392640.7.m1;Note=rna-XM_392640.7|cov:100.00|id:96.40
+mstrand_c	ALN	exon	1401	1540	87.23	-	0	ID=rna-XM_392640.7.exon4;Parent=rna-XM_392640.7.m1
+mstrand_c	ALN	exon	1064	1274	98.57	-	1	ID=rna-XM_392640.7.exon3;Parent=rna-XM_392640.7.m1
+mstrand_c	ALN	exon	797	987	98.44	-	0	ID=rna-XM_392640.7.exon2;Parent=rna-XM_392640.7.m1
+mstrand_c	ALN	exon	500	716	98.61	-	1	ID=rna-XM_392640.7.exon1;Parent=rna-XM_392640.7.m1
+mstrand_c	ALN	CDS	1401	1540	87.23	-	0	ID=rna-XM_392640.7.cds4;Parent=rna-XM_392640.7.m1
+mstrand_c	ALN	CDS	1064	1274	98.57	-	1	ID=rna-XM_392640.7.cds3;Parent=rna-XM_392640.7.m1
+mstrand_c	ALN	CDS	797	987	98.44	-	0	ID=rna-XM_392640.7.cds2;Parent=rna-XM_392640.7.m1
+mstrand_c	ALN	CDS	500	716	98.61	-	1	ID=rna-XM_392640.7.cds1;Parent=rna-XM_392640.7.m1

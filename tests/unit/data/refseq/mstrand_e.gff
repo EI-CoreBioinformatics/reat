@@ -1,0 +1,10 @@
+mstrand_e	ALN	gene	500	2033	2389.9	-	.	ID=mstrand_e.g;Name=rna-XM_033456960.1.g1
+mstrand_e	ALN	mrna	500	2033	2389.9	-	.	ID=rna-XM_033456960.1.m1;Parent=mstrand_e.g;Name=rna-XM_033456960.1.m1;Note=rna-XM_033456960.1|cov:100.00|id:96.80
+mstrand_e	ALN	exon	1571	2033	97.4	-	0	ID=rna-XM_033456960.1.exon4;Parent=rna-XM_033456960.1.m1
+mstrand_e	ALN	exon	1293	1494	97.06	-	2	ID=rna-XM_033456960.1.exon3;Parent=rna-XM_033456960.1.m1
+mstrand_e	ALN	exon	984	1208	93.33	-	1	ID=rna-XM_033456960.1.exon2;Parent=rna-XM_033456960.1.m1
+mstrand_e	ALN	exon	500	914	97.83	-	1	ID=rna-XM_033456960.1.exon1;Parent=rna-XM_033456960.1.m1
+mstrand_e	ALN	CDS	1571	2033	97.4	-	0	ID=rna-XM_033456960.1.cds4;Parent=rna-XM_033456960.1.m1
+mstrand_e	ALN	CDS	1293	1494	97.06	-	2	ID=rna-XM_033456960.1.cds3;Parent=rna-XM_033456960.1.m1
+mstrand_e	ALN	CDS	984	1208	93.33	-	1	ID=rna-XM_033456960.1.cds2;Parent=rna-XM_033456960.1.m1
+mstrand_e	ALN	CDS	500	914	97.83	-	1	ID=rna-XM_033456960.1.cds1;Parent=rna-XM_033456960.1.m1

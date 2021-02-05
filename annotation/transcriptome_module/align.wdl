@@ -26,6 +26,8 @@ workflow wf_align {
         String portcullis_merge_operator = "max"
         String? portcullis_extra_parameters
 
+        Boolean? skip_scallop = false
+
         String LQ_aligner = "minimap2"
         String HQ_aligner = "gmap"
         String HQ_assembler = "merge"
@@ -93,6 +95,7 @@ workflow wf_align {
             input:
             aligned_samples = wf_align_short.aligned_samples,
             reference_annotation = wf_sanitise.annotation,
+            skip_scallop = skip_scallop,
             scallop_assembly_resources = short_read_scallop_assembly_resources,
             stringtie_assembly_resources = short_read_stringtie_assembly_resources
         }

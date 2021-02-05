@@ -2,6 +2,8 @@
 
 The files in this directory are example configuration files for running cromwell under different conditions.
 
-* cromwell_noserver_slurm.conf - SLURM configuration using cromwell's **run** mode, there is no cromwell server and the database is backed on disk.
-* cromwell_noserver.conf - Localhost configuration using cromwell's **run** mode, no cromwell server configuration and disk backed database.
-* cromwell_server_options.conf - Localhost configuration with mysql database for call caching configured also on the localhost, this configuration can be used with a cromwell **server** instead of just the run mode.
+* slurm.conf - SLURM configuration using cromwell's **run** mode. No server with disk based DB.
+* local.conf - Local configuration using cromwell's **run** mode. No server with disk based DB.
+
+
+Please note the default queue on the SLURM configuration is site specific and will need to be adapted for your local HPC.

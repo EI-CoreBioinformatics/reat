@@ -290,7 +290,8 @@ task CombineXspecies {
     RuntimeAttr default_attr = object {
         cpu_cores: "~{cpus}",
         mem_gb: 16,
-        max_retries: 1
+        max_retries: 1,
+        queue: ""
     }
 
     RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
@@ -316,6 +317,7 @@ task CombineXspecies {
         cpu: task_cpus
         memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
         maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+        queue: select_first([runtime_attr.queue, default_attr.queue])
     }
 }
 
@@ -333,7 +335,8 @@ task IndexGenome {
     RuntimeAttr default_attr = object {
         cpu_cores: "~{cpus}",
         mem_gb: 16,
-        max_retries: 1
+        max_retries: 1,
+        queue: ""
     }
 
     RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
@@ -351,6 +354,7 @@ task IndexGenome {
         cpu: task_cpus
         memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
         maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+        queue: select_first([runtime_attr.queue, default_attr.queue])
     }
 }
 
@@ -409,7 +413,8 @@ task AlignProteins {
     RuntimeAttr default_attr = object {
         cpu_cores: "~{cpus}",
         mem_gb: 32,
-        max_retries: 1
+        max_retries: 1,
+        queue: ""
     }
 
     RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
@@ -429,7 +434,8 @@ task AlignProteins {
     command <<<
         set -euxo pipefail
         ln ~{sub(genome_index[0], "\.[^/.]+$", "")}.* .
-        spaln -t~{task_cpus} -KP -O0,12 -Q7 -M~{max_per_query}.~{max_per_query} ~{"-T"+species} -dgenome_to_annotate -o ~{out_prefix} -yL~{min_spaln_exon_len} ~{genome_proteins.protein_sequences}
+        ln -s ~{genome_proteins.protein_sequences} .
+        spaln -t~{task_cpus} -KP -O0,12 -Q7 -M~{max_per_query}.~{max_per_query} ~{"-T"+species} -dgenome_to_annotate -o ~{out_prefix} -yL~{min_spaln_exon_len} ~{basename(genome_proteins.protein_sequences)}
         sortgrcd -O4 ~{out_prefix}.grd | tee ~{out_prefix}.s | spaln2gff --min_coverage ~{min_coverage} --min_identity ~{min_identity} -s "spaln" > ~{ref_prefix}.alignment.gff
 
         xspecies_cleanup ~{if show_intron_len then "--show_intron_len" else ""} \
@@ -443,6 +449,7 @@ task AlignProteins {
         cpu: task_cpus
         memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
         maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+        queue: select_first([runtime_attr.queue, default_attr.queue])
     }
 
 }
@@ -498,7 +505,8 @@ task ScoreAlignments {
     RuntimeAttr default_attr = object {
         cpu_cores: "~{cpus}",
         mem_gb: 32,
-        max_retries: 1
+        max_retries: 1,
+        queue: ""
     }
 
     RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
@@ -518,6 +526,7 @@ task ScoreAlignments {
         cpu: task_cpus
         memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
         maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+        queue: select_first([runtime_attr.queue, default_attr.queue])
     }
 
 }

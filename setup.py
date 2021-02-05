@@ -4,8 +4,8 @@ import glob
 setup(
     name='reat',
     version='0.0.7',
-    packages=find_packages('.'),
-    url='github.com/ei-corebioinformatics/reat',
+    packages=find_packages('.', exclude=["tests"]),
+    url='https://github.com/ei-corebioinformatics/reat',
     classifiers=[
         "Development Status :: 4 - Beta",
         "Topic :: Scientific Engineering :: Bio/Informatics",
@@ -18,9 +18,9 @@ setup(
     license='MIT',
     author='Luis Yanes',
     author_email='luis.yanes@earlham.ac.uk',
-    description='Robust and Extendable Eukaryotic Annotation Toolkit',
+    description='Robust Eukaryotic Annotation Toolkit',
     zip_safe=False,
-    keywords="gene annotation WDL pipeline workflow",
+    keywords="gene annotation WDL pipeline workflow cromwell transcriptome homology",
     scripts=[
         script for script in glob.glob("annotation/scripts/*")
     ],
@@ -28,10 +28,11 @@ setup(
         "pyyaml~=5.3",
         "pyfaidx~=0.5.8",
         "jsonschema~=3.2.0",
-        "biopython~=1.78"
+        "biopython~=1.78",
+        "mikado>=2.0"
     ],
     package_data={
-        "validation": ["transcriptome.schema", "homology.schema"],
+        "validation": ["transcriptome.schema.json", "homology.schema.json"],
         "annotation": ["transcriptome_module/*.wdl",
                        "transcriptome_module/*/**/*.wdl",
                        "transcriptome_module/*/**/**/*.wdl",

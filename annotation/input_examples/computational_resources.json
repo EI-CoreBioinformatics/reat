@@ -2,75 +2,75 @@
     "ei_annotation.wf_align.long_read_alignment_resources":
     {
         "cpu_cores": 8,
-        "max_retries": 2, 
+        "max_retries": 1,
         "mem_gb": 16
     },
     "ei_annotation.wf_align.long_read_assembly_resources":
     {
         "cpu_cores": 8,
-        "max_retries": 2, 
+        "max_retries": 1,
         "mem_gb": 16
     },
     "ei_annotation.wf_align.long_read_indexing_resources":
     {
         "cpu_cores": 8,
-        "max_retries": 2, 
+        "max_retries": 1,
         "mem_gb": 16
     },
     "ei_annotation.wf_align.short_read_alignment_resources":
     {
         "cpu_cores": 8,
-        "max_retries": 2, 
+        "max_retries": 1,
         "mem_gb": 16
     },
     "ei_annotation.wf_align.short_read_alignment_sort_resources":
     {
         "cpu_cores": 8,
-        "max_retries": 2, 
+        "max_retries": 1,
         "mem_gb": 16
     },
     "ei_annotation.wf_align.short_read_assembly_resources":
     {
         "cpu_cores": 8,
-        "max_retries": 2, 
+        "max_retries": 1,
         "mem_gb": 16
     },
     "ei_annotation.wf_align.short_read_stats_resources":
     {
-        "cpu_cores": 1,
-        "max_retries": 2, 
+        "cpu_cores": 6,
+        "max_retries": 1,
         "mem_gb": 8
     },
     "ei_annotation.wf_main_mikado.homology_alignment_resources":
     {
         "constraints": "avx2,sse4,avx",
         "cpu_cores": 8,
-        "max_retries": 2, 
+        "max_retries": 1,
         "mem_gb": 16
     },
     "ei_annotation.wf_main_mikado.homology_index_resources":
     {
-        "cpu_cores": 1,
-        "max_retries": 2, 
+        "cpu_cores": 6,
+        "max_retries": 1,
         "mem_gb": 8
     },
     "ei_annotation.wf_main_mikado.orf_calling_resources":
     {
         "constraints": "avx2,sse4,avx",
-        "cpu_cores": 1,
-        "max_retries": 2, 
+        "cpu_cores": 6,
+        "max_retries": 1,
         "mem_gb": 8
     },
     "ei_annotation.wf_main_mikado.protein_alignment_resources":
     {
         "cpu_cores": 8,
-        "max_retries": 2, 
+        "max_retries": 1,
         "mem_gb": 16
     },
     "ei_annotation.wf_main_mikado.protein_index_resources":
     {
         "cpu_cores": 8,
-        "max_retries": 2, 
+        "max_retries": 1,
         "mem_gb": 16
     }
 }

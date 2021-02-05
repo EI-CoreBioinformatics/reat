@@ -2,10 +2,54 @@
   tags:
     - integration
   command: >-
-    cromwell run -o tests/configuration/cromwell_options.json
-    -i tests/integration/transcriptome_input.json annotation/transcriptome_module/main.wdl
+    reat --computational_resources tests/integration/transcriptome/computational_resources.json
+    --workflow_options_file tests/integration/transcriptome/options.json
+    transcriptome
+    --orf_caller transdecoder
+    --orf_calling_proteins tests/integration/transcriptome/inputs/proteins_db/cross_species_all.10pc.fa.gz
+    --homology_proteins tests/integration/transcriptome/inputs/proteins_db/cross_species_all.10pc.fa.gz
+    --LQ_assembler stringtie
+    --HQ_assembler merge
+    --all_scoring_file "tests/integration/transcriptome/inputs/plant.yaml"
+    --long_scoring_file "tests/integration/transcriptome/inputs/plant.yaml"
+    --reference "tests/integration/transcriptome/inputs/reference/scaffold_6.fa.gz"
+    --csv_paired "tests/integration/transcriptome/ds_paired_samples.csv"
+    --csv_long "tests/integration/transcriptome/long_samples.csv"
   files:
-    - path: "reat/outputs/mikado.summary.stats.tsv"
     - path: "log.out"
       contains:
       - "WorkflowSucceededState"
+- name: Transcriptome_Module_no_scallop
+  tags:
+    - integration
+  command: >-
+    reat --computational_resources tests/integration/transcriptome/computational_resources.json
+    --workflow_options_file tests/integration/transcriptome/options.json
+    transcriptome
+    --skip_scallop
+    --orf_caller transdecoder
+    --orf_calling_proteins tests/integration/transcriptome/inputs/proteins_db/cross_species_all.10pc.fa.gz
+    --homology_proteins tests/integration/transcriptome/inputs/proteins_db/cross_species_all.10pc.fa.gz
+    --LQ_assembler stringtie
+    --HQ_assembler merge
+    --all_scoring_file "tests/integration/transcriptome/inputs/plant.yaml"
+    --long_scoring_file "tests/integration/transcriptome/inputs/plant.yaml"
+    --reference "tests/integration/transcriptome/inputs/reference/scaffold_6.fa.gz"
+    --csv_paired "tests/integration/transcriptome/ds_paired_samples.csv"
+    --csv_long "tests/integration/transcriptome/long_samples.csv"
+  files:
+    - path: "log.out"
+      contains:
+      - "WorkflowSucceededState"
+- name: help
+  tags:
+    - cli
+  command: >-
+    reat --help
+  stdout:
+    contains:
+      - "REAT"
+  stderr:
+    must_not_contain:
+      - "environment and hardware support"
+      - "required version"

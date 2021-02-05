@@ -66,7 +66,8 @@ task BuildModellerDB {
     RuntimeAttr default_attr = object {
         cpu_cores: 1,
         mem_gb: 4,
-        max_retries: 1
+        max_retries: 1,
+        queue: ""
     }
     
     RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
@@ -97,7 +98,8 @@ task RepeatModeller {
     RuntimeAttr default_attr = object {
         cpu_cores: 1,
         mem_gb: 4,
-        max_retries: 1
+        max_retries: 1,
+        queue: ""
     }
     
     RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
@@ -130,7 +132,8 @@ task RetrieveLibraries {
     RuntimeAttr default_attr = object {
         cpu_cores: 1,
         mem_gb: 4,
-        max_retries: 1
+        max_retries: 1,
+        queue: ""
     }
     
     RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
@@ -163,7 +166,8 @@ task CreateLibrary {
     RuntimeAttr default_attr = object {
         cpu_cores: 1,
         mem_gb: 4,
-        max_retries: 1
+        max_retries: 1,
+        queue: ""
     }
     
     RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
@@ -195,7 +199,8 @@ task RepeatMasker {
     RuntimeAttr default_attr = object {
         cpu_cores: 1,
         mem_gb: 4,
-        max_retries: 1
+        max_retries: 1,
+        queue: ""
     }
     
     RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])

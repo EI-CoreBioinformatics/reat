@@ -59,7 +59,8 @@ workflow wf_main_mikado {
     RuntimeAttr default_runtime_attr = object {
         cpu_cores: 1,
         mem_gb: 4,
-        max_retries: 1
+        max_retries: 1,
+        queue: ""
     }
 
     Boolean run_mikado_homology = defined(homology_proteins)
@@ -146,7 +147,6 @@ workflow wf_main_mikado {
     }
     if (!separate_LQ)
     {
-        # TODO: Check if we need a conditional for having short read datasets here
         call mikado.wf_mikado as Mikado_short_and_long {
             input:
             scoring_file = all_scoring_file,

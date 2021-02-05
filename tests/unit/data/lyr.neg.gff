@@ -1,0 +1,15 @@
+Alyrata_scaffold_1	phytozomev11	gene	400674	402415	.	-	.	ID=AL1G11160.v2.1;Name=AL1G11160;ancestorIdentifier=470145.v1
+Alyrata_scaffold_1	phytozomev11	mRNA	400674	402415	.	-	.	ID=AL1G11160.t1.v2.1;Name=AL1G11160.t1;pacid=35930946;longest=1;ancestorIdentifier=470145.v1.107;Parent=AL1G11160.v2.1
+Alyrata_scaffold_1	phytozomev11	exon	400674	402415	.	-	.	ID=AL1G11160.t1.v2.1.exon.1;Parent=AL1G11160.t1.v2.1;pacid=35930946
+Alyrata_scaffold_1	phytozomev11	three_prime_UTR	400674	400937	.	-	.	ID=AL1G11160.t1.v2.1.three_prime_UTR.1;Parent=AL1G11160.t1.v2.1;pacid=35930946
+Alyrata_scaffold_1	phytozomev11	CDS	400938	402395	.	-	0	ID=AL1G11160.t1.v2.1.CDS.1;Parent=AL1G11160.t1.v2.1;pacid=35930946
+Alyrata_scaffold_1	phytozomev11	five_prime_UTR	402396	402415	.	-	.	ID=AL1G11160.t1.v2.1.five_prime_UTR.1;Parent=AL1G11160.t1.v2.1;pacid=35930946
+Alyrata_scaffold_1	phytozomev11	gene	403308	405315	.	-	.	ID=AL1G11170.v2.1;Name=AL1G11170;ancestorIdentifier=311305.v1
+Alyrata_scaffold_1	phytozomev11	mRNA	403308	405315	.	-	.	ID=AL1G11170.t1.v2.1;Name=AL1G11170.t1;pacid=35931809;longest=1;Parent=AL1G11170.v2.1
+Alyrata_scaffold_1	phytozomev11	exon	405154	405315	.	-	.	ID=AL1G11170.t1.v2.1.exon.1;Parent=AL1G11170.t1.v2.1;pacid=35931809
+Alyrata_scaffold_1	phytozomev11	five_prime_UTR	405154	405315	.	-	.	ID=AL1G11170.t1.v2.1.five_prime_UTR.1;Parent=AL1G11170.t1.v2.1;pacid=35931809
+Alyrata_scaffold_1	phytozomev11	exon	404166	404891	.	-	.	ID=AL1G11170.t1.v2.1.exon.2;Parent=AL1G11170.t1.v2.1;pacid=35931809
+Alyrata_scaffold_1	phytozomev11	three_prime_UTR	404166	404198	.	-	.	ID=AL1G11170.t1.v2.1.three_prime_UTR.1;Parent=AL1G11170.t1.v2.1;pacid=35931809
+Alyrata_scaffold_1	phytozomev11	CDS	404199	404891	.	-	0	ID=AL1G11170.t1.v2.1.CDS.1;Parent=AL1G11170.t1.v2.1;pacid=35931809
+Alyrata_scaffold_1	phytozomev11	exon	403308	403514	.	-	.	ID=AL1G11170.t1.v2.1.exon.3;Parent=AL1G11170.t1.v2.1;pacid=35931809
+Alyrata_scaffold_1	phytozomev11	three_prime_UTR	403308	403514	.	-	.	ID=AL1G11170.t1.v2.1.three_prime_UTR.2;Parent=AL1G11170.t1.v2.1;pacid=35931809

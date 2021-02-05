@@ -2,7 +2,8 @@
 
 import argparse
 from collections import defaultdict
-from eicore2.parsers.GFF import GFFReader
+
+from annotation.lib.parsers.GFF import GFFReader
 
 
 def main():

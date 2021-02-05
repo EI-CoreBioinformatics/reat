@@ -1,0 +1,10 @@
+pstrand_e	ALN	gene	500	1969	2259.2	+	.	ID=pstrand_e.g;Name=rna-XM_033441273.1.g1
+pstrand_e	ALN	mrna	500	1969	2259.2	+	.	ID=rna-XM_033441273.1.m1;Parent=pstrand_e.g;Name=rna-XM_033441273.1.m1;Note=rna-XM_033441273.1|cov:100.00|id:100.00
+pstrand_e	ALN	exon	500	631	100.0	+	0	ID=rna-XM_033441273.1.exon1;Parent=rna-XM_033441273.1.m1
+pstrand_e	ALN	exon	724	1018	100.0	+	0	ID=rna-XM_033441273.1.exon2;Parent=rna-XM_033441273.1.m1
+pstrand_e	ALN	exon	1100	1439	100.0	+	2	ID=rna-XM_033441273.1.exon3;Parent=rna-XM_033441273.1.m1
+pstrand_e	ALN	exon	1543	1969	100.0	+	1	ID=rna-XM_033441273.1.exon4;Parent=rna-XM_033441273.1.m1
+pstrand_e	ALN	CDS	500	631	100.0	+	0	ID=rna-XM_033441273.1.cds1;Parent=rna-XM_033441273.1.m1
+pstrand_e	ALN	CDS	724	1018	100.0	+	0	ID=rna-XM_033441273.1.cds2;Parent=rna-XM_033441273.1.m1
+pstrand_e	ALN	CDS	1100	1439	100.0	+	2	ID=rna-XM_033441273.1.cds3;Parent=rna-XM_033441273.1.m1
+pstrand_e	ALN	CDS	1543	1969	100.0	+	1	ID=rna-XM_033441273.1.cds4;Parent=rna-XM_033441273.1.m1

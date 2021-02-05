@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 
 import argparse
-from eicore2.parsers.GFF import GFFReader
+from annotation.lib.parsers.GFF import GFFReader
+
 
 def main():
     p = argparse.ArgumentParser()
