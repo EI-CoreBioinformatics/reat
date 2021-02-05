@@ -74,7 +74,7 @@ workflow wf_assembly_short {
             }
     }
 
-    if (def_skip_scallop) {
+    if (!def_skip_scallop) {
         scatter (aligned_sample in aligned_samples) {
             call Scallop {
                 input:
