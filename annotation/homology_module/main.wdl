@@ -405,6 +405,7 @@ task AlignProteins {
         Int min_filter_exon_len = 20
         Int min_cds_len = 20
         Int max_per_query = 4
+        Int recursion_level = 7
         Boolean show_intron_len = false
         Array[String] filters = "none"
         RuntimeAttr? runtime_attr_override
@@ -435,7 +436,7 @@ task AlignProteins {
         set -euxo pipefail
         ln ~{sub(genome_index[0], "\.[^/.]+$", "")}.* .
         ln -s ~{genome_proteins.protein_sequences} .
-        spaln -t~{task_cpus} -KP -O0,12 -Q7 -M~{max_per_query}.~{max_per_query} ~{"-T"+species} -dgenome_to_annotate -o ~{out_prefix} -yL~{min_spaln_exon_len} ~{basename(genome_proteins.protein_sequences)}
+        spaln -t~{task_cpus} -KP -O0,12 -Q~{recursion_level} -M~{max_per_query}.~{max_per_query} ~{"-T"+species} -dgenome_to_annotate -o ~{out_prefix} -yL~{min_spaln_exon_len} ~{basename(genome_proteins.protein_sequences)}
         sortgrcd -O4 ~{out_prefix}.grd | tee ~{out_prefix}.s | spaln2gff --min_coverage ~{min_coverage} --min_identity ~{min_identity} -s "spaln" > ~{ref_prefix}.alignment.gff
 
         xspecies_cleanup ~{if show_intron_len then "--show_intron_len" else ""} \

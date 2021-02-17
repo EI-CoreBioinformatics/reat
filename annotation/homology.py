@@ -60,6 +60,8 @@ def combine_arguments_homology(cli_arguments):
         cromwell_inputs["ei_homology.AlignProteins.min_coverage"] = cli_arguments.alignment_min_coverage
     if cli_arguments.alignment_max_per_query:
         cromwell_inputs["ei_homology.AlignProteins.max_per_query"] = cli_arguments.alignment_max_per_query
+    if cli_arguments.alignment_recursion_level:
+        cromwell_inputs["ei_homology.AlignProteins.recursion_level"] = cli_arguments.alignment_recursion_level
     if cli_arguments.alignment_show_intron_length:
         cromwell_inputs["ei_homology.AlignProteins.show_intron_len"] = cli_arguments.alignment_show_intron_length
 
