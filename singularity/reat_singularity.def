@@ -31,7 +31,7 @@ java -version
 python3 --version
 python --version
 
-# DIAMOND - 0.9.31
+# DIAMOND - 0.9.31 NEEDS UPDATE
 wget https://github.com/bbuchfink/diamond/archive/v0.9.31.tar.gz
 tar xf v0.9.31.tar.gz
 cd diamond-0.9.31
@@ -52,7 +52,7 @@ cpanm -i Parallel::ForkManager File::Which Scalar::Util::Numeric URI::Escape Dat
 gem install -q -f full_lengther_next  -v 1.0.1 -N
 full_lengther_next --help
 
-# Install BLAST - 2.7.1
+# Install BLAST - 2.7.1 NEEDS UPDATE
 wget ftp://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/2.7.1/ncbi-blast-2.7.1+-x64-linux.tar.gz
 tar xf ncbi-blast-2.7.1+-x64-linux.tar.gz
 cp ncbi-blast-2.7.1+/bin/* /usr/local/bin
@@ -73,7 +73,7 @@ make install
 cd ../
 rm -rf libdeflate
 
-# HTSLib - 1.9
+# HTSLib - 1.9 NEEDS UPDATE
 wget https://github.com/samtools/htslib/releases/download/1.9/htslib-1.9.tar.bz2
 tar xaf htslib-1.9.tar.bz2
 mv htslib-1.9 htslib  # Necessary for augustus
@@ -85,7 +85,7 @@ htsfile --help 2>&1 | head
 cd ../
 rm htslib-1.9.tar.bz2
 
-# Samtools - 1.9
+# Samtools - 1.9 NEEDS UPDATE
 wget https://github.com/samtools/samtools/releases/download/1.9/samtools-1.9.tar.bz2
 tar xaf samtools-1.9.tar.bz2
 mv samtools-1.9 samtools  # Necessary for augustus
@@ -140,7 +140,7 @@ cd /opt/software/
 gffread --help 2>&1 | head
 rm -rf gffread gclib
 
-# GMAP - 2019-02-15
+# GMAP - 2019-02-15 NEEDS UPDATE
 wget http://research-pub.gene.com/gmap/src/gmap-gsnap-2019-02-15.tar.gz
 tar xaf gmap-gsnap-2019-02-15.tar.gz
 cd gmap-2019-02-15
@@ -176,14 +176,14 @@ cd /opt/software/
 rm -rf genometools-1.5.10.tar.gz genometools-1.5.10
 
 
-# HISAT2 - 2.1.0
+# HISAT2 - 2.1.0 NEEDS UPDATE
 wget ftp://ftp.ccb.jhu.edu/pub/infphilo/hisat2/downloads/hisat2-2.1.0-Linux_x86_64.zip
 unzip hisat2-2.1.0-Linux_x86_64.zip
 hisat2-2.1.0/hisat2-build --help
 rm hisat2-2.1.0-Linux_x86_64.zip
 cd /opt/software
 
-# STAR - 2.7.3a
+# STAR - 2.7.3a NEEDS UPDATE
 wget https://github.com/alexdobin/STAR/archive/2.7.3a.tar.gz -O star-2.7.3a.tar.gz
 tar xaf star-2.7.3a.tar.gz
 mv STAR-2.7.3a/bin/Linux_x86_64_static/STAR -t /usr/local/bin/
@@ -200,7 +200,7 @@ make -j 8
 make install
 cd /opt/software
 
-# Stringtie2 - v2.1.1
+# Stringtie2 - v2.1.1 NEEDS UPDATE
 git clone -b v2.1.1 https://github.com/gpertea/stringtie.git
 cd stringtie
 make -j 4 release
@@ -215,7 +215,7 @@ create_rna_sr.py -h
 
 cd /opt/software/
 
-# Scallop - 0.10.4
+# Scallop - 0.10.4 NEEDS UPDATE
 wget https://github.com/Kingsford-Group/scallop/releases/download/v0.10.4/scallop-0.10.4_linux_x86_64.tar.gz
 tar xf scallop-0.10.4_linux_x86_64.tar.gz
 cp scallop-0.10.4_linux_x86_64/scallop /usr/local/bin
@@ -254,13 +254,13 @@ make -j 8
 make install
 cd /opt/software
 
-# Mikado - 2.0
+# Mikado - 2.0.2
 git clone https://github.com/EI-CoreBioinformatics/mikado
 cd mikado
-git checkout d6edd6f
+git checkout tags/v2.0.2
 #python3 setup.py test;
 python3 setup.py bdist_wheel;
-pip3 install dist/*whl
+pip3 install mikado
 
 # ei-liftover
 cd /opt/software
