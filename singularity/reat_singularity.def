@@ -2,7 +2,7 @@ Bootstrap: docker
 From: ubuntu:18.04
 
 %environment
-export PATH=$PATH:/opt/software/hisat2-2.1.0
+export PATH=$PATH:/opt/software/hisat2-2.2.1
 export PATH=$PATH:/opt/software/TransDecoder-TransDecoder-v5.5.0:/opt/software/TransDecoder-TransDecoder-v5.5.0/util
 export PATH=$PATH:/opt/software/repeatmasker/RepeatMasker:/opt/software/repeatmasker/RepeatModeler
 export PATH=$PATH:/opt/software/spaln/bin
@@ -31,17 +31,17 @@ java -version
 python3 --version
 python --version
 
-# DIAMOND - 0.9.31 NEEDS UPDATE
-wget https://github.com/bbuchfink/diamond/archive/v0.9.31.tar.gz
-tar xf v0.9.31.tar.gz
-cd diamond-0.9.31
+# DIAMOND - 2.0.7
+wget https://github.com/bbuchfink/diamond/archive/v2.0.7.tar.gz
+tar xf v2.0.7.tar.gz
+cd diamond-2.0.7
 mkdir build
 cd build
 cmake ../
 make
 make install
 cd ../../
-rm -rf diamond-0.9.31 v0.9.31.tar.gz
+rm -rf diamond-2.0.7 v2.0.7.tar.gz
 diamond --help
 
 # BioPerl
@@ -73,41 +73,41 @@ make install
 cd ../
 rm -rf libdeflate
 
-# HTSLib - 1.9 NEEDS UPDATE
-wget https://github.com/samtools/htslib/releases/download/1.9/htslib-1.9.tar.bz2
-tar xaf htslib-1.9.tar.bz2
-mv htslib-1.9 htslib  # Necessary for augustus
+# HTSLib - 1.11
+wget https://github.com/samtools/htslib/releases/download/1.11/htslib-1.11.tar.bz2
+tar xaf htslib-1.11.tar.bz2
+mv htslib-1.11 htslib  # Necessary for augustus
 cd htslib
 ./configure --enable-libcurl --enable-plugins --enable-s3  --with-libdeflate
 make -j 20
 make install
 htsfile --help 2>&1 | head
 cd ../
-rm htslib-1.9.tar.bz2
+rm htslib-1.11.tar.bz2
 
-# Samtools - 1.9 NEEDS UPDATE
-wget https://github.com/samtools/samtools/releases/download/1.9/samtools-1.9.tar.bz2
-tar xaf samtools-1.9.tar.bz2
-mv samtools-1.9 samtools  # Necessary for augustus
+# Samtools - 1.11
+wget https://github.com/samtools/samtools/releases/download/1.11/samtools-1.11.tar.bz2
+tar xaf samtools-1.11.tar.bz2
+mv samtools-1.11 samtools  # Necessary for augustus
 cd samtools  # and similarly for bcftools and htslib
 ./configure --enable-libcurl --enable-plugins --enable-s3
 make -j 20
 make install
 samtools --help 2>&1 | head
 cd ../
-rm samtools-1.9.tar.bz2
+rm samtools-1.11.tar.bz2
 
-# BCFTools - 1.9
-wget https://github.com/samtools/bcftools/releases/download/1.9/bcftools-1.9.tar.bz2
-tar xaf bcftools-1.9.tar.bz2
-mv bcftools-1.9 bcftools
+# BCFTools - 1.11
+wget https://github.com/samtools/bcftools/releases/download/1.11/bcftools-1.11.tar.bz2
+tar xaf bcftools-1.11.tar.bz2
+mv bcftools-1.11 bcftools
 cd bcftools
 ./configure --enable-libcurl --enable-plugins --enable-s3
 make -j 20
 make install
 bcftools --help 2>&1 | head
 cd /opt/software/
-rm -rf bcftools-1.9.tar.bz2
+rm -rf bcftools-1.11.tar.bz2
 
 # BAMtools - 2.5.1
 wget https://github.com/pezmaster31/bamtools/archive/v2.5.1.tar.gz -O bamtools-v2.5.1.tar.gz
@@ -124,16 +124,16 @@ bamtools --help 2>&1 | head
 cd ../../
 rm -rf bamtools-v2.5.1.tar.gz
 
-# gffread - tags/v0.12.2
+# gffread - tags/v0.12.6
 ## Install gffread - this has to be *after* cufflinks as it supercedes it
 cd /opt/software/
 git clone https://github.com/gpertea/gclib.git
 cd gclib
-git checkout tags/v0.12.2
+git checkout tags/v0.12.6
 cd ../
 git clone https://github.com/gpertea/gffread.git
 cd gffread
-git checkout tags/v0.12.2
+git checkout tags/v0.12.6
 make
 cp gffread /usr/local/bin/
 cd /opt/software/
@@ -141,9 +141,9 @@ gffread --help 2>&1 | head
 rm -rf gffread gclib
 
 # GMAP - 2019-02-15 NEEDS UPDATE
-wget http://research-pub.gene.com/gmap/src/gmap-gsnap-2019-02-15.tar.gz
-tar xaf gmap-gsnap-2019-02-15.tar.gz
-cd gmap-2019-02-15
+wget http://research-pub.gene.com/gmap/src/gmap-gsnap-2021-02-12.tar.gz
+tar xaf gmap-gsnap-2021-02-12.tar.gz
+cd gmap-2021-02-12
 for i in sse2 ssse3 sse41 sse42;
 do
     ./configure --with-simd-level=$i --enable-zlib --enable-bzlib
@@ -154,7 +154,7 @@ done;
 gmap --help
 gsnap --help
 cd /opt/software/
-rm -rf gmap-gsnap-2019-02-15.tar.gz
+rm -rf gmap-gsnap-2021-02-12.tar.gz
 
 # MiniMap2 - 2.17
 wget https://github.com/lh3/minimap2/releases/download/v2.17/minimap2-2.17_x64-linux.tar.bz2
@@ -176,22 +176,23 @@ cd /opt/software/
 rm -rf genometools-1.5.10.tar.gz genometools-1.5.10
 
 
-# HISAT2 - 2.1.0 NEEDS UPDATE
-wget ftp://ftp.ccb.jhu.edu/pub/infphilo/hisat2/downloads/hisat2-2.1.0-Linux_x86_64.zip
-unzip hisat2-2.1.0-Linux_x86_64.zip
-hisat2-2.1.0/hisat2-build --help
-rm hisat2-2.1.0-Linux_x86_64.zip
+# HISAT2 - 2.2.1
+wget -O hisat2-2.2.1-Linux_x86_64.zip https://cloud.biohpc.swmed.edu/index.php/s/oTtGWbWjaxsQ2Ho/download
+unzip hisat2-2.2.1-Linux_x86_64.zip
+hisat2-2.2.1/hisat2-build --help
+rm hisat2-2.2.1-Linux_x86_64.zip
 cd /opt/software
 
 # STAR - 2.7.3a NEEDS UPDATE
-wget https://github.com/alexdobin/STAR/archive/2.7.3a.tar.gz -O star-2.7.3a.tar.gz
-tar xaf star-2.7.3a.tar.gz
-mv STAR-2.7.3a/bin/Linux_x86_64_static/STAR -t /usr/local/bin/
-mv STAR-2.7.3a/bin/Linux_x86_64_static/STARlong -t /usr/local/bin/
+
+wget https://github.com/alexdobin/STAR/archive/2.7.8a.tar.gz -O star-2.7.8a.tar.gz
+tar xaf star-2.7.8a.tar.gz
+mv STAR-2.7.8a/bin/Linux_x86_64_static/STAR -t /usr/local/bin/
+mv STAR-2.7.8a/bin/Linux_x86_64_static/STARlong -t /usr/local/bin/
 STAR --help
 STARlong --help
 cd /opt/software/
-rm -rf star-2.7.3a.tar.gz STAR-2.7.3a
+rm -rf star-2.7.8a.tar.gz STAR-2.7.8a
 
 # seqtk - master
 git clone https://github.com/lh3/seqtk.git
@@ -200,22 +201,22 @@ make -j 8
 make install
 cd /opt/software
 
-# Stringtie2 - v2.1.1 NEEDS UPDATE
-git clone -b v2.1.1 https://github.com/gpertea/stringtie.git
+# Stringtie2 - v2.1.4
+git clone -b tags/v2.1.4 https://github.com/gpertea/stringtie.git
 cd stringtie
 make -j 4 release
 cp stringtie /usr/local/bin
 stringtie -h
 
-cd SuperReads_RNA
-sed -i '141s/operator/realloc/' global-1/SuperReadsR/include/reallocators.hpp
-./install.sh
-cp /opt/software/stringtie/SuperReads_RNA/create_rna_sr.py /usr/local/bin
-create_rna_sr.py -h
+#cd SuperReads_RNA
+#sed -i '141s/operator/realloc/' global-1/SuperReadsR/include/reallocators.hpp
+#./install.sh
+#cp /opt/software/stringtie/SuperReads_RNA/create_rna_sr.py /usr/local/bin
+#create_rna_sr.py -h
 
 cd /opt/software/
 
-# Scallop - 0.10.4 NEEDS UPDATE
+# Scallop - 0.10.4
 wget https://github.com/Kingsford-Group/scallop/releases/download/v0.10.4/scallop-0.10.4_linux_x86_64.tar.gz
 tar xf scallop-0.10.4_linux_x86_64.tar.gz
 cp scallop-0.10.4_linux_x86_64/scallop /usr/local/bin
@@ -402,6 +403,7 @@ cd /opt/software
 wget https://github.com/ogotoh/spaln/archive/Ver.2.4.2.tar.gz
 tar xf Ver.2.4.2.tar.gz
 cd spaln-Ver.2.4.2/src
+sed -i '454i\                       if (phl->jnc < 2) continue' fwd2h1.cc
 ./configure -e /opt/software/spaln/bin -t /opt/software/spaln/table -d /opt/software/spaln/seqdbs
 make -j 4
 make install
