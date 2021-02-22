@@ -202,7 +202,7 @@ make install
 cd /opt/software
 
 # Stringtie2 - v2.1.4
-git clone -b tags/v2.1.4 https://github.com/gpertea/stringtie.git
+git clone -b v2.1.4 https://github.com/gpertea/stringtie.git
 cd stringtie
 make -j 4 release
 cp stringtie /usr/local/bin
@@ -403,7 +403,7 @@ cd /opt/software
 wget https://github.com/ogotoh/spaln/archive/Ver.2.4.2.tar.gz
 tar xf Ver.2.4.2.tar.gz
 cd spaln-Ver.2.4.2/src
-sed -i '454i\                       if (phl->jnc < 2) continue' fwd2h1.cc
+sed -i '454i\                       if (phl->jnc < 2) continue;' fwd2h1.cc
 ./configure -e /opt/software/spaln/bin -t /opt/software/spaln/table -d /opt/software/spaln/seqdbs
 make -j 4
 make install
