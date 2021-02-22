@@ -220,6 +220,7 @@ cd /opt/software/
 wget https://github.com/Kingsford-Group/scallop/archive/v0.10.5.tar.gz
 tar xf v0.10.5.tar.gz
 cd scallop-0.10.5
+mv configure.linux.ac configure.ac
 autoreconf -i
 ./configure
 make -j4
