@@ -385,7 +385,7 @@ def parse_arguments():
                              default=80)
     homology_ap.add_argument("--alignment_max_per_query", type=int, default=4,
                              help="Maximum number of alignments per input query protein")
-    homology_ap.add_argument("--alignment_recursion_level", type=int, default=7,
+    homology_ap.add_argument("--alignment_recursion_level", type=int, default=6,
                              help="SPALN's Q value, indicating the level of recursion for the Hirschberg algorithm")
     homology_ap.add_argument("--alignment_show_intron_length", action='store_true',
                              help="Add an attribute to the alignment gff with the maximum intron len for each mRNA")

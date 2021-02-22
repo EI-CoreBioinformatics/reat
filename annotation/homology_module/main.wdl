@@ -405,7 +405,7 @@ task AlignProteins {
         Int min_filter_exon_len = 20
         Int min_cds_len = 20
         Int max_per_query = 4
-        Int recursion_level = 7
+        Int recursion_level = 6
         Boolean show_intron_len = false
         Array[String] filters = "none"
         RuntimeAttr? runtime_attr_override
