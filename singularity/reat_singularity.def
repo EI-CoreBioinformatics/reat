@@ -216,11 +216,16 @@ stringtie -h
 
 cd /opt/software/
 
-# Scallop - 0.10.4
-wget https://github.com/Kingsford-Group/scallop/releases/download/v0.10.4/scallop-0.10.4_linux_x86_64.tar.gz
-tar xf scallop-0.10.4_linux_x86_64.tar.gz
-cp scallop-0.10.4_linux_x86_64/scallop /usr/local/bin
-rm -rf scallop-0.10.4_linux_x86_64*
+# Scallop - 0.10.5
+wget https://github.com/Kingsford-Group/scallop/archive/v0.10.5.tar.gz
+tar xf v0.10.5.tar.gz
+cd scallop-0.10.5
+autoreconf -i
+./configure
+make -j4
+make install
+cd /opt/software/
+rm -rf scallop-0.10.5 v0.10.5.tar.gz
 
 # Scallop-lr - 0.9.2
 wget https://github.com/Kingsford-Group/scallop/releases/download/isoseq-v0.9.2/scallop-lr-0.9.2_linux_x86_64.tar.gz
