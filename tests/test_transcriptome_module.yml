@@ -53,3 +53,23 @@
     must_not_contain:
       - "environment and hardware support"
       - "required version"
+- name: Transcriptome_Module_no_short
+  tags:
+    - integration
+  command: >-
+    reat --computational_resources tests/integration/transcriptome/computational_resources.json
+    --workflow_options_file tests/integration/transcriptome/options.json
+    transcriptome
+    --orf_caller transdecoder
+    --orf_calling_proteins tests/integration/transcriptome/inputs/proteins_db/cross_species_all.10pc.fa.gz
+    --homology_proteins tests/integration/transcriptome/inputs/proteins_db/cross_species_all.10pc.fa.gz
+    --LQ_assembler stringtie
+    --HQ_assembler merge
+    --all_scoring_file "tests/integration/transcriptome/inputs/plant.yaml"
+    --long_scoring_file "tests/integration/transcriptome/inputs/plant.yaml"
+    --reference "tests/integration/transcriptome/inputs/reference/scaffold_6.fa.gz"
+    --csv_long "tests/integration/transcriptome/long_samples.csv"
+  files:
+    - path: "log.out"
+      contains:
+      - "WorkflowSucceededState"
