@@ -344,7 +344,7 @@ def parse_json_input(s):
 
 def sample_validation(cromwell_inputs):
     paired_sample_names = set()
-    if cromwell_inputs['ei_annotation.paired_samples']:
+    if cromwell_inputs.get('ei_annotation.paired_samples', None):
         for sample in cromwell_inputs['ei_annotation.paired_samples']:
             l = len(paired_sample_names)
             paired_sample_names.add(sample['name'])
