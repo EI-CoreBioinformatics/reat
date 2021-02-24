@@ -267,6 +267,14 @@ def combine_arguments(cli_arguments):
 
     cromwell_inputs["ei_annotation.wf_align.skip_scallop"] = cli_arguments.skip_scallop
 
+    if cli_arguments.annotation:
+        cromwell_inputs["ei_annotation.annotation"] = cli_arguments.annotation.name
+    if cli_arguments.extra_junctions:
+        cromwell_inputs["ei_annotation.wf_align.extra_junctions"] = cli_arguments.extra_junctions.name
+
+    if cli_arguments.skip_mikado_long:
+        cromwell_inputs["ei_annotation.wf_main_mikado.skip_mikado_long"] = cli_arguments.skip_mikado_long
+
     cromwell_inputs["ei_annotation.wf_align.HQ_assembler"] = cli_arguments.HQ_assembler
     cromwell_inputs["ei_annotation.wf_align.LQ_assembler"] = cli_arguments.LQ_assembler
 

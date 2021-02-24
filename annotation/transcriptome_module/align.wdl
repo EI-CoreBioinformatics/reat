@@ -16,6 +16,7 @@ workflow wf_align {
         Array[LRSample]? LQ_long_read_samples
         Array[LRSample]? HQ_long_read_samples
         File? reference_annotation
+        File? extra_junctions
         Object? group_to_samples
 
         Float min_identity = 0.9
@@ -124,7 +125,9 @@ workflow wf_align {
             max_intron_len = select_first([max_intron_len, 200000]),
             max_intron_len_ends = select_first([max_intron_len_ends, 100000]),
             aligner_extra_parameters = select_first([LQ_aligner_extra_parameters, ""]),
-            bed_junctions = portcullis.pass_bed,
+            annotation = reference_annotation,
+            extra_junctions = extra_junctions,
+            portcullis_junctions = portcullis.pass_bed,
             indexing_resources = long_read_indexing_resources,
             alignment_resources = long_read_alignment_resources
         }
@@ -154,7 +157,9 @@ workflow wf_align {
             max_intron_len = max_intron_len,
             max_intron_len_ends = max_intron_len_ends,
             aligner_extra_parameters = select_first([HQ_aligner_extra_parameters, ""]),
-            bed_junctions = portcullis.pass_bed,
+            annotation = reference_annotation,
+            extra_junctions = extra_junctions,
+            portcullis_junctions = portcullis.pass_bed,
             indexing_resources = long_read_indexing_resources,
             alignment_resources = long_read_alignment_resources
         }

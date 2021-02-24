@@ -199,6 +199,13 @@ def parse_arguments():
                                   help="Annotation of the reference, this file will be used as the base for the new"
                                        " annotation which will incorporate from the available evidence new gene models"
                                        " or update existing ones")
+    transcriptome_ap.add_argument("--extra_junctions", type=argparse.FileType('r'),
+                                  help="Extra junctions provided by the user, this file will be used as a set of valid"
+                                       " junctions for alignment of short and long read samples, in the case of long"
+                                       " reads, these junctions are combined with the results of portcullis whenever"
+                                       " short read samples have been provided as part of the input datasets")
+    transcriptome_ap.add_argument("--skip_mikado_long", action='store_true', default=False,
+                                  help="Disables generation of the long read only mikado run")
     transcriptome_ap.add_argument("--parameters_file", type=argparse.FileType('r'),
                                   help="Base parameters file, this file can be the output of a previous REAT run "
                                        "which will be used as the base for a new parameters file written to the"
