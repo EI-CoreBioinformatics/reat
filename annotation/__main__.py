@@ -140,20 +140,18 @@ def parse_arguments():
     :return: Object containing the validated CLI input arguments.
     """
     reat_ap = argparse.ArgumentParser(add_help=True, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    # runtime = reat_ap.add_mutually_exclusive_group(required=True)
-    #
-    # runtime.add_argument("--server", type=str,
-    #                      help="Run the workflow in a cromwell server. Address and port of the cromwell server to "
-    #                           "submit the workflow")
-    # reat_ap.add_argument("-r", "--runtime_configuration", type=argparse.FileType('r'),
-    #                      help="Configuration file for the backend, please follow "
-    #                           "https://cromwell.readthedocs.io/en/stable/backends/HPC/ for more information.\n"
-    #                           "An example of this file can be found at ",
-    #                      required=True)
+
+    reat_ap.add_argument("-j", "--jar_cromwell", type=argparse.FileType('r'),
+                         help="Cromwell server jar file", required=True)
+    reat_ap.add_argument("-r", "--runtime_configuration", type=argparse.FileType('r'),
+                         help="Configuration file for the backend, please follow "
+                              "https://cromwell.readthedocs.io/en/stable/backends/HPC/ for more information.\n"
+                              "An example of this file can be found at ",
+                         required=True)
 
     reat_ap.add_argument("-c", "--computational_resources", type=argparse.FileType('r'),
                          help="Computational resources for REAT, please look at the template for more information",
-                         )  # required=True)
+                         required=True)
     reat_ap.add_argument("-o", "--output_parameters_file", type=str,
                          help="REAT parameters file, this file will be used as the input for REAT. "
                               "It provides the arguments for the workflow runtime.",
@@ -430,7 +428,8 @@ def transcriptome_module(cli_arguments):
         workflow_options_file = None
         if cli_arguments.workflow_options_file is not None:
             workflow_options_file = cli_arguments.workflow_options_file.name
-        return execute_cromwell(cli_arguments.output_parameters_file, workflow_options_file, wdl_file)
+        return execute_cromwell(cli_arguments.runtime_configuration, cli_arguments.jar_cromwell,
+                                cli_arguments.output_parameters_file, workflow_options_file, wdl_file)
 
 
 def homology_module(cli_arguments):
@@ -443,11 +442,13 @@ def homology_module(cli_arguments):
         workflow_options_file = None
         if cli_arguments.workflow_options_file is not None:
             workflow_options_file = cli_arguments.workflow_options_file.name
-        return execute_cromwell(cli_arguments.output_parameters_file, workflow_options_file, wdl_file)
+        return execute_cromwell(cli_arguments.runtime_configuration, cli_arguments.jar_cromwell,
+                                cli_arguments.output_parameters_file, workflow_options_file, wdl_file)
 
 
-def execute_cromwell(input_parameters_filepath, workflow_options_file, wdl_file):
-    return cromwell_run(input_parameters_filepath, workflow_options_file, wdl_file)
+def execute_cromwell(workflow_configuration_file, jar_cromwell, input_parameters_filepath, workflow_options_file, wdl_file):
+    return cromwell_run(workflow_configuration_file, jar_cromwell,
+                        input_parameters_filepath, workflow_options_file, wdl_file)
 
 
 def cromwell_submit(cli_arguments, input_parameters_filepath, workflow_options_file, wdl_file):
@@ -466,14 +467,15 @@ def kill_cromwell(sig, frame):
     raise KeyboardInterrupt
 
 
-def cromwell_run(input_parameters_filepath, workflow_options_file, wdl_file):
+def cromwell_run(workflow_configuration_file, jar_cromwell, input_parameters_filepath, workflow_options_file, wdl_file):
+    formatted_command_line = ["java", f"-Dconfig.file={str(workflow_configuration_file.name)}",
+                              "-jar", str(jar_cromwell.name),
+                              "run",
+                              "-i", str(input_parameters_filepath)]
     if workflow_options_file:
-        formatted_command_line = ["cromwell", "run",
-                                  "-i", str(input_parameters_filepath), "-o", str(workflow_options_file),
-                                  "-m", "run_details.json", str(wdl_file)]
-    else:
-        formatted_command_line = ["cromwell", "run",
-                                  "-i", str(input_parameters_filepath), "-m", "run_details.json", str(wdl_file)]
+        formatted_command_line.extend(["-o", str(workflow_options_file)])
+
+    formatted_command_line.extend(["-m", "run_details.json", str(wdl_file)])
 
     print("Starting:")
     print(' '.join(formatted_command_line))
