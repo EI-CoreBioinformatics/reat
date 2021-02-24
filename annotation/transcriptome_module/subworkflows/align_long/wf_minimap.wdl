@@ -42,6 +42,41 @@ workflow wf_mm2 {
 
 }
 
+task Index {
+	input {
+		Boolean is_hq
+		File reference
+		RuntimeAttr? indexing_resources
+	}
+
+	output {
+		File index = basename(reference) + ".mmi"
+	}
+
+    Int cpus = 16
+    RuntimeAttr default_attr = object {
+        cpu_cores: "~{cpus}",
+        mem_gb: 8,
+        max_retries: 1,
+        queue: ""
+    }
+
+    RuntimeAttr runtime_attr = select_first([indexing_resources, default_attr])
+    Int task_cpus = select_first([runtime_attr.cpu_cores, cpus])
+
+	command <<<
+	minimap2 -ax ~{if (is_hq) then "splice:hq" else "splice"} \
+		-t ~{task_cpus} \
+		-d ~{basename(reference)}.mmi ~{reference}
+
+	>>>
+    runtime {
+        cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
+        memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
+        maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+        queue: select_first([runtime_attr.queue, default_attr.queue])
+    }
+}
 
 task Minimap2Long {
     input {
@@ -115,4 +150,18 @@ task Minimap2Long {
         maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
         queue: select_first([runtime_attr.queue, default_attr.queue])
     }
+}
+
+task gff2bed {
+	input {
+		File annotation
+	}
+
+	output {
+		File bed = "annotation_junctions.bed"
+	}
+
+	command <<<
+	gffread --bed ~{annotation} > annotation_junctions.bed
+	>>>
 }

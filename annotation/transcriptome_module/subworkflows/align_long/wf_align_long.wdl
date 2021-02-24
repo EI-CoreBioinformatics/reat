@@ -8,9 +8,11 @@ import "wf_gmap.wdl" as gmap
 workflow wf_align_long {
     input {
         File reference
+        File? annotation
         Array[LRSample] long_samples
         Boolean is_hq
-        File? bed_junctions
+        File? extra_junctions
+        File? portcullis_junctions
         String aligner = "minimap2"
         String? aligner_extra_parameters
         Float min_identity = 0.9
@@ -33,10 +35,34 @@ workflow wf_align_long {
     
     # Add aligner option
     if (aligner == "minimap2") {
+        if (defined(annotation)) {
+            call mm2.gff2bed {
+                input:
+                annotation = select_first([annotation])
+            }
+        }
+
+        if (defined(annotation) || defined(portcullis_junctions) || defined(extra_junctions)) {
+            call CombineJunctions {
+                input:
+                annotation_bed = gff2bed.bed,
+                junctions_bed = portcullis_junctions,
+                extra_junctions = extra_junctions
+            }
+        }
+
+        call mm2.Index {
+            input:
+            is_hq = is_hq,
+            reference = reference,
+            indexing_resources = indexing_resources
+        }
+
         scatter (sample in long_samples) {
             call mm2.wf_mm2 {
                 input:
-                reference = reference,
+                reference = Index.index,
+                bed_junctions = CombineJunctions.combined_junctions,
                 LRS = sample.LR,
                 is_hq = is_hq,
                 name = sample.name,
@@ -241,5 +267,21 @@ task GMapExonsIIT {
     command <<<
         set -euxo pipefail
         gtf_genes ~{annotation} | iit_store -o gmap_exons.iit
+    >>>
+}
+
+task CombineJunctions {
+    input {
+    File? annotation_bed
+    File? junctions_bed
+    File? extra_junctions
+    }
+
+    output {
+        File combined_junctions = "combined_junctions.bed"
+    }
+
+    command <<<
+    cat ~{annotation_bed} ~{junctions_bed} ~{extra_junctions} > "combined_junctions.bed"
     >>>
 }

@@ -17,6 +17,7 @@ workflow wf_main_mikado {
         File? homology_proteins
         File? orf_calling_proteins
         Boolean separate_LQ = false
+        Boolean skip_mikado_long = false
         String? orf_calling_program
 
         File? all_prepare_cfg
@@ -173,7 +174,7 @@ workflow wf_main_mikado {
             homology_alignment_resources = select_first([homology_alignment_resources, default_runtime_attr])
         }
 
-        if (defined(LQ_assemblies) || defined(HQ_assemblies)) {
+        if (!skip_mikado_long && (defined(LQ_assemblies) || defined(HQ_assemblies))) {
             call mikado.wf_mikado as Mikado_long {
                 input:
                 scoring_file = long_scoring_file,

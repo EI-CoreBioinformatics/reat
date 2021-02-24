@@ -89,7 +89,10 @@
         "ei_annotation.LQ_long_read_samples": {
             "$ref": "#/definitions/LR_Sample"
         },
-        "ei_annotation.annotation": {
+        "ei_annotation.wf_align.annotation": {
+            "type": "string"
+        },
+        "ei_annotation.wf_align.extra_junctions": {
             "type": "string"
         },
         "ei_annotation.homology_proteins": {
