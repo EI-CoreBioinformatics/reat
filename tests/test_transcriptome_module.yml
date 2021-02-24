@@ -2,7 +2,9 @@
   tags:
     - integration
   command: >-
-    reat --computational_resources tests/integration/transcriptome/computational_resources.json
+    reat --jar_cromwell /Users/yanesl/.cromwell/cromwell.jar
+    --runtime_configuration /Users/yanesl/.cromwell/cromwell.examples.conf
+    --computational_resources tests/integration/transcriptome/computational_resources.json
     --workflow_options_file tests/integration/transcriptome/options.json
     transcriptome
     --orf_caller transdecoder
@@ -23,7 +25,9 @@
   tags:
     - integration
   command: >-
-    reat --computational_resources tests/integration/transcriptome/computational_resources.json
+    reat --jar_cromwell /Users/yanesl/.cromwell/cromwell.jar
+    --runtime_configuration /Users/yanesl/.cromwell/cromwell.examples.conf
+    --computational_resources tests/integration/transcriptome/computational_resources.json
     --workflow_options_file tests/integration/transcriptome/options.json
     transcriptome
     --skip_scallop
@@ -57,7 +61,9 @@
   tags:
     - integration
   command: >-
-    reat --computational_resources tests/integration/transcriptome/computational_resources.json
+    reat --jar_cromwell /Users/yanesl/.cromwell/cromwell.jar
+    --runtime_configuration /Users/yanesl/.cromwell/cromwell.examples.conf
+    --computational_resources tests/integration/transcriptome/computational_resources.json
     --workflow_options_file tests/integration/transcriptome/options.json
     transcriptome
     --orf_caller transdecoder
