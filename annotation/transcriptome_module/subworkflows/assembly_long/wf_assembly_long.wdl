@@ -129,7 +129,7 @@ task StringtieLong {
         set -euxo pipefail
         mkdir ~{output_directory}
         cd ~{output_directory}
-        stringtie -p "~{cpus}" ~{"-G " + reference_annotation} ~{collapse_string} <(samtools merge - ~{sep=" " aligned_sample.bam}) -o "~{aligned_sample.name}.~{aligned_sample.aligner}.stringtie.gtf"
+        stringtie ~{sep=" " aligned_sample.bam} -p "~{cpus}"~{" -G " + reference_annotation} ~{collapse_string} -o "~{aligned_sample.name}.~{aligned_sample.aligner}.stringtie.gtf"
     >>>
 
     RuntimeAttr default_attr = object {
