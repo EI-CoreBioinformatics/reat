@@ -101,7 +101,7 @@ task Minimap2Long {
 
     RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
     Int task_cpus = select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
-	Int task_mem = select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + task_cpus/2
+	Int task_mem = round(select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + task_cpus/2)
 
     output {
         File bam = "alignments/minimap2."+name+"."+LR_basename+".bam"
