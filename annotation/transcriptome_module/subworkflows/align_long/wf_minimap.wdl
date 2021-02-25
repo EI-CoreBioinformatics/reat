@@ -92,16 +92,16 @@ task Minimap2Long {
         RuntimeAttr? runtime_attr_override
     }
 
-    Int cpus = 16
     RuntimeAttr default_attr = object {
-        cpu_cores: "~{cpus}",
+        cpu_cores: 16,
         mem_gb: 8,
         max_retries: 1,
         queue: ""
     }
 
     RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
-    Int task_cpus = select_first([runtime_attr.cpu_cores, cpus])
+    Int task_cpus = select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
+	Int task_mem = select_first([runtime_attr.mem_gb, default_attr.mem_gb])
 
     output {
         File bam = "alignments/minimap2."+name+"."+LR_basename+".bam"
@@ -141,12 +141,12 @@ task Minimap2Long {
         -L --MD \
         --eqx -2 \
         --secondary=no \
-        ~{reference} - | samtools view -F 4 -F 0x900 -bS - | samtools sort -@ ~{task_cpus/2} --reference ~{reference} -T minimap2.sort -o minimap2.~{name}.~{LR_basename}.bam -
+        ~{reference} - | samtools view -F 4 -F 0x900 -bS - | samtools sort -@ ~{task_cpus/2} -m 1G --reference ~{reference} -T minimap2.sort -o minimap2.~{name}.~{LR_basename}.bam -
     >>>
 
     runtime {
         cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
-        memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
+        memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + task_cpus/2 + " GB"
         maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
         queue: select_first([runtime_attr.queue, default_attr.queue])
     }
