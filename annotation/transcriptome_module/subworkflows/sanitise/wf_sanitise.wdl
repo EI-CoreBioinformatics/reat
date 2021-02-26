@@ -62,11 +62,11 @@ task SanitizeAnnotation {
     command <<<
         set -euxo pipefail
         filepath=~{annotation}
-        if [ ${filepath##*.} == "gff" ]
+        if [ ${filepath##*.} == "gtf" ]
         then
-            mikado util convert -of gtf ~{annotation} "reference.san.gtf"
-        else
             ln ~{annotation} "reference.san.gtf"
+        else
+            mikado util convert -of gtf ~{annotation} "reference.san.gtf"
         fi
     >>>
 }
