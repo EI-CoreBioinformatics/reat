@@ -62,6 +62,7 @@ workflow ei_annotation {
         long_lq_serialise_cfg = long_lq_serialise_cfg,
         long_lq_pick_cfg = long_lq_pick_cfg,
         reference_genome = wf_align.clean_reference_index,
+        annotation = wf_align.clean_annotation,
         junctions_bed = wf_align.pass_filtered_bed,
         SR_assemblies = wf_align.SR_gff,
         LQ_assemblies = wf_align.LQ_gff,

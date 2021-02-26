@@ -140,14 +140,14 @@ cd /opt/software/
 gffread --help 2>&1 | head
 rm -rf gffread gclib
 
-# GMAP - 2019-02-15 NEEDS UPDATE
+# GMAP - 2021-02-12
 wget http://research-pub.gene.com/gmap/src/gmap-gsnap-2021-02-12.tar.gz
 tar xaf gmap-gsnap-2021-02-12.tar.gz
 cd gmap-2021-02-12
-for i in sse2 ssse3 sse41 sse42;
+for i in sse2 ssse3 sse41 sse42 avx2 avx512;
 do
     ./configure --with-simd-level=$i --enable-zlib --enable-bzlib
-    make -j 20
+    make -j 4
     make install
 done;
 
@@ -183,7 +183,7 @@ hisat2-2.2.1/hisat2-build --help
 rm hisat2-2.2.1-Linux_x86_64.zip
 cd /opt/software
 
-# STAR - 2.7.3a NEEDS UPDATE
+# STAR - 2.7.8a
 
 wget https://github.com/alexdobin/STAR/archive/2.7.8a.tar.gz -O star-2.7.8a.tar.gz
 tar xaf star-2.7.8a.tar.gz
@@ -194,11 +194,19 @@ STARlong --help
 cd /opt/software/
 rm -rf star-2.7.8a.tar.gz STAR-2.7.8a
 
-# seqtk - master
+# seqtk
 git clone https://github.com/lh3/seqtk.git
 cd seqtk
 make -j 8
 make install
+cd /opt/software
+
+# bioawk
+git clone https://github.com/lh3/bioawk.git
+cd bioawk
+make
+cp bioawk /usr/local/bin
+
 cd /opt/software
 
 # Stringtie2 - v2.1.4
