@@ -64,6 +64,10 @@ def validate_long_samples(samples):
         except ValueError as e:
             errors[line].append(f"Unexpected input '{fields}'\n\t\tPlease make sure this is a csv file with at minimum"
                                 f"the following fields name, quality, strand, files")
+
+        if name == "reference":
+            errors[line].append(f"The 'reference' name is reserved for internal use, please rename the sample")
+
         if name in names:
             errors[line].append(
                 ("Non-unique name '{}' specified, please make sure sample names are unique".format(name)))
@@ -148,6 +152,8 @@ def validate_paired_samples(samples):
             errors[line].append(f"Unexpected input '{fields}'\n\t\tPlease make sure this is a csv file with at minimum"
                                 f" the following fields name, strand, files, merge")
             break
+        if name == "reference":
+            errors[line].append(f"The 'reference' name is reserved for internal use, please rename the sample")
         for file in files.split(' '):
             try:
                 r1, r2 = file.split(';')

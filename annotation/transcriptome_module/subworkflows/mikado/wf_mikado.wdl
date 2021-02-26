@@ -7,6 +7,7 @@ import "./homology/wf_homology.wdl" as hml
 
 workflow wf_mikado {
     input {
+        File? annotation
         IndexedReference indexed_reference
         Array[AssembledSample]? SR_assemblies
         Array[AssembledSample]? LQ_assemblies
@@ -71,7 +72,8 @@ workflow wf_mikado {
 
     call WriteModelsFile {
         input:
-        models = flatten(select_all([sr_models.models, LQ_models.models, HQ_models.models]))
+        models = flatten(select_all([sr_models.models, LQ_models.models, HQ_models.models])),
+        annotation = annotation
     }
 
     call MikadoPrepare {
@@ -86,12 +88,20 @@ workflow wf_mikado {
 
     # ORF Calling
     if (defined(orf_caller)) {
+
+        if (defined(annotation)) {
+            call FilterPrepare {
+                input:
+                    prepared_transcripts = MikadoPrepare.prepared_fasta
+            }
+        }
+
         String def_orf_caller = select_first([orf_caller])
         if (def_orf_caller == "prodigal") {
             call pdg.wf_prodigal {
                 input:
                 gencode = prodigal_gencode,
-                prepared_transcripts = MikadoPrepare.prepared_fasta,
+                prepared_transcripts = select_first([FilterPrepare.filtered_prepared_fasta, MikadoPrepare.prepared_fasta]),
                 output_directory = output_prefix,
                 prodigal_runtime_attr = orf_calling_resources
             }
@@ -177,6 +187,7 @@ workflow wf_mikado {
 task WriteModelsFile {
     input {
         Array[String] models
+        File? annotation
         RuntimeAttr? runtime_attr_override
     }
 
@@ -206,6 +217,10 @@ task WriteModelsFile {
         set -euxo pipefail
         for i in "~{sep="\" \"" models}"; do
         echo $i; done | awk 'BEGIN{OFS="\t"} {$1=$1} 1' > models.txt;
+
+        if [ "~{annotation}" != "" ]
+            echo -e ~{annotation}'\t'reference'\t'True'\t'0'\t'True >> models.txt
+        fi
     >>>
 }
 
@@ -444,4 +459,18 @@ task MikadoPrepare {
         maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
         queue: select_first([runtime_attr.queue, default_attr.queue])
     }
+}
+
+task FilterPrepare {
+    input {
+        File prepared_transcripts
+    }
+
+    output {
+        File filtered_prepared_fasta = "filtered_prepare.fasta"
+    }
+
+    command <<<
+    bioawk -c'fastx' '{split($name, parts, '_'); if (parts[1] != 'reference') print ">"$name"\n"$seq}' ~{prepared_transcripts} > filtered_prepare.fasta
+    >>>
 }

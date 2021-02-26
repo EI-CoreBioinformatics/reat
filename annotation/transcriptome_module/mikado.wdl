@@ -7,6 +7,7 @@ import "subworkflows/mikado/wf_mikado.wdl" as mikado
 workflow wf_main_mikado {
     input {
         IndexedReference reference_genome
+        File? annotation
         File all_scoring_file
         File long_scoring_file
         File? long_lq_scoring_file
@@ -71,6 +72,7 @@ workflow wf_main_mikado {
     {
         call mikado.wf_mikado as Mikado_short_and_long_noLQ {
             input:
+            annotation = annotation,
             indexed_reference =  reference_genome,
             SR_assemblies = SR_assemblies,
             HQ_assemblies = HQ_assemblies,
@@ -97,6 +99,7 @@ workflow wf_main_mikado {
         if (defined(HQ_assemblies)) {
             call mikado.wf_mikado as Mikado_longHQ {
                 input:
+                annotation = annotation,
                 indexed_reference =  reference_genome,
                 HQ_assemblies = HQ_assemblies,
                 scoring_file = long_scoring_file,
@@ -123,6 +126,7 @@ workflow wf_main_mikado {
         if (defined(LQ_assemblies)) {
             call mikado.wf_mikado as Mikado_longLQ {
                 input:
+                annotation = annotation,
                 scoring_file = select_first([long_lq_scoring_file]),
                 indexed_reference =  reference_genome,
                 LQ_assemblies = LQ_assemblies,
@@ -150,6 +154,7 @@ workflow wf_main_mikado {
     {
         call mikado.wf_mikado as Mikado_short_and_long {
             input:
+            annotation = annotation,
             scoring_file = all_scoring_file,
             indexed_reference =  reference_genome,
             SR_assemblies = SR_assemblies,
@@ -177,6 +182,7 @@ workflow wf_main_mikado {
         if (!skip_mikado_long && (defined(LQ_assemblies) || defined(HQ_assemblies))) {
             call mikado.wf_mikado as Mikado_long {
                 input:
+                annotation = annotation,
                 scoring_file = long_scoring_file,
                 indexed_reference =  reference_genome,
                 LQ_assemblies = LQ_assemblies,
