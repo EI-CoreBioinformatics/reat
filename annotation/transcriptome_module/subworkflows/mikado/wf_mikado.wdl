@@ -219,6 +219,7 @@ task WriteModelsFile {
         echo $i; done | awk 'BEGIN{OFS="\t"} {$1=$1} 1' > models.txt;
 
         if [ "~{annotation}" != "" ]
+        then
             echo -e ~{annotation}'\t'reference'\t'True'\t'0'\t'True >> models.txt
         fi
     >>>

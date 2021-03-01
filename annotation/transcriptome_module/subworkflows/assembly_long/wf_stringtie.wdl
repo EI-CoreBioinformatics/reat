@@ -47,11 +47,11 @@ task StringtieMerge {
 	}
 
 	output {
-		File gff = "merged.gff"
+		File gff = label+".merged.gtf"
 	}
 
 	command <<<
-		stringtie --merge -l ~{label}  ~{sep=" " assemblies} -o merged.gtf
+		stringtie --merge -l ~{label}  ~{sep=" " assemblies} -o ~{label}.merged.gtf
 	>>>
 }
 
