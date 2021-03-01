@@ -196,7 +196,6 @@ workflow wf_align {
         Array[AssembledSample]? LQ_gff = LQ_assembly.gff
         Array[AssembledSample]? HQ_gff = HQ_assembly.gff
 
-        Array[Array[File]]? stats = wf_align_short.stats
 #        Array[Array[Array[File]]]? plots = wf_align_short.plots
         Array[Array[File]]? stats = wf_align_short.stats
         Array[Array[File]]? actg_cycles_plots = wf_align_short.actg_cycles_plots
