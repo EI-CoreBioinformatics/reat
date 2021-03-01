@@ -2,8 +2,6 @@ version 1.0
 
 import "mikado.wdl" as wfm
 import "align.wdl" as waln
-import "subworkflows/common/structs.wdl"
-import "subworkflows/sanitise/wf_sanitise.wdl" as san
 
 workflow ei_annotation {
     input {

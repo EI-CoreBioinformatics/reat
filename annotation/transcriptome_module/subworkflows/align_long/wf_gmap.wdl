@@ -111,7 +111,7 @@ task GMapLong {
         $in_pipe | $(determine_gmap.py ~{reference}) --dir="$(dirname ~{gmap_index[0]})" --db=test_genome \
         ~{"--min-intronlength=" + min_intron_len} ~{"--max-intronlength-middle=" + max_intron_len} \
         ~{"--max-intronlength-ends=" + max_intron_len_ends} --npaths=1 \
-        ~{"-m " + iit} ${strand_opt} \
+        ~{"-m " + iit} "${strand_opt}" \
         ~{"--min-trimmed-coverage=" + min_trimmed_coverage} \
         ~{"--min-identity=" + min_identity} \
         --format=samse ~{extra_parameters} \
