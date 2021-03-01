@@ -3,6 +3,7 @@ version 1.0
 import "../common/tasks.wdl"
 import "../common/structs.wdl"
 import "../common/rt_struct.wdl"
+import "wf_stringtie.wdl" as wstl
 
 workflow wf_assembly_long {
     input {
@@ -37,7 +38,7 @@ workflow wf_assembly_long {
             }
         }
         if (assembler == "stringtie") {
-            call StringtieLong as stringtie_assemble {
+            call wstl.wf_stringtie_long as stringtie_assemble {
                 input:
                 reference_annotation = reference_annotation,
                 aligned_sample = sample,
@@ -46,7 +47,7 @@ workflow wf_assembly_long {
             }
         }
         if (assembler == "stringtie_collapse") {
-            call StringtieLong as stringtie_collapse {
+            call wstl.wf_stringtie_long as stringtie_collapse {
                 input:
                 reference_annotation = reference_annotation,
                 collapse = true,
@@ -106,48 +107,6 @@ task FilterGFF {
     cd ~{output_directory}
     filter_gmap_hardFilter_v0.1.pl --gff ~{gff} --identity ~{min_identity} --coverage ~{min_coverage} > ~{basename(gff)}.~{min_identity}id~{min_coverage}cov.gff
     >>>
-}
-
-task StringtieLong {
-    input {
-        File? reference_annotation
-        Boolean collapse = false
-        String collapse_string = if (collapse==true) then "-R " else "-L "
-        AlignedSample aligned_sample
-        String output_directory
-        RuntimeAttr? runtime_attr_override
-    }
-
-    Int cpus = 8
-#    String strand = if (aligned_sample.strand == "fr-firststrand") then "-fr" else if (aligned_sample.strand == "fr-secondstrand") then "-rf" else ""
-
-    output {
-        File gff = output_directory + "/" + aligned_sample.name+"."+aligned_sample.aligner+".stringtie.gtf"
-    }
-
-    command <<<
-        set -euxo pipefail
-        mkdir ~{output_directory}
-        cd ~{output_directory}
-        stringtie ~{sep=" " aligned_sample.bam} -p "~{cpus}"~{" -G " + reference_annotation} ~{collapse_string} -o "~{aligned_sample.name}.~{aligned_sample.aligner}.stringtie.gtf"
-    >>>
-
-    RuntimeAttr default_attr = object {
-        cpu_cores: "~{cpus}",
-        mem_gb: 16,
-        max_retries: 1,
-        queue: ""
-    }
-    
-    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
-
-
-    runtime {
-        cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
-        memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
-        maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
-        queue: select_first([runtime_attr.queue, default_attr.queue])
-    }
 }
 
 task Sam2gff {
