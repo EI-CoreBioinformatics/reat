@@ -472,6 +472,6 @@ task FilterPrepare {
     }
 
     command <<<
-    bioawk -c'fastx' '{split($name, parts, '_'); if (parts[1] != 'reference') print ">"$name"\n"$seq}' ~{prepared_transcripts} > filtered_prepare.fasta
+    bioawk -c'fastx' '{split($name, parts, "_"); if (parts[1] != "reference") print ">"$name"\n"$seq}' ~{prepared_transcripts} > filtered_prepare.fasta
     >>>
 }
