@@ -17,7 +17,7 @@ workflow wf_align {
         Array[LRSample]? HQ_long_read_samples
         File? reference_annotation
         File? extra_junctions
-        Object? group_to_samples
+        Map[String, Array[String]]? group_to_samples
 
         Float min_identity = 0.9
         Int? min_intron_len = 20

@@ -7,7 +7,7 @@ workflow portcullis {
     input {
         File reference
         String merge_operator = "max"
-        Object? group_to_samples # Consider applying "localization_optional" to the preparation task
+        Map[String, Array[String]]? group_to_samples # Consider applying "localization_optional" to the preparation task
         Array[AlignedSample] aligned_samples
         File? annotation
         RuntimeAttr? portcullis_resources
@@ -102,7 +102,7 @@ workflow portcullis {
 
 task PrepareGroups {
     input {
-        Object group_to_samples
+        Map[String, Array[String]] group_to_samples
         Array[AlignedSample] aligned_samples
     }
 
@@ -111,7 +111,7 @@ task PrepareGroups {
     }
 
     command <<<
-        portcullis_sample_grouping ~{write_objects(aligned_samples)} ~{write_json(group_to_samples)}
+        portcullis_sample_grouping ~{write_json(aligned_samples)} ~{write_json(group_to_samples)}
     >>>
 }
 
