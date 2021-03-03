@@ -16,6 +16,11 @@ workflow wf_mikado {
         File? orf_calling_proteins
         File? homology_proteins
         String output_prefix
+
+        Int annotation_score
+        String mode
+        Boolean check_reference
+
         RuntimeAttr? orf_calling_resources
         RuntimeAttr? orf_protein_index_resources
         RuntimeAttr? orf_protein_alignment_resources
@@ -73,7 +78,8 @@ workflow wf_mikado {
     call WriteModelsFile {
         input:
         models = flatten(select_all([sr_models.models, LQ_models.models, HQ_models.models])),
-        annotation = annotation
+        annotation = annotation,
+        annotation_score = annotation_score
     }
 
     call MikadoPrepare {
@@ -81,6 +87,8 @@ workflow wf_mikado {
         reference_fasta = indexed_reference.fasta,
         blast_targets = homology_proteins,
         models = WriteModelsFile.result,
+        mode = mode,
+        check_reference = check_reference,
         extra_config = prepare_extra_config,
         runtime_attr_override = mikado_prepare_resources,
         output_prefix = output_prefix
@@ -188,6 +196,7 @@ task WriteModelsFile {
     input {
         Array[String] models
         File? annotation
+        Int annotation_score
         RuntimeAttr? runtime_attr_override
     }
 
@@ -220,7 +229,7 @@ task WriteModelsFile {
 
         if [ "~{annotation}" != "" ]
         then
-            echo -e ~{annotation}'\t'reference'\t'True'\t'0'\t'True >> models.txt
+            echo -e ~{annotation}'\t'reference'\t'True'\t'~{annotation_score}'\t'True >> models.txt
         fi
     >>>
 }
@@ -416,6 +425,8 @@ task MikadoPrepare {
     input {
         File models
         File reference_fasta
+        String mode
+        Boolean check_reference
         File? blast_targets
         File? extra_config
         String output_prefix
@@ -442,7 +453,24 @@ task MikadoPrepare {
     command <<<
         set -euxo pipefail
         export TMPDIR=/tmp
-        mikado configure \
+
+        # Choose configure mode
+
+        case "~{mode}" in
+                basic)
+                    mode_parameter=""
+                    ;;
+
+                update)
+                    mode_parameter="--reference-update"
+                    ;;
+
+                only_update)
+                    mode_parameter="--only-reference-update"
+                    ;;
+        esac
+
+        mikado configure ${mode_parameter} ~{if(check_reference) then "--check-references" else ""} \
         ~{"-bt " + blast_targets} \
         --list=~{models} \
         ~{"--reference=" + reference_fasta} \

@@ -10,6 +10,9 @@ workflow ei_annotation {
         Array[LRSample]? LQ_long_read_samples
         Array[LRSample]? HQ_long_read_samples
         File? annotation
+        Int annotation_score = 1
+        String mode
+        Boolean check_reference
         File all_scoring_file
         File long_scoring_file
         File? long_lq_scoring_file
@@ -66,7 +69,10 @@ workflow ei_annotation {
         LQ_assemblies = wf_align.LQ_gff,
         HQ_assemblies = wf_align.HQ_gff,
         orf_calling_proteins = orf_calling_proteins,
-        homology_proteins = homology_proteins
+        homology_proteins = homology_proteins,
+        annotation_score = annotation_score,
+        mode = mode,
+        check_reference = check_reference
     }
 
     output {

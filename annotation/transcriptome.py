@@ -273,8 +273,14 @@ def combine_arguments(cli_arguments):
 
     cromwell_inputs["ei_annotation.wf_align.skip_scallop"] = cli_arguments.skip_scallop
 
+    # Reference annotation parameters
+    cromwell_inputs["ei_annotation.mode"] = cli_arguments.mode
+    cromwell_inputs["ei_annotation.check_reference"] = cli_arguments.check_reference
     if cli_arguments.annotation:
         cromwell_inputs["ei_annotation.annotation"] = cli_arguments.annotation.name
+        cromwell_inputs["ei_annotation.annotation_score"] = cli_arguments.annotation_score
+    #####
+
     if cli_arguments.extra_junctions:
         cromwell_inputs["ei_annotation.wf_align.extra_junctions"] = cli_arguments.extra_junctions.name
 

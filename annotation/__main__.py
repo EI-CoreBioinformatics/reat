@@ -166,6 +166,8 @@ def parse_arguments():
                                              help="Transcriptome module",
                                              formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     # General inputs
+    transcriptome_ap.add_argument("--reference", type=argparse.FileType('r'),
+                                  help="Reference FASTA to annotate", required=True)
     transcriptome_ap.add_argument("--samples", nargs='+', type=argparse.FileType('r'),
                                   help="Reads organised in the input specification for REAT, for more information "
                                        "please look at https://github.com/ei-corebioinformatics/reat for an example")
@@ -193,12 +195,21 @@ def parse_arguments():
                                        "is_ref and exclude_redundant are booleans and take values 'true', 'false'\n\n"
                                        "Example:\n"
                                        "Sample1,fr-firststrand,A.fq /samples/long/B.fq ./inputs/C.fq,low,2")
-    transcriptome_ap.add_argument("--reference", type=argparse.FileType('r'),
-                                  help="Reference FASTA to annotate", required=True)
     transcriptome_ap.add_argument("--annotation", type=argparse.FileType('r'),
                                   help="Annotation of the reference, this file will be used as the base for the new"
                                        " annotation which will incorporate from the available evidence new gene models"
                                        " or update existing ones")
+    transcriptome_ap.add_argument("--annotation_score", type=int, default=1,
+                                  help="Score for models in the reference annotation file")
+    transcriptome_ap.add_argument("--check_reference", action="store_true", default=False,
+                                  help="At mikado stage, annotation models will be evaluated in the same manner as "
+                                       "RNA-seq based models, removing any models deemed incorrect")
+    transcriptome_ap.add_argument("--mode", choices=['basic', 'update', 'only_update'], default='basic',
+                                  help="basic: Annotation models are treated the same as the RNA-Seq models at the pick"
+                                       " stage."
+                                       "update: Annotation models are prioritised but also novel loci are reported."
+                                       "only_update: Annotation models are prioritised and non-reference loci are "
+                                       "excluded.")
     transcriptome_ap.add_argument("--extra_junctions", type=argparse.FileType('r'),
                                   help="Extra junctions provided by the user, this file will be used as a set of valid"
                                        " junctions for alignment of short and long read samples, in the case of long"
@@ -474,8 +485,10 @@ def kill_cromwell(sig, frame):
     raise KeyboardInterrupt
 
 
-def cromwell_run(workflow_configuration_file, jar_cromwell, input_parameters_filepath, workflow_options_file, wdl_file):
+def cromwell_run(workflow_configuration_file, jar_cromwell, input_parameters_filepath, workflow_options_file, wdl_file,
+                 log_level="INFO"):
     formatted_command_line = ["java", f"-Dconfig.file={str(workflow_configuration_file.name)}",
+                              f"-DLOG_LEVEL={log_level}",
                               "-jar", str(jar_cromwell.name),
                               "run",
                               "-i", str(input_parameters_filepath)]
