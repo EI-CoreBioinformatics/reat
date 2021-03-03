@@ -1,5 +1,5 @@
 set -euxo
-version=0.0.9
+version=0.0.10
 rundir=${PWD}
 cd $(mktemp -d)
 cp ${rundir}/reat_singularity.def reat.def
