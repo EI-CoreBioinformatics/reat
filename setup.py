@@ -3,7 +3,7 @@ import glob
 
 setup(
     name='reat',
-    version='0.0.8',
+    version='0.0.9',
     packages=find_packages('.', exclude=["tests"]),
     url='https://github.com/ei-corebioinformatics/reat',
     classifiers=[
