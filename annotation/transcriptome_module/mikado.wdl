@@ -8,6 +8,11 @@ workflow wf_main_mikado {
     input {
         IndexedReference reference_genome
         File? annotation
+
+        Int annotation_score = 1
+        String mode
+        Boolean check_reference
+
         File all_scoring_file
         File long_scoring_file
         File? long_lq_scoring_file
@@ -73,6 +78,9 @@ workflow wf_main_mikado {
         call mikado.wf_mikado as Mikado_short_and_long_noLQ {
             input:
             annotation = annotation,
+            annotation_score = annotation_score,
+            mode = mode,
+            check_reference = check_reference,
             indexed_reference =  reference_genome,
             SR_assemblies = SR_assemblies,
             HQ_assemblies = HQ_assemblies,
@@ -100,6 +108,9 @@ workflow wf_main_mikado {
             call mikado.wf_mikado as Mikado_longHQ {
                 input:
                 annotation = annotation,
+                annotation_score = annotation_score,
+                mode = mode,
+                check_reference = check_reference,
                 indexed_reference =  reference_genome,
                 HQ_assemblies = HQ_assemblies,
                 scoring_file = long_scoring_file,
@@ -127,6 +138,9 @@ workflow wf_main_mikado {
             call mikado.wf_mikado as Mikado_longLQ {
                 input:
                 annotation = annotation,
+                annotation_score = annotation_score,
+                mode = mode,
+                check_reference = check_reference,
                 scoring_file = select_first([long_lq_scoring_file]),
                 indexed_reference =  reference_genome,
                 LQ_assemblies = LQ_assemblies,
@@ -155,6 +169,9 @@ workflow wf_main_mikado {
         call mikado.wf_mikado as Mikado_short_and_long {
             input:
             annotation = annotation,
+            annotation_score = annotation_score,
+            mode = mode,
+            check_reference = check_reference,
             scoring_file = all_scoring_file,
             indexed_reference =  reference_genome,
             SR_assemblies = SR_assemblies,
@@ -183,6 +200,9 @@ workflow wf_main_mikado {
             call mikado.wf_mikado as Mikado_long {
                 input:
                 annotation = annotation,
+                annotation_score = annotation_score,
+                mode = mode,
+                check_reference = check_reference,
                 scoring_file = long_scoring_file,
                 indexed_reference =  reference_genome,
                 LQ_assemblies = LQ_assemblies,

@@ -57,6 +57,25 @@
     must_not_contain:
       - "environment and hardware support"
       - "required version"
+- name: Transcriptome_module_portcullis_grouped
+  tags:
+    - portcullis_grouped
+  command: >-
+    reat --jar_cromwell /Users/yanesl/.cromwell/cromwell.jar
+    --runtime_configuration /Users/yanesl/.cromwell/cromwell.examples.conf
+    --computational_resources tests/integration/transcriptome/computational_resources.json
+    --workflow_options_file tests/integration/transcriptome/options.json
+    transcriptome
+    --orf_caller transdecoder
+    --orf_calling_proteins /Users/yanesl/rundir/test_reat_cli/transcriptome/inputs/proteins_db/cross_species_all.protein_nl70.fasta
+    --homology_proteins /Users/yanesl/rundir/test_reat_cli/transcriptome/inputs/proteins_db/cross_species_all.protein_nl70.fasta
+    --LQ_assembler stringtie
+    --HQ_assembler merge
+    --all_scoring_file /Users/yanesl/rundir/test_reat_cli/transcriptome/inputs/plant.yaml
+    --long_scoring_file /Users/yanesl/rundir/test_reat_cli/transcriptome/inputs/plant.yaml
+    --reference /Users/yanesl/rundir/test_reat_cli/transcriptome/inputs/reference/Myzus_persicae_O_v2.0.scaffolds.fa
+    --samp /Users/yanesl/rundir/test_reat_cli/transcriptome/multi_sample_grouped.json
+    --HQ_aligner_extra_parameters "--min-trimmed-coverage 0.8"
 - name: Transcriptome_Module_no_short
   tags:
     - integration
@@ -92,6 +111,113 @@
     --skip_mikado_long
     --annotation tests/integration/transcriptome/inputs/annotation/aphid_reat_annotation.gff3
     --extra_junctions tests/integration/transcriptome/inputs/annotation/aphid_junctions.bed
+    --orf_caller transdecoder
+    --orf_calling_proteins tests/integration/transcriptome/inputs/proteins_db/cross_species_all.10pc.fa.gz
+    --homology_proteins tests/integration/transcriptome/inputs/proteins_db/cross_species_all.10pc.fa.gz
+    --LQ_assembler stringtie
+    --HQ_assembler merge
+    --all_scoring_file "tests/integration/transcriptome/inputs/plant.yaml"
+    --long_scoring_file "tests/integration/transcriptome/inputs/plant.yaml"
+    --reference "tests/integration/transcriptome/inputs/reference/scaffold_6.fa.gz"
+    --csv_long "tests/integration/transcriptome/long_samples.csv"
+  files:
+    - path: "log.out"
+      contains:
+      - "WorkflowSucceededState"
+- name: Transcriptome_basic_annotation_score10
+  tags:
+    - integration
+    - junctions
+  command: >-
+    reat --jar_cromwell /Users/yanesl/.cromwell/cromwell.jar
+    --runtime_configuration /Users/yanesl/.cromwell/cromwell.examples.conf
+    --computational_resources tests/integration/transcriptome/computational_resources.json
+    --workflow_options_file tests/integration/transcriptome/options.json
+    transcriptome
+    --annotation tests/integration/transcriptome/inputs/annotation/aphid_reat_annotation.gff3
+    --annotation_score 10
+    --mode basic
+    --extra_junctions tests/integration/transcriptome/inputs/annotation/aphid_junctions.bed
+    --orf_caller transdecoder
+    --orf_calling_proteins tests/integration/transcriptome/inputs/proteins_db/cross_species_all.10pc.fa.gz
+    --homology_proteins tests/integration/transcriptome/inputs/proteins_db/cross_species_all.10pc.fa.gz
+    --LQ_assembler stringtie
+    --HQ_assembler merge
+    --all_scoring_file "tests/integration/transcriptome/inputs/plant.yaml"
+    --long_scoring_file "tests/integration/transcriptome/inputs/plant.yaml"
+    --reference "tests/integration/transcriptome/inputs/reference/scaffold_6.fa.gz"
+    --csv_long "tests/integration/transcriptome/long_samples.csv"
+  files:
+    - path: "log.out"
+      contains:
+      - "WorkflowSucceededState"
+- name: Transcriptome_reference_update_annotation_score10
+  tags:
+    - integration
+    - junctions
+  command: >-
+    reat --jar_cromwell /Users/yanesl/.cromwell/cromwell.jar
+    --runtime_configuration /Users/yanesl/.cromwell/cromwell.examples.conf
+    --computational_resources tests/integration/transcriptome/computational_resources.json
+    --workflow_options_file tests/integration/transcriptome/options.json
+    transcriptome
+    --annotation tests/integration/transcriptome/inputs/annotation/aphid_reat_annotation.gff3
+    --annotation_score 10
+    --mode update
+    --extra_junctions tests/integration/transcriptome/inputs/annotation/aphid_junctions.bed
+    --orf_caller transdecoder
+    --orf_calling_proteins tests/integration/transcriptome/inputs/proteins_db/cross_species_all.10pc.fa.gz
+    --homology_proteins tests/integration/transcriptome/inputs/proteins_db/cross_species_all.10pc.fa.gz
+    --LQ_assembler stringtie
+    --HQ_assembler merge
+    --all_scoring_file "tests/integration/transcriptome/inputs/plant.yaml"
+    --long_scoring_file "tests/integration/transcriptome/inputs/plant.yaml"
+    --reference "tests/integration/transcriptome/inputs/reference/scaffold_6.fa.gz"
+    --csv_long "tests/integration/transcriptome/long_samples.csv"
+  files:
+    - path: "log.out"
+      contains:
+      - "WorkflowSucceededState"
+- name: Transcriptome_only_update_annotation_score10
+  tags:
+    - integration
+    - junctions
+  command: >-
+    reat --jar_cromwell /Users/yanesl/.cromwell/cromwell.jar
+    --runtime_configuration /Users/yanesl/.cromwell/cromwell.examples.conf
+    --computational_resources tests/integration/transcriptome/computational_resources.json
+    --workflow_options_file tests/integration/transcriptome/options.json
+    transcriptome
+    --annotation tests/integration/transcriptome/inputs/annotation/aphid_reat_annotation.gff3
+    --annotation_score 10
+    --mode only_update
+    --extra_junctions tests/integration/transcriptome/inputs/annotation/aphid_junctions.bed
+    --orf_caller transdecoder
+    --orf_calling_proteins tests/integration/transcriptome/inputs/proteins_db/cross_species_all.10pc.fa.gz
+    --homology_proteins tests/integration/transcriptome/inputs/proteins_db/cross_species_all.10pc.fa.gz
+    --LQ_assembler stringtie
+    --HQ_assembler merge
+    --all_scoring_file "tests/integration/transcriptome/inputs/plant.yaml"
+    --long_scoring_file "tests/integration/transcriptome/inputs/plant.yaml"
+    --reference "tests/integration/transcriptome/inputs/reference/scaffold_6.fa.gz"
+    --csv_long "tests/integration/transcriptome/long_samples.csv"
+  files:
+    - path: "log.out"
+      contains:
+      - "WorkflowSucceededState"
+- name: Transcriptome_check_references
+  tags:
+    - integration
+    - check_reference
+  command: >-
+    reat --jar_cromwell /Users/yanesl/.cromwell/cromwell.jar
+    --runtime_configuration /Users/yanesl/.cromwell/cromwell.examples.conf
+    --computational_resources tests/integration/transcriptome/computational_resources.json
+    --workflow_options_file tests/integration/transcriptome/options.json
+    transcriptome
+    --annotation tests/integration/transcriptome/inputs/annotation/aphid_reat_annotation.gff3
+    --annotation_score 10
+    --check_reference
     --orf_caller transdecoder
     --orf_calling_proteins tests/integration/transcriptome/inputs/proteins_db/cross_species_all.10pc.fa.gz
     --homology_proteins tests/integration/transcriptome/inputs/proteins_db/cross_species_all.10pc.fa.gz
