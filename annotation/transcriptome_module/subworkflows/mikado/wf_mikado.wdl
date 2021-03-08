@@ -7,19 +7,21 @@ import "./homology/wf_homology.wdl" as hml
 
 workflow wf_mikado {
     input {
-        File? annotation
         IndexedReference indexed_reference
         Array[AssembledSample]? SR_assemblies
         Array[AssembledSample]? LQ_assemblies
         Array[AssembledSample]? HQ_assemblies
+
+        File? annotation
+        Int annotation_score
+        String mode
+        Boolean check_reference
+
         File scoring_file
         File? orf_calling_proteins
         File? homology_proteins
         String output_prefix
 
-        Int annotation_score
-        String mode
-        Boolean check_reference
 
         RuntimeAttr? orf_calling_resources
         RuntimeAttr? orf_protein_index_resources
@@ -41,53 +43,15 @@ workflow wf_mikado {
         Boolean mikado_do_homology_assessment
     }
 
-    if (defined(SR_assemblies)) {
-        Array[AssembledSample] def_SR_assemblies = select_first([SR_assemblies])
-        scatter (sr_assembly in def_SR_assemblies) {
-            call GenerateModelsList as sr_models {
-                input:
-                assembly = sr_assembly
-            }
-        }
-    }
-
-    if (defined(LQ_assemblies)) {
-        Array[AssembledSample] def_LQ_assemblies = select_first([LQ_assemblies])
-
-        scatter (lr_assembly in def_LQ_assemblies) {
-            call GenerateModelsList as LQ_models {
-                input:
-                assembly = lr_assembly,
-                long_score_bias = 1
-            }
-        }
-    }
-
-    if (defined(HQ_assemblies)) {
-        Array[AssembledSample] def_HQ_assemblies = select_first([HQ_assemblies])
-
-        scatter (lr_assembly in def_HQ_assemblies) {
-            call GenerateModelsList as HQ_models {
-                input:
-                assembly = lr_assembly,
-                long_score_bias = 1
-            }
-        }
-    }
-
-    call WriteModelsFile {
-        input:
-        models = flatten(select_all([sr_models.models, LQ_models.models, HQ_models.models])),
-        annotation = annotation,
-        annotation_score = annotation_score
-    }
-
+    Array[Array[AssembledSample]] jsamples = select_all([SR_assemblies, LQ_assemblies, HQ_assemblies])
     call MikadoPrepare {
         input:
         reference_fasta = indexed_reference.fasta,
         blast_targets = homology_proteins,
-        models = WriteModelsFile.result,
         mode = mode,
+        jsamples = jsamples,
+        annotation = annotation,
+        annotation_score = annotation_score,
         check_reference = check_reference,
         extra_config = prepare_extra_config,
         runtime_attr_override = mikado_prepare_resources,
@@ -423,10 +387,15 @@ task GenerateModelsList {
 
 task MikadoPrepare {
     input {
-        File models
         File reference_fasta
         String mode
         Boolean check_reference
+
+        Array[Array[AssembledSample]] jsamples
+
+        File? annotation
+        Int annotation_score
+
         File? blast_targets
         File? extra_config
         String output_prefix
@@ -470,9 +439,16 @@ task MikadoPrepare {
                     ;;
         esac
 
+
+        # Generate models from input SR, LQ and HQ assemblies + annotation/_score
+
+        generate_model_file ~{"--annotation " + annotation} \
+        ~{if defined(annotation) then "--annotation_score " + annotation_score else ""} \
+        ~{write_json(jsamples)} > model.list
+
         mikado configure ${mode_parameter} ~{if(check_reference) then "--check-references" else ""} \
         ~{"-bt " + blast_targets} \
-        --list=~{models} \
+        --list=model.list \
         ~{"--reference=" + reference_fasta} \
         ~{output_prefix}-mikado.yaml
 

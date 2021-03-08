@@ -1,0 +1,25 @@
+#!/usr/bin/env python3
+
+import argparse
+import json
+
+
+def main():
+    parser = argparse.ArgumentParser("Generate mikado models file")
+    parser.add_argument("-a", "--annotation")
+    parser.add_argument("-s", "--annotation_score")
+    parser.add_argument("assemblies", type=argparse.FileType('r'))
+
+    args = parser.parse_args()
+    assemblies_list = json.load(args.assemblies)
+
+    if args.annotation:
+        print(args.annotation, 'reference', 'True', args.annotation_score, 'True', sep='\t')
+    for assemblies in assemblies_list:
+        for assembly in assemblies:
+            print(assembly["assembly"], assembly["name"], "True" if assembly["strand"] == "fr-unstranded" else "False",
+                  assembly["score"], assembly["is_ref"], assembly["exclude_redundant"], sep='\t')
+
+
+if __name__ == "__main__":
+    main()
