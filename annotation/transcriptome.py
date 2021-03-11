@@ -364,13 +364,17 @@ def parse_json_input(s):
 
 def sample_validation(cromwell_inputs):
     paired_sample_names = set()
+    sample_strand = dict()
     if cromwell_inputs.get('ei_annotation.paired_samples', None):
         for sample in cromwell_inputs['ei_annotation.paired_samples']:
             l = len(paired_sample_names)
             paired_sample_names.add(sample['name'])
+            sample_strand[sample['name']] = sample['strand']
             if len(paired_sample_names) == l:
                 raise ValueError(f"Sample {sample['name']} is repeated, please make sure sample names are unique")
+
     if cromwell_inputs.get("ei_annotation.wf_align.group_to_samples", None):
+        seen_samples = set(paired_sample_names)
         samples_in_groups = defaultdict(list)
         group_names = set()
         for group_name, group_samples in cromwell_inputs["ei_annotation.wf_align.group_to_samples"].items():
@@ -379,16 +383,25 @@ def sample_validation(cromwell_inputs):
             if len(group_names) == l:
                 raise ValueError(f"Group name {group_name} has already been used, please make sure group names are "
                                  f"unique")
+            group_strand = sample_strand[group_samples[0]]
             for sample_name in group_samples:
                 if sample_name not in paired_sample_names:
                     raise ValueError(f"The name '{sample_name}' is not a paired_samples name {paired_sample_names}, "
                                      f"please make sure the samples in the groups have been defined previously as "
                                      f"paired samples")
+                if group_strand != sample_strand[sample_name]:
+                    raise ValueError(f"The strandness of '{sample_name}' ({sample_strand[sample_name]}) does not match "
+                                     f"the strandness ({group_strand}) of other samples in this group, please ensure "
+                                     f"all samples in a group have the same strandness")
                 samples_in_groups[sample_name].append(group_name)
         for sample, groups in samples_in_groups.items():
             if len(groups) > 1:
                 raise ValueError(f"The sample '{sample}' appears in more than one group ({groups}), please make sure "
                                  f"samples are only present in a single group")
+        for sample in samples_in_groups.keys():
+            seen_samples.remove(sample)
+        if len(seen_samples) != 0:
+            raise ValueError(f"The samples {seen_samples} do not belong to any groups, please include them in a group")
 
 
 def validate_transcriptome_inputs(cromwell_inputs):
