@@ -228,13 +228,13 @@ task GMapIndex {
     }
 
     output {
-        Array[File] gmap_index = glob("gmapIndex/test_genome/*")
+        Array[File] gmap_index = glob("gmapIndex/reference/*")
     }
 
 
     command <<<
         set -euxo pipefail
-        gmap_build --dir=gmapIndex --db=test_genome ~{reference}
+        gmap_build -D gmapIndex -d reference ~{reference}
     >>>
 }
 
