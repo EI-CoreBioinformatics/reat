@@ -50,8 +50,6 @@ def main():
     parser.add_argument("fasta", nargs="+", type=argparse.FileType("rt"))
     args = parser.parse_args()
 
-    found_ids = Counter()
-
     starter = 96
 
     for fasta in args.fasta:
@@ -62,21 +60,27 @@ def main():
             prefix = ""
         if fasta.name.endswith(".gz"):
             with gzip.open(fasta.name, "rt") as handle:
-                parse_fasta(args, found_ids, handle, logger, prefix)
+                parse_fasta(args, handle, logger, prefix)
         else:
-            parse_fasta(args, found_ids, fasta, logger, prefix)
+            parse_fasta(args, fasta, logger, prefix)
 
     args.out.close()
 
 
-def parse_fasta(args, found_ids, handle, logger, prefix):
+def parse_fasta(args, handle, logger, prefix):
+    found_ids = Counter()
     for record in Bio.SeqIO.parse(handle, "fasta"):
-        if record.id in found_ids:
-            logger.warning("ID found other {} time{} in the input files!".format(
+        if record.id in found_ids and args.correct_stops:
+            found_ids[record.id] += 1
+            logger.warning("{} found {} time{} in the input files!".format(record.id,
                 found_ids[record.id], "s" if found_ids[record.id] > 1 else ""))
+            record.id += str(found_ids[record.id])
+        elif args.correct_stops:  # If this is true the input is a protein database and we will deduplicate the inputs
+            found_ids[record.id] += 1
+
         record.id = "{}{}".format(prefix, re.sub("\|", "_", record.id))
         record.description = ""
-        if '.' in record.seq:
+        if args.correct_stops and '.' in record.seq:
             record.seq = Bio.Seq.Seq(re.sub('\.', '*', str(record.seq)))
 
         Bio.SeqIO.write(record, args.out, "fasta")
