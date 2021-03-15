@@ -59,7 +59,7 @@ workflow wf_homology {
         if (homology_alignment_program == "diamond") {
             call prt_aln.DiamondIndex {
                 input:
-                target = def_db,
+                target = SanitiseProteinBlastDB.clean_db,
                 runtime_attr_override = index_resources
             }
             scatter (seq_file in SplitSequences.seq_files) {
