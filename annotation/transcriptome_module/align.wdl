@@ -54,6 +54,7 @@ workflow wf_align {
         RuntimeAttr? short_read_alignment_resources
         RuntimeAttr? short_read_alignment_sort_resources
         RuntimeAttr? short_read_stats_resources
+        RuntimeAttr? short_read_merge_resources
         RuntimeAttr? short_read_stringtie_assembly_resources
         RuntimeAttr? short_read_scallop_assembly_resources
         RuntimeAttr? long_read_indexing_resources
@@ -89,6 +90,7 @@ workflow wf_align {
             max_intron_len = select_first([max_intron_len, 200000]),
             alignment_resources = short_read_alignment_resources,
             sort_resources = short_read_alignment_sort_resources,
+            merge_resources = short_read_merge_resources,
             stats_resources = short_read_stats_resources
         }
 

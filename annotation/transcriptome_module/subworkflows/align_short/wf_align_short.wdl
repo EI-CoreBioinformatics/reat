@@ -17,6 +17,7 @@ workflow wf_align_short {
         Int max_intron_len
         RuntimeAttr? alignment_resources
         RuntimeAttr? sort_resources
+        RuntimeAttr? merge_resources
         RuntimeAttr? stats_resources
     }
     
@@ -99,7 +100,8 @@ workflow wf_align_short {
             call MergeAlignments {
                 input:
                 bams = Sort.sorted_bam,
-                name = aligned_sample.name
+                name = aligned_sample.name,
+                runtime_attr_override = merge_resources
             }
         }
         Array[File] aligned_file =  select_first([MergeAlignments.bam,Sort.sorted_bam])
@@ -242,7 +244,20 @@ task MergeAlignments {
     input { 
         Array[File] bams
         String name
+        RuntimeAttr? runtime_attr_override
     }
+
+    Int cpus = 8
+    RuntimeAttr default_attr = object {
+        cpu_cores: "~{cpus}",
+        mem_gb: 8,
+        max_retries: 1,
+        queue: ""
+    }
+
+    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
+    Int task_cpus = select_first([runtime_attr.cpu_cores, cpus])
+
 
     output {
         Array[File] bam = ["alignments/" + name + ".merged.bam"]
@@ -251,9 +266,17 @@ task MergeAlignments {
     command <<<
     mkdir alignments
     cd alignments
-    samtools merge ~{name}.merged.bam ~{sep=" " bams}
+    samtools merge -@ ~{task_cpus} ~{name}.merged.bam ~{sep=" " bams}
     samtools index ~{name}.merged.bam
     >>>
+
+    runtime {
+        cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
+        memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
+        maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+        queue: select_first([runtime_attr.queue, default_attr.queue])
+    }
+
 }
 
 task Sort {
