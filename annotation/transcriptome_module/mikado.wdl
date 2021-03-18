@@ -75,33 +75,35 @@ workflow wf_main_mikado {
     # The user can choose to run the LQ-LR datasets separately
     if (separate_LQ)
     {
-        call mikado.wf_mikado as Mikado_short_and_long_noLQ {
-            input:
-            annotation = annotation,
-            annotation_score = annotation_score,
-            mode = mode,
-            check_reference = check_reference,
-            indexed_reference =  reference_genome,
-            SR_assemblies = SR_assemblies,
-            HQ_assemblies = HQ_assemblies,
-            scoring_file = all_scoring_file,
-            orf_calling_proteins = orf_calling_proteins,
-            orf_caller = orf_calling_program,
-            mikado_do_homology_assessment = run_mikado_homology,
-            homology_proteins = homology_proteins,
-            junctions = junctions_bed,
-            output_prefix = "mikado_all_noLQ",
-            prepare_extra_config = all_prepare_cfg,
-            serialise_extra_config = all_serialise_cfg,
-            pick_extra_config = all_pick_cfg,
-            mikado_prepare_resources = mikado_all_prepare_resources,
-            mikado_serialise_resources = mikado_all_serialise_resources,
-            mikado_pick_resources = mikado_all_pick_resources,
-            orf_calling_resources = select_first([orf_calling_resources,default_runtime_attr]),
-            orf_protein_index_resources = select_first([protein_index_resources,default_runtime_attr]),
-            orf_protein_alignment_resources = select_first([protein_alignment_resources,default_runtime_attr]),
-            homology_index_resources = select_first([homology_index_resources,default_runtime_attr]),
-            homology_alignment_resources = select_first([homology_alignment_resources,default_runtime_attr])
+        if (defined(SR_assemblies)) {
+            call mikado.wf_mikado as Mikado_short_and_long_noLQ {
+                input:
+                annotation = annotation,
+                annotation_score = annotation_score,
+                mode = mode,
+                check_reference = check_reference,
+                indexed_reference =  reference_genome,
+                SR_assemblies = SR_assemblies,
+                HQ_assemblies = HQ_assemblies,
+                scoring_file = all_scoring_file,
+                orf_calling_proteins = orf_calling_proteins,
+                orf_caller = orf_calling_program,
+                mikado_do_homology_assessment = run_mikado_homology,
+                homology_proteins = homology_proteins,
+                junctions = junctions_bed,
+                output_prefix = "mikado_all_noLQ",
+                prepare_extra_config = all_prepare_cfg,
+                serialise_extra_config = all_serialise_cfg,
+                pick_extra_config = all_pick_cfg,
+                mikado_prepare_resources = mikado_all_prepare_resources,
+                mikado_serialise_resources = mikado_all_serialise_resources,
+                mikado_pick_resources = mikado_all_pick_resources,
+                orf_calling_resources = select_first([orf_calling_resources,default_runtime_attr]),
+                orf_protein_index_resources = select_first([protein_index_resources,default_runtime_attr]),
+                orf_protein_alignment_resources = select_first([protein_alignment_resources,default_runtime_attr]),
+                homology_index_resources = select_first([homology_index_resources,default_runtime_attr]),
+                homology_alignment_resources = select_first([homology_alignment_resources,default_runtime_attr])
+            }
         }
 
         if (defined(HQ_assemblies)) {
@@ -166,34 +168,36 @@ workflow wf_main_mikado {
     }
     if (!separate_LQ)
     {
-        call mikado.wf_mikado as Mikado_short_and_long {
-            input:
-            annotation = annotation,
-            annotation_score = annotation_score,
-            mode = mode,
-            check_reference = check_reference,
-            scoring_file = all_scoring_file,
-            indexed_reference =  reference_genome,
-            SR_assemblies = SR_assemblies,
-            LQ_assemblies = LQ_assemblies,
-            HQ_assemblies = HQ_assemblies,
-            junctions = junctions_bed,
-            orf_calling_proteins = orf_calling_proteins,
-            orf_caller = orf_calling_program,
-            mikado_do_homology_assessment = run_mikado_homology,
-            homology_proteins = homology_proteins,
-            output_prefix = "mikado_all",
-            prepare_extra_config = all_prepare_cfg,
-            serialise_extra_config = all_serialise_cfg,
-            pick_extra_config = all_pick_cfg,
-            mikado_prepare_resources = mikado_all_prepare_resources,
-            mikado_serialise_resources = mikado_all_serialise_resources,
-            mikado_pick_resources = mikado_all_pick_resources,
-            orf_calling_resources = select_first([orf_calling_resources, default_runtime_attr]),
-            orf_protein_index_resources = select_first([protein_index_resources, default_runtime_attr]),
-            orf_protein_alignment_resources = select_first([protein_alignment_resources, default_runtime_attr]),
-            homology_index_resources = select_first([homology_index_resources, default_runtime_attr]),
-            homology_alignment_resources = select_first([homology_alignment_resources, default_runtime_attr])
+        if (defined(SR_assemblies)) {
+            call mikado.wf_mikado as Mikado_short_and_long {
+                input:
+                annotation = annotation,
+                annotation_score = annotation_score,
+                mode = mode,
+                check_reference = check_reference,
+                scoring_file = all_scoring_file,
+                indexed_reference =  reference_genome,
+                SR_assemblies = SR_assemblies,
+                LQ_assemblies = LQ_assemblies,
+                HQ_assemblies = HQ_assemblies,
+                junctions = junctions_bed,
+                orf_calling_proteins = orf_calling_proteins,
+                orf_caller = orf_calling_program,
+                mikado_do_homology_assessment = run_mikado_homology,
+                homology_proteins = homology_proteins,
+                output_prefix = "mikado_all",
+                prepare_extra_config = all_prepare_cfg,
+                serialise_extra_config = all_serialise_cfg,
+                pick_extra_config = all_pick_cfg,
+                mikado_prepare_resources = mikado_all_prepare_resources,
+                mikado_serialise_resources = mikado_all_serialise_resources,
+                mikado_pick_resources = mikado_all_pick_resources,
+                orf_calling_resources = select_first([orf_calling_resources, default_runtime_attr]),
+                orf_protein_index_resources = select_first([protein_index_resources, default_runtime_attr]),
+                orf_protein_alignment_resources = select_first([protein_alignment_resources, default_runtime_attr]),
+                homology_index_resources = select_first([homology_index_resources, default_runtime_attr]),
+                homology_alignment_resources = select_first([homology_alignment_resources, default_runtime_attr])
+            }
         }
 
         if (!skip_mikado_long && (defined(LQ_assemblies) || defined(HQ_assemblies))) {
