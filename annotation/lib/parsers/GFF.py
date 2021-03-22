@@ -8,6 +8,10 @@ from ..models.Transcript import Exon, Gene, Transcript
 from ..parsers import get_handle
 
 
+class RepeatedIDError(Exception):
+    pass
+
+
 class EmptyFileError(Exception):
     pass
 
@@ -228,8 +232,8 @@ class GFFReader(object):
             if 'Parent' not in attr:
                 pass
             elif entry_type != 'cds':
-                raise Exception("Repeated ID {} in file {} at position {}\nCurrent line: {}\nuids: {}".format(
-                    uid, self.filename, self.fh.tell(), self.line, self.uids))
+                raise RepeatedIDError("Repeated ID {} in file {} at position {}\nCurrent line: {}".format(
+                    uid, self.filename, self.fh.tell(), self.line))
 
         return uid
 
