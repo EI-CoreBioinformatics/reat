@@ -53,6 +53,7 @@ def test_for_construct():
                 if count == 1:
                     result = _
                 count += 1
+        assert count == 3
         assert result.start == 3306
         assert _.uid == "AL1G10030.v2.1"
         assert _.mrnas["AL1G10030.t1.v2.1"].attr["Note"] == "cov:100|id:97.65"
@@ -339,7 +340,7 @@ scaffold_1\tphytozomev11\texon\t3306\t3708\t.\t-\t.\tID=AL1G10020.t1.v2.1.exon.6
 scaffold_1\tphytozomev11\tthree_prime_UTR\t3306\t3528\t.\t-\t.\tID=AL1G10020.t1.v2.1.three_prime_UTR.1;Parent=AL1G10020.t1.v2.1;pacid=35931978
 scaffold_1\tphytozomev11\tCDS\t3529\t3708\t.\t-\t0\tID=AL1G10020.t1.v2.1.CDS.6;Parent=AL1G10020.t1.v2.1;pacid=35931978
 scaffold_1\tphytozomev11\tgene\t7429\t7630\t.\t+\t.\tID=AL1G10030.v2.1;Name=AL1G10030;ancestorIdentifier=918722.v1
-scaffold_1\tphytozomev11\tmRNA\t7429\t7630\t.\t+\t.\tID=AL1G10030.t1.v2.1;Name=AL1G10030.t1;pacid=35935000;longest=1;ancestorIdentifier=918722.v1.107;Parent=AL1G10030.v2.1;Note=cov:100|id:97.65
+scaffold_1\tphytozomev11\ttranscript\t7429\t7630\t.\t+\t.\tID=AL1G10030.t1.v2.1;Name=AL1G10030.t1;pacid=35935000;longest=1;ancestorIdentifier=918722.v1.107;Parent=AL1G10030.v2.1;Note=cov:100|id:97.65
 scaffold_1\tphytozomev11\texon\t7429\t7630\t.\t+\t.\tID=AL1G10030.t1.v2.1.exon.1;Parent=AL1G10030.t1.v2.1;pacid=35935000
 scaffold_1\tphytozomev11\tfive_prime_UTR\t7429\t7448\t.\t+\t.\tID=AL1G10030.t1.v2.1.five_prime_UTR.1;Parent=AL1G10030.t1.v2.1;pacid=35935000
 scaffold_1\tphytozomev11\tCDS\t7449\t7610\t.\t+\t0\tID=AL1G10030.t1.v2.1.CDS.1;Parent=AL1G10030.t1.v2.1;pacid=35935000

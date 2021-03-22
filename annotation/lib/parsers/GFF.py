@@ -172,7 +172,7 @@ class GFFReader(object):
             pass
         elif entry_type_lc == 'three_prime_utr' or entry_type_lc == '3\'utr':
             pass
-        elif entry_type_lc == 'mrna' or entry_type_lc.endswith("_gene_segment"):
+        elif entry_type_lc == 'mrna' or entry_type_lc.endswith("_gene_segment") or entry_type_lc == 'transcript':
             score = 0 if self.raw[5] == '.' else float(self.raw[5])
             gene_mrnas[entry_uid] = Transcript(entry_uid, entry_type, entry_source, entry_chr, entry_start,
                                                entry_end, entry_strand, score, [], [], None, None,
