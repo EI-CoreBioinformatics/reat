@@ -28,7 +28,11 @@ def main():
     detail_file.readline()
     for detail_line in detail_file:
         line_data = detail_line.strip().split('\t')
-        if line_data[0].split()[-1].starts_with(".m"):
+
+        # Ignore any detail lines coming from what would be another alignment,
+        #   these would look similar to mrna.XXXXXX.t1.m1
+        split_reference_transcript_name = line_data[1].split('.')
+        if split_reference_transcript_name[-2][0] == 't' and split_reference_transcript_name[-1][0] == 'm':
             continue
         aligned_mrna = line_data[3]
         cds_id, cds_exon_f1, cds_junction_f1, cds_ccode = line_data[15], line_data[18], line_data[21], line_data[22]
@@ -41,7 +45,8 @@ def main():
         valid_mrnas = []
         for mrna_id, mrna in gene.mrnas.items():
             extra_note = []
-            details = mrna_details[mrna_id]
+            details = mrna_details.get(mrna_id, {'cds_id': 'NA', 'cds_exon_f1': 0.0,
+                                                 'cds_junction_f1': 0.0, 'cds_ccode': 'u'})
             if details['cds_exon_f1'] != 'NA' and float(details['cds_exon_f1']) < args.exon_f1_filter:
                 continue
             if details['cds_junction_f1'] != 'NA' and float(details['cds_junction_f1']) < args.junction_f1_filter:
