@@ -28,6 +28,8 @@ def main():
     detail_file.readline()
     for detail_line in detail_file:
         line_data = detail_line.strip().split('\t')
+        if line_data[0].split()[-1].starts_with(".m"):
+            continue
         aligned_mrna = line_data[3]
         cds_id, cds_exon_f1, cds_junction_f1, cds_ccode = line_data[15], line_data[18], line_data[21], line_data[22]
         mrna_details[aligned_mrna] = {"cds_id": cds_id,
