@@ -345,7 +345,7 @@ class Gene(UniquelyIdentifiableSegment):
             if len(v.exons) == 0 and len(v.cds_exons) > 0:
                 v.exons = deepcopy(v.cds_exons)
                 for e in v.exons:
-                    e.uid = "virt_exon-" + e.uid
+                    e.uid = f"virt_exon-{e.uid}"
             if v.strand == '-':
                 v.exons.sort(reverse=True)
                 v.cds_exons.sort(reverse=True)

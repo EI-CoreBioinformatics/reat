@@ -236,6 +236,20 @@ def test_mitochondrial_gff():
     assert genes['gene-ND1'].mrnas['gene-ND1'].cds_exons[0].uid[:5] != 'virt_'
 
 
+def test_int_exon_mitochondrial_gff():
+    genes = {}
+    for gene in GFFReader("tests/unit/data/int_mitochondrial.gff"):
+        genes[gene.uid] = gene
+
+    assert genes['gene-CYTB'] is not None
+    assert len(genes['gene-CYTB'].mrnas) > 0
+    assert len(genes['gene-CYTB'].mrnas['gene-CYTB'].exons) > 0
+    assert genes['gene-CYTB'].mrnas['gene-CYTB'].exons[0].uid[:5] == 'virt_'
+    assert genes['gene-ND1'].mrnas['gene-ND1'].cds_exons[0].uid[:5] != 'virt_'
+    assert genes['gene-ND1'].mrnas['gene-ND1'].exons[0].uid[:5] == 'virt_'
+    assert genes['gene-ND1'].mrnas['gene-ND1'].cds_exons[0].uid[:5] != 'virt_'
+
+
 gff_header_only = "##gff-version 3"
 
 gff_wrong_number_of_fields = \
