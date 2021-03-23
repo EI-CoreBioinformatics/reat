@@ -24,9 +24,9 @@ def main():
     groupid = 0
     with open("groups.txt", "w") as gf:
         for k, v in gene_to_group.items():
-            groupid += 1
-            print('.'.join([k]), groupid, file=gf)
             for a in v:
+                groupid += 1
+                print('.'.join([k]), groupid, file=gf)
                 print(a, groupid, file=gf)
 
 
