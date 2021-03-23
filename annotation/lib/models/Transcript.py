@@ -34,7 +34,7 @@ class UniquelyIdentifiableSegment(GenomicSegment):
 
     def __init__(self, uid, chrom, start, end, strand, attr):
         super().__init__(chrom, start, end, strand)
-        self.uid = uid
+        self.uid = str(uid)
         self.attr = attr
 
     def __eq__(self, other):
@@ -450,8 +450,8 @@ class Gene(UniquelyIdentifiableSegment):
 
     def change_id(self, new_uid):
         for m in self.mrnas.values():
-            m.attr["Parent"] = [p.replace(self.uid, new_uid) for p in m.attr["Parent"]]
-        self.uid = new_uid
+            m.attr["Parent"] = [p.replace(self.uid, str(new_uid)) for p in m.attr["Parent"]]
+        self.uid = str(new_uid)
 
     def print_gff_line(self, file=sys.stdout):
         print(f"{self.chrom}\t{self.source}\tgene\t{self.start}\t{self.end}\t"
