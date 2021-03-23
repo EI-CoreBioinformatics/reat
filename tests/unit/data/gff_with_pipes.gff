@@ -1,0 +1,57 @@
+##gff-version	3
+PKPP01000001.1	Genbank	gene	3827	4962	.	+	.	ID=gene-CTI12_AA000410
+PKPP01000001.1	Genbank	mRNA	3827	4962	.	+	.	ID=rna-gnl|WGS:PKPP|mrna.AA000410.t1;Parent=gene-CTI12_AA000410;Name=rna-gnl|WGS:PKPP|mrna.AA000410.t1
+PKPP01000001.1	Genbank	exon	3827	4962	.	+	.	ID=rna-gnl|WGS:PKPP|mrna.AA000410.t1.exon1;Parent=rna-gnl|WGS:PKPP|mrna.AA000410.t1
+PKPP01000001.1	Genbank	five_prime_UTR	3827	3877	.	+	.	ID=rna-gnl|WGS:PKPP|mrna.AA000410.t1.five_prime_UTR1;Parent=rna-gnl|WGS:PKPP|mrna.AA000410.t1
+PKPP01000001.1	Genbank	CDS	3878	4876	.	+	0	ID=rna-gnl|WGS:PKPP|mrna.AA000410.t1.CDS1;Parent=rna-gnl|WGS:PKPP|mrna.AA000410.t1
+PKPP01000001.1	Genbank	three_prime_UTR	4877	4962	.	+	.	ID=rna-gnl|WGS:PKPP|mrna.AA000410.t1.three_prime_UTR1;Parent=rna-gnl|WGS:PKPP|mrna.AA000410.t1
+###
+PKPP01000001.1	Genbank	gene	6513	7380	.	-	.	ID=gene-CTI12_AA000420
+PKPP01000001.1	Genbank	mRNA	6513	7380	.	-	.	ID=rna-gnl|WGS:PKPP|mrna.AA000420.t1;Parent=gene-CTI12_AA000420;Name=rna-gnl|WGS:PKPP|mrna.AA000420.t1
+PKPP01000001.1	Genbank	CDS	6513	6548	.	-	0	ID=rna-gnl|WGS:PKPP|mrna.AA000420.t1.CDS1;Parent=rna-gnl|WGS:PKPP|mrna.AA000420.t1
+PKPP01000001.1	Genbank	exon	6513	6548	.	-	.	ID=rna-gnl|WGS:PKPP|mrna.AA000420.t1.exon1;Parent=rna-gnl|WGS:PKPP|mrna.AA000420.t1
+PKPP01000001.1	Genbank	CDS	6628	6653	.	-	2	ID=rna-gnl|WGS:PKPP|mrna.AA000420.t1.CDS2;Parent=rna-gnl|WGS:PKPP|mrna.AA000420.t1
+PKPP01000001.1	Genbank	exon	6628	6653	.	-	.	ID=rna-gnl|WGS:PKPP|mrna.AA000420.t1.exon2;Parent=rna-gnl|WGS:PKPP|mrna.AA000420.t1
+PKPP01000001.1	Genbank	CDS	6830	7070	.	-	0	ID=rna-gnl|WGS:PKPP|mrna.AA000420.t1.CDS3;Parent=rna-gnl|WGS:PKPP|mrna.AA000420.t1
+PKPP01000001.1	Genbank	exon	6830	7070	.	-	.	ID=rna-gnl|WGS:PKPP|mrna.AA000420.t1.exon3;Parent=rna-gnl|WGS:PKPP|mrna.AA000420.t1
+PKPP01000001.1	Genbank	CDS	7154	7288	.	-	0	ID=rna-gnl|WGS:PKPP|mrna.AA000420.t1.CDS4;Parent=rna-gnl|WGS:PKPP|mrna.AA000420.t1
+PKPP01000001.1	Genbank	exon	7154	7288	.	-	.	ID=rna-gnl|WGS:PKPP|mrna.AA000420.t1.exon4;Parent=rna-gnl|WGS:PKPP|mrna.AA000420.t1
+PKPP01000001.1	Genbank	CDS	7372	7380	.	-	0	ID=rna-gnl|WGS:PKPP|mrna.AA000420.t1.CDS5;Parent=rna-gnl|WGS:PKPP|mrna.AA000420.t1
+PKPP01000001.1	Genbank	exon	7372	7380	.	-	.	ID=rna-gnl|WGS:PKPP|mrna.AA000420.t1.exon5;Parent=rna-gnl|WGS:PKPP|mrna.AA000420.t1
+###
+PKPP01000001.1	Genbank	gene	20114	27124	.	-	.	ID=gene-CTI12_AA000430
+PKPP01000001.1	Genbank	mRNA	20114	27124	.	-	.	ID=rna-gnl|WGS:PKPP|mrna.AA000430.t1;Parent=gene-CTI12_AA000430;Name=rna-gnl|WGS:PKPP|mrna.AA000430.t1
+PKPP01000001.1	Genbank	CDS	20114	20324	.	-	1	ID=rna-gnl|WGS:PKPP|mrna.AA000430.t1.CDS1;Parent=rna-gnl|WGS:PKPP|mrna.AA000430.t1
+PKPP01000001.1	Genbank	exon	20114	20324	.	-	.	ID=rna-gnl|WGS:PKPP|mrna.AA000430.t1.exon1;Parent=rna-gnl|WGS:PKPP|mrna.AA000430.t1
+PKPP01000001.1	Genbank	CDS	25057	25389	.	-	1	ID=rna-gnl|WGS:PKPP|mrna.AA000430.t1.CDS2;Parent=rna-gnl|WGS:PKPP|mrna.AA000430.t1
+PKPP01000001.1	Genbank	exon	25057	25389	.	-	.	ID=rna-gnl|WGS:PKPP|mrna.AA000430.t1.exon2;Parent=rna-gnl|WGS:PKPP|mrna.AA000430.t1
+PKPP01000001.1	Genbank	CDS	25770	25909	.	-	0	ID=rna-gnl|WGS:PKPP|mrna.AA000430.t1.CDS3;Parent=rna-gnl|WGS:PKPP|mrna.AA000430.t1
+PKPP01000001.1	Genbank	exon	25770	25909	.	-	.	ID=rna-gnl|WGS:PKPP|mrna.AA000430.t1.exon3;Parent=rna-gnl|WGS:PKPP|mrna.AA000430.t1
+PKPP01000001.1	Genbank	CDS	26017	26080	.	-	1	ID=rna-gnl|WGS:PKPP|mrna.AA000430.t1.CDS4;Parent=rna-gnl|WGS:PKPP|mrna.AA000430.t1
+PKPP01000001.1	Genbank	exon	26017	26080	.	-	.	ID=rna-gnl|WGS:PKPP|mrna.AA000430.t1.exon4;Parent=rna-gnl|WGS:PKPP|mrna.AA000430.t1
+PKPP01000001.1	Genbank	CDS	26179	26296	.	-	2	ID=rna-gnl|WGS:PKPP|mrna.AA000430.t1.CDS5;Parent=rna-gnl|WGS:PKPP|mrna.AA000430.t1
+PKPP01000001.1	Genbank	exon	26179	26296	.	-	.	ID=rna-gnl|WGS:PKPP|mrna.AA000430.t1.exon5;Parent=rna-gnl|WGS:PKPP|mrna.AA000430.t1
+PKPP01000001.1	Genbank	CDS	26406	26477	.	-	2	ID=rna-gnl|WGS:PKPP|mrna.AA000430.t1.CDS6;Parent=rna-gnl|WGS:PKPP|mrna.AA000430.t1
+PKPP01000001.1	Genbank	exon	26406	26477	.	-	.	ID=rna-gnl|WGS:PKPP|mrna.AA000430.t1.exon6;Parent=rna-gnl|WGS:PKPP|mrna.AA000430.t1
+PKPP01000001.1	Genbank	CDS	26567	26710	.	-	2	ID=rna-gnl|WGS:PKPP|mrna.AA000430.t1.CDS7;Parent=rna-gnl|WGS:PKPP|mrna.AA000430.t1
+PKPP01000001.1	Genbank	exon	26567	26710	.	-	.	ID=rna-gnl|WGS:PKPP|mrna.AA000430.t1.exon7;Parent=rna-gnl|WGS:PKPP|mrna.AA000430.t1
+PKPP01000001.1	Genbank	CDS	26818	27124	.	-	0	ID=rna-gnl|WGS:PKPP|mrna.AA000430.t1.CDS8;Parent=rna-gnl|WGS:PKPP|mrna.AA000430.t1
+PKPP01000001.1	Genbank	exon	26818	27124	.	-	.	ID=rna-gnl|WGS:PKPP|mrna.AA000430.t1.exon8;Parent=rna-gnl|WGS:PKPP|mrna.AA000430.t1
+###
+PKPP01000001.1	Genbank	gene	50840	54300	.	+	.	ID=gene-CTI12_AA000440
+PKPP01000001.1	Genbank	mRNA	50840	54300	.	+	.	ID=rna-gnl|WGS:PKPP|mrna.AA000440.t1;Parent=gene-CTI12_AA000440;Name=rna-gnl|WGS:PKPP|mrna.AA000440.t1
+PKPP01000001.1	Genbank	CDS	50840	51286	.	+	0	ID=rna-gnl|WGS:PKPP|mrna.AA000440.t1.CDS1;Parent=rna-gnl|WGS:PKPP|mrna.AA000440.t1
+PKPP01000001.1	Genbank	exon	50840	51286	.	+	.	ID=rna-gnl|WGS:PKPP|mrna.AA000440.t1.exon1;Parent=rna-gnl|WGS:PKPP|mrna.AA000440.t1
+PKPP01000001.1	Genbank	CDS	52220	52651	.	+	0	ID=rna-gnl|WGS:PKPP|mrna.AA000440.t1.CDS2;Parent=rna-gnl|WGS:PKPP|mrna.AA000440.t1
+PKPP01000001.1	Genbank	exon	52220	52651	.	+	.	ID=rna-gnl|WGS:PKPP|mrna.AA000440.t1.exon2;Parent=rna-gnl|WGS:PKPP|mrna.AA000440.t1
+PKPP01000001.1	Genbank	CDS	54130	54300	.	+	0	ID=rna-gnl|WGS:PKPP|mrna.AA000440.t1.CDS3;Parent=rna-gnl|WGS:PKPP|mrna.AA000440.t1
+PKPP01000001.1	Genbank	exon	54130	54300	.	+	.	ID=rna-gnl|WGS:PKPP|mrna.AA000440.t1.exon3;Parent=rna-gnl|WGS:PKPP|mrna.AA000440.t1
+###
+PKPP01000001.1	Genbank	gene	58368	59663	.	+	.	ID=gene-CTI12_AA000450
+PKPP01000001.1	Genbank	mRNA	58368	59663	.	+	.	ID=rna-gnl|WGS:PKPP|mrna.AA000450.t1;Parent=gene-CTI12_AA000450;Name=rna-gnl|WGS:PKPP|mrna.AA000450.t1
+PKPP01000001.1	Genbank	CDS	58368	58841	.	+	0	ID=rna-gnl|WGS:PKPP|mrna.AA000450.t1.CDS1;Parent=rna-gnl|WGS:PKPP|mrna.AA000450.t1
+PKPP01000001.1	Genbank	exon	58368	58841	.	+	.	ID=rna-gnl|WGS:PKPP|mrna.AA000450.t1.exon1;Parent=rna-gnl|WGS:PKPP|mrna.AA000450.t1
+PKPP01000001.1	Genbank	CDS	58924	59448	.	+	0	ID=rna-gnl|WGS:PKPP|mrna.AA000450.t1.CDS2;Parent=rna-gnl|WGS:PKPP|mrna.AA000450.t1
+PKPP01000001.1	Genbank	exon	58924	59663	.	+	.	ID=rna-gnl|WGS:PKPP|mrna.AA000450.t1.exon2;Parent=rna-gnl|WGS:PKPP|mrna.AA000450.t1
+PKPP01000001.1	Genbank	three_prime_UTR	59449	59663	.	+	.	ID=rna-gnl|WGS:PKPP|mrna.AA000450.t1.three_prime_UTR1;Parent=rna-gnl|WGS:PKPP|mrna.AA000450.t1
+###

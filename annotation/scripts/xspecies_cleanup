@@ -321,7 +321,7 @@ def main():
                         print_gff_line(c, "CDS", mrna, output_file)
 
                     if protein_file:
-                        print(">", mrna_id, sep='', file=protein_file)
+                        print(">", mrna.uid, sep='', file=protein_file)
                         if aa_seq[-1] == '*':
                             print('\n'.join(wrap(aa_seq[:-1])), file=protein_file)
                         else:
@@ -330,7 +330,7 @@ def main():
                         if mexons == 0:
                             assert len(cds_seq) == cds_exons_seq_len + int(mrna.cds_exons[0].phase), \
                                 f"{mrna_id} processing failed the assertion, {len(cds_seq)} != {cds_exons_seq_len}"
-                        print(">", mrna_id, sep='', file=cds_file)
+                        print(">", mrna.uid, sep='', file=cds_file)
                         print('\n'.join(wrap(cds_seq)), file=cds_file)
 
                     if bed_file:
@@ -392,23 +392,28 @@ def print_attributes(item, output_file):
     # If there are no attributes, just print the ID without a trailing colon
     if len(attrl) == 0:
         if item.uid:
-            print(f"ID={item.uid}", file=output_file)
+            print(f"ID={item.uid.replace('|', '_')}", file=output_file)
             return
 
     # Otherwise print the trailing colon and then print all the attributes
     if item.uid:
-        print(f"ID={item.uid}", file=output_file, end=';')
+        print(f"ID={item.uid.replace('|', '_')}", file=output_file, end=';')
     for k, v in attrl[:-1]:
         print(f"{k}=", file=output_file, end='')
-        if isinstance(v, list):
+        if k == 'Parent':
+            pstring = ','.join([p.replace('|', '_') for p in v])
+            print(f"{pstring}", file=output_file, end=';')
+        elif isinstance(v, list):
             print(f"{','.join(v)}", file=output_file, end=';')
         else:
             print(f"{v}", file=output_file, end=';')
 
     k, v = attrl[-1]
     print(f"{k}=", file=output_file, end='')
-
-    if isinstance(v, list):
+    if k == 'Parent':
+        pstring = ','.join([p.replace('|', '_') for p in v])
+        print(f"{pstring}", file=output_file)
+    elif isinstance(v, list):
         print(f"{','.join(v)}", file=output_file)
     else:
         print(f"{v}", file=output_file)
