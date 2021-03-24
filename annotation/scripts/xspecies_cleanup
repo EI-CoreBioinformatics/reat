@@ -321,7 +321,7 @@ def main():
                         print_gff_line(c, "CDS", mrna, output_file)
 
                     if protein_file:
-                        print(">", mrna.uid, sep='', file=protein_file)
+                        print(">", mrna.uid.replace('|', '_'), sep='', file=protein_file)
                         if aa_seq[-1] == '*':
                             print('\n'.join(wrap(aa_seq[:-1])), file=protein_file)
                         else:
@@ -330,7 +330,7 @@ def main():
                         if mexons == 0:
                             assert len(cds_seq) == cds_exons_seq_len + int(mrna.cds_exons[0].phase), \
                                 f"{mrna_id} processing failed the assertion, {len(cds_seq)} != {cds_exons_seq_len}"
-                        print(">", mrna.uid, sep='', file=cds_file)
+                        print(">", mrna.uid.replace('|', '_'), sep='', file=cds_file)
                         print('\n'.join(wrap(cds_seq)), file=cds_file)
 
                     if bed_file:
