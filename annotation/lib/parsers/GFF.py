@@ -232,6 +232,10 @@ class GFFReader(object):
             if 'Parent' not in attr:
                 pass
             elif entry_type != 'cds':
+                if 'Parent' in attr and len(attr['Parent']) > 1:
+                    print(f"WARNING: {entry_type} in {self.filename}:{self.fh.tell()} was found to have a duplicated ID"
+                          f", but it could be a transpliced mrna, please check the feature's parent to make sure this "
+                          f"is the case!\nLine:\n{self.line}")
                 raise RepeatedIDError("Repeated ID {} in file {} at position {}\nCurrent line: {}".format(
                     uid, self.filename, self.fh.tell(), self.line))
 
