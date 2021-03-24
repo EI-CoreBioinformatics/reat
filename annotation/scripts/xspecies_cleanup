@@ -336,7 +336,7 @@ def main():
                     if bed_file:
                         if is_alignment:
                             bed_line = mrna.to_bed(cds_only=True)
-                        print(bed_line, file=bed_file)
+                        print(bed_line.replace('|', '_'), file=bed_file)
 
                 if num_valid_transcripts > 0:
                     total_valid_genes += 1
