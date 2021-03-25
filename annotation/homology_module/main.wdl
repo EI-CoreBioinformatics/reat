@@ -515,7 +515,7 @@ task PrepareAlignments {
 
         xspecies_cleanup ~{if show_intron_len then "--show_intron_len" else ""} \
         --filters ~{sep=" " filters} --max_intron ~{max_intron_len} --min_exon ~{min_filter_exon_len} --min_protein ~{min_cds_len} \
-        -g ~{genome_to_annotate} -A raw_alignments --bed ~{ref_prefix}.alignment.bed \
+        -g ~{genome_to_annotate} -A ~{raw_alignments} --bed ~{ref_prefix}.alignment.bed \
         -x ~{ref_prefix}.alignment.cdna.fa \
         -o ~{ref_prefix}.alignment.stop_extended.extra_attr.gff > ~{ref_prefix}.alignment.stats
 
