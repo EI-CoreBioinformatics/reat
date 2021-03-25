@@ -57,11 +57,11 @@ workflow ei_homology {
             annotation_cdnas = PrepareAnnotations.cdnas,
             annotation_bed = PrepareAnnotations.bed,
             ref_prefix = ref_prefix,
+            raw_alignments = AlignProteins.raw_alignments,
             genome_to_annotate = genome_to_annotate
         }
 
-        String aln_prefix = sub(basename(AlignProteins.alignments), "\.[^/.]+$", "")
-        String ref_prefix = sub(basename(cleaned_up.genome), "\.[^/.]+$", "")
+        String aln_prefix = sub(basename(PrepareAlignments.clean_alignments), "\.[^/.]+$", "")
 
         call ScoreAlignments {
             input:
@@ -76,7 +76,7 @@ workflow ei_homology {
         call CombineResults {
             input:
             alignment_compare_detail = ScoreAlignments.alignment_compare_detail,
-            alignment_gff = AlignProteins.alignments
+            alignment_gff = PrepareAlignments.clean_alignments
         }
     }
 
@@ -122,7 +122,7 @@ workflow ei_homology {
         Array[File] mgc_evaluation = ScoreAlignments.alignment_compare
         Array[File] mgc_evaluation_detail = ScoreAlignments.alignment_compare_detail
         Array[File] annotation_filter_stats = PrepareAnnotations.stats
-        Array[File] alignment_filter_stats = AlignProteins.stats
+        Array[File] alignment_filter_stats = PrepareAlignments.stats
         File        mgc_score_summary = ScoreSummary.summary_table
         File loci = MikadoPick.loci
         File scores = MikadoPick.scores
@@ -466,11 +466,7 @@ task AlignProteins {
     Int task_cpus = select_first([runtime_attr.cpu_cores, cpus])
 
     output {
-        File raw_alignments = ref_prefix + ".alignment.gff"
-        File stats = ref_prefix + ".alignment.stats"
-        File alignments = ref_prefix+".alignment.stop_extended.extra_attr.gff"
-        File cdnas = ref_prefix + ".alignment.cdna.fa"
-        File bed = ref_prefix + ".alignment.bed"
+        File raw_alignments = ref_prefix+".alignment.gff"
     }
 
     command <<<
@@ -500,12 +496,15 @@ task PrepareAlignments {
         Boolean show_intron_len = false
         Array[String] filters = "none"
 
+        File raw_alignments
         File genome_to_annotate
         File annotation_cdnas
         File annotation_bed
     }
 
     output {
+        File clean_alignments = ref_prefix + ".alignment.stop_extended.extra_attr.gff"
+        File stats = ref_prefix + ".alignment.stats"
         File cdnas = "all_cdnas.fa"
         File bed = "all_cdnas.bed"
         File groups = "groups.txt"
@@ -516,7 +515,7 @@ task PrepareAlignments {
 
         xspecies_cleanup ~{if show_intron_len then "--show_intron_len" else ""} \
         --filters ~{sep=" " filters} --max_intron ~{max_intron_len} --min_exon ~{min_filter_exon_len} --min_protein ~{min_cds_len} \
-        -g ~{genome_to_annotate} -A ~{ref_prefix}.alignment.gff --bed ~{ref_prefix}.alignment.bed \
+        -g ~{genome_to_annotate} -A raw_alignments --bed ~{ref_prefix}.alignment.bed \
         -x ~{ref_prefix}.alignment.cdna.fa \
         -o ~{ref_prefix}.alignment.stop_extended.extra_attr.gff > ~{ref_prefix}.alignment.stats
 
