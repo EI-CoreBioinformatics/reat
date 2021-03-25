@@ -145,7 +145,7 @@ task Mikado {
         File mikado_db = output_prefix+"-mikado/mikado.db"
     }
 
-    Int cpus = 1
+    Int cpus = 8
     RuntimeAttr default_attr = object {
         cpu_cores: "~{cpus}",
         mem_gb: 16,
@@ -215,7 +215,7 @@ task MikadoPick {
         RuntimeAttr? runtime_attr_override
     }
 
-    Int cpus = 1
+    Int cpus = 8
     RuntimeAttr default_attr = object {
         cpu_cores: "~{cpus}",
         mem_gb: 16,
@@ -450,7 +450,7 @@ task AlignProteins {
         Array[String] filters = "none"
         RuntimeAttr? runtime_attr_override
     }
-    Int cpus = 2
+    Int cpus = 8
     RuntimeAttr default_attr = object {
         cpu_cores: "~{cpus}",
         mem_gb: 32,
@@ -542,7 +542,7 @@ task ScoreAlignments {
         File alignment_compare_detail = 'ScoreAlignments/' + "comp_"+aln_prefix+"_"+ref_prefix+"_detail.tab"
     }
 
-    Int cpus = 2
+    Int cpus = 4
     RuntimeAttr default_attr = object {
         cpu_cores: "~{cpus}",
         mem_gb: 32,
