@@ -162,7 +162,7 @@ class GFFReader(object):
                     Exon(entry_uid, entry_chr, entry_start, entry_end,
                          entry_score, entry_phase, entry_strand, entry_attr)
                 )
-        elif entry_type_lc == 'cds':
+        elif entry_type_lc == 'cds' and entry_phase != '.':
             for parent in entry_attr['Parent']:
                 if parent not in gene_mrnas:
                     gene_mrnas[parent] = Transcript(entry_uid, entry_type, entry_source, entry_chr, entry_start, entry_end,

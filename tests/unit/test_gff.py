@@ -104,6 +104,15 @@ def test_ends_at_directive():
     assert result.attr['Dbxref'] == ['db1']
 
 
+def test_gene_parented():
+    with tempfile.NamedTemporaryFile("wt", suffix=".gff") as gff_temp:
+        print(gff_gene_parented_CDS, file=gff_temp)
+        gff_temp.flush()
+        for _ in GFFReader(gff_temp.name):
+            pass
+        assert _
+
+
 def test_eden():
     with tempfile.NamedTemporaryFile("wt", suffix=".gff") as gff_temp:
         print(gff_file_eden, file=gff_temp)
@@ -248,6 +257,18 @@ def test_int_exon_mitochondrial_gff():
     assert genes['gene-ND1'].mrnas['gene-ND1'].cds_exons[0].uid[:5] != 'virt_'
     assert genes['gene-ND1'].mrnas['gene-ND1'].exons[0].uid[:5] == 'virt_'
     assert genes['gene-ND1'].mrnas['gene-ND1'].cds_exons[0].uid[:5] != 'virt_'
+
+
+def test_cds_w_no_phase():
+    with tempfile.NamedTemporaryFile("wt", suffix=".gff") as tmp:
+        print(gff_CDS_w_no_phase, file=tmp)
+        tmp.flush()
+        for _ in GFFReader(tmp.name):
+            pass
+
+        for mrna in _.mrnas.values():
+            for cds in mrna.cds_exons:
+                assert cds.phase != '.'
 
 
 gff_header_only = "##gff-version 3"
@@ -515,4 +536,43 @@ ctg123\t.\tCDS\t7000\t7600\t.\t+\t1\tID=cds00003;Parent=mRNA00003;
 ctg123\t.\tCDS\t3391\t3902\t.\t+\t0\tID=cds00004;Parent=mRNA00003;
 ctg123\t.\tCDS\t5000\t5500\t.\t+\t1\tID=cds00004;Parent=mRNA00003;
 ctg123\t.\tCDS\t7000\t7600\t.\t+\t1\tID=cds00004;Parent=mRNA00003;
+"""
+
+
+gff_gene_parented_CDS = """##gff-version 3
+NC_000014.9\tCurated Genomic\tgene\t105741473\t105743070\t.\t-\t.\tID=gene28689;geneID=gene28689;gene_name=IGHG1;Dbxref=GeneID:3500,HGNC:HGNC:5525,IMGT/GENE-DB:IGHG1,MIM:147100;Name=IGHG1;description=immuno
+NC_000014.9\tCurated Genomic\tCDS\t105741473\t105741795\t.\t-\t2\tParent=gene28689;Dbxref=GeneID:3500,HGNC:HGNC:5525,IMGT/GENE-DB:IGHG1,MIM:147100
+NC_000014.9\tCurated Genomic\tCDS\t105741893\t105742222\t.\t-\t2\tParent=gene28689;Dbxref=GeneID:3500,HGNC:HGNC:5525,IMGT/GENE-DB:IGHG1,MIM:147100
+NC_000014.9\tCurated Genomic\tCDS\t105742341\t105742385\t.\t-\t2\tParent=gene28689;Dbxref=GeneID:3500,HGNC:HGNC:5525,IMGT/GENE-DB:IGHG1,MIM:147100
+NC_000014.9\tCurated Genomic\tCDS\t105742777\t105743070\t.\t-\t2\tParent=gene28689;Dbxref=GeneID:3500,HGNC:HGNC:5525,IMGT/GENE-DB:IGHG1,MIM:147100
+"""
+
+
+gff_CDS_w_no_phase = """##gff-version 3
+NC_000014.9\tCuratedGenomic\tgene\t105765914\t105771405\t.\t-\t.\tID=gene28690;geneID=gene28690;gene_name=IGHG3
+NC_000014.9\tCuratedGenomic\tCDS\t105765914\t105765997\t.\t-\t.\tParent=gene28690
+NC_000014.9\tCuratedGenomic\tCDS\t105767813\t105767943\t.\t-\t.\tParent=gene28690
+NC_000014.9\tCuratedGenomic\tCDS\t105769237\t105769559\t.\t-\t.\tParent=gene28690
+NC_000014.9\tCuratedGenomic\tCDS\t105769657\t105769986\t.\t-\t.\tParent=gene28690
+NC_000014.9\tCuratedGenomic\tCDS\t105770105\t105770149\t.\t-\t.\tParent=gene28690
+NC_000014.9\tCuratedGenomic\tCDS\t105770293\t105770337\t.\t-\t.\tParent=gene28690
+NC_000014.9\tCuratedGenomic\tCDS\t105770481\t105770525\t.\t-\t.\tParent=gene28690
+NC_000014.9\tCuratedGenomic\tCDS\t105770669\t105770719\t.\t-\t.\tParent=gene28690
+NC_000014.9\tCuratedGenomic\tCDS\t105771112\t105771405\t.\t-\t.\tParent=gene28690
+NC_000014.9\tCuratedGenomic\tCDS\t105765914\t105765997\t.\t-\t0\tParent=gene28690;Dbxref=GeneID:3502,HGNC:HGNC
+NC_000014.9\tCuratedGenomic\tCDS\t105767813\t105767943\t.\t-\t2\tParent=gene28690;Dbxref=GeneID:3502,HGNC:HGNC
+NC_000014.9\tCuratedGenomic\tCDS\t105769237\t105769559\t.\t-\t2\tParent=gene28690;Dbxref=GeneID:3502,HGNC:HGNC
+NC_000014.9\tCuratedGenomic\tCDS\t105769245\t105769559\t.\t-\t2\tParent=gene28690;Dbxref=GeneID:3502,HGNC:HGNC
+NC_000014.9\tCuratedGenomic\tCDS\t105769657\t105769986\t.\t-\t2\tParent=gene28690;Dbxref=GeneID:3502,HGNC:HGNC
+NC_000014.9\tCuratedGenomic\tCDS\t105769657\t105769986\t.\t-\t2\tParent=gene28690;Dbxref=GeneID:3502,HGNC:HGNC
+NC_000014.9\tCuratedGenomic\tCDS\t105770105\t105770149\t.\t-\t2\tParent=gene28690;Dbxref=GeneID:3502,HGNC:HGNC
+NC_000014.9\tCuratedGenomic\tCDS\t105770105\t105770149\t.\t-\t2\tParent=gene28690;Dbxref=GeneID:3502,HGNC:HGNC
+NC_000014.9\tCuratedGenomic\tCDS\t105770293\t105770337\t.\t-\t2\tParent=gene28690;Dbxref=GeneID:3502,HGNC:HGNC
+NC_000014.9\tCuratedGenomic\tCDS\t105770293\t105770337\t.\t-\t2\tParent=gene28690;Dbxref=GeneID:3502,HGNC:HGNC
+NC_000014.9\tCuratedGenomic\tCDS\t105770481\t105770525\t.\t-\t2\tParent=gene28690;Dbxref=GeneID:3502,HGNC:HGNC
+NC_000014.9\tCuratedGenomic\tCDS\t105770481\t105770525\t.\t-\t2\tParent=gene28690;Dbxref=GeneID:3502,HGNC:HGNC
+NC_000014.9\tCuratedGenomic\tCDS\t105770669\t105770719\t.\t-\t2\tParent=gene28690;Dbxref=GeneID:3502,HGNC:HGNC
+NC_000014.9\tCuratedGenomic\tCDS\t105770669\t105770719\t.\t-\t2\tParent=gene28690;Dbxref=GeneID:3502,HGNC:HGNC
+NC_000014.9\tCuratedGenomic\tCDS\t105771112\t105771405\t.\t-\t2\tParent=gene28690;Dbxref=GeneID:3502,HGNC:HGNC
+NC_000014.9\tCuratedGenomic\tCDS\t105771112\t105771405\t.\t-\t2\tParent=gene28690;Dbxref=GeneID:3502,HGNC:HGNC
 """
