@@ -522,7 +522,7 @@ task PrepareAlignments {
         create_mgc_groups -f ~{ref_prefix}.alignment.cdna.fa
 
         cat ~{ref_prefix}.alignment.cdna.fa ~{annotation_cdnas}  > all_cdnas.fa
-        cat --bed ~{ref_prefix}.alignment.bed ~{annotation_bed} > all_cdnas.bed
+        cat ~{ref_prefix}.alignment.bed ~{annotation_bed} > all_cdnas.bed
     >>>
 
     runtime {
