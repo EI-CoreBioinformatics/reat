@@ -347,7 +347,8 @@ def parse_arguments():
                              help="Fasta file of the genome to annotate",
                              required=True)
     homology_ap.add_argument("--alignment_species", type=str,
-                             help="Available aligner species, for more information, please look at URL",
+                             help="Species specific parameters, select a value from the first or second column of "
+                                  "https://raw.githubusercontent.com/ogotoh/spaln/master/table/gnm2tab",
                              required=True)
     homology_ap.add_argument("--annotations_csv", type=argparse.FileType('r'),
                              help="CSV file with reference annotations to extract proteins/cdnas for spliced alignments"

@@ -18,6 +18,7 @@ workflow ei_homology {
         File genome_to_annotate
         File mikado_scoring
         File mikado_config
+        String species
         RuntimeAttr? index_attr
         RuntimeAttr? score_attr
         RuntimeAttr? aln_attr
@@ -37,21 +38,26 @@ workflow ei_homology {
         }
 
         GenomeProteins cleaned_up = object { genome: annotation.genome, annotation_gff: PrepareAnnotations.cleaned_up_gff, protein_sequences: PrepareAnnotations.proteins}
+        String out_prefix = sub(basename(cleaned_up.annotation_gff), "\.[^/.]+$", "")
+        String ref_prefix = sub(basename(cleaned_up.genome), "\.[^/.]+$", "")
 
         call AlignProteins {
             input:
                 genome_index = IndexGenome.genome_index,
                 genome_to_annotate = genome_to_annotate,
                 genome_proteins = cleaned_up,
+                ref_prefix = ref_prefix,
+                out_prefix = out_prefix,
+                species = species,
                 runtime_attr_override = aln_attr
         }
 
         call PrepareAlignments {
             input:
             annotation_cdnas = PrepareAnnotations.cdnas,
-            alignment_cdnas  = AlignProteins.cdnas,
             annotation_bed = PrepareAnnotations.bed,
-            alignment_bed = AlignProteins.bed
+            ref_prefix = ref_prefix,
+            genome_to_annotate = genome_to_annotate
         }
 
         String aln_prefix = sub(basename(AlignProteins.alignments), "\.[^/.]+$", "")
@@ -437,17 +443,14 @@ task AlignProteins {
         Array[File] genome_index
         File genome_to_annotate
         GenomeProteins genome_proteins
-        String species = "Eudicoty" # TODO: Need a lookup table from the original file
+        String species
         Int min_spaln_exon_len = 20
         Int min_coverage = 80
         Int min_identity = 50
-        Int max_intron_len = 200000
-        Int min_filter_exon_len = 20
-        Int min_cds_len = 20
         Int max_per_query = 4
         Int recursion_level = 6
-        Boolean show_intron_len = false
-        Array[String] filters = "none"
+        String ref_prefix
+        String out_prefix
         RuntimeAttr? runtime_attr_override
     }
     Int cpus = 8
@@ -461,11 +464,9 @@ task AlignProteins {
     RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
 
     Int task_cpus = select_first([runtime_attr.cpu_cores, cpus])
-#    String out_prefix = sub(basename(genome_index[0]), "\.[^/.]+$", "")
-    String out_prefix = sub(basename(genome_proteins.annotation_gff), "\.[^/.]+$", "")
-    String ref_prefix = sub(basename(genome_proteins.genome), "\.[^/.]+$", "")
 
     output {
+        File raw_alignments = ref_prefix + ".alignment.gff"
         File stats = ref_prefix + ".alignment.stats"
         File alignments = ref_prefix+".alignment.stop_extended.extra_attr.gff"
         File cdnas = ref_prefix + ".alignment.cdna.fa"
@@ -478,12 +479,6 @@ task AlignProteins {
         ln -s ~{genome_proteins.protein_sequences} .
         spaln -t~{task_cpus} -KP -O0,12 -Q~{recursion_level} -M~{max_per_query}.~{max_per_query} ~{"-T"+species} -dgenome_to_annotate -o ~{out_prefix} -yL~{min_spaln_exon_len} ~{basename(genome_proteins.protein_sequences)}
         sortgrcd -O4 ~{out_prefix}.grd | tee ~{out_prefix}.s | spaln2gff --min_coverage ~{min_coverage} --min_identity ~{min_identity} -s "spaln" > ~{ref_prefix}.alignment.gff
-
-        xspecies_cleanup ~{if show_intron_len then "--show_intron_len" else ""} \
-        --filters ~{sep=" " filters} --max_intron ~{max_intron_len} --min_exon ~{min_filter_exon_len} --min_protein ~{min_cds_len} \
-        -g ~{genome_to_annotate} -A ~{ref_prefix}.alignment.gff --bed ~{ref_prefix}.alignment.bed \
-        -x ~{ref_prefix}.alignment.cdna.fa \
-        -o ~{ref_prefix}.alignment.stop_extended.extra_attr.gff > ~{ref_prefix}.alignment.stats
     >>>
 
     runtime {
@@ -497,10 +492,17 @@ task AlignProteins {
 
 task PrepareAlignments {
     input {
+        String ref_prefix
+
+        Int max_intron_len = 200000
+        Int min_filter_exon_len = 20
+        Int min_cds_len = 20
+        Boolean show_intron_len = false
+        Array[String] filters = "none"
+
+        File genome_to_annotate
         File annotation_cdnas
         File annotation_bed
-        File alignment_cdnas
-        File alignment_bed
     }
 
     output {
@@ -512,10 +514,16 @@ task PrepareAlignments {
     command <<<
         set -euxo pipefail
 
-        create_mgc_groups -f ~{alignment_cdnas}
+        xspecies_cleanup ~{if show_intron_len then "--show_intron_len" else ""} \
+        --filters ~{sep=" " filters} --max_intron ~{max_intron_len} --min_exon ~{min_filter_exon_len} --min_protein ~{min_cds_len} \
+        -g ~{genome_to_annotate} -A ~{ref_prefix}.alignment.gff --bed ~{ref_prefix}.alignment.bed \
+        -x ~{ref_prefix}.alignment.cdna.fa \
+        -o ~{ref_prefix}.alignment.stop_extended.extra_attr.gff > ~{ref_prefix}.alignment.stats
 
-        cat ~{alignment_cdnas} ~{annotation_cdnas}  > all_cdnas.fa
-        cat ~{alignment_bed} ~{annotation_bed} > all_cdnas.bed
+        create_mgc_groups -f ~{ref_prefix}.alignment.cdna.fa
+
+        cat ~{ref_prefix}.alignment.cdna.fa ~{annotation_cdnas}  > all_cdnas.fa
+        cat --bed ~{ref_prefix}.alignment.bed ~{annotation_bed} > all_cdnas.bed
     >>>
 
     runtime {
