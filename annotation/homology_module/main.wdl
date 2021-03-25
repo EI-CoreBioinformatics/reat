@@ -21,6 +21,7 @@ workflow ei_homology {
         RuntimeAttr? index_attr
         RuntimeAttr? score_attr
         RuntimeAttr? aln_attr
+        RuntimeAttr? mikado_attr
     }
 
     call IndexGenome {
@@ -75,7 +76,7 @@ workflow ei_homology {
 
     call ScoreSummary {
         input:
-        alignments_detail = ScoreAlignments.alignment_compare_detail
+        alignments_compare = ScoreAlignments.alignment_compare_detail
     }
 
     scatter (alignment in CombineResults.augmented_alignments_gff) {
@@ -94,7 +95,8 @@ workflow ei_homology {
         reference = genome_to_annotate,
         extra_config = mikado_config,
         xspecies = CombineXspecies.xspecies_scored_alignment,
-        output_prefix = "xspecies"
+        output_prefix = "xspecies",
+        runtime_attr_override = mikado_attr
     }
 
     call MikadoPick {
@@ -103,7 +105,8 @@ workflow ei_homology {
         scoring_file = mikado_scoring,
         mikado_db = Mikado.mikado_db,
         transcripts = Mikado.prepared_gtf,
-        output_prefix = "xspecies"
+        output_prefix = "xspecies",
+        runtime_attr_override = mikado_attr
     }
 
 
@@ -132,6 +135,7 @@ task Mikado {
         File? utrs
         File? junctions
         String output_prefix
+        RuntimeAttr? runtime_attr_override
     }
 
     output {
@@ -141,7 +145,17 @@ task Mikado {
         File mikado_db = output_prefix+"-mikado/mikado.db"
     }
 
-    Int task_cpus = 8
+    Int cpus = 1
+    RuntimeAttr default_attr = object {
+        cpu_cores: "~{cpus}",
+        mem_gb: 16,
+        max_retries: 1,
+        queue: ""
+    }
+
+    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
+
+    Int task_cpus = select_first([runtime_attr.cpu_cores, cpus])
 
     command <<<
         set -euxo pipefail
@@ -180,6 +194,14 @@ task Mikado {
         --json-conf=~{output_prefix}-mikado.yaml --start-method=spawn -od ~{output_prefix}-mikado --procs=~{task_cpus}
 
     >>>
+
+    runtime {
+        cpu: task_cpus
+        memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
+        maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+        queue: select_first([runtime_attr.queue, default_attr.queue])
+    }
+
 }
 
 task MikadoPick {
@@ -190,9 +212,20 @@ task MikadoPick {
         File transcripts
         File mikado_db
         String output_prefix
+        RuntimeAttr? runtime_attr_override
     }
 
-    Int task_cpus = 8
+    Int cpus = 1
+    RuntimeAttr default_attr = object {
+        cpu_cores: "~{cpus}",
+        mem_gb: 16,
+        max_retries: 1,
+        queue: ""
+    }
+
+    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
+
+    Int task_cpus = select_first([runtime_attr.cpu_cores, cpus])
 
     output {
         File index_log  = output_prefix + "-index_loci.log"
@@ -218,11 +251,18 @@ task MikadoPick {
     mikado util stats  ~{output_prefix}.loci.gff3 ~{output_prefix}.loci.gff3.stats
     >>>
 
+    runtime {
+        cpu: task_cpus
+        memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
+        maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+        queue: select_first([runtime_attr.queue, default_attr.queue])
+    }
+
 }
 
 task ScoreSummary {
     input {
-        Array[File] alignments_detail
+        Array[File] alignments_compare
     }
 
     output {
@@ -233,7 +273,7 @@ task ScoreSummary {
         set -euxo pipefail
         mkdir ScoreAlignments
         cd ScoreAlignments
-        for i in ~{sep=" " alignments_detail}; do
+        for i in ~{sep=" " alignments_compare}; do
             echo $i;
             cat $i |awk -vOFS=" " 'NR > 1 {print $11,$13}' |awk '{sum = 0; for (i = 1; i <= NF; i++) sum += $i; sum /= NF; print sum}' | \
             awk 'BEGIN { delta = (delta == "" ? 0.1 : delta) }
