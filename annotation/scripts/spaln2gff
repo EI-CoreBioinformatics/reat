@@ -133,7 +133,7 @@ class SpalnReader(object):
                     tend = int(self.raw[7])
                     gstart = int(self.raw[8])
                     gend = int(self.raw[9])
-                    if gstart < 0 or gend < 0:
+                    if gstart <= 0 or gend < 0:
                         valid = False
                     phase = self.raw[18]
                     if phase == '2':
