@@ -308,6 +308,11 @@ def main():
                         except KeyError:
                             mrna.attr['Note'] = f'max_intron_len={longest_intron}'
 
+                    if mexons == 0 and len(cds_seq) != cds_exons_seq_len + int(mrna.cds_exons[0].phase):
+                        print(f"{mrna_id} processing failed, {len(cds_seq)} != "
+                              f"{cds_exons_seq_len + int(mrna.cds_exons[0].phase)}", file=error_file)
+                        continue
+
                     if first:
                         print_gff_line(gene, "gene", gene, output_file)
                         first = False
