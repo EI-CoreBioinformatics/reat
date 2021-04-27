@@ -8,9 +8,9 @@ from pathlib import Path
 
 from jsonschema import ValidationError, Draft7Validator, validators
 try:
-    from yaml import CLoader as Loader, CDumper as Dumper
+    from yaml import CLoader as Loader, CDumper as Dumper, load, dump
 except ImportError:
-    from yaml import Loader, Dumper
+    from yaml import Loader, Dumper, load, dump
 
 
 def eprint(*args, **kwargs):
