@@ -1,10 +1,11 @@
 import json
 import os
-import sys
 from collections import defaultdict
 from importlib import resources as pkg_resources
 
 from jsonschema import Draft7Validator, validators
+
+from annotation import report_errors
 
 
 def combine_arguments_homology(cli_arguments):
@@ -98,14 +99,5 @@ def validate_annotations(csv_annotation_file):
         if not errors[line]:
             result['ei_homology.annotations'].append({'genome': fasta, 'annotation_gff': gff})
 
-    if any([len(error_list) for error_list in errors.values()]):
-        print(f"File {csv_annotation_file.name} parsing failed, errors found:\n", file=sys.stderr)
-        for line, error_list in errors.items():
-            if not error_list:
-                continue
-            print("Line:", line.strip(), sep='\n\t', file=sys.stderr)
-            print("was not parsed successfully, the following errors were found:", file=sys.stderr)
-            [print("\t-", e, file=sys.stderr) for e in error_list]
-        raise ValueError(f"Could not parse file {csv_annotation_file.name}")
-
+    report_errors(errors, csv_annotation_file)
     return result

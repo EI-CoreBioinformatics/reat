@@ -58,16 +58,15 @@ workflow wf_mikado {
         output_prefix = output_prefix
     }
 
+    if (defined(annotation)) {
+        call FilterPrepare {
+            input:
+                prepared_transcripts = MikadoPrepare.prepared_fasta
+        }
+    }
+
     # ORF Calling
     if (defined(orf_caller)) {
-
-        if (defined(annotation)) {
-            call FilterPrepare {
-                input:
-                    prepared_transcripts = MikadoPrepare.prepared_fasta
-            }
-        }
-
         String def_orf_caller = select_first([orf_caller])
         if (def_orf_caller == "prodigal") {
             call pdg.wf_prodigal {
@@ -79,19 +78,10 @@ workflow wf_mikado {
             }
         }
 
-        if (def_orf_caller == "GTCDS") {
-            call GTCDS {
-                input:
-                prepared_transcripts = MikadoPrepare.prepared_fasta,
-                gtf = MikadoPrepare.prepared_gtf,
-                runtime_attr_override = orf_calling_resources
-            }
-        }
-
         if (def_orf_caller == "transdecoder") {
             call tdc.wf_transdecoder as Transdecoder {
                 input:
-                prepared_transcripts = MikadoPrepare.prepared_fasta,
+                prepared_transcripts = select_first([FilterPrepare.filtered_prepared_fasta, MikadoPrepare.prepared_fasta]),
                 orf_proteins = orf_calling_proteins,
                 orf_calling_resources = orf_calling_resources,
                 genetic_code = transdecoder_genetic_code,
@@ -102,7 +92,7 @@ workflow wf_mikado {
             }
         }
 
-        File maybe_orfs = select_first([wf_prodigal.orfs, GTCDS.orfs, Transdecoder.gff])
+        File maybe_orfs = select_first([wf_prodigal.orfs, Transdecoder.gff])
     }
 
     # Mikado Homology
@@ -110,7 +100,7 @@ workflow wf_mikado {
         call hml.wf_homology as Homology {
             input:
             homology_alignment_program = homology_alignment_program,
-            reference = MikadoPrepare.prepared_fasta,
+            reference = select_first([FilterPrepare.filtered_prepared_fasta, MikadoPrepare.prepared_fasta]),
             protein_db = homology_proteins,
             index_resources = homology_index_resources,
             protein_alignment_resources = homology_alignment_resources

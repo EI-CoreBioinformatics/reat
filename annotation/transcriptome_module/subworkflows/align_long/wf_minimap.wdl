@@ -32,6 +32,11 @@ workflow wf_mm2 {
 			extra_parameters = aligner_extra_parameters,
 			runtime_attr_override = alignment_resources
 		}
+
+		# TODO: Add 2pass at this stage to re-align each sample with filtered junctions
+#		call twopass {
+#
+#		}
 	}
 
 	output {
@@ -150,6 +155,24 @@ task Minimap2Long {
         maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
         queue: select_first([runtime_attr.queue, default_attr.queue])
     }
+}
+
+task twopass {
+	input {
+		File alignment
+		File reference
+	}
+
+	output {
+		File junctions = basename(alignment)+".junc.bed"
+	}
+
+	command <<<
+		2passtools score -o ~{basename(alignment) + ".score.bed"} -f ~{reference} ~{alignment}
+		2passtools filter --exprs 'decision_tree_2_pred' -o ~{basename(alignment) + ".junc.bed"} ~{basename(alignment) + ".score.bed"}
+
+
+	>>>
 }
 
 task gff2bed {

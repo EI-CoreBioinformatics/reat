@@ -1,3 +1,5 @@
+import glob
+from datetime import datetime
 import json
 import os
 import sys
@@ -7,6 +9,9 @@ from json.decoder import JSONDecodeError
 from pathlib import Path
 
 from jsonschema import ValidationError, Draft7Validator, validators
+
+from annotation import report_errors
+
 try:
     from yaml import CLoader as Loader, CDumper as Dumper, load, dump
 except ImportError:
@@ -26,25 +31,97 @@ def is_valid_name(validator, value, instance, schema):
 
 
 def separate_mikado_config(mikado_config, mikado_run):
-    # Check empty/None creates no files!
+    # Creates a new file with a timestamp if the current configuration is different from the previous.
+    #  - No previous run in the same directory -> Folders created, new files with timestamps
+    #  - A run with new parameters -> New files with timestamps, previous files removed
+    #  - A run with the same parameters -> No changes to the existing files
     config = load(open(mikado_config, 'r'), Loader=Loader)
     prepare = config.get('prepare', None)
     serialise = config.get('serialise', None)
     pick = config.get('pick', None)
 
-    prepare_path = Path(mikado_run).joinpath("prepare.yaml") if prepare else None
-    serialise_path = Path(mikado_run).joinpath("serialise.yaml") if serialise else None
-    pick_path = Path(mikado_run).joinpath("pick.yaml") if pick else None
+    # Load the latest version of the files to compare
+    previous_prepare, prepare_path = get_previous_config_part(mikado_run, "prepare", prepare)
+    previous_serialise, serialise_path = get_previous_config_part(mikado_run, "serialise", serialise)
+    previous_pick, pick_path = get_previous_config_part(mikado_run, "pick", pick)
 
-    if any((prepare_path, serialise_path, pick_path)):
+    ctimestamp = str(datetime.timestamp(datetime.now()))
+    if any((prepare, serialise, pick)):
         Path(mikado_run).mkdir(exist_ok=True)
-        if prepare:
-            print(dump({'prepare': prepare}, default_flow_style=False), file=open(prepare_path, 'w'))
-        if serialise:
-            print(dump({'serialise': serialise}, default_flow_style=False), file=open(serialise_path, 'w'))
-        if pick:
-            print(dump({'pick': pick}, default_flow_style=False), file=open(pick_path, 'w'))
-    return prepare_path, serialise_path, pick_path
+        if prepare != previous_prepare:
+            prepare_path = Path(mikado_run).joinpath(ctimestamp+"-prepare.yaml")
+            print(dump({'prepare': prepare}, default_flow_style=False),
+                  file=open(prepare_path, 'w'))
+        if serialise != previous_serialise:
+            serialise_path = Path(mikado_run).joinpath(ctimestamp+"-serialise.yaml")
+            print(dump({'serialise': serialise}, default_flow_style=False),
+                  file=open(serialise_path, 'w'))
+        if pick != previous_pick:
+            pick_path = Path(mikado_run).joinpath(ctimestamp+"-pick.yaml")
+            print(dump({'pick': pick}, default_flow_style=False),
+                  file=open(pick_path, 'w'))
+
+    return str(prepare_path), str(serialise_path), str(pick_path)
+
+
+def scoring_setup(cli_arguments, cromwell_inputs):
+    all_scoring_filepath = cli_arguments.all_scoring_file.name
+    all_scoring_path = get_prev_scoring(all_scoring_filepath)
+    cromwell_inputs["ei_annotation.all_scoring_file"] = all_scoring_path
+
+    if cli_arguments.long_scoring_file:
+        long_scoring_filepath = cli_arguments.long_scoring_file.name
+        long_scoring_path = get_prev_scoring(long_scoring_filepath)
+        cromwell_inputs["ei_annotation.long_scoring_file"] = long_scoring_path
+    else:
+        cromwell_inputs["ei_annotation.long_scoring_file"] = all_scoring_path
+
+    if cli_arguments.long_lq_scoring_file:
+        long_lq_scoring_filepath = cli_arguments.long_lq_scoring_file.name
+        long_lq_scoring_path = get_prev_scoring(long_lq_scoring_filepath)
+        cromwell_inputs["ei_annotation.long_lq_scoring_file"] = long_lq_scoring_path
+
+
+def get_prev_scoring(scoring_filepath):
+    file_found = False
+    prev_filepath = None
+    prev_scoring = None
+    scoring = load(open(scoring_filepath), Loader=Loader)
+    list_of_files = glob.glob(f"scoring/*-scoring.yaml")
+    for prev_filepath in sorted(list_of_files, key=os.path.getctime):
+        prev_scoring = load(open(prev_filepath), Loader=Loader)
+        if scoring == prev_scoring:
+            file_found = True
+            break
+    latest_filepath = Path(prev_filepath) if prev_filepath else None
+    previous_config = prev_scoring if file_found else None
+    scoring_path = latest_filepath if previous_config else None
+    ctimestamp = str(datetime.timestamp(datetime.now()))
+    if scoring:
+        Path('scoring').mkdir(exist_ok=True)
+        if scoring != prev_scoring:
+            scoring_path = Path('scoring').joinpath(ctimestamp + "-scoring.yaml")
+            print(dump(scoring, default_flow_style=False),
+                  file=open(scoring_path, 'w'))
+
+    return str(scoring_path)
+
+
+def get_previous_config_part(mikado_run, config_part, cur_config_part):
+    file_found = False
+    prev_filepath = None
+    prev_config_part = None
+    list_of_files = glob.glob(f"{mikado_run}/*-{config_part}.yaml")
+    for prev_filepath in sorted(list_of_files, key=os.path.getctime):
+        prev_config_part = load(open(prev_filepath), Loader=Loader).get(f"{config_part}", None)
+        if cur_config_part and prev_config_part and cur_config_part == prev_config_part:
+            file_found = True
+            break
+    latest_filepath = Path(prev_filepath) if prev_filepath else None
+    previous_config = prev_config_part if file_found else None
+    config_part_filepath = latest_filepath if previous_config else None
+
+    return previous_config, config_part_filepath
 
 
 def validate_long_samples(samples):
@@ -64,6 +141,7 @@ def validate_long_samples(samples):
         except ValueError as e:
             errors[line].append(f"Unexpected input '{fields}'\n\t\tPlease make sure this is a csv file with at minimum"
                                 f"the following fields name, quality, strand, files")
+            continue
 
         if name == "reference":
             errors[line].append(f"The 'reference' name is reserved for internal use, please rename the sample")
@@ -83,34 +161,8 @@ def validate_long_samples(samples):
         if strand.lower() not in strands:
             errors[line].append(
                 ("Incorrect strand '{}' specification, please choose one of {}".format(strand, strands)))
-        names.append(name)
 
-        try:
-            score = float(fields[4])
-        except ValueError as e:
-            errors[line].append("Cannot parse score value '{}' as float".format(fields[4]))
-        except IndexError as e:
-            score = 0
-
-        try:
-            is_ref = fields[5].lower()
-            if is_ref in ("true", "false"):
-                is_ref = True if is_ref == 'true' else False
-            else:
-                errors[line].append("is_ref field with value '{}' should be either 'true' or 'false'".format(is_ref))
-        except IndexError:
-            is_ref = False
-
-        try:
-            exclude_redundant = fields[6].lower()
-            if exclude_redundant in ("true", "false"):
-                exclude_redundant = True if exclude_redundant == 'true' else False
-            else:
-                errors[line].append(
-                    "exclude_redundant field with value '{}' should be either 'true' or 'false'".format(exclude_redundant))
-        except IndexError:
-            exclude_redundant = False
-
+        exclude_redundant, is_ref, score = parse_sample_extra_fields(errors, fields, line, name, names)
         if not errors:
             if quality == 'high':
                 hq_samples.append({'name': name, 'strand': strand, 'LR': out_files,
@@ -119,15 +171,7 @@ def validate_long_samples(samples):
                 lq_samples.append({'name': name, 'strand': strand, 'LR': out_files,
                                    'score': score, 'is_ref': is_ref, 'exclude_redundant': exclude_redundant})
 
-    if any([len(error_list) for error_list in errors.values()]):
-        print(f"File {samples.name} parsing failed, errors found:\n", file=sys.stderr)
-        for line, error_list in errors.items():
-            if not error_list:
-                continue
-            print("Line:", line, sep='\n\t', file=sys.stderr)
-            print("was not parsed successfully, the following errors were found:", file=sys.stderr)
-            [print("\t-", e, file=sys.stderr) for e in error_list]
-        raise ValueError(f"Could not parse file {samples.name}")
+    report_errors(errors, samples)
 
     if hq_samples:
         result['ei_annotation.HQ_long_read_samples'] = hq_samples
@@ -182,33 +226,7 @@ def validate_paired_samples(samples):
         else:
             errors[line].append("merge field with value '{}' should be either 'true' or 'false'".format(merge))
 
-        names.append(name)
-
-        try:
-            score = float(fields[4])
-        except ValueError as e:
-            errors[line].append("Cannot parse score value '{}' as float".format(fields[4]))
-        except IndexError as e:
-            score = 0
-
-        try:
-            is_ref = fields[5].lower()
-            if is_ref in ("true", "false"):
-                is_ref = True if is_ref == 'true' else False
-            else:
-                errors[line].append("is_ref field with value '{}' should be either 'true' or 'false'".format(is_ref))
-        except IndexError:
-            is_ref = False
-
-        try:
-            exclude_redundant = fields[6].lower()
-            if exclude_redundant in ("true", "false"):
-                exclude_redundant = True if exclude_redundant == 'true' else False
-            else:
-                errors[line].append(
-                    "exclude_redundant field with value '{}' should be either 'true' or 'false'".format(exclude_redundant))
-        except IndexError:
-            exclude_redundant = False
+        exclude_redundant, is_ref, score = parse_sample_extra_fields(errors, fields, line, name, names)
 
         if not errors[line]:
             result['ei_annotation.paired_samples'].append(
@@ -218,17 +236,38 @@ def validate_paired_samples(samples):
             )
         first_line = False
 
-    if any([len(error_list) for error_list in errors.values()]):
-        print(f"File {samples.name} parsing failed, errors found:\n", file=sys.stderr)
-        for line, error_list in errors.items():
-            if not error_list:
-                continue
-            print("Line:", line.strip(), sep='\n\t', file=sys.stderr)
-            print("was not parsed successfully, the following errors were found:", file=sys.stderr)
-            [print("\t-", e, file=sys.stderr) for e in error_list]
-        raise ValueError(f"Could not parse file {samples.name}")
+    report_errors(errors, samples)
 
     return result
+
+
+def parse_sample_extra_fields(errors, fields, line, name, names):
+    names.append(name)
+    score = 0
+    try:
+        score = float(fields[4])
+    except ValueError as e:
+        errors[line].append("Cannot parse score value '{}' as float".format(fields[4]))
+    except IndexError as e:
+        score = 0
+    try:
+        is_ref = fields[5].lower()
+        if is_ref in ("true", "false"):
+            is_ref = True if is_ref == 'true' else False
+        else:
+            errors[line].append("is_ref field with value '{}' should be either 'true' or 'false'".format(is_ref))
+    except IndexError:
+        is_ref = False
+    try:
+        exclude_redundant = fields[6].lower()
+        if exclude_redundant in ("true", "false"):
+            exclude_redundant = True if exclude_redundant == 'true' else False
+        else:
+            errors[line].append(
+                "exclude_redundant field with value '{}' should be either 'true' or 'false'".format(exclude_redundant))
+    except IndexError:
+        exclude_redundant = False
+    return exclude_redundant, is_ref, score
 
 
 def combine_arguments(cli_arguments):
@@ -249,14 +288,7 @@ def combine_arguments(cli_arguments):
         cromwell_inputs.update(validate_long_samples(cli_arguments.csv_long_samples))
 
     cromwell_inputs["ei_annotation.reference_genome"] = cli_arguments.reference.name
-    cromwell_inputs["ei_annotation.all_scoring_file"] = cli_arguments.all_scoring_file.name
-
-    if cli_arguments.long_scoring_file:
-        cromwell_inputs["ei_annotation.long_scoring_file"] = cli_arguments.long_scoring_file.name
-    else:
-        cromwell_inputs["ei_annotation.long_scoring_file"] = cli_arguments.all_scoring_file.name
-    if cli_arguments.long_lq_scoring_file:
-        cromwell_inputs["ei_annotation.long_lq_scoring_file"] = cli_arguments.long_lq_scoring_file.name
+    scoring_setup(cli_arguments, cromwell_inputs)
 
     cromwell_inputs["ei_annotation.wf_align.PR_hisat_extra_parameters"] = cli_arguments.PR_hisat_extra_parameters
     cromwell_inputs["ei_annotation.wf_align.PR_star_extra_parameters"] = cli_arguments.PR_star_extra_parameters
