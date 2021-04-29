@@ -115,6 +115,11 @@ workflow ei_homology {
         runtime_attr_override = mikado_attr
     }
 
+    call MikadoSummaryStats {
+        input:
+        stats = [MikadoPick.stats],
+        output_prefix = "xspecies"
+    }
 
     output {
         Array[File] xspecies_combined_alignments = CombineXspecies.xspecies_scored_alignment
@@ -128,6 +133,7 @@ workflow ei_homology {
         File scores = MikadoPick.scores
         File metrics = MikadoPick.metrics
         File stats = MikadoPick.stats
+        File stats_summary = MikadoSummaryStats.summary
     }
 }
 
@@ -598,5 +604,20 @@ task CombineResults {
         set -euxo pipefail
         combine_alignments_with_mgc --detail ~{alignment_compare_detail} ~{'--exon_f1_filter ' + exon_f1_filter} \
         ~{'--junction_f1_filter ' + junction_f1_filter} --gff ~{alignment_gff} -o ~{aln_prefix}.mgc.gff
+    >>>
+}
+
+task MikadoSummaryStats {
+    input {
+        Array[File] stats
+        String output_prefix
+    }
+
+    output {
+        File summary = output_prefix + ".summary.stats.tsv"
+    }
+
+    command <<<
+    mikado_summary_stats ~{sep=" " stats} > ~{output_prefix}.summary.stats.tsv
     >>>
 }
