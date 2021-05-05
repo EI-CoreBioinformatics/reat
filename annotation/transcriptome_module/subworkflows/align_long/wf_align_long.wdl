@@ -8,7 +8,7 @@ import "wf_gmap.wdl" as gmap
 
 workflow wf_align_long {
     input {
-        File reference
+        IndexedReference indexed_reference
         File? annotation
         Array[LRSample] long_samples
         Boolean is_hq
@@ -35,7 +35,7 @@ workflow wf_align_long {
     }
     
     # Add aligner option
-    if (aligner == "minimap2" || aligner == "2pass") {
+    if (aligner == "minimap2" || aligner == "2pass" || aligner == "2pass_merged") {
         if (defined(annotation)) {
             call gff2bed {
                 input:
@@ -55,7 +55,7 @@ workflow wf_align_long {
         call Minimap2Index {
             input:
             is_hq = is_hq,
-            reference = reference,
+            reference = indexed_reference.fasta,
             indexing_resources = indexing_resources
         }
 
@@ -79,15 +79,18 @@ workflow wf_align_long {
                 }
             }
 
-            if (aligner == "2pass") {
+            if (aligner == "2pass" || aligner == "2pass_merged") {
                 call twopass.wf_twopass {
                     input:
-                    reference = Minimap2Index.index,
+                    reference = indexed_reference.fasta,
+                    reference_fai = indexed_reference.fai,
+                    reference_index = Minimap2Index.index,
                     bed_junctions = CombineJunctions.combined_junctions,
                     LRS = sample.LR,
                     is_hq = is_hq,
                     name = sample.name,
                     strand = sample.strand,
+                    merge_juncs = (aligner == "2pass_merged"),
                     score = sample.score,
                     is_ref = sample.is_ref,
                     exclude_redundant = sample.exclude_redundant,
@@ -104,7 +107,7 @@ workflow wf_align_long {
     if (aligner == "gmap") {
         call GMapIndex {
             input:
-            reference = reference,
+            reference = indexed_reference.fasta,
             runtime_attr_override = indexing_resources
         }
         scatter (sample in long_samples) {
@@ -117,7 +120,7 @@ workflow wf_align_long {
                 score = sample.score,
                 is_ref = sample.is_ref,
                 exclude_redundant = sample.exclude_redundant,
-                reference = reference,
+                reference = indexed_reference.fasta,
                 min_identity = min_identity,
                 min_intron_len = select_first([min_intron_len,20]),
                 max_intron_len = select_first([max_intron_len,2000]),

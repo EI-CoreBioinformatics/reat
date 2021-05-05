@@ -40,6 +40,7 @@ from annotation import VERSION
 from annotation.homology import combine_arguments_homology, validate_homology_inputs
 from annotation.transcriptome import combine_arguments, validate_transcriptome_inputs
 
+LONG_READ_ALIGNER_CHOICES = ['minimap2', 'gmap', '2pass', '2pass_merged']
 RUN_METADATA = "run_details.json"
 
 try:
@@ -51,6 +52,7 @@ try:
     from yaml import CLoader as Loader, CDumper as Dumper
 except ImportError:
     from yaml import Loader, Dumper
+
 
 def check_environment(force_quit=True):
     """
@@ -250,9 +252,9 @@ def parse_arguments():
                                                                "Parameters for alignment of short and long reads")
     alignment_parameters.add_argument("--short_reads_aligner", choices=['hisat', 'star'],
                                       help="Choice of short read aligner", default='hisat')
-    alignment_parameters.add_argument("--HQ_aligner", choices=['minimap2', 'gmap', '2pass'],
+    alignment_parameters.add_argument("--HQ_aligner", choices=LONG_READ_ALIGNER_CHOICES,
                                       help="Choice of aligner for high-quality long reads", default='minimap2')
-    alignment_parameters.add_argument("--LQ_aligner", choices=['minimap2', 'gmap', '2pass'],
+    alignment_parameters.add_argument("--LQ_aligner", choices=LONG_READ_ALIGNER_CHOICES,
                                       help="Choice of aligner for low-quality long reads", default='minimap2')
     alignment_parameters.add_argument("--min_identity", type=float,
                                       help="Minimum alignment identity to retain transcript", default=0.9)

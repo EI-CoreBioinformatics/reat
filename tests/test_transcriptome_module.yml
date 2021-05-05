@@ -1,3 +1,28 @@
+- name: Transcriptome_Module_no_short_2pass_both
+  tags:
+    - integration
+  command: >-
+    reat --jar_cromwell /Users/yanesl/.cromwell/cromwell.jar
+    --runtime_configuration /Users/yanesl/.cromwell/cromwell.examples.conf
+    --computational_resources tests/integration/transcriptome/computational_resources.json
+    --workflow_options_file tests/integration/transcriptome/options.json
+    transcriptome
+    --orf_caller prodigal
+    --orf_calling_proteins tests/integration/transcriptome/inputs/proteins_db/cross_species_all.10pc.fa.gz
+    --homology_proteins tests/integration/transcriptome/inputs/proteins_db/cross_species_all.10pc.fa.gz
+    --LQ_aligner 2pass_merged
+    --HQ_aligner 2pass
+    --LQ_assembler stringtie
+    --HQ_assembler merge
+    --all_scoring_file "tests/integration/transcriptome/inputs/plant.yaml"
+    --long_scoring_file "tests/integration/transcriptome/inputs/plant.yaml"
+    --reference "tests/integration/transcriptome/inputs/reference/scaffold_6.fa.gz"
+    --csv_long "tests/integration/transcriptome/long_samples.csv"
+  files:
+    - path: "log.out"
+      contains:
+      - "WorkflowSucceededState"
+
 - name: Transcriptome_Module_no_short_2pass
   tags:
     - integration
