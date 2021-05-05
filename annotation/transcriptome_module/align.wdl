@@ -30,7 +30,7 @@ workflow wf_align {
         Boolean? skip_scallop = false
 
         String LQ_aligner = "minimap2"
-        String HQ_aligner = "gmap"
+        String HQ_aligner = "minimap2"
         String HQ_assembler = "merge"
         String LQ_assembler = "stringtie"
 

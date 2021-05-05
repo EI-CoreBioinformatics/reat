@@ -250,9 +250,9 @@ def parse_arguments():
                                                                "Parameters for alignment of short and long reads")
     alignment_parameters.add_argument("--short_reads_aligner", choices=['hisat', 'star'],
                                       help="Choice of short read aligner", default='hisat')
-    alignment_parameters.add_argument("--HQ_aligner", choices=['minimap2', 'gmap'],
-                                      help="Choice of aligner for high-quality long reads", default='gmap')
-    alignment_parameters.add_argument("--LQ_aligner", choices=['minimap2', 'gmap'],
+    alignment_parameters.add_argument("--HQ_aligner", choices=['minimap2', 'gmap', '2pass'],
+                                      help="Choice of aligner for high-quality long reads", default='minimap2')
+    alignment_parameters.add_argument("--LQ_aligner", choices=['minimap2', 'gmap', '2pass'],
                                       help="Choice of aligner for low-quality long reads", default='minimap2')
     alignment_parameters.add_argument("--min_identity", type=float,
                                       help="Minimum alignment identity to retain transcript", default=0.9)

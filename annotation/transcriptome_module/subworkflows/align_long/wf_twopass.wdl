@@ -3,7 +3,7 @@ version 1.0
 import "../common/rt_struct.wdl"
 import "../common/structs.wdl"
 
-workflow wf_mm2 {
+workflow wf_twopass {
 	input {
 		File reference
 		Array[File]+ LRS
@@ -20,7 +20,7 @@ workflow wf_mm2 {
 	}
 
 	scatter (LR in LRS) {
-		call Minimap2Long {
+		call Minimap2Pass as base_alignment {
 			input:
 			LR = LR,
 			is_hq = is_hq,
@@ -33,21 +33,34 @@ workflow wf_mm2 {
 			runtime_attr_override = alignment_resources
 		}
 
-		# TODO: Add 2pass at this stage to re-align each sample with filtered junctions
-#		call twopass {
-#
-#		}
+		call twopass {
+			input:
+			alignment = base_alignment.bam,
+			reference = reference
+		}
+
+		call Minimap2Pass as second_pass {
+			input:
+			LR = LR,
+			is_hq = is_hq,
+			strand = strand,
+			name = name,
+			reference = reference,
+			bed_junctions = twopass.junctions,
+			max_intron_len = select_first([max_intron_len, 200000]),
+			extra_parameters = aligner_extra_parameters,
+			runtime_attr_override = alignment_resources
+		}
 	}
 
 	output {
-		AlignedSample aligned_sample = object {name: name, strand:strand, aligner:"minimap2", bam: Minimap2Long.bam, merge:false,
+		AlignedSample aligned_sample = object {name: name, strand:strand, aligner:"minimap2-2pass", bam: second_pass.bam, merge:false,
 									   is_ref: select_first([is_ref, false]), exclude_redundant: select_first([exclude_redundant, false]),
 									   score: select_first([score, 0])}
 	}
-
 }
 
-task Minimap2Long {
+task Minimap2Pass {
     input {
         File LR
         String LR_basename = sub(basename(LR), "\.[^/.]+$", "")
@@ -122,19 +135,38 @@ task Minimap2Long {
 }
 
 task twopass {
+	# TODO: Transform BED12 junctions into BED6 intron junctions when passing in pre-annotated junctions
 	input {
 		File alignment
 		File reference
+        RuntimeAttr? runtime_attr_override
 	}
+
+    RuntimeAttr default_attr = object {
+        cpu_cores: 16,
+        mem_gb: 8,
+        max_retries: 1,
+        queue: ""
+    }
+
+    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
+    Int task_cpus = select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
+	Int task_mem = round(select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + task_cpus/2)
+
 
 	output {
 		File junctions = basename(alignment)+".junc.bed"
 	}
 
 	command <<<
-		2passtools score -o ~{basename(alignment) + ".score.bed"} -f ~{reference} ~{alignment}
+		2passtools score --processes ~{task_cpus} -o ~{basename(alignment) + ".score.bed"} -f ~{reference} ~{alignment}
 		2passtools filter --exprs 'decision_tree_2_pred' -o ~{basename(alignment) + ".junc.bed"} ~{basename(alignment) + ".score.bed"}
-
-
 	>>>
+
+	runtime {
+        cpu: task_cpus
+        memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
+        maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+        queue: select_first([runtime_attr.queue, default_attr.queue])
+    }
 }

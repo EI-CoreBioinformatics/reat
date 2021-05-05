@@ -7,7 +7,7 @@
         },
 
         "LR_Aligner": {
-            "enum": ["minimap2", "gmap"]
+            "enum": ["minimap2", "gmap", "2pass"]
         },
 
         "LR_Sample": {
