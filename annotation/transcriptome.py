@@ -61,7 +61,7 @@ def separate_mikado_config(mikado_config, mikado_run):
             print(dump({'pick': pick}, default_flow_style=False),
                   file=open(pick_path, 'w'))
 
-    return str(prepare_path), str(serialise_path), str(pick_path)
+    return prepare_path, serialise_path, pick_path
 
 
 def scoring_setup(cli_arguments, cromwell_inputs):
