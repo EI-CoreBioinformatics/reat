@@ -1,0 +1,22 @@
+name: reat
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - python=3.7
+  - pip
+#  - portcullis==1.2.2
+  - stringtie
+  - hisat2
+  - minimap2
+  - star
+  - spaln>=2.4.3
+  - scallop
+  - gffread
+  - transdecoder
+  - prodigal
+  - blast
+  - diamond>=2.0.0
+  - pip:
+      - .
+      - git+git://github.com/bartongroup/2passtools.git
