@@ -8,3 +8,4 @@ reat.iml
 *.pyc
 *.egg-info/
 tests/integration
+docs/_build
