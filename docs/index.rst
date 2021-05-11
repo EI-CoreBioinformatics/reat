@@ -42,22 +42,56 @@ In case an annotation is available, this can be provided for junctions and refer
 Sample files
 ^^^^^^^^^^^^^
 
-The way samples are organised in the input files reflects how the files that correspond to the sample will be processed. Data can be combined or kept separate at different stages of the workflow in accordance with the configuration provided and the characteristics of the data.
+The way samples are organised in the input files reflects how the files that correspond to the sample will be processed.
+Data can be combined or kept separate at different stages of the workflow in accordance with the configuration provided
+and the characteristics of the data.
 
 
 Short read data
 """"""""""""""""
 
-::
+Each line corresponds to a sample.
+There are four required fields: Sample name, strandness, RNA-seq paired data, merge.
+Followed by three optional fields: score, is_reference, exclude_redundant.
+Previous fields to an optional field must be present in the line.
+Files within a pair are separated by semi-colon and where there are multiple pairs in a sample, these are separated by spaces.
 
-   Ara0,fr-firststrand,data/Ara1.1.fastq.gz;data/Ara1.2.fastq.gz,true,20
-   Ara1,fr-firststrand,data/Ara1.1.fastq.gz;data/Ara1.2.fastq.gz data/Ara2.1.fastq.gz;data/Ara2.2.fastq.gz,true,20
-   Ara2,fr-firststrand,data/Ara3.1.fastq.gz;data/Ara3.2.fastq.gz data/Ara5.1.fastq.gz;data/Ara5.2.fastq.gz data/Ara6.1.fastq.gz;data/Ara6.2.fastq.gz,false
+.. code-block:: bash
+
+  Ara0,fr-firststrand,data/Ara1.1.fastq.gz;data/Ara1.2.fastq.gz,true,20
+  Ara1,fr-firststrand,data/Ara1.1.fastq.gz;data/Ara1.2.fastq.gz data/Ara2.1.fastq.gz;data/Ara2.2.fastq.gz,true,20
+  Ara2,fr-firststrand,data/Ara3.1.fastq.gz;data/Ara3.2.fastq.gz data/Ara5.1.fastq.gz;data/Ara5.2.fastq.gz data/Ara6.1.fastq.gz;data/Ara6.2.fastq.gz,false
 
 
+Sample RNA-seq data can be merged in different places, the options for controlling when the merging happens are as follows:
+All transcripts assembled from paired reads within a sample are combined after assembling, paired read alignments can be merged before assembly using the 'merge' parameter in the CSV file.
+
+Junctions from RNA-seq data can be determined in several ways.
+By default junctions are collected for all the RNA-seq fastq pair as defined in the 'RNA-seq paired data' section of the CSV file for each sample.
+Alternatively, samples can be combined where appropriate using the 'ei_annotation.wf_align.group_to_samples' parameter in the input.json file.
+This parameter will define arbitrary groupings of the samples present in the short read CSV, with the following format::
+
+  "ei_annotation.wf_align.group_to_samples": {
+    "group1": ["Sample1", "Sample2"],
+    "group2": ["Sample3", "Sample4"]
+  }
+
+These groups will be validated against the samples in the CSV files, group names should be unique, samples can only belong to a single group and all samples should be part of a group.
 
 Long read data
 """""""""""""""
+
+
+ ::
+
+   A01_1,fr-firststrand,data/A1_1.fastq.gz,low
+   A01_2,fr-firststrand,data/A1_2.fastq.gz,low
+   B01,fr-firststrand,data/B1.fastq.gz,low,10,true,true
+   C01,fr-firststrand,data/C1.fastq.gz,low
+   ALL,fr-firststrand,data/D1_1.fastq.gz data/D1_2.fastq.gz data/D1_3.fastq.gz data/D1_4.fastq.gz,low
+   CCS,fr-firststrand,data/CCS.fastq.gz,high
+   polished,fr-firststrand,data/polished.fastq.gz,high
+
 
 Indices and tables
 ==================
