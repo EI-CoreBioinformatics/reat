@@ -14,5 +14,11 @@ formats:
    - pdf
 
 # Optionally set the version of Python and requirements required to build your docs
-conda:
-  environment: reat.yaml
+#conda:
+#  environment: reat.yaml
+
+python:
+  version: 3
+  pip_install: true
+  extra_requirements:
+    - docs

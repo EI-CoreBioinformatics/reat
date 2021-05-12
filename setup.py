@@ -31,6 +31,12 @@ setup(
         "biopython~=1.78",
         "mikado>=2.0"
     ],
+    extras_require={
+        'docs': [
+            'sphinx',
+            'sphinx_pdj_theme',
+        ]
+    },
     package_data={
         "validation": ["transcriptome.schema.json", "homology.schema.json"],
         "annotation": ["transcriptome_module/*.wdl",
