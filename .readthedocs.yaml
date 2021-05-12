@@ -19,6 +19,8 @@ formats:
 
 python:
   version: 3
-  pip_install: true
-  extra_requirements:
-    - docs
+  install:
+    - method: pip
+      path: .
+      extra_requirements:
+        - docs
