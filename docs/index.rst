@@ -17,6 +17,127 @@ a set of workflows geared towards integrating multiple sources of evidence into 
 an execution environment for these workflows.
 
 
+Installation
+============
+
+To install REAT you can:
+
+.. code-block:: bash
+
+  git clone https://github.com/ei-corebioinformatics/reat
+  wget https://github.com/broadinstitute/cromwell/releases/download/62/cromwell-62.jar
+  conda env create -f reat/reat.yaml
+
+These commands will download the cromwell binary required to execute the workflows and make REAT available in the 'reat' conda environment which can be activated using:
+
+.. code-block:: bash
+
+  conda activate reat
+
+
+Each task in the workflow is configured with default resource requirements appropriate for most tasks, but these can be overriden by user provided ones.
+For an example of this file see::
+
+   {
+       "ei_annotation.wf_align.long_read_alignment_resources":
+       {
+           "cpu_cores": 6,
+           "max_retries": 1,
+           "mem_gb": 16
+       },
+       "ei_annotation.wf_align.long_read_assembly_resources":
+       {
+           "cpu_cores": 6,
+           "max_retries": 1,
+           "mem_gb": 16
+       },
+       "ei_annotation.wf_align.long_read_indexing_resources":
+       {
+           "cpu_cores": 6,
+           "max_retries": 1,
+           "mem_gb": 16
+       },
+       "ei_annotation.wf_align.short_read_alignment_resources":
+       {
+           "cpu_cores": 6,
+           "max_retries": 1,
+           "mem_gb": 16
+       },
+       "ei_annotation.wf_align.short_read_alignment_sort_resources":
+       {
+           "cpu_cores": 6,
+           "max_retries": 1,
+           "mem_gb": 16
+       },
+       "ei_annotation.wf_align.short_read_merge_resources": {
+           "cpu_cores": 4,
+           "max_retries": 1,
+           "mem_gb": 16
+       },
+       "ei_annotation.wf_align.short_read_scallop_assembly_resources":
+       {
+           "cpu_cores": 6,
+           "max_retries": 1,
+           "mem_gb": 16
+       },
+       "ei_annotation.wf_align.short_read_stringtie_assembly_resources":
+       {
+           "cpu_cores": 6,
+           "max_retries": 1,
+           "mem_gb": 16
+       },
+       "ei_annotation.wf_align.short_read_stats_resources":
+       {
+           "cpu_cores": 6,
+           "max_retries": 1,
+           "mem_gb": 8
+       },
+       "ei_annotation.wf_main_mikado.homology_alignment_resources":
+       {
+           "cpu_cores": 6,
+           "max_retries": 1,
+           "mem_gb": 16
+       },
+       "ei_annotation.wf_main_mikado.homology_index_resources":
+       {
+           "cpu_cores": 6,
+           "max_retries": 1,
+           "mem_gb": 8
+       },
+       "ei_annotation.wf_main_mikado.orf_calling_resources":
+       {
+           "cpu_cores": 6,
+           "max_retries": 1,
+           "mem_gb": 8
+       },
+       "ei_annotation.wf_main_mikado.protein_alignment_resources":
+       {
+           "cpu_cores": 6,
+           "max_retries": 1,
+           "mem_gb": 16
+       },
+       "ei_annotation.wf_main_mikado.protein_index_resources":
+       {
+           "cpu_cores": 6,
+           "max_retries": 1,
+           "mem_gb": 16
+       }
+   }
+
+
+To configure the cromwell engine, there are two relevant files, the cromwell runtime options and the workflow options files.
+
+The cromwell engine can be configured to run in your environment using a file such as:
+
+.. highlight:: none
+.. include:: ../cromwell_configuration/slurm.conf
+  :literal:
+
+
+The workflow options can be used to activate the caching behaviour in cromwell, i.e:
+
+.. include:: ../workflow_options/options.json
+  :literal:
 
 Running REAT
 =============
@@ -112,6 +233,7 @@ This is achieved by aligning the proteins provided through a set of related spec
 Protein alignments are evaluated in two ways: Coherence of the alignment structure with respect to the original model's structure and consensus structure from the multiple species.
 These scores are then used by Mikado to group and filter models, generating a set of predicted models.
 
+.. highlight:: none
 .. include:: ./homology_help.txt
   :literal:
 
