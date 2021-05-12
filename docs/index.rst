@@ -3,9 +3,6 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to REAT's documentation!
-================================
-
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
@@ -16,7 +13,6 @@ REAT - Robust and Extendable eukaryotic Annotation Toolkit
 REAT is a robust easy-to-use genome annotation toolkit for turning high-quality genome assemblies into usable and informative resources. REAT makes use of state-of-the-art annotation tools and is robust to varying quality and sources of molecular evidence.
 
 REAT provides an integrated environment that comprises both
-
 a set of workflows geared towards integrating multiple sources of evidence into a genome annotation, and
 an execution environment for these workflows.
 
@@ -38,6 +34,10 @@ The data input for the workflow can be defined through the use of comma separate
 The aligner and assembly programs used for short and long read samples can be selected through command line arguments. There are also command line arguments to select extra options to be applied at each step.
 
 In case an annotation is available, this can be provided for junctions and reference models to be extracted and these can then be augmented using the evidence present in the data.
+
+.. highlight:: none
+.. include:: ./transcriptome_help.txt
+  :literal:
 
 Sample files
 ^^^^^^^^^^^^^
@@ -81,8 +81,13 @@ These groups will be validated against the samples in the CSV files, group names
 Long read data
 """""""""""""""
 
+Each line corresponds to a sample.
+There are four required fields: Sample name, strandness, RNA-seq long read data, merge.
+Followed by three optional fields: score, is_reference and exclude_redundant.
+Previous fields to an optional field must be present in the line.
+Where multiple read files correspond to a single sample (this implies they result in a single set of transcripts), the third column will contain all the files separated by spaces.
 
- ::
+.. code-block:: bash
 
    A01_1,fr-firststrand,data/A1_1.fastq.gz,low
    A01_2,fr-firststrand,data/A1_2.fastq.gz,low
@@ -91,6 +96,25 @@ Long read data
    ALL,fr-firststrand,data/D1_1.fastq.gz data/D1_2.fastq.gz data/D1_3.fastq.gz data/D1_4.fastq.gz,low
    CCS,fr-firststrand,data/CCS.fastq.gz,high
    polished,fr-firststrand,data/polished.fastq.gz,high
+
+
+.. warning::
+
+   The 'reference' sample name is reserved for internal use.
+   If this name is being used in any of the sample input CSV files, you will be notified with an error message.
+
+
+Homology workflow
+-----------------
+
+When there is protein evidence available from related species, the homology workflow can be used to generate gene models based on this evidence.
+This is achieved by aligning the proteins provided through a set of related species annotations and evaluating these alignments to generate a score.
+Protein alignments are evaluated in two ways: Coherence of the alignment structure with respect to the original model's structure and consensus structure from the multiple species.
+These scores are then used by Mikado to group and filter models, generating a set of predicted models.
+
+.. include:: ./homology_help.txt
+  :literal:
+
 
 
 Indices and tables

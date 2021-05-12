@@ -3,6 +3,8 @@
 # This file only contains a selection of the most common options. For a full
 # list see the documentation:
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
+import subprocess
+
 from annotation import VERSION
 import sphinx_pdj_theme
 
@@ -53,3 +55,10 @@ html_theme_path = [sphinx_pdj_theme.get_html_theme_path()]
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
+
+
+transcriptome_help = subprocess.run(['reat', 'transcriptome', '--help'], capture_output=True)
+print(transcriptome_help.stdout.decode(), file=open('transcriptome_help.txt', 'w'))
+
+homology_help = subprocess.run(['reat', 'homology', '--help'], capture_output=True)
+print(homology_help.stdout.decode(), file=open('homology_help.txt', 'w'))
