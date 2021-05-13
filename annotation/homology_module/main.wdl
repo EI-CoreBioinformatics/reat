@@ -571,7 +571,7 @@ task ScoreAlignments {
         set -euxo pipefail
         mkdir ScoreAlignments/
         cd ScoreAlignments
-        multi_genome_compare.py -t ~{task_cpus} --groups ~{groups} \
+        multi_genome_compare -t ~{task_cpus} --groups ~{groups} \
         --cdnas ~{cdnas} --bed12 ~{bed} \
         -o comp_~{aln_prefix}_~{ref_prefix}.tab -d comp_~{aln_prefix}_~{ref_prefix}_detail.tab
     >>>

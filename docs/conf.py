@@ -57,8 +57,10 @@ html_theme_path = [sphinx_pdj_theme.get_html_theme_path()]
 html_static_path = ['_static']
 
 
+# Generate a full CLI help for the transcriptome command
 transcriptome_help = subprocess.run(['reat', 'transcriptome', '--help'], capture_output=True)
 print(transcriptome_help.stdout.decode(), file=open('transcriptome_help.txt', 'w'))
 
+# Generate a full CLI help for the homology command
 homology_help = subprocess.run(['reat', 'homology', '--help'], capture_output=True)
 print(homology_help.stdout.decode(), file=open('homology_help.txt', 'w'))
