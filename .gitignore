@@ -9,3 +9,6 @@ reat.iml
 *.egg-info/
 tests/integration
 docs/_build
+*.so
+*.o
+build
