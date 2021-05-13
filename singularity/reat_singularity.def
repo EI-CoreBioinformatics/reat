@@ -144,7 +144,7 @@ rm -rf gffread gclib
 wget http://research-pub.gene.com/gmap/src/gmap-gsnap-2021-02-12.tar.gz
 tar xaf gmap-gsnap-2021-02-12.tar.gz
 cd gmap-2021-02-12
-for i in sse2 ssse3 sse41 sse42 avx2 avx512;
+for i in sse2 ssse3 sse41 sse42;
 do
     ./configure --with-simd-level=$i --enable-zlib --enable-bzlib
     make -j 4

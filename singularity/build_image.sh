@@ -1,6 +1,6 @@
 set -euxo
 version=0.0.10
-rundir=$(dirname "$0")
+rundir=$(dirname "$(realpath "$0")")
 cd "$(mktemp -d)"
 cp "${rundir}"/reat_singularity.def reat.def
 sudo singularity build reat.img reat.def
