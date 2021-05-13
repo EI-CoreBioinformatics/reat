@@ -187,6 +187,9 @@ Files within a pair are separated by semi-colon and where there are multiple pai
 Sample RNA-seq data can be merged in different places, the options for controlling when the merging happens are as follows:
 All transcripts assembled from paired reads within a sample are combined after assembling, paired read alignments can be merged before assembly using the 'merge' parameter in the CSV file.
 
+Junctions
+++++++++++
+
 Junctions from RNA-seq data can be determined in several ways.
 By default junctions are collected for all the RNA-seq fastq pair as defined in the 'RNA-seq paired data' section of the CSV file for each sample.
 Alternatively, samples can be combined where appropriate using the 'ei_annotation.wf_align.group_to_samples' parameter in the input.json file.
