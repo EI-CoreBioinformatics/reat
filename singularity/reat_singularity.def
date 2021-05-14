@@ -269,20 +269,6 @@ make -j 8
 make install
 cd /opt/software
 
-# Mikado - 2.1.1
-git clone https://github.com/EI-CoreBioinformatics/mikado
-cd mikado
-git checkout tags/v2.1.1
-pip3 install .
-
-# ei-liftover
-cd /opt/software
-git clone https://github.com/lucventurini/ei-liftover
-pip3 install Cython parasail
-pip3 install ./ei-liftover
-
-cd /opt/software
-
 # Gotoh's SPALN
 
 wget https://github.com/ogotoh/spaln/archive/refs/tags/ver.2.4.4.tar.gz
