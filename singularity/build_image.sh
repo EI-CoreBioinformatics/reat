@@ -7,11 +7,13 @@ sudo singularity build reat.img reat.def
 mkdir -p /ei/software/testing/reat/${version}/x86_64/bin
 cp reat.img /ei/software/testing/reat/${version}/x86_64/reat-${version}.img
 
-cat << EOF > /ei/software/testing/reat/${version}/x86_64/bin/singularity.exec
+cat << 'EOF' > /ei/software/testing/reat/${version}/x86_64/bin/singularity.exec
 #!/bin/bash
 DIR=$(dirname "$(readlink -f "$0")")
-singularity exec $DIR/../reat-${version}.img $(basename "$0") $@
+singularity exec "$DIR"/../reat-${version}.img $(basename "$0") $@
 EOF
+
+pushd /ei/software/testing/reat/${version}/x86_64/bin
 
 ln -s singularity.exec hisat2
 ln -s singularity.exec stringtie
@@ -50,3 +52,5 @@ ln -s singularity.exec blastx
 ln -s singularity.exec blastp
 ln -s singularity.exec blastn
 ln -s singularity.exec makeblastdb
+
+popd
