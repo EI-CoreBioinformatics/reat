@@ -1,6 +1,6 @@
 - name: Transcriptome_Module_no_short_2pass_both
   tags:
-    - integration
+    - transcriptome
   command: >-
     reat --jar_cromwell /Users/yanesl/.cromwell/cromwell.jar
     --runtime_configuration /Users/yanesl/.cromwell/cromwell.examples.conf
@@ -25,7 +25,7 @@
 
 - name: Transcriptome_Module_no_short_2pass
   tags:
-    - integration
+    - transcriptome
   command: >-
     reat --jar_cromwell /Users/yanesl/.cromwell/cromwell.jar
     --runtime_configuration /Users/yanesl/.cromwell/cromwell.examples.conf
@@ -50,7 +50,7 @@
 
 - name: Transcriptome_Module
   tags:
-    - integration
+    - transcriptome
   command: >-
     reat --jar_cromwell /Users/yanesl/.cromwell/cromwell.jar
     --runtime_configuration /Users/yanesl/.cromwell/cromwell.examples.conf
@@ -73,7 +73,7 @@
       - "WorkflowSucceededState"
 - name: Transcriptome_Module_no_scallop
   tags:
-    - integration
+    - transcriptome
   command: >-
     reat --jar_cromwell /Users/yanesl/.cromwell/cromwell.jar
     --runtime_configuration /Users/yanesl/.cromwell/cromwell.examples.conf
@@ -128,7 +128,7 @@
 
 - name: Transcriptome_Module_no_short
   tags:
-    - integration
+    - transcriptome
   command: >-
     reat --jar_cromwell /Users/yanesl/.cromwell/cromwell.jar
     --runtime_configuration /Users/yanesl/.cromwell/cromwell.examples.conf
@@ -151,7 +151,7 @@
 
 - name: Transcriptome_Module_annotation_w_extra_junctions
   tags:
-    - integration
+    - transcriptome
     - junctions
   command: >-
     reat --jar_cromwell /Users/yanesl/.cromwell/cromwell.jar
@@ -177,7 +177,7 @@
       - "WorkflowSucceededState"
 - name: Transcriptome_basic_annotation_score10
   tags:
-    - integration
+    - transcriptome
     - junctions
   command: >-
     reat --jar_cromwell /Users/yanesl/.cromwell/cromwell.jar
@@ -204,7 +204,7 @@
       - "WorkflowSucceededState"
 - name: Transcriptome_reference_update_annotation_score10
   tags:
-    - integration
+    - transcriptome
     - junctions
   command: >-
     reat --jar_cromwell /Users/yanesl/.cromwell/cromwell.jar
@@ -231,7 +231,7 @@
       - "WorkflowSucceededState"
 - name: Transcriptome_only_update_annotation_score10
   tags:
-    - integration
+    - transcriptome
     - junctions
   command: >-
     reat --jar_cromwell /Users/yanesl/.cromwell/cromwell.jar
@@ -258,7 +258,7 @@
       - "WorkflowSucceededState"
 - name: Transcriptome_check_references
   tags:
-    - integration
+    - transcriptome
     - check_reference
   command: >-
     reat --jar_cromwell /Users/yanesl/.cromwell/cromwell.jar
