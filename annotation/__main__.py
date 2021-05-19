@@ -40,6 +40,9 @@ from annotation import VERSION
 from annotation.homology import combine_arguments_homology, validate_homology_inputs
 from annotation.transcriptome import combine_arguments, validate_transcriptome_inputs
 
+LONG_READ_ALIGNER_CHOICES = ['minimap2', 'gmap', '2pass', '2pass_merged']
+RUN_METADATA = "run_details.json"
+
 try:
     import importlib.resources as pkg_resources
 except ImportError:
@@ -249,9 +252,9 @@ def parse_arguments():
                                                                "Parameters for alignment of short and long reads")
     alignment_parameters.add_argument("--short_reads_aligner", choices=['hisat', 'star'],
                                       help="Choice of short read aligner", default='hisat')
-    alignment_parameters.add_argument("--HQ_aligner", choices=['minimap2', 'gmap'],
-                                      help="Choice of aligner for high-quality long reads", default='gmap')
-    alignment_parameters.add_argument("--LQ_aligner", choices=['minimap2', 'gmap'],
+    alignment_parameters.add_argument("--HQ_aligner", choices=LONG_READ_ALIGNER_CHOICES,
+                                      help="Choice of aligner for high-quality long reads", default='minimap2')
+    alignment_parameters.add_argument("--LQ_aligner", choices=LONG_READ_ALIGNER_CHOICES,
                                       help="Choice of aligner for low-quality long reads", default='minimap2')
     alignment_parameters.add_argument("--min_identity", type=float,
                                       help="Minimum alignment identity to retain transcript", default=0.9)
@@ -347,7 +350,8 @@ def parse_arguments():
                              help="Fasta file of the genome to annotate",
                              required=True)
     homology_ap.add_argument("--alignment_species", type=str,
-                             help="Available aligner species, for more information, please look at URL",
+                             help="Species specific parameters, select a value from the first or second column of "
+                                  "https://raw.githubusercontent.com/ogotoh/spaln/master/table/gnm2tab",
                              required=True)
     homology_ap.add_argument("--annotations_csv", type=argparse.FileType('r'),
                              help="CSV file with reference annotations to extract proteins/cdnas for spliced alignments"
@@ -428,6 +432,194 @@ def parse_arguments():
     return args
 
 
+def symlink(path, out_file):
+    if os.path.exists(os.path.join(path, os.path.basename(out_file))):
+        os.unlink(os.path.join(path, os.path.basename(out_file)))
+    os.symlink(out_file, os.path.join(path, os.path.basename(out_file)))
+
+
+def collect_transcriptome_output(RUN_METADATA, output_path="outputs"):
+    # Get the outputs and symlink them to the output folder
+    run_metadata = json.load(open(RUN_METADATA))
+    outputs = run_metadata["outputs"]
+    prfx = "ei_annotation."
+    outputs_path = output_path
+    if not os.path.exists(outputs_path):
+        os.mkdir(outputs_path)
+
+    # reat/outputs
+    # ├── align_long.HQ_read_samples.summary.stats.tsv
+    # ├── alignments/
+    # ├── align_short.SR_read_samples.summary.stats.tsv
+    # ├── assembly_long/
+    # ├── assembly_short/
+    # ├── assembly_short.scallop.summary.stats.tsv
+    # ├── assembly_short.stringtie.summary.stats.tsv
+    # ├── plots/
+    # ├── Mikado_long-permissive.loci.gff3
+    # ├── Mikado_long-permissive.loci.gff3.stats
+    # ├── Mikado_long-permissive.loci.metrics.tsv
+    # ├── Mikado_long-permissive.loci.scores.tsv
+    # ├── Mikado_short_and_long-permissive.loci.gff3
+    # ├── Mikado_short_and_long-permissive.loci.gff3.stats
+    # ├── Mikado_short_and_long-permissive.loci.metrics.tsv
+    # ├── Mikado_short_and_long-permissive.loci.scores.tsv
+    # ├── mikado.summary.stats.tsv
+    # └── portcullis/
+
+    # Alignments
+    # Array[AlignedSample]? SR_bams = wf_align.SR_bams
+    # Array[File]? SR_alignment_summary_stats = wf_align.SR_summary_stats
+    # File? SR_alignment_summary_stats_table = wf_align.SR_summary_stats_table
+    link_bams(outputs, outputs_path, prfx + 'SR_bams', prfx + 'SR_alignment_summary_stats',
+              prfx + 'SR_alignment_summary_stats_table')
+    # Array[AlignedSample]? LQ_bams = wf_align.LQ_bams
+    # Array[File]? LQ_alignment_summary_stats = wf_align.LQ_summary_stats
+    # File? LQ_alignment_summary_stats_table = wf_align.LQ_summary_stats_table
+    link_bams(outputs, outputs_path, prfx + 'LQ_bams', prfx + 'LQ_alignment_summary_stats',
+              prfx + 'LQ_alignment_summary_stats_table')
+    # Array[AlignedSample]? HQ_bams = wf_align.HQ_bams
+    # Array[File]? HQ_alignment_summary_stats = wf_align.HQ_summary_stats
+    # File? HQ_alignment_summary_stats_table = wf_align.HQ_summary_stats_table
+    link_bams(outputs, outputs_path, prfx + 'HQ_bams', prfx + 'HQ_alignment_summary_stats',
+              prfx + 'HQ_alignment_summary_stats_table')
+
+    # assembly_short
+    # Array[AssembledSample]? SR_asms = wf_align.SR_gff
+    # Array[File]? SR_assembly_stats = wf_align.SR_assembly_stats
+    link_assemblies(prfx + 'SR_asms', os.path.join(outputs_path, 'assembly_short'), prfx + 'SR_assembly_stats', outputs)
+
+    # assembly_long
+    # Array[AssembledSample]? LQ_asms = wf_align.LQ_gff
+    # Array[File]? LQ_assembly_stats = wf_align.LQ_assembly_stats
+    link_assemblies(prfx + 'LQ_asms', os.path.join(outputs_path, 'assembly_long'), prfx + 'LQ_assembly_stats', outputs)
+    # Array[AssembledSample]? HQ_asms = wf_align.HQ_gff
+    # Array[File]? HQ_assembly_stats = wf_align.HQ_assembly_stats
+    link_assemblies(prfx + 'HQ_asms', os.path.join(outputs_path, 'assembly_long'), prfx + 'HQ_assembly_stats', outputs)
+
+    # portcullis
+    if any((outputs[prfx + 'portcullis_pass_tab'], outputs[prfx + 'portcullis_pass_bed'],
+            outputs[prfx + 'portcullis_pass_gff3'],
+            outputs[prfx + 'portcullis_fail_tab'], outputs[prfx + 'portcullis_fail_bed'],
+            outputs[prfx + 'portcullis_fail_gff3'])):
+        portcullis_path = os.path.join(outputs_path, 'portcullis')
+        os.mkdir(portcullis_path) if not os.path.exists(portcullis_path) else ""
+        # File? portcullis_pass_tab = wf_align.pass_filtered_tab
+        if outputs[prfx + 'portcullis_pass_tab']:
+            symlink(portcullis_path, outputs[prfx + 'portcullis_pass_tab'])
+        # File? portcullis_pass_bed = wf_align.pass_filtered_bed
+        if outputs[prfx + 'portcullis_pass_bed']:
+            symlink(portcullis_path, outputs[prfx + 'portcullis_pass_bed'])
+        # File? portcullis_pass_gff3 = wf_align.pass_filtered_gff3
+        if outputs[prfx + 'portcullis_pass_gff3']:
+            symlink(portcullis_path, outputs[prfx + 'portcullis_pass_gff3'])
+        # File? portcullis_fail_tab = wf_align.fail_filtered_tab
+        if outputs[prfx + 'portcullis_fail_tab']:
+            symlink(portcullis_path, outputs[prfx + 'portcullis_fail_tab'])
+        # File? portcullis_fail_bed = wf_align.fail_filtered_bed
+        if outputs[prfx + 'portcullis_fail_bed']:
+            symlink(portcullis_path, outputs[prfx + 'portcullis_fail_bed'])
+        # File? portcullis_fail_gff3 = wf_align.fail_filtered_gff3
+        if outputs[prfx + 'portcullis_fail_gff3']:
+            symlink(portcullis_path, outputs[prfx + 'portcullis_fail_gff3'])
+
+    # TODO
+    #  Plots
+    #  Array[Array[File]]? stats = wf_align.stats
+    #  Array[Array[File]]? actg_cycles_plots = wf_align.actg_cycles_plots
+    #  Array[Array[File]]? coverage_plots = wf_align.coverage_plots
+    #  Array[Array[File]]? gc_content_plots = wf_align.gc_content_plots
+    #  Array[Array[File]]? gc_depth_plots = wf_align.gc_depth_plots
+    #  Array[Array[File]]? htmls = wf_align.htmls
+    #  Array[Array[File]]? indel_cycles_plots = wf_align.indel_cycles_plots
+    #  Array[Array[File]]? indel_dist_plots = wf_align.indel_dist_plots
+    #  Array[Array[File]]? insert_size_plots = wf_align.insert_size_plots
+    #  Array[Array[File]]? quals_plots = wf_align.quals_plots
+    #  Array[Array[File]]? quals2_plots = wf_align.quals2_plots
+    #  Array[Array[File]]? quals3_plots = wf_align.quals3_plots
+    #  Array[Array[File]]? quals_hm_plots = wf_align.quals_hm_plots
+
+    # File? SR_stringtie_summary_stats = wf_align.SR_stringtie_summary_stats
+    if outputs[prfx + 'SR_stringtie_summary_stats']:
+        symlink(outputs_path, outputs[prfx + 'SR_stringtie_summary_stats'])
+    # File? SR_scallop_summary_stats = wf_align.SR_scallop_summary_stats
+    if outputs[prfx + 'SR_scallop_summary_stats']:
+        symlink(outputs_path, outputs[prfx + 'SR_scallop_summary_stats'])
+    # File? LQ_assembly_summary_stats = wf_align.LQ_assembly_summary_stats
+    if outputs[prfx + 'LQ_assembly_summary_stats']:
+        symlink(outputs_path, outputs[prfx + 'LQ_assembly_summary_stats'])
+    # File? HQ_assembly_summary_stats = wf_align.HQ_assembly_summary_stats
+    if outputs[prfx + 'HQ_assembly_summary_stats']:
+        symlink(outputs_path, outputs[prfx + 'HQ_assembly_summary_stats'])
+
+    # File? mikado_long_loci = wf_main_mikado.long_loci
+    # File? mikado_long_scores = wf_main_mikado.long_scores
+    # File? mikado_long_metrics = wf_main_mikado.long_metrics
+    # File? mikado_long_stats = wf_main_mikado.long_stats
+    link_mikado(outputs, outputs_path, prfx + 'mikado_long_')
+    #
+    # File? mikado_short_loci = wf_main_mikado.short_loci
+    # File? mikado_short_scores = wf_main_mikado.short_scores
+    # File? mikado_short_metrics = wf_main_mikado.short_metrics
+    # File? mikado_short_stats = wf_main_mikado.short_stats
+    link_mikado(outputs, outputs_path, prfx + 'mikado_short_')
+    #
+    # File? mikado_short_and_long_noLQ_loci = wf_main_mikado.short_and_long_noLQ_loci
+    # File? mikado_short_and_long_noLQ_scores = wf_main_mikado.short_and_long_noLQ_scores
+    # File? mikado_short_and_long_noLQ_metrics = wf_main_mikado.short_and_long_noLQ_metrics
+    # File? mikado_short_and_long_noLQ_stats = wf_main_mikado.short_and_long_noLQ_stats
+    link_mikado(outputs, outputs_path, prfx + 'mikado_short_and_long_noLQ_')
+    #
+    # File? mikado_longHQ_loci = wf_main_mikado.longHQ_loci
+    # File? mikado_longHQ_scores = wf_main_mikado.longHQ_scores
+    # File? mikado_longHQ_metrics = wf_main_mikado.longHQ_metrics
+    # File? mikado_longHQ_stats = wf_main_mikado.longHQ_stats
+    link_mikado(outputs, outputs_path, prfx + 'mikado_longHQ_')
+    #
+    # File? mikado_longLQ_loci = wf_main_mikado.longLQ_loci
+    # File? mikado_longLQ_scores = wf_main_mikado.longLQ_scores
+    # File? mikado_longLQ_metrics = wf_main_mikado.longLQ_metrics
+    # File? mikado_longLQ_stats = wf_main_mikado.longLQ_stats
+    link_mikado(outputs, outputs_path, prfx + 'mikado_longLQ_')
+
+    # File mikado_summary_stats = wf_main_mikado.mikado_stats_summary
+    if outputs[prfx + 'mikado_summary_stats']:
+        symlink(outputs_path, outputs[prfx + 'mikado_summary_stats'])
+
+
+def link_mikado(outputs, outputs_path, mikado):
+    for suffix in ('loci', 'scores', 'metrics', 'stats'):
+        mikado_name = mikado + suffix
+        if outputs[mikado_name]:
+            symlink(outputs_path, outputs[mikado_name])
+
+
+def link_assemblies(assemblies, assembly_path, assembly_stats, outputs):
+    if outputs[assemblies]:
+        if not os.path.exists(assembly_path):
+            os.mkdir(assembly_path)
+        if outputs[assembly_stats]:
+            for stats in outputs[assembly_stats]:
+                symlink(assembly_path, stats)
+        for sr_asm in outputs[assemblies]:
+            symlink(assembly_path, sr_asm['assembly'])
+
+
+def link_bams(outputs, outputs_path, bams_array, stats_array, stats_table):
+    alignments_path = os.path.join(outputs_path, 'alignments')
+    if outputs[bams_array]:
+        if not os.path.exists(alignments_path):
+            os.mkdir(alignments_path)
+        for aligned_sample in outputs[bams_array]:
+            for bam in aligned_sample['bam']:
+                symlink(alignments_path, bam)
+    if outputs[stats_array]:
+        for stats in outputs[stats_array]:
+            symlink(alignments_path, stats)
+    if outputs[stats_table]:
+        symlink(alignments_path, outputs[stats_table])
+
+
 def transcriptome_module(cli_arguments):
     """
     Collects the CLI arguments and combines them with CLI defined input files.
@@ -446,8 +638,93 @@ def transcriptome_module(cli_arguments):
         workflow_options_file = None
         if cli_arguments.workflow_options_file is not None:
             workflow_options_file = cli_arguments.workflow_options_file.name
-        return execute_cromwell(cli_arguments.runtime_configuration, cli_arguments.jar_cromwell,
-                                cli_arguments.output_parameters_file, workflow_options_file, wdl_file)
+        rc = execute_cromwell(cli_arguments.runtime_configuration, cli_arguments.jar_cromwell,
+                              cli_arguments.output_parameters_file, workflow_options_file, wdl_file)
+        if rc == 0:
+            collect_transcriptome_output(RUN_METADATA)
+        return rc
+
+
+def collect_homology_output(run_metadata):
+    # Get the outputs and symlink them to the output folder
+    run_metadata = json.load(open(run_metadata))
+    outputs = run_metadata['outputs']
+    outputs_path = 'outputs'
+    if not os.path.exists(outputs_path):
+        os.mkdir(outputs_path)
+
+    # ├── Annotations
+    # │      ├── Homo_sapiens.coding.annotation.stats
+    # │      ├── Homo_sapiens.coding.clean.extra_attr.gff
+    # │      ├── Monodelphis_domestica.coding.annotation.stats
+    # │      ├── Monodelphis_domestica.coding.clean.extra_attr.gff
+    # │      ├── Notamacropus_eugenii.coding.annotation.stats
+    # │      ├── Notamacropus_eugenii.coding.clean.extra_attr.gff
+    # │      ├── Sarcophilus_harrisii.coding.annotation.stats
+    # │      └── Sarcophilus_harrisii.coding.clean.extra_attr.gff
+    # ├── Homo_sapiens.alignment.stats
+    # ├── Homo_sapiens.alignment.stop_extended.extra_attr.mgc.xspecies_scores.gff
+    # ├── Monodelphis_domestica.alignment.stats
+    # ├── Monodelphis_domestica.alignment.stop_extended.extra_attr.mgc.xspecies_scores.gff
+    # ├── Notamacropus_eugenii.alignment.stats
+    # ├── Notamacropus_eugenii.alignment.stop_extended.extra_attr.mgc.xspecies_scores.gff
+    # ├── Sarcophilus_harrisii.alignment.stats
+    # ├── Sarcophilus_harrisii.alignment.stop_extended.extra_attr.mgc.xspecies_scores.gff
+    # ├── ScoreAlignments
+    # │      ├── all_avgF1.bin.txt
+    # │      ├── comp_Homo_sapiens.alignment.stop_extended.extra_attr_Homo_sapiens_detail.tab
+    # │      ├── comp_Homo_sapiens.alignment.stop_extended.extra_attr_Homo_sapiens.tab
+    # │      ├── comp_Monodelphis_domestica.alignment.stop_extended.extra_attr_Monodelphis_domestica_detail.tab
+    # │      ├── comp_Monodelphis_domestica.alignment.stop_extended.extra_attr_Monodelphis_domestica.tab
+    # │      ├── comp_Notamacropus_eugenii.alignment.stop_extended.extra_attr_Notamacropus_eugenii_detail.tab
+    # │      ├── comp_Notamacropus_eugenii.alignment.stop_extended.extra_attr_Notamacropus_eugenii.tab
+    # │      ├── comp_Sarcophilus_harrisii.alignment.stop_extended.extra_attr_Sarcophilus_harrisii_detail.tab
+    # │      └── comp_Sarcophilus_harrisii.alignment.stop_extended.extra_attr_Sarcophilus_harrisii.tab
+    # ├── xspecies.loci.gff3
+    # ├── xspecies.loci.gff3.stats
+    # ├── xspecies.loci.metrics.tsv
+    # └── xspecies.loci.scores.tsv
+
+    # Annotations
+    annotations_path = os.path.join(outputs_path, 'ei_homology.annotations')
+    if not os.path.exists(annotations_path):
+        os.mkdir(annotations_path)
+    # Array[File] clean_annotations = PrepareAnnotations.cleaned_up_gff
+    for clean_annotation in outputs['ei_homology.clean_annotations']:
+        symlink(annotations_path, clean_annotation)
+    # Array[File] annotation_filter_stats = PrepareAnnotations.stats
+    for annotation_stats in outputs['ei_homology.annotation_filter_stats']:
+        symlink(annotations_path, annotation_stats)
+
+    # ScoreAlignments
+    score_alignments_path = os.path.join(outputs_path, 'ei_homology.score_alignments')
+    if not os.path.exists(score_alignments_path):
+        os.mkdir(score_alignments_path)
+    # Array[File] mgc_evaluation = ScoreAlignments.alignment_compare
+    for mgc_eval in outputs['ei_homology.mgc_evaluation']:
+        symlink(score_alignments_path, mgc_eval)
+    # Array[File] mgc_evaluation_detail = ScoreAlignments.alignment_compare_detail
+    for mgc_eval_detail in outputs['ei_homology.mgc_evaluation_detail']:
+        symlink(score_alignments_path, mgc_eval_detail)
+    # File        mgc_score_summary = ScoreSummary.summary_table
+    symlink(score_alignments_path, outputs['ei_homology.mgc_score_summary'])
+
+    # Main output folder
+    # Array[File] xspecies_combined_alignments = CombineXspecies.xspecies_scored_alignment
+    for xspc_combined_aln in outputs['ei_homology.xspecies_combined_alignments']:
+        symlink(outputs_path, xspc_combined_aln)
+    # Array[File] alignment_filter_stats = AlignProteins.stats
+    for aln_filter_stat in outputs['ei_homology.alignment_filter_stats']:
+        symlink(outputs_path, aln_filter_stat)
+
+    # File loci = MikadoPick.loci
+    symlink(outputs_path, outputs['ei_homology.loci'])
+    # File scores = MikadoPick.scores
+    symlink(outputs_path, outputs['ei_homology.scores'])
+    # File metrics = MikadoPick.metrics
+    symlink(outputs_path, outputs['ei_homology.metrics'])
+    # File stats = MikadoPick.stats
+    symlink(outputs_path, outputs['ei_homology.stats'])
 
 
 def homology_module(cli_arguments):
@@ -460,11 +737,16 @@ def homology_module(cli_arguments):
         workflow_options_file = None
         if cli_arguments.workflow_options_file is not None:
             workflow_options_file = cli_arguments.workflow_options_file.name
-        return execute_cromwell(cli_arguments.runtime_configuration, cli_arguments.jar_cromwell,
-                                cli_arguments.output_parameters_file, workflow_options_file, wdl_file)
+        rc = execute_cromwell(cli_arguments.runtime_configuration, cli_arguments.jar_cromwell,
+                              cli_arguments.output_parameters_file, workflow_options_file, wdl_file)
+        if rc == 0:
+            collect_homology_output(RUN_METADATA)
+
+        return rc
 
 
-def execute_cromwell(workflow_configuration_file, jar_cromwell, input_parameters_filepath, workflow_options_file, wdl_file):
+def execute_cromwell(workflow_configuration_file, jar_cromwell, input_parameters_filepath, workflow_options_file,
+                     wdl_file):
     return cromwell_run(workflow_configuration_file, jar_cromwell,
                         input_parameters_filepath, workflow_options_file, wdl_file)
 
@@ -495,7 +777,7 @@ def cromwell_run(workflow_configuration_file, jar_cromwell, input_parameters_fil
     if workflow_options_file:
         formatted_command_line.extend(["-o", str(workflow_options_file)])
 
-    formatted_command_line.extend(["-m", "run_details.json", str(wdl_file)])
+    formatted_command_line.extend(["-m", RUN_METADATA, str(wdl_file)])
 
     print("Starting:")
     print(' '.join(formatted_command_line))

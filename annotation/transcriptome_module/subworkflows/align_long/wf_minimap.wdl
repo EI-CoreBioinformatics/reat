@@ -32,6 +32,11 @@ workflow wf_mm2 {
 			extra_parameters = aligner_extra_parameters,
 			runtime_attr_override = alignment_resources
 		}
+
+		# TODO: Add 2pass at this stage to re-align each sample with filtered junctions
+#		call twopass {
+#
+#		}
 	}
 
 	output {
@@ -40,42 +45,6 @@ workflow wf_mm2 {
 									   score: select_first([score, 0])}
 	}
 
-}
-
-task Index {
-	input {
-		Boolean is_hq
-		File reference
-		RuntimeAttr? indexing_resources
-	}
-
-	output {
-		File index = basename(reference) + ".mmi"
-	}
-
-    Int cpus = 16
-    RuntimeAttr default_attr = object {
-        cpu_cores: "~{cpus}",
-        mem_gb: 8,
-        max_retries: 1,
-        queue: ""
-    }
-
-    RuntimeAttr runtime_attr = select_first([indexing_resources, default_attr])
-    Int task_cpus = select_first([runtime_attr.cpu_cores, cpus])
-
-	command <<<
-	minimap2 -ax ~{if (is_hq) then "splice:hq" else "splice"} \
-		-t ~{task_cpus} \
-		-d ~{basename(reference)}.mmi ~{reference}
-
-	>>>
-    runtime {
-        cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
-        memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
-        maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
-        queue: select_first([runtime_attr.queue, default_attr.queue])
-    }
 }
 
 task Minimap2Long {
@@ -152,16 +121,20 @@ task Minimap2Long {
     }
 }
 
-task gff2bed {
+task twopass {
 	input {
-		File annotation
+		File alignment
+		File reference
 	}
 
 	output {
-		File bed = "annotation_junctions.bed"
+		File junctions = basename(alignment)+".junc.bed"
 	}
 
 	command <<<
-	gffread --bed ~{annotation} > annotation_junctions.bed
+		2passtools score -o ~{basename(alignment) + ".score.bed"} -f ~{reference} ~{alignment}
+		2passtools filter --exprs 'decision_tree_2_pred' -o ~{basename(alignment) + ".junc.bed"} ~{basename(alignment) + ".score.bed"}
+
+
 	>>>
 }

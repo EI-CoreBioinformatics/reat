@@ -30,7 +30,7 @@ workflow wf_align {
         Boolean? skip_scallop = false
 
         String LQ_aligner = "minimap2"
-        String HQ_aligner = "gmap"
+        String HQ_aligner = "minimap2"
         String HQ_assembler = "merge"
         String LQ_assembler = "stringtie"
 
@@ -118,7 +118,7 @@ workflow wf_align {
         Array[LRSample] def_lq_long_sample = select_first([LQ_long_read_samples])
         call aln_l.wf_align_long as LQ_align {
             input:
-            reference = wf_sanitise.reference,
+            indexed_reference = wf_sanitise.indexed_reference,
             is_hq = false,
             aligner = LQ_aligner,
             long_samples = def_lq_long_sample,
@@ -150,7 +150,7 @@ workflow wf_align {
         Array[LRSample] def_hq_long_sample = select_first([HQ_long_read_samples])
         call aln_l.wf_align_long as HQ_align {
             input:
-            reference = wf_sanitise.reference,
+            indexed_reference = wf_sanitise.indexed_reference,
             is_hq = true,
             aligner = HQ_aligner,
             long_samples = def_hq_long_sample,

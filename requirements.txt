@@ -1,7 +1,0 @@
-setuptools~=45.2.0
-pyfaidx~=0.5.8
-jsonschema~=3.2.0
-biopython~=1.78
-pytest~=6.2.2
-pytest-workflow~=1.5.0
-mikado~=2.0

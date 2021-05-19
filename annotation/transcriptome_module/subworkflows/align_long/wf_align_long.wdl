@@ -3,11 +3,12 @@ version 1.0
 import "../common/structs.wdl"
 import "../common/rt_struct.wdl"
 import "wf_minimap.wdl" as mm2
+import "wf_twopass.wdl" as twopass
 import "wf_gmap.wdl" as gmap
 
 workflow wf_align_long {
     input {
-        File reference
+        IndexedReference indexed_reference
         File? annotation
         Array[LRSample] long_samples
         Boolean is_hq
@@ -34,9 +35,9 @@ workflow wf_align_long {
     }
     
     # Add aligner option
-    if (aligner == "minimap2") {
+    if (aligner == "minimap2" || aligner == "2pass" || aligner == "2pass_merged") {
         if (defined(annotation)) {
-            call mm2.gff2bed {
+            call gff2bed {
                 input:
                 annotation = select_first([annotation])
             }
@@ -51,36 +52,62 @@ workflow wf_align_long {
             }
         }
 
-        call mm2.Index {
+        call Minimap2Index {
             input:
             is_hq = is_hq,
-            reference = reference,
+            reference = indexed_reference.fasta,
             indexing_resources = indexing_resources
         }
 
         scatter (sample in long_samples) {
-            call mm2.wf_mm2 {
-                input:
-                reference = Index.index,
-                bed_junctions = CombineJunctions.combined_junctions,
-                LRS = sample.LR,
-                is_hq = is_hq,
-                name = sample.name,
-                strand = sample.strand,
-                score = sample.score,
-                is_ref = sample.is_ref,
-                exclude_redundant = sample.exclude_redundant,
-                max_intron_len = max_intron_len,
-                aligner_extra_parameters = aligner_extra_parameters,
-                alignment_resources = alignment_resources
+
+            if (aligner == "minimap2") {
+                call mm2.wf_mm2 {
+                    input:
+                    reference = Minimap2Index.index,
+                    bed_junctions = CombineJunctions.combined_junctions,
+                    LRS = sample.LR,
+                    is_hq = is_hq,
+                    name = sample.name,
+                    strand = sample.strand,
+                    score = sample.score,
+                    is_ref = sample.is_ref,
+                    exclude_redundant = sample.exclude_redundant,
+                    max_intron_len = max_intron_len,
+                    aligner_extra_parameters = aligner_extra_parameters,
+                    alignment_resources = alignment_resources
+                }
             }
+
+            if (aligner == "2pass" || aligner == "2pass_merged") {
+                call twopass.wf_twopass {
+                    input:
+                    reference = indexed_reference.fasta,
+                    reference_fai = indexed_reference.fai,
+                    reference_index = Minimap2Index.index,
+                    bed_junctions = CombineJunctions.combined_junctions,
+                    LRS = sample.LR,
+                    is_hq = is_hq,
+                    name = sample.name,
+                    strand = sample.strand,
+                    merge_juncs = (aligner == "2pass_merged"),
+                    score = sample.score,
+                    is_ref = sample.is_ref,
+                    exclude_redundant = sample.exclude_redundant,
+                    max_intron_len = max_intron_len,
+                    aligner_extra_parameters = aligner_extra_parameters,
+                    alignment_resources = alignment_resources
+                }
+            }
+
+            AlignedSample def_aligned_sample = select_first([wf_mm2.aligned_sample, wf_twopass.aligned_sample])
         }
     }
 
     if (aligner == "gmap") {
         call GMapIndex {
             input:
-            reference = reference,
+            reference = indexed_reference.fasta,
             runtime_attr_override = indexing_resources
         }
         scatter (sample in long_samples) {
@@ -93,7 +120,7 @@ workflow wf_align_long {
                 score = sample.score,
                 is_ref = sample.is_ref,
                 exclude_redundant = sample.exclude_redundant,
-                reference = reference,
+                reference = indexed_reference.fasta,
                 min_identity = min_identity,
                 min_intron_len = select_first([min_intron_len,20]),
                 max_intron_len = select_first([max_intron_len,2000]),
@@ -104,7 +131,8 @@ workflow wf_align_long {
         }
     }
 
-    Array[AlignedSample] def_alignments = select_first([wf_mm2.aligned_sample, wf_gmap.aligned_sample])
+    Array[AlignedSample] def_alignments = select_first([def_aligned_sample,
+                                                       wf_gmap.aligned_sample])
 
     scatter (aligned_sample in def_alignments) {
         scatter (bam in aligned_sample.bam) {
@@ -133,6 +161,42 @@ workflow wf_align_long {
         File summary_stats_table = CollectAlignmentStats.summary_stats_table
     }
 
+}
+
+task Minimap2Index {
+	input {
+		Boolean is_hq
+		File reference
+		RuntimeAttr? indexing_resources
+	}
+
+	output {
+		File index = basename(reference) + ".mmi"
+	}
+
+    Int cpus = 16
+    RuntimeAttr default_attr = object {
+        cpu_cores: "~{cpus}",
+        mem_gb: 8,
+        max_retries: 1,
+        queue: ""
+    }
+
+    RuntimeAttr runtime_attr = select_first([indexing_resources, default_attr])
+    Int task_cpus = select_first([runtime_attr.cpu_cores, cpus])
+
+	command <<<
+	minimap2 -ax ~{if (is_hq) then "splice:hq" else "splice"} \
+		-t ~{task_cpus} \
+		-d ~{basename(reference)}.mmi ~{reference}
+
+	>>>
+    runtime {
+        cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
+        memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
+        maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+        queue: select_first([runtime_attr.queue, default_attr.queue])
+    }
 }
 
 task CollectAlignmentStats {
@@ -284,4 +348,18 @@ task CombineJunctions {
     command <<<
     cat ~{annotation_bed} ~{junctions_bed} ~{extra_junctions} > "combined_junctions.bed"
     >>>
+}
+
+task gff2bed {
+	input {
+		File annotation
+	}
+
+	output {
+		File bed = "annotation_junctions.bed"
+	}
+
+	command <<<
+	gffread --bed ~{annotation} > annotation_junctions.bed
+	>>>
 }

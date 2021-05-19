@@ -1,10 +1,11 @@
 import json
 import os
-import sys
 from collections import defaultdict
 from importlib import resources as pkg_resources
 
 from jsonschema import Draft7Validator, validators
+
+from annotation import report_errors
 
 
 def combine_arguments_homology(cli_arguments):
@@ -16,7 +17,7 @@ def combine_arguments_homology(cli_arguments):
     cromwell_inputs.update(annotation)
 
     cromwell_inputs["ei_homology.genome_to_annotate"] = cli_arguments.genome.name
-    cromwell_inputs["ei_homology.AlignProteins.species"] = cli_arguments.alignment_species
+    cromwell_inputs["ei_homology.species"] = cli_arguments.alignment_species
     cromwell_inputs["ei_homology.mikado_config"] = cli_arguments.mikado_config.name
     cromwell_inputs["ei_homology.mikado_scoring"] = cli_arguments.mikado_scoring.name
 
@@ -36,6 +37,7 @@ def combine_arguments_homology(cli_arguments):
         cromwell_inputs["ei_homology.CombineResults.junction_f1_filter"] = cli_arguments.junction_f1_filter
     if cli_arguments.exon_f1_filter:
         cromwell_inputs["ei_homology.CombineResults.exon_f1_filter"] = cli_arguments.exon_f1_filter
+
     if cli_arguments.annotation_filters:
         cromwell_inputs["ei_homology.PrepareAnnotations.filters"] = cli_arguments.annotation_filters
     if cli_arguments.filter_min_cds:
@@ -44,16 +46,20 @@ def combine_arguments_homology(cli_arguments):
         cromwell_inputs["ei_homology.PrepareAnnotations.max_intron_len"] = cli_arguments.filter_max_intron
     if cli_arguments.filter_min_exon:
         cromwell_inputs["ei_homology.PrepareAnnotations.min_exon_len"] = cli_arguments.filter_min_exon
+
+    if cli_arguments.filter_min_cds:
+        cromwell_inputs["ei_homology.PrepareAlignments.min_cds_len"] = cli_arguments.filter_min_cds
+    if cli_arguments.alignment_filters:
+        cromwell_inputs["ei_homology.PrepareAlignments.filters"] = cli_arguments.alignment_filters
+    if cli_arguments.filter_min_exon:
+        cromwell_inputs["ei_homology.PrepareAlignments.min_filter_exon_len"] = cli_arguments.filter_min_exon
+    if cli_arguments.alignment_show_intron_length:
+        cromwell_inputs["ei_homology.PrepareAlignments.show_intron_len"] = cli_arguments.alignment_show_intron_length
+    if cli_arguments.filter_max_intron:
+        cromwell_inputs["ei_homology.PrepareAlignments.max_intron_len"] = cli_arguments.filter_max_intron
+
     if cli_arguments.alignment_min_exon_len:
         cromwell_inputs["ei_homology.AlignProteins.min_spaln_exon_len"] = cli_arguments.alignment_min_exon_len
-    if cli_arguments.alignment_filters:
-        cromwell_inputs["ei_homology.AlignProteins.filters"] = cli_arguments.alignment_filters
-    if cli_arguments.filter_min_cds:
-        cromwell_inputs["ei_homology.AlignProteins.min_cds_len"] = cli_arguments.filter_min_cds
-    if cli_arguments.filter_max_intron:
-        cromwell_inputs["ei_homology.AlignProteins.max_intron_len"] = cli_arguments.filter_max_intron
-    if cli_arguments.filter_min_exon:
-        cromwell_inputs["ei_homology.AlignProteins.min_filter_exon_len"] = cli_arguments.filter_min_exon
     if cli_arguments.alignment_min_identity:
         cromwell_inputs["ei_homology.AlignProteins.min_identity"] = cli_arguments.alignment_min_identity
     if cli_arguments.alignment_min_coverage:
@@ -62,8 +68,6 @@ def combine_arguments_homology(cli_arguments):
         cromwell_inputs["ei_homology.AlignProteins.max_per_query"] = cli_arguments.alignment_max_per_query
     if cli_arguments.alignment_recursion_level:
         cromwell_inputs["ei_homology.AlignProteins.recursion_level"] = cli_arguments.alignment_recursion_level
-    if cli_arguments.alignment_show_intron_length:
-        cromwell_inputs["ei_homology.AlignProteins.show_intron_len"] = cli_arguments.alignment_show_intron_length
 
     return cromwell_inputs
 
@@ -95,14 +99,5 @@ def validate_annotations(csv_annotation_file):
         if not errors[line]:
             result['ei_homology.annotations'].append({'genome': fasta, 'annotation_gff': gff})
 
-    if any([len(error_list) for error_list in errors.values()]):
-        print(f"File {csv_annotation_file.name} parsing failed, errors found:\n", file=sys.stderr)
-        for line, error_list in errors.items():
-            if not error_list:
-                continue
-            print("Line:", line.strip(), sep='\n\t', file=sys.stderr)
-            print("was not parsed successfully, the following errors were found:", file=sys.stderr)
-            [print("\t-", e, file=sys.stderr) for e in error_list]
-        raise ValueError(f"Could not parse file {csv_annotation_file.name}")
-
+    report_errors(errors, csv_annotation_file)
     return result

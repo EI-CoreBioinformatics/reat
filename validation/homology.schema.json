@@ -26,13 +26,13 @@
                 "required": ["genome", "annotation_gff"]
             }
         },
-        "ei_homology.AlignProteins.filters": {
+        "ei_homology.PrepareAlignments.filters": {
             "type": "array",
             "items": {
                 "$ref": "#/definitions/filters"
             }
         },
-        "ei_homology.AlignProteins.species": {
+        "ei_homology.species": {
             "type": "string"
         },
         "ei_homology.PrepareAnnotations.filters": {
@@ -47,9 +47,10 @@
         "ei_homology.AlignProteins.min_coverage": {
             "type": "integer"
         },
-        "ei_homology.PrepareAnnotations.min_cds_len": {
+        "ei_homology.PrepareAlignments.min_cds_len": {
             "type": "integer"
         }
     },
-    "required": ["ei_homology.genome_to_annotate", "ei_homology.annotations", "ei_homology.AlignProteins.species"]
+    "required": ["ei_homology.genome_to_annotate", "ei_homology.annotations", "ei_homology.species"]
 }
+

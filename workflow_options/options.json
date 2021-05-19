@@ -1,6 +1,4 @@
 {
     "write_to_cache": true,
-    "read_from_cache": true,
-    "final_workflow_outputs_dir": "final_outputs",
-    "use_relative_output_paths": true
+    "read_from_cache": true
 }

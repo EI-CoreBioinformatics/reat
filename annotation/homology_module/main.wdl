@@ -18,6 +18,7 @@ workflow ei_homology {
         File genome_to_annotate
         File mikado_scoring
         File mikado_config
+        String species
         RuntimeAttr? index_attr
         RuntimeAttr? score_attr
         RuntimeAttr? aln_attr
@@ -37,25 +38,30 @@ workflow ei_homology {
         }
 
         GenomeProteins cleaned_up = object { genome: annotation.genome, annotation_gff: PrepareAnnotations.cleaned_up_gff, protein_sequences: PrepareAnnotations.proteins}
+        String out_prefix = sub(basename(cleaned_up.annotation_gff), "\.[^/.]+$", "")
+        String ref_prefix = sub(basename(cleaned_up.genome), "\.[^/.]+$", "")
 
         call AlignProteins {
             input:
                 genome_index = IndexGenome.genome_index,
                 genome_to_annotate = genome_to_annotate,
                 genome_proteins = cleaned_up,
+                ref_prefix = ref_prefix,
+                out_prefix = out_prefix,
+                species = species,
                 runtime_attr_override = aln_attr
         }
 
         call PrepareAlignments {
             input:
             annotation_cdnas = PrepareAnnotations.cdnas,
-            alignment_cdnas  = AlignProteins.cdnas,
             annotation_bed = PrepareAnnotations.bed,
-            alignment_bed = AlignProteins.bed
+            ref_prefix = ref_prefix,
+            raw_alignments = AlignProteins.raw_alignments,
+            genome_to_annotate = genome_to_annotate
         }
 
-        String aln_prefix = sub(basename(AlignProteins.alignments), "\.[^/.]+$", "")
-        String ref_prefix = sub(basename(cleaned_up.genome), "\.[^/.]+$", "")
+        String aln_prefix = sub(basename(PrepareAlignments.clean_alignments), "\.[^/.]+$", "")
 
         call ScoreAlignments {
             input:
@@ -70,7 +76,7 @@ workflow ei_homology {
         call CombineResults {
             input:
             alignment_compare_detail = ScoreAlignments.alignment_compare_detail,
-            alignment_gff = AlignProteins.alignments
+            alignment_gff = PrepareAlignments.clean_alignments
         }
     }
 
@@ -109,6 +115,11 @@ workflow ei_homology {
         runtime_attr_override = mikado_attr
     }
 
+    call MikadoSummaryStats {
+        input:
+        stats = [MikadoPick.stats],
+        output_prefix = "xspecies"
+    }
 
     output {
         Array[File] xspecies_combined_alignments = CombineXspecies.xspecies_scored_alignment
@@ -116,12 +127,13 @@ workflow ei_homology {
         Array[File] mgc_evaluation = ScoreAlignments.alignment_compare
         Array[File] mgc_evaluation_detail = ScoreAlignments.alignment_compare_detail
         Array[File] annotation_filter_stats = PrepareAnnotations.stats
-        Array[File] alignment_filter_stats = AlignProteins.stats
+        Array[File] alignment_filter_stats = PrepareAlignments.stats
         File        mgc_score_summary = ScoreSummary.summary_table
         File loci = MikadoPick.loci
         File scores = MikadoPick.scores
         File metrics = MikadoPick.metrics
         File stats = MikadoPick.stats
+        File stats_summary = MikadoSummaryStats.summary
     }
 }
 
@@ -437,17 +449,14 @@ task AlignProteins {
         Array[File] genome_index
         File genome_to_annotate
         GenomeProteins genome_proteins
-        String species = "Eudicoty" # TODO: Need a lookup table from the original file
+        String species
         Int min_spaln_exon_len = 20
         Int min_coverage = 80
         Int min_identity = 50
-        Int max_intron_len = 200000
-        Int min_filter_exon_len = 20
-        Int min_cds_len = 20
         Int max_per_query = 4
         Int recursion_level = 6
-        Boolean show_intron_len = false
-        Array[String] filters = "none"
+        String ref_prefix
+        String out_prefix
         RuntimeAttr? runtime_attr_override
     }
     Int cpus = 8
@@ -461,15 +470,9 @@ task AlignProteins {
     RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
 
     Int task_cpus = select_first([runtime_attr.cpu_cores, cpus])
-#    String out_prefix = sub(basename(genome_index[0]), "\.[^/.]+$", "")
-    String out_prefix = sub(basename(genome_proteins.annotation_gff), "\.[^/.]+$", "")
-    String ref_prefix = sub(basename(genome_proteins.genome), "\.[^/.]+$", "")
 
     output {
-        File stats = ref_prefix + ".alignment.stats"
-        File alignments = ref_prefix+".alignment.stop_extended.extra_attr.gff"
-        File cdnas = ref_prefix + ".alignment.cdna.fa"
-        File bed = ref_prefix + ".alignment.bed"
+        File raw_alignments = ref_prefix+".alignment.gff"
     }
 
     command <<<
@@ -478,12 +481,6 @@ task AlignProteins {
         ln -s ~{genome_proteins.protein_sequences} .
         spaln -t~{task_cpus} -KP -O0,12 -Q~{recursion_level} -M~{max_per_query}.~{max_per_query} ~{"-T"+species} -dgenome_to_annotate -o ~{out_prefix} -yL~{min_spaln_exon_len} ~{basename(genome_proteins.protein_sequences)}
         sortgrcd -O4 ~{out_prefix}.grd | tee ~{out_prefix}.s | spaln2gff --min_coverage ~{min_coverage} --min_identity ~{min_identity} -s "spaln" > ~{ref_prefix}.alignment.gff
-
-        xspecies_cleanup ~{if show_intron_len then "--show_intron_len" else ""} \
-        --filters ~{sep=" " filters} --max_intron ~{max_intron_len} --min_exon ~{min_filter_exon_len} --min_protein ~{min_cds_len} \
-        -g ~{genome_to_annotate} -A ~{ref_prefix}.alignment.gff --bed ~{ref_prefix}.alignment.bed \
-        -x ~{ref_prefix}.alignment.cdna.fa \
-        -o ~{ref_prefix}.alignment.stop_extended.extra_attr.gff > ~{ref_prefix}.alignment.stats
     >>>
 
     runtime {
@@ -497,13 +494,23 @@ task AlignProteins {
 
 task PrepareAlignments {
     input {
+        String ref_prefix
+
+        Int max_intron_len = 200000
+        Int min_filter_exon_len = 20
+        Int min_cds_len = 20
+        Boolean show_intron_len = false
+        Array[String] filters = "none"
+
+        File raw_alignments
+        File genome_to_annotate
         File annotation_cdnas
         File annotation_bed
-        File alignment_cdnas
-        File alignment_bed
     }
 
     output {
+        File clean_alignments = ref_prefix + ".alignment.stop_extended.extra_attr.gff"
+        File stats = ref_prefix + ".alignment.stats"
         File cdnas = "all_cdnas.fa"
         File bed = "all_cdnas.bed"
         File groups = "groups.txt"
@@ -512,10 +519,16 @@ task PrepareAlignments {
     command <<<
         set -euxo pipefail
 
-        create_mgc_groups -f ~{alignment_cdnas}
+        xspecies_cleanup ~{if show_intron_len then "--show_intron_len" else ""} \
+        --filters ~{sep=" " filters} --max_intron ~{max_intron_len} --min_exon ~{min_filter_exon_len} --min_protein ~{min_cds_len} \
+        -g ~{genome_to_annotate} -A ~{raw_alignments} --bed ~{ref_prefix}.alignment.bed \
+        -x ~{ref_prefix}.alignment.cdna.fa \
+        -o ~{ref_prefix}.alignment.stop_extended.extra_attr.gff > ~{ref_prefix}.alignment.stats
 
-        cat ~{alignment_cdnas} ~{annotation_cdnas}  > all_cdnas.fa
-        cat ~{alignment_bed} ~{annotation_bed} > all_cdnas.bed
+        create_mgc_groups -f ~{ref_prefix}.alignment.cdna.fa
+
+        cat ~{ref_prefix}.alignment.cdna.fa ~{annotation_cdnas}  > all_cdnas.fa
+        cat ~{ref_prefix}.alignment.bed ~{annotation_bed} > all_cdnas.bed
     >>>
 
     runtime {
@@ -558,7 +571,7 @@ task ScoreAlignments {
         set -euxo pipefail
         mkdir ScoreAlignments/
         cd ScoreAlignments
-        multi_genome_compare.py -t ~{task_cpus} --groups ~{groups} \
+        multi_genome_compare -t ~{task_cpus} --groups ~{groups} \
         --cdnas ~{cdnas} --bed12 ~{bed} \
         -o comp_~{aln_prefix}_~{ref_prefix}.tab -d comp_~{aln_prefix}_~{ref_prefix}_detail.tab
     >>>
@@ -591,5 +604,20 @@ task CombineResults {
         set -euxo pipefail
         combine_alignments_with_mgc --detail ~{alignment_compare_detail} ~{'--exon_f1_filter ' + exon_f1_filter} \
         ~{'--junction_f1_filter ' + junction_f1_filter} --gff ~{alignment_gff} -o ~{aln_prefix}.mgc.gff
+    >>>
+}
+
+task MikadoSummaryStats {
+    input {
+        Array[File] stats
+        String output_prefix
+    }
+
+    output {
+        File summary = output_prefix + ".summary.stats.tsv"
+    }
+
+    command <<<
+    mikado_summary_stats ~{sep=" " stats} > ~{output_prefix}.summary.stats.tsv
     >>>
 }

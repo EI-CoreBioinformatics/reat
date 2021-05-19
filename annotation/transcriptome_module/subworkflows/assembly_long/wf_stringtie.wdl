@@ -67,6 +67,15 @@ task StringtieLong {
     }
 
     Int cpus = 8
+    RuntimeAttr default_attr = object {
+        cpu_cores: "~{cpus}",
+        mem_gb: 16,
+        max_retries: 1,
+        queue: ""
+    }
+
+    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
+    Int task_cpus = select_first([runtime_attr.cpu_cores, cpus])
 
     output {
         File gff = output_directory + "/" + name+"."+aligner+".stringtie.gtf"
@@ -76,18 +85,8 @@ task StringtieLong {
         set -euxo pipefail
         mkdir ~{output_directory}
         cd ~{output_directory}
-        stringtie ~{bam} -p "~{cpus}"~{" -G " + reference_annotation} ~{if(collapse) then "-R " else "-L "} -o "~{name}.~{aligner}.stringtie.gtf"
+        stringtie ~{bam} -p "~{task_cpus}"~{" -G " + reference_annotation} ~{if(collapse) then "-R " else "-L "} -o "~{name}.~{aligner}.stringtie.gtf"
     >>>
-
-    RuntimeAttr default_attr = object {
-        cpu_cores: "~{cpus}",
-        mem_gb: 16,
-        max_retries: 1,
-        queue: ""
-    }
-
-    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
-
 
     runtime {
         cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
