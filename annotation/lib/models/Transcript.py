@@ -8,6 +8,7 @@ class GenomicSegment:
     """
     A genomic segment defines a totally ordered hashable base type
     """
+    __slots__ = ('chrom', 'start', 'end', 'strand')
 
     def __init__(self, chrom, start, end, strand):
         self.chrom = sys.intern(chrom)  # Chromosome names are interned to save space and speedup comparisons
@@ -31,6 +32,7 @@ class UniquelyIdentifiableSegment(GenomicSegment):
     uid member which will be used for both hashing and equality, the uniqueness of the uid
     is not enforced by this base class
     """
+    __slots__ = ('uid', 'attr')
 
     def __init__(self, uid, chrom, start, end, strand, attr):
         super().__init__(chrom, start, end, strand)
@@ -65,6 +67,8 @@ class UniquelyIdentifiableSegment(GenomicSegment):
 
 
 class Exon(UniquelyIdentifiableSegment):
+    __slots__ = ('_score', '_phase')
+
     def __init__(self, uid, chrom, gstart, gend, score, phase, strand, attr):
         super().__init__(uid, chrom, gstart, gend, strand, attr)
         self._score = score
@@ -99,7 +103,9 @@ class Exon(UniquelyIdentifiableSegment):
 
 
 class Transcript(UniquelyIdentifiableSegment):
-    def __init__(self, uid, type, source, chrom, gstart, gend, strand, score, exons: list, cds_exons: list,
+    __slots__ = ('exons', 'cds_exons', 'score', 'type', 'source', 'css', 'ces')
+
+    def __init__(self, uid, ftype, source, chrom, gstart, gend, strand, score, exons: list, cds_exons: list,
                  css, ces, attr: dict):
         super().__init__(uid, chrom, gstart, gend, strand, attr)
 
@@ -107,7 +113,7 @@ class Transcript(UniquelyIdentifiableSegment):
         # See test_gene.py:test_translate_to:214, without the following it would fail
         if exons is cds_exons:
             cds_exons = deepcopy(exons)
-        self.type = type
+        self.type = ftype
         self.score = score
         self.source = sys.intern(source)
         self.exons = exons

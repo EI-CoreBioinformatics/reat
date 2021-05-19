@@ -151,7 +151,7 @@ def memoize_bed(string, sql):
         pos = parser.tell()  # This will be 0 as we are at the beginning
         for line in parser:
             fields = line.split(b"\t")
-            if len(fields) != 12 or (fields and fields[0][0] == b"#"):
+            if len(fields) < 12 or (fields and fields[0][0] == b"#"):
                 header = True
             else:
                 header = False
@@ -351,8 +351,8 @@ class ComparisonWorker(mp.Process):
             else:
                 coding_identity = round(100 * coding_identical / coding_common, 2)
 
-                coding_result = array_compare(np.ravel(np.array(c_t1_coding, dtype=np.int)),
-                                              np.ravel(np.array(c_t2_coding, dtype=np.int)),
+                coding_result = array_compare(np.ravel(np.array(c_t1_coding, dtype=int)),
+                                              np.ravel(np.array(c_t2_coding, dtype=int)),
                                               coding_identity)
                 coding_result, coding_ccode = coding_result[:-1].reshape((2, 3)), int(coding_result[-1])
 
@@ -613,6 +613,9 @@ def main():
         logger.info("Starting to load BED file")
         memoize_bed(args.bed12, bed_db)
         logger.info("Loaded BED file")
+
+    with pyfaidx.Fasta(args.cdnas):
+        pass
 
     writer = logging.handlers.QueueListener(logging_queue, logger)
     writer.respect_handler_level = True
