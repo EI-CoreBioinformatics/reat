@@ -690,11 +690,11 @@ def collect_homology_output(run_metadata):
     if not os.path.exists(annotations_path):
         os.mkdir(annotations_path)
     # Array[File] clean_annotations = PrepareAnnotations.cleaned_up_gff
-    for clean_annotation in outputs['ei_homology.clean_annotation']:
+    for clean_annotation in outputs['ei_homology.clean_annotations']:
         symlink(annotations_path, clean_annotation)
     # Array[File] annotation_filter_stats = PrepareAnnotations.stats
     for annotation_stats in outputs['ei_homology.annotation_filter_stats']:
-        symlink(annotation_stats, annotation_stats)
+        symlink(annotations_path, annotation_stats)
 
     # ScoreAlignments
     score_alignments_path = os.path.join(outputs_path, 'ei_homology.score_alignments')
