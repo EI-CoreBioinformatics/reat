@@ -20,6 +20,7 @@ workflow wf_twopass {
 		Boolean? exclude_redundant
 		String? aligner_extra_parameters
         RuntimeAttr? twopass_resources
+        RuntimeAttr? twopass_merge_resources
 		RuntimeAttr? alignment_resources
 	}
 
@@ -70,7 +71,7 @@ workflow wf_twopass {
 			reference_fai = reference_fai,
 			strand = strand,
 			scored_beds = twopass.scored_junctions,
-			runtime_attr_override = twopass_resources
+			runtime_attr_override = twopass_merge_resources
 		}
 
 		scatter (LR in LRS) {

@@ -21,6 +21,7 @@ workflow wf_align_long {
         Int? max_intron_len = 200000
         Int? max_intron_len_ends = 100000
         RuntimeAttr? twopass_resources
+        RuntimeAttr? twopass_merge_resources
         RuntimeAttr? alignment_resources
         RuntimeAttr? indexing_resources
     }
@@ -98,7 +99,8 @@ workflow wf_align_long {
                     max_intron_len = max_intron_len,
                     aligner_extra_parameters = aligner_extra_parameters,
                     alignment_resources = alignment_resources,
-                    twopass_resources = twopass_resources
+                    twopass_resources = twopass_resources,
+                    twopass_merge_resources = twopass_merge_resources
                 }
             }
 
