@@ -19,6 +19,7 @@ workflow wf_twopass {
 		Boolean? is_ref
 		Boolean? exclude_redundant
 		String? aligner_extra_parameters
+        RuntimeAttr? twopass_resources
 		RuntimeAttr? alignment_resources
 	}
 
@@ -42,7 +43,8 @@ workflow wf_twopass {
 			alignment = base_alignment.bam,
 			index = base_alignment.csi,
 			reference = reference,
-			reference_fai = reference_fai
+			reference_fai = reference_fai,
+			runtime_attr_override = twopass_resources
 		}
 
 		if (!merge_juncs) {
@@ -67,7 +69,8 @@ workflow wf_twopass {
 			reference = reference,
 			reference_fai = reference_fai,
 			strand = strand,
-			scored_beds = twopass.scored_junctions
+			scored_beds = twopass.scored_junctions,
+			runtime_attr_override = twopass_resources
 		}
 
 		scatter (LR in LRS) {

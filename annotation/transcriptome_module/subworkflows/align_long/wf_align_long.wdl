@@ -20,6 +20,7 @@ workflow wf_align_long {
         Int? min_intron_len = 20
         Int? max_intron_len = 200000
         Int? max_intron_len_ends = 100000
+        RuntimeAttr? twopass_resources
         RuntimeAttr? alignment_resources
         RuntimeAttr? indexing_resources
     }
@@ -96,7 +97,8 @@ workflow wf_align_long {
                     exclude_redundant = sample.exclude_redundant,
                     max_intron_len = max_intron_len,
                     aligner_extra_parameters = aligner_extra_parameters,
-                    alignment_resources = alignment_resources
+                    alignment_resources = alignment_resources,
+                    twopass_resources = twopass_resources
                 }
             }
 
