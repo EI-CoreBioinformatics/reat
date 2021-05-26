@@ -43,6 +43,7 @@ setup(
         "jsonschema~=3.2.0",
         "pyyaml~=5.4.1",
         "parasail~=1.2.4",
+        '2passtools @ git+https://github.com/bartongroup/2passtools.git#d4378d0'
     ],
     extras_require={
         'docs': [

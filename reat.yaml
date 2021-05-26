@@ -23,6 +23,3 @@ dependencies:
   - prodigal=2.6.3
   - blast=2.11.0
   - diamond>=2.0.0
-  - pip:
-      - git+https://github.com/bartongroup/2passtools.git
-      - .
