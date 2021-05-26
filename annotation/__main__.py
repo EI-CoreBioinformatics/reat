@@ -847,6 +847,14 @@ def main():
     cli_arguments = parse_arguments()
     check_environment()
 
+    # Check options.json
+    try:
+        json.load(cli_arguments.workflow_options_file)
+    except ValueError as e:
+        print(f"Sorry, it appears {cli_arguments.workflow_options_file.name} is not a valid JSON file.",
+              file=sys.stderr)
+        print(f"Please see the following for more details:\n{e}", file=sys.stderr)
+
     if cli_arguments.reat_module == "transcriptome":
         rc = transcriptome_module(cli_arguments)
     elif cli_arguments.reat_module == "homology":
