@@ -348,6 +348,8 @@ def parse_arguments():
     homology_ap.add_argument("--genome", type=argparse.FileType('r'),
                              help="Fasta file of the genome to annotate",
                              required=True)
+    homology_ap.add_argument("-p", "--output_prefix", type=str, default='xspecies',
+                             help="Prefix for the final output files")
     homology_ap.add_argument("--alignment_species", type=str,
                              help="Species specific parameters, select a value from the first or second column of "
                                   "https://raw.githubusercontent.com/ogotoh/spaln/master/table/gnm2tab",
