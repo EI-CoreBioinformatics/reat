@@ -3,7 +3,6 @@ version 1.0
 import "../common/structs.wdl"
 import "../common/rt_struct.wdl"
 import "wf_minimap.wdl" as mm2
-import "wf_twopass.wdl" as twopass
 import "wf_gmap.wdl" as gmap
 
 workflow wf_align_long {
@@ -36,38 +35,63 @@ workflow wf_align_long {
         indexing_resources: {description:"Computational resources to generate the genome target index previous to alignment, overrides defaults.", category: "required"}
     }
     
-    # Add aligner option
+    if (defined(annotation)) {
+        call gff2bed {
+            input:
+            annotation = select_first([annotation])
+        }
+    }
+
+    if (defined(annotation) || defined(portcullis_junctions) || defined(extra_junctions)) {
+        call CombineJunctions {
+            input:
+            annotation_bed = gff2bed.bed,
+            junctions_bed = portcullis_junctions,
+            extra_junctions = extra_junctions
+        }
+    }
+
     if (aligner == "minimap2" || aligner == "2pass" || aligner == "2pass_merged") {
-        if (defined(annotation)) {
-            call gff2bed {
-                input:
-                annotation = select_first([annotation])
-            }
-        }
-
-        if (defined(annotation) || defined(portcullis_junctions) || defined(extra_junctions)) {
-            call CombineJunctions {
-                input:
-                annotation_bed = gff2bed.bed,
-                junctions_bed = portcullis_junctions,
-                extra_junctions = extra_junctions
-            }
-        }
-
         call Minimap2Index {
             input:
             is_hq = is_hq,
             reference = indexed_reference.fasta,
             indexing_resources = indexing_resources
         }
-
+		File mmi_2pass = select_first([Minimap2Index.index])
         scatter (sample in long_samples) {
-
-            if (aligner == "minimap2") {
-                call mm2.wf_mm2 {
+            call mm2.wf_mm2 as minimap2 {
+                input:
+                reference = mmi_2pass,
+                bed_junctions = CombineJunctions.combined_junctions,
+                LRS = sample.LR,
+                is_hq = is_hq,
+                name = sample.name,
+                strand = sample.strand,
+                score = sample.score,
+                is_ref = sample.is_ref,
+                exclude_redundant = sample.exclude_redundant,
+                max_intron_len = max_intron_len,
+                aligner_extra_parameters = aligner_extra_parameters,
+                alignment_resources = alignment_resources
+            }
+            if (aligner == "2pass" || aligner == "2pass_merged") {
+                call twopass_score {
                     input:
-                    reference = Minimap2Index.index,
-                    bed_junctions = CombineJunctions.combined_junctions,
+                    strand = sample.strand,
+                    name = sample.name,
+                    alignment = minimap2.aligned_sample.bam,
+                    reference = indexed_reference.fasta,
+                    reference_fai = indexed_reference.fai,
+                    runtime_attr_override = twopass_resources
+                }
+            }
+            if (aligner == "2pass") {
+                File twopass_junctions = select_first([twopass_score.filtered_junctions])
+                call mm2.wf_mm2 as minimap2_2pass {
+                    input:
+                    reference = mmi_2pass,
+                    bed_junctions = twopass_junctions,
                     LRS = sample.LR,
                     is_hq = is_hq,
                     name = sample.name,
@@ -80,32 +104,39 @@ workflow wf_align_long {
                     alignment_resources = alignment_resources
                 }
             }
-
-            if (aligner == "2pass" || aligner == "2pass_merged") {
-                call twopass.wf_twopass {
-                    input:
-                    reference = indexed_reference.fasta,
-                    reference_fai = indexed_reference.fai,
-                    reference_index = Minimap2Index.index,
-                    bed_junctions = CombineJunctions.combined_junctions,
-                    LRS = sample.LR,
-                    is_hq = is_hq,
-                    name = sample.name,
-                    strand = sample.strand,
-                    merge_juncs = (aligner == "2pass_merged"),
-                    score = sample.score,
-                    is_ref = sample.is_ref,
-                    exclude_redundant = sample.exclude_redundant,
-                    max_intron_len = max_intron_len,
-                    aligner_extra_parameters = aligner_extra_parameters,
-                    alignment_resources = alignment_resources,
-                    twopass_resources = twopass_resources,
-                    twopass_merge_resources = twopass_merge_resources
-                }
-            }
-
-            AlignedSample def_aligned_sample = select_first([wf_mm2.aligned_sample, wf_twopass.aligned_sample])
+            AlignedSample def_minimap_1pass = select_first([minimap2_2pass.aligned_sample, minimap2.aligned_sample])
         }
+
+		if (aligner == "2pass_merged") {
+			# Merge the scored junctions from all samples
+			Array[File] scored_junctions = select_all(select_first([twopass_score.scored_junctions]))
+			call twopass_merge {
+				input:
+				reference = indexed_reference.fasta,
+				reference_fai = indexed_reference.fai,
+				scored_beds = scored_junctions,
+				runtime_attr_override = twopass_merge_resources
+			}
+			# And align all samples with the new merged junctions
+			scatter (sample in long_samples) {
+				call mm2.wf_mm2 as minimap2_2pass_merged {
+					input:
+					reference = mmi_2pass,
+					bed_junctions = twopass_merge.merged_filtered_junctions,
+					LRS = sample.LR,
+					is_hq = is_hq,
+					name = sample.name,
+					strand = sample.strand,
+					score = sample.score,
+					is_ref = sample.is_ref,
+					exclude_redundant = sample.exclude_redundant,
+					max_intron_len = max_intron_len,
+					aligner_extra_parameters = aligner_extra_parameters,
+					alignment_resources = alignment_resources
+				}
+			}
+		}
+		Array[AlignedSample] def_mm2 = select_first([minimap2_2pass_merged.aligned_sample, def_minimap_1pass])
     }
 
     if (aligner == "gmap") {
@@ -135,8 +166,7 @@ workflow wf_align_long {
         }
     }
 
-    Array[AlignedSample] def_alignments = select_first([def_aligned_sample,
-                                                       wf_gmap.aligned_sample])
+    Array[AlignedSample] def_alignments = select_first([def_mm2, wf_gmap.aligned_sample])
 
     scatter (aligned_sample in def_alignments) {
         scatter (bam in aligned_sample.bam) {
@@ -366,4 +396,95 @@ task gff2bed {
 	command <<<
 	gffread --bed ~{annotation} > annotation_junctions.bed
 	>>>
+}
+
+task twopass_score {
+	input {
+		Array[File] alignment
+		File reference
+		File reference_fai
+        String name
+		String strand
+		RuntimeAttr? runtime_attr_override
+	}
+
+	RuntimeAttr default_attr = object {
+		cpu_cores: 16,
+		mem_gb: 8,
+		max_retries: 1,
+		queue: ""
+	}
+
+	RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
+	Int task_cpus = select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
+	Int task_mem = round(select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + task_cpus/2)
+
+
+	output {
+		File filtered_junctions = name+".filt_junc.bed"
+		File scored_junctions = name+".score_junc.bed"
+	}
+
+	command <<<
+		strand_opt="--unstranded"
+		if [ "~{strand}" == "fr-secondstrand" ]
+		then
+			strand_opt="--stranded"
+		fi
+
+		ln -s ~{reference} reference.fasta
+		ln -s ~{reference_fai} reference.fasta.fai
+
+		samtools merge --write-index aln.bam ~{sep=" " alignment}
+		2passtools score --processes ~{task_cpus} ${strand_opt} -o ~{name + ".score_junc.bed"} -f reference.fasta aln.bam
+		2passtools filter --exprs 'decision_tree_2_pred' -o ~{name + ".filt_junc.bed"} ~{name + ".score_junc.bed"}
+	>>>
+
+	runtime {
+		cpu: task_cpus
+		memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
+		maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+		queue: select_first([runtime_attr.queue, default_attr.queue])
+	}
+}
+
+task twopass_merge {
+	input {
+		Array[File] scored_beds
+		File reference
+		File reference_fai
+		RuntimeAttr? runtime_attr_override
+	}
+
+	RuntimeAttr default_attr = object {
+		cpu_cores: 16,
+		mem_gb: 8,
+		max_retries: 1,
+		queue: ""
+	}
+
+	RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
+	Int task_cpus = select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
+	Int task_mem = round(select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + task_cpus/2)
+
+
+	output {
+		File merged_filtered_junctions = "merged.filt_junc.bed"
+		File merged_scored_junctions = "merged.score_junc.bed"
+	}
+
+	command <<<
+		ln -s ~{reference} reference.fasta
+		ln -s ~{reference_fai} reference.fasta.fai
+
+		2passtools merge --processes ~{task_cpus} -o merged.score_junc.bed -f reference.fasta ~{sep=" " scored_beds}
+		2passtools filter --exprs 'decision_tree_2_pred' -o merged.filt_junc.bed merged.score_junc.bed
+	>>>
+
+	runtime {
+		cpu: task_cpus
+		memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
+		maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+		queue: select_first([runtime_attr.queue, default_attr.queue])
+	}
 }
