@@ -37,7 +37,7 @@ setup(
     ],
     install_requires=[
         "biopython~=1.78",
-        "mikado~=2.2.4",
+        "mikado~=2.3.0",
         "pyfaidx~=0.5.8",
         "numpy~=1.20.3",
         "jsonschema~=3.2.0",
