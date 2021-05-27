@@ -850,10 +850,11 @@ def main():
     # Check options.json
     try:
         json.load(cli_arguments.workflow_options_file)
-    except ValueError as e:
-        print(f"Sorry, it appears {cli_arguments.workflow_options_file.name} is not a valid JSON file.",
-              file=sys.stderr)
-        print(f"Please see the following for more details:\n{e}", file=sys.stderr)
+    except json.JSONDecodeError as err:
+        start, stop = max(0, err.pos - 20), err.pos + 20
+        snippet = err.doc[start:stop]
+        print(err)
+        print('... ' if start else '', snippet, ' ...' if stop < len(err.doc) else '', sep="")
 
     if cli_arguments.reat_module == "transcriptome":
         rc = transcriptome_module(cli_arguments)
