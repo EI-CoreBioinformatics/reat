@@ -1,0 +1,74 @@
+#!/usr/bin/env python3
+import argparse
+import time
+from textwrap import wrap
+
+import pyfaidx
+
+from annotation.lib.parsers.GFF import GFFReader
+
+
+def parse_args():
+    p = argparse.ArgumentParser()
+    p.add_argument("-a", "--annotation", type=argparse.FileType('r'), required=True,
+                   help="GFF file to extract from")
+    p.add_argument("-g", "--genome", type=argparse.FileType('r'), required=True,
+                   help="FASTA file of the reference to the annotated species to extract proteins from")
+    p.add_argument("-l", "--list_extract", type=argparse.FileType('r'),
+                   help="File containing names of the genes to extract")
+    p.add_argument("-o", "--output",
+                   help="Output prefix of the extracted sequence (fasta) and gene (GFF)", default="extracted")
+    p.add_argument("-e", "--extract", nargs='+', type=str,
+                   help="ID of the gene to extract")
+    p.add_argument("-w", "--window", type=int, default=100,
+                   help="Window up/down stream of the gene start/end to extract")
+    p.add_argument("-n", "--name", default='',
+                   help="Name of the extracted gene, same as 'extract' parameter if empty")
+    args = p.parse_args()
+    return args
+
+
+def main():
+    args = parse_args()
+    fasta_file = args.genome
+    gff_file = args.annotation
+    gene_ids = set()
+    if args.extract:
+        gene_ids = set(args.extract)
+    if args.list_extract:
+        for line in args.list_extract:
+            gene_ids.add(line.strip())
+    window = args.window
+    name = args.name
+    with open(args.output + ".gff", "w") as output_file_gff, open(args.output + ".fa", 'w') as output_file_fa:
+        with pyfaidx.Fasta(fasta_file.name, read_ahead=10000000) as genome:
+            for gene in GFFReader(gff_file.name):
+                mrnas_to_print = set()
+                for mrna_id, mrna in gene.mrnas.items():
+                    if mrna_id in gene_ids:
+                        mrnas_to_print.add(mrna)
+                if mrnas_to_print:
+                    # Extract the sequence with a user-specified window up/down stream
+                    seq_max = len(genome[gene.chrom])
+                    window_min = max(1, gene.start - window + 1)
+                    window_max = min(seq_max, gene.end + window)
+                    gene_seq = genome.get_seq(gene.chrom, window_min, window_max).seq
+                    # Extract the gene with a user-specified name prefix
+                    gene.change_id(gene.chrom+'_'+str(window_min)+'-'+str(window_max))
+                    # Edit all the coordinates in the gene to the new location based on the extracted window of sequence
+                    gene.translate_to(min(window_min, window), gene.uid)
+                    gene.print_gff_line(output_file_gff)
+                    print(">", gene.uid, sep='', file=output_file_fa)
+                    print('\n'.join(wrap(gene_seq)), file=output_file_fa)
+                    for mrna in mrnas_to_print:
+                        mrna.print_gff_line(output_file_gff)
+                        for e in mrna.exons:
+                            e.print_gff_line(gene.source, "exon", output_file_gff)
+                        for c in mrna.cds_exons:
+                            c.print_gff_line(gene.source, "CDS", output_file_gff)
+
+
+if __name__ == '__main__':
+    t1 = time.time()
+    main()
+    print(f'Done in {time.time() - t1:.2f}s')

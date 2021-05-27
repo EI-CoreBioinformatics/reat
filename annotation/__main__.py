@@ -71,7 +71,6 @@ def check_environment(force_quit=True):
         "blastn": {"command": "blastn -version".split(' '), "result": "blastn: 2.7.1+"},
         "blastx": {"command": "blastx -version".split(' '), "result": "blastx: 2.7.1+"},
         "samtools": {"command": "samtools --version".split(' '), "result": "samtools 1.9"},
-        "bamtools": {"command": "bamtools --version".split(' '), "result": "bamtools 2.5.1"},
         "gffread": {"command": "gffread --version".split(' '), "result": "0.12.2"},
         "gmap": {"command": "gmap --version".split(' '), "result": "version 2019-02-15"},
         "minimap2": {"command": "minimap2 --version".split(' '), "result": "2.17-r941"},
@@ -349,6 +348,8 @@ def parse_arguments():
     homology_ap.add_argument("--genome", type=argparse.FileType('r'),
                              help="Fasta file of the genome to annotate",
                              required=True)
+    homology_ap.add_argument("-p", "--output_prefix", type=str, default='xspecies',
+                             help="Prefix for the final output files")
     homology_ap.add_argument("--alignment_species", type=str,
                              help="Species specific parameters, select a value from the first or second column of "
                                   "https://raw.githubusercontent.com/ogotoh/spaln/master/table/gnm2tab",
@@ -845,6 +846,15 @@ def main():
     start_time = time.time()
     cli_arguments = parse_arguments()
     check_environment()
+
+    # Check options.json
+    try:
+        json.load(cli_arguments.workflow_options_file)
+    except json.JSONDecodeError as err:
+        start, stop = max(0, err.pos - 20), err.pos + 20
+        snippet = err.doc[start:stop]
+        print(err)
+        print('... ' if start else '', snippet, ' ...' if stop < len(err.doc) else '', sep="")
 
     if cli_arguments.reat_module == "transcriptome":
         rc = transcriptome_module(cli_arguments)

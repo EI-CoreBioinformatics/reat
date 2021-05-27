@@ -1,0 +1,19 @@
+- name: REAT_Homology
+  tags:
+    - homology
+  command: >-
+    reat --jar_cromwell /Users/yanesl/.cromwell/cromwell.jar
+    --runtime_configuration /Users/yanesl/.cromwell/cromwell.examples.conf
+    --workflow_options_file tests/integration/homology/options.json
+    --computational_resources tests/integration/homology/compute_inputs.json
+    homology
+    --genome tests/integration/homology/inputs/Athaliana_447_TAIR10_Chr3_1065466-1464870.fa
+    --alignment_species arabthal
+    --output_prefix homology_test
+    --annotations_csv tests/integration/homology/annotations.csv
+    --mikado_config tests/integration/homology/inputs/config.yaml
+    --mikado_scoring tests/integration/homology/inputs/plant.protein.wport_wex.percentage.yaml
+  files:
+    - path: "log.out"
+      contains:
+      - "WorkflowSucceededState"

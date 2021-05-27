@@ -19,6 +19,7 @@ workflow ei_homology {
         File mikado_scoring
         File mikado_config
         String species
+        String output_prefix = "xspecies"
         RuntimeAttr? index_attr
         RuntimeAttr? score_attr
         RuntimeAttr? aln_attr
@@ -101,7 +102,7 @@ workflow ei_homology {
         reference = genome_to_annotate,
         extra_config = mikado_config,
         xspecies = CombineXspecies.xspecies_scored_alignment,
-        output_prefix = "xspecies",
+        output_prefix = output_prefix,
         runtime_attr_override = mikado_attr
     }
 
@@ -111,14 +112,14 @@ workflow ei_homology {
         scoring_file = mikado_scoring,
         mikado_db = Mikado.mikado_db,
         transcripts = Mikado.prepared_gtf,
-        output_prefix = "xspecies",
+        output_prefix = output_prefix,
         runtime_attr_override = mikado_attr
     }
 
     call MikadoSummaryStats {
         input:
         stats = [MikadoPick.stats],
-        output_prefix = "xspecies"
+        output_prefix = output_prefix
     }
 
     output {

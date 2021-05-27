@@ -32,11 +32,6 @@ workflow wf_mm2 {
 			extra_parameters = aligner_extra_parameters,
 			runtime_attr_override = alignment_resources
 		}
-
-		# TODO: Add 2pass at this stage to re-align each sample with filtered junctions
-#		call twopass {
-#
-#		}
 	}
 
 	output {
@@ -107,7 +102,7 @@ task Minimap2Long {
         -G ~{max_intron_len} \
         ${strand_opt} \
         -t ~{task_cpus} \
-        -L --MD \
+        -L \
         --eqx -2 \
         --secondary=no \
         ~{reference} - | samtools view -F 4 -F 0x900 -bS - | samtools sort -@ ~{task_cpus/2} -m 1G --reference ~{reference} -T minimap2.sort -o minimap2.~{name}.~{LR_basename}.bam -

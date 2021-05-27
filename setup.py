@@ -6,7 +6,7 @@ import glob
 
 setup(
     name='reat',
-    version='0.1.0',
+    version='0.2.0',
     packages=find_packages('.', exclude=["tests"]),
     url='https://github.com/ei-corebioinformatics/reat',
     classifiers=[
@@ -37,12 +37,13 @@ setup(
     ],
     install_requires=[
         "biopython~=1.78",
-        "mikado~=2.2.4",
+        "mikado~=2.3.0",
         "pyfaidx~=0.5.8",
         "numpy~=1.20.3",
         "jsonschema~=3.2.0",
         "pyyaml~=5.4.1",
         "parasail~=1.2.4",
+        '2passtools @ git+https://github.com/bartongroup/2passtools.git#d4378d0'
     ],
     extras_require={
         'docs': [

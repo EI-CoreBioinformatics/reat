@@ -59,6 +59,8 @@ workflow wf_align {
         RuntimeAttr? short_read_scallop_assembly_resources
         RuntimeAttr? long_read_indexing_resources
         RuntimeAttr? long_read_alignment_resources
+        RuntimeAttr? long_read_twopass_resources
+        RuntimeAttr? long_read_twopass_merge_resources
         RuntimeAttr? long_read_assembly_resources
         RuntimeAttr? portcullis_resources
     }
@@ -131,7 +133,9 @@ workflow wf_align {
             extra_junctions = extra_junctions,
             portcullis_junctions = portcullis.pass_bed,
             indexing_resources = long_read_indexing_resources,
-            alignment_resources = long_read_alignment_resources
+            alignment_resources = long_read_alignment_resources,
+            twopass_resources = long_read_twopass_resources,
+            twopass_merge_resources = long_read_twopass_merge_resources
         }
 
         # Check what is defined for lq-long and run that
@@ -163,7 +167,9 @@ workflow wf_align {
             extra_junctions = extra_junctions,
             portcullis_junctions = portcullis.pass_bed,
             indexing_resources = long_read_indexing_resources,
-            alignment_resources = long_read_alignment_resources
+            alignment_resources = long_read_alignment_resources,
+            twopass_resources = long_read_twopass_resources,
+            twopass_merge_resources = long_read_twopass_merge_resources
         }
 
         # Check what is defined for hq-long and run that

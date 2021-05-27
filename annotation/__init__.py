@@ -1,6 +1,6 @@
 import sys
 
-VERSION = '0.1.0'
+VERSION = '0.2.0'
 
 
 def report_errors(errors, samples):
