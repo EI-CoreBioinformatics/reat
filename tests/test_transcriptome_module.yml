@@ -107,15 +107,12 @@
     --workflow_options_file tests/integration/transcriptome/options.json
     transcriptome
     --orf_caller prodigal
-    --orf_calling_proteins /Users/yanesl/rundir/test_reat_cli/transcriptome/inputs/proteins_db/cross_species_all.protein_nl70.fasta
-    --homology_proteins /Users/yanesl/rundir/test_reat_cli/transcriptome/inputs/proteins_db/cross_species_all.protein_nl70.fasta
-    --LQ_assembler stringtie
-    --HQ_assembler merge
-    --all_scoring_file /Users/yanesl/rundir/test_reat_cli/transcriptome/inputs/plant.yaml
-    --long_scoring_file /Users/yanesl/rundir/test_reat_cli/transcriptome/inputs/plant.yaml
-    --reference /Users/yanesl/rundir/test_reat_cli/transcriptome/inputs/reference/Myzus_persicae_O_v2.0.scaffolds.fa
-    --samp /Users/yanesl/rundir/test_reat_cli/transcriptome/multi_sample_grouped.json
-
+    --orf_calling_proteins tests/integration/transcriptome/inputs/proteins_db/cross_species_all.3pc.fa.gz
+    --homology_proteins tests/integration/transcriptome/inputs/proteins_db/cross_species_all.3pc.fa.gz
+    --all_scoring_file tests/integration/transcriptome/inputs/plant.yaml
+    --long_scoring_file tests/integration/transcriptome/inputs/plant.yaml
+    --reference tests/integration/transcriptome/inputs/Athaliana_447_TAIR10_Chr3_1065466-1464870.fa
+    --samp tests/integration/transcriptome/inputs/group_to_samples.json
 - name: Transcriptome_Module_no_short
   tags:
     - transcriptome
@@ -128,10 +125,10 @@
     --homology_proteins tests/integration/transcriptome/inputs/proteins_db/cross_species_all.3pc.fa.gz
     --LQ_assembler stringtie
     --HQ_assembler merge
-    --all_scoring_file "tests/integration/transcriptome/inputs/plant.yaml"
-    --long_scoring_file "tests/integration/transcriptome/inputs/plant.yaml"
-    --reference "tests/integration/transcriptome/inputs/Athaliana_447_TAIR10_Chr3_1065466-1464870.fa"
-    --csv_long "tests/integration/transcriptome/long_samples.csv"
+    --all_scoring_file tests/integration/transcriptome/inputs/plant.yaml
+    --long_scoring_file tests/integration/transcriptome/inputs/plant.yaml
+    --reference tests/integration/transcriptome/inputs/Athaliana_447_TAIR10_Chr3_1065466-1464870.fa
+    --csv_long tests/integration/transcriptome/long_samples.csv
   files:
     - path: "log.out"
       contains:

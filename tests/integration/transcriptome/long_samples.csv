@@ -1,0 +1,3 @@
+SRR11031294,fr-firststrand,tests/integration/transcriptome/inputs/SRR11031294.Chr3_1065466-1464870.30pc.fastq.gz,low
+SRR11031292,fr-firststrand,tests/integration/transcriptome/inputs/SRR11031292.Chr3_1065466-1464870.30pc.fastq.gz,low
+ccs-flnc-np-gt3,fr-firststrand,tests/integration/transcriptome/inputs/ccs.flnc.np_gt3.mapped.bam.Chr3_1065466-1464870.fastq.gz,high
