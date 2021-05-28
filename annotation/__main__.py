@@ -144,12 +144,11 @@ def parse_arguments():
     reat_ap = argparse.ArgumentParser(add_help=True, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     reat_ap.add_argument("-j", "--jar_cromwell", type=argparse.FileType('r'),
-                         help="Cromwell server jar file", required=True)
+                         help="Cromwell server jar file")
     reat_ap.add_argument("-r", "--runtime_configuration", type=argparse.FileType('r'),
                          help="Configuration file for the backend, please follow "
                               "https://cromwell.readthedocs.io/en/stable/backends/HPC/ for more information.\n"
-                              "An example of this file can be found at ",
-                         required=True)
+                              "An example of this file can be found at ")
 
     reat_ap.add_argument("-c", "--computational_resources", type=argparse.FileType('r'),
                          help="Computational resources for REAT, please look at the template for more information",
@@ -630,6 +629,13 @@ def transcriptome_module(cli_arguments):
     """
     # Print input file for cromwell
     cromwell_inputs = combine_arguments(cli_arguments)
+    cromwell_jar = os.environ.get('CROMWELL_JAR', None)
+    if cli_arguments.jar_cromwell:
+        cromwell_jar = cli_arguments.jar_cromwell
+    runtime_config = os.environ.get('CROMWELL_RUNTIME_CONFIG', None)
+    if cli_arguments.runtime_configuration:
+        runtime_config = cli_arguments.runtime_configuration
+
     # Validate input against schema
     validate_transcriptome_inputs(cromwell_inputs)
     with open(cli_arguments.output_parameters_file, 'w') as cromwell_input_file:
@@ -639,7 +645,7 @@ def transcriptome_module(cli_arguments):
         workflow_options_file = None
         if cli_arguments.workflow_options_file is not None:
             workflow_options_file = cli_arguments.workflow_options_file.name
-        rc = execute_cromwell(cli_arguments.runtime_configuration, cli_arguments.jar_cromwell,
+        rc = execute_cromwell(runtime_config, cromwell_jar,
                               cli_arguments.output_parameters_file, workflow_options_file, wdl_file)
         if rc == 0:
             collect_transcriptome_output(RUN_METADATA)
@@ -731,6 +737,14 @@ def collect_homology_output(run_metadata):
 def homology_module(cli_arguments):
     cromwell_inputs = combine_arguments_homology(cli_arguments)
     validate_homology_inputs(cromwell_inputs)
+
+    cromwell_jar = os.environ.get('CROMWELL_JAR', None)
+    if cli_arguments.jar_cromwell:
+        cromwell_jar = cli_arguments.jar_cromwell
+    runtime_config = os.environ.get('CROMWELL_RUNTIME_CONFIG', None)
+    if cli_arguments.runtime_configuration:
+        runtime_config = cli_arguments.runtime_configuration.name
+
     with open(cli_arguments.output_parameters_file, 'w') as cromwell_input_file:
         json.dump(cromwell_inputs, cromwell_input_file)
     # Submit pipeline to server or run locally depending on the arguments
@@ -738,7 +752,7 @@ def homology_module(cli_arguments):
         workflow_options_file = None
         if cli_arguments.workflow_options_file is not None:
             workflow_options_file = cli_arguments.workflow_options_file.name
-        rc = execute_cromwell(cli_arguments.runtime_configuration, cli_arguments.jar_cromwell,
+        rc = execute_cromwell(runtime_config, cromwell_jar,
                               cli_arguments.output_parameters_file, workflow_options_file, wdl_file)
         if rc == 0:
             collect_homology_output(RUN_METADATA)
@@ -770,9 +784,9 @@ def kill_cromwell(sig, frame):
 
 def cromwell_run(workflow_configuration_file, jar_cromwell, input_parameters_filepath, workflow_options_file, wdl_file,
                  log_level="INFO"):
-    formatted_command_line = ["java", f"-Dconfig.file={str(workflow_configuration_file.name)}",
+    formatted_command_line = ["java", f"-Dconfig.file={str(workflow_configuration_file)}",
                               f"-DLOG_LEVEL={log_level}",
-                              "-jar", str(jar_cromwell.name),
+                              "-jar", str(jar_cromwell),
                               "run",
                               "-i", str(input_parameters_filepath)]
     if workflow_options_file:

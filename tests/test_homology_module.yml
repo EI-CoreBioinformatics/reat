@@ -2,9 +2,7 @@
   tags:
     - homology
   command: >-
-    reat --jar_cromwell /Users/yanesl/.cromwell/cromwell.jar
-    --runtime_configuration /Users/yanesl/.cromwell/cromwell.examples.conf
-    --workflow_options_file tests/integration/homology/options.json
+    reat --workflow_options_file tests/integration/homology/options.json
     --computational_resources tests/integration/homology/compute_inputs.json
     homology
     --genome tests/integration/homology/inputs/Athaliana_447_TAIR10_Chr3_1065466-1464870.fa
