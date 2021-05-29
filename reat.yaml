@@ -23,3 +23,5 @@ dependencies:
   - prodigal=2.6.3
   - blast=2.11.0
   - diamond>=2.0.0
+  - scallop-lr
+  - genometools-genometools=1.6.1
