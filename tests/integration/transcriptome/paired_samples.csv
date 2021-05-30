@@ -1,0 +1,5 @@
+SRR5956436,fr-firststrand,tests/integration/transcriptome/inputs/SRR5956436_Chr3_1065466-1464870_1.15pc.fastq.gz;tests/integration/transcriptome/inputs/SRR5956436_Chr3_1065466-1464870_2.15pc.fastq.gz,false
+SRR5956440,fr-firststrand,tests/integration/transcriptome/inputs/SRR5956440_Chr3_1065466-1464870_1.15pc.fastq.gz;tests/integration/transcriptome/inputs/SRR5956440_Chr3_1065466-1464870_2.15pc.fastq.gz,false
+SRR5956444,fr-firststrand,tests/integration/transcriptome/inputs/SRR5956444_Chr3_1065466-1464870_1.15pc.fastq.gz;tests/integration/transcriptome/inputs/SRR5956444_Chr3_1065466-1464870_2.15pc.fastq.gz,false
+SRR7947123,fr-firststrand,tests/integration/transcriptome/inputs/SRR7947123_Chr3_1065466-1464870_1.15pc.fastq.gz;tests/integration/transcriptome/inputs/SRR7947123_Chr3_1065466-1464870_2.15pc.fastq.gz,false
+SRR7947124,fr-firststrand,tests/integration/transcriptome/inputs/SRR7947124_Chr3_1065466-1464870_1.15pc.fastq.gz;tests/integration/transcriptome/inputs/SRR7947124_Chr3_1065466-1464870_2.15pc.fastq.gz,false

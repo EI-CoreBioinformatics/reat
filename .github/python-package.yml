@@ -1,0 +1,65 @@
+# This workflow will install Python dependencies, run tests and lint with a variety of Python versions
+# For more information see: https://help.github.com/actions/language-and-framework-guides/using-python-with-github-actions
+name: REAT
+on:
+  [ push, pull_request ]
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash -l {0}
+    strategy:
+      matrix:
+        python-version: [ 3.8 ]
+        os: [ubuntu-latest, macos-latest]
+    steps:
+    - name: Install system development tools
+      if: startsWith(runner.os, 'Linux')
+      run: |
+        export DEBIAN_FRONTEND=noninteractive
+        sudo apt update
+        sudo apt install -y build-essential zlib1g-dev zlib1g
+    - uses: actions/checkout@v2
+    - uses: actions/cache@v2
+      if: startsWith(runner.os, 'Linux')
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+    - uses: actions/cache@v2
+      if: startsWith(runner.os, 'macOS')
+      with:
+        path: ~/Library/Caches/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+    - name: Cache conda
+      id: cache-miniconda
+      uses: actions/cache@v2
+      env:
+        CACHE_NUMBER: 0
+      with:
+        path: ~/conda_pkgs_dir
+        key:
+          ${{ runner.os }}-conda-${{ env.CACHE_NUMBER }}-${{ hashFiles('./reat.yml') }}
+    - uses: conda-incubator/setup-miniconda@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+        miniconda-version: "latest"
+        environment-file: ./reat.yml
+        mamba-version: "*"
+        use-mamba: true
+        channels: conda-forge, defaults
+        use-only-tar-bz2: true  # IMPORTANT: This needs to be set for caching to work properly!
+        activate-environment: "REAT"
+    - name: Install dependencies
+      run: |
+        wget -O cromwell.jar https://github.com/broadinstitute/cromwell/releases/download/63/cromwell-63.jar
+        pip install -r requirements.txt
+        pip install pytest-workflow
+        pip install .
+    - name: Test full with coverage
+      run: |
+        CROMWELL_RUNTIME_CONFIG=cromwell_configuration/cromwell.local.conf CROMWELL_JAR=cromwell.jar pytest

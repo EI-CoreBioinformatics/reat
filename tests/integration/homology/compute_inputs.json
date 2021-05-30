@@ -1,0 +1,15 @@
+{
+  "ei_homology.index_attr":
+  {
+    "cpu_cores": 4  
+  },
+  "ei_homology.aln_attr":
+  {
+    "cpu_cores": 4
+  },
+  "ei_homology.score_attr":
+  {
+    "cpu_cores": 4,
+    "mem_gb": 8
+  }
+}

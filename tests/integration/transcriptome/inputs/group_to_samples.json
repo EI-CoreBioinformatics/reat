@@ -1,0 +1,6 @@
+{
+  "ei_annotation.wf_align.group_to_samples": {
+      "all": ["SRR5956436", "SRR5956440", "SRR5956444"],
+      "all2": ["SRR7947123", "SRR7947124"]
+  }
+}

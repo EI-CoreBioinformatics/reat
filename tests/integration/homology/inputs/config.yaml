@@ -1,0 +1,12 @@
+prepare:
+  minimum_cdna_length: 100
+pick:
+  alternative_splicing:
+    min_cdna_overlap: 0.1
+    min_score_perc: 0.6
+    only_confirmed_introns: false
+    ts_distance: 4000
+    ts_max_splices: 4
+  clustering:
+    simple_overlap_for_monoexonic: false
+
