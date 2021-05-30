@@ -1,4 +1,4 @@
-name: reat
+name: REAT
 channels:
   - conda-forge
   - bioconda
