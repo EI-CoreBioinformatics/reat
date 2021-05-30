@@ -405,7 +405,7 @@ def sample_validation(cromwell_inputs):
             if len(paired_sample_names) == l:
                 raise ValueError(f"Sample {sample['name']} is repeated, please make sure sample names are unique")
 
-    if not sample_strand:
+    if cromwell_inputs.get("ei_annotation.wf_align.group_to_samples", None) and not sample_strand:
         raise ValueError(f"Sorry! It appears there are no paired samples to group. Did you mean to include the "
                          f"csv_paired_samples argument?")
     if cromwell_inputs.get("ei_annotation.wf_align.group_to_samples", None):
