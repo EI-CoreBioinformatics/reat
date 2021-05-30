@@ -172,6 +172,7 @@ task Mikado {
 
     command <<<
         set -euxo pipefail
+        export TMPDIR=/tmp
         # Create the lists file
         for i in ~{sep=" " xspecies}
         do
