@@ -63,4 +63,4 @@ jobs:
       run: |
         export CROMWELL_JAR=cromwell.jar
         export CROMWELL_RUNTIME_CONFIG=cromwell_configuration/cromwell.local.conf
-        pytest --kwd --basetemp pytest_temp
+        pytest --kwd --basetemp ../pytest_temp
