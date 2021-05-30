@@ -112,7 +112,8 @@
     --all_scoring_file tests/integration/transcriptome/inputs/plant.yaml
     --long_scoring_file tests/integration/transcriptome/inputs/plant.yaml
     --reference tests/integration/transcriptome/inputs/Athaliana_447_TAIR10_Chr3_1065466-1464870.fa
-    --samp tests/integration/transcriptome/inputs/group_to_samples.json
+    --csv_paired tests/integration/transcriptome/paired_samples.csv
+    --parameters_file tests/integration/transcriptome/inputs/group_to_samples.json
 - name: Transcriptome_Module_no_short
   tags:
     - transcriptome

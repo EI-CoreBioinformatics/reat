@@ -5,6 +5,7 @@ channels:
 dependencies:
   - openjdk
   - pip
+  - git
   - bioawk=1.0
   - seqtk=1.3
   - samtools=1.12

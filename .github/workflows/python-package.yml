@@ -63,6 +63,4 @@ jobs:
       run: |
         export CROMWELL_JAR=cromwell.jar
         export CROMWELL_RUNTIME_CONFIG=cromwell_configuration/cromwell.local.conf
-        pytest --kwd --basetemp ../pytest_temp
-        cat ../pytest_temp/REAT_Homology/log.out
-        cat ../pytest_temp/REAT_Homology/log.err
+        pytest --symlink --kwd --basetemp ../pytest_temp
