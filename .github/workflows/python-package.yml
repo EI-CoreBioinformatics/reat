@@ -56,12 +56,9 @@ jobs:
         activate-environment: "REAT"
     - name: Install dependencies
       run: |
-        pwd
-        ls -l
         wget -O cromwell.jar https://github.com/broadinstitute/cromwell/releases/download/63/cromwell-63.jar
-        pip install -r reat/requirements.txt
         pip install pytest-workflow
-        pip install reat
+        pip install .
     - name: Test full with coverage
       run: |
         CROMWELL_RUNTIME_CONFIG=cromwell_configuration/cromwell.local.conf CROMWELL_JAR=cromwell.jar pytest
