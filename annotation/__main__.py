@@ -631,7 +631,7 @@ def transcriptome_module(cli_arguments):
     cromwell_inputs = combine_arguments(cli_arguments)
     cromwell_jar = os.environ.get('CROMWELL_JAR', None)
     if cli_arguments.jar_cromwell:
-        cromwell_jar = cli_arguments.jar_cromwell
+        cromwell_jar = cli_arguments.jar_cromwell.name
     runtime_config = os.environ.get('CROMWELL_RUNTIME_CONFIG', None)
     if cli_arguments.runtime_configuration:
         runtime_config = cli_arguments.runtime_configuration
@@ -740,7 +740,7 @@ def homology_module(cli_arguments):
 
     cromwell_jar = os.environ.get('CROMWELL_JAR', None)
     if cli_arguments.jar_cromwell:
-        cromwell_jar = cli_arguments.jar_cromwell
+        cromwell_jar = cli_arguments.jar_cromwell.name
     runtime_config = os.environ.get('CROMWELL_RUNTIME_CONFIG', None)
     if cli_arguments.runtime_configuration:
         runtime_config = cli_arguments.runtime_configuration.name
