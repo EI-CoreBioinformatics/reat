@@ -50,12 +50,12 @@ task SplitSequences {
     }
 
     output {
-        Array[File] seq_files = glob(prefix+"*")
+        Array[File] seq_files = glob(prefix+"/*")
     }
 
     command <<<
         set -euxo pipefail
-        seqtk split -n ~{num_out_files} ~{prefix} ~{sequences_file}
+        seqkit split ~{sequences_file} -p ~{num_out_files} -O ~{prefix}
     >>>
 }
 
