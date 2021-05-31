@@ -19,7 +19,7 @@
   files:
     - path: "log.out"
       contains:
-      - "WorkflowSucceededState"
+      - "SingleWorkflowRunnerActor workflow finished with status 'Succeeded'"
 
 - name: Transcriptome_Module_no_short_2pass
   tags:
@@ -42,7 +42,7 @@
   files:
     - path: "log.out"
       contains:
-      - "WorkflowSucceededState"
+      - "SingleWorkflowRunnerActor workflow finished with status 'Succeeded'"
 
 - name: Transcriptome_Module
   tags:
@@ -64,7 +64,7 @@
   files:
     - path: "log.out"
       contains:
-      - "WorkflowSucceededState"
+      - "SingleWorkflowRunnerActor workflow finished with status 'Succeeded'"
 - name: Transcriptome_Module_no_scallop
   tags:
     - transcriptome
@@ -86,7 +86,7 @@
   files:
     - path: "log.out"
       contains:
-      - "WorkflowSucceededState"
+      - "SingleWorkflowRunnerActor workflow finished with status 'Succeeded'"
 - name: help
   tags:
     - cli
@@ -134,7 +134,7 @@
   files:
     - path: "log.out"
       contains:
-      - "WorkflowSucceededState"
+      - "SingleWorkflowRunnerActor workflow finished with status 'Succeeded'"
 
 - name: Transcriptome_Module_annotation_w_extra_junctions
   tags:
@@ -159,7 +159,7 @@
   files:
     - path: "log.out"
       contains:
-      - "WorkflowSucceededState"
+      - "SingleWorkflowRunnerActor workflow finished with status 'Succeeded'"
 - name: Transcriptome_basic_annotation_score10
   tags:
     - transcriptome
@@ -184,7 +184,7 @@
   files:
     - path: "log.out"
       contains:
-      - "WorkflowSucceededState"
+      - "SingleWorkflowRunnerActor workflow finished with status 'Succeeded'"
 - name: Transcriptome_reference_update_annotation_score10
   tags:
     - transcriptome
@@ -209,7 +209,7 @@
   files:
     - path: "log.out"
       contains:
-      - "WorkflowSucceededState"
+      - "SingleWorkflowRunnerActor workflow finished with status 'Succeeded'"
 - name: Transcriptome_only_update_annotation_score10
   tags:
     - transcriptome
@@ -234,7 +234,7 @@
   files:
     - path: "log.out"
       contains:
-      - "WorkflowSucceededState"
+      - "SingleWorkflowRunnerActor workflow finished with status 'Succeeded'"
 - name: Transcriptome_check_references
   tags:
     - transcriptome
@@ -258,4 +258,4 @@
   files:
     - path: "log.out"
       contains:
-      - "WorkflowSucceededState"
+      - "SingleWorkflowRunnerActor workflow finished with status 'Succeeded'"
