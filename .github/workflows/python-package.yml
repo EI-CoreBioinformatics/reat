@@ -59,8 +59,18 @@ jobs:
         wget -O cromwell.jar https://github.com/broadinstitute/cromwell/releases/download/63/cromwell-63.jar
         pip install pytest-workflow
         pip install .
-    - name: Main tests
+    - name: CLI test
       run: |
-        export CROMWELL_JAR=cromwell.jar
-        export CROMWELL_RUNTIME_CONFIG=cromwell_configuration/cromwell.local.conf
-        pytest --symlink --kwd --basetemp ../pytest_temp
+        export CROMWELL_JAR=$(readlink -f cromwell.jar)
+        export CROMWELL_RUNTIME_CONFIG=$(readlink -f cromwell_configuration/cromwell.local.conf)
+        pytest --tag cli --symlink --kwd --basetemp ../pytest_temp
+    - name: Homology test
+      run: |
+        export CROMWELL_JAR=$(readlink -f cromwell.jar)
+        export CROMWELL_RUNTIME_CONFIG=$(readlink -f cromwell_configuration/cromwell.local.conf)
+        pytest --tag homology --symlink --kwd --basetemp ../pytest_temp
+    - name: Transcriptome test
+      run: |
+        export CROMWELL_JAR=$(readlink -f cromwell.jar)
+        export CROMWELL_RUNTIME_CONFIG=$(readlink -f cromwell_configuration/cromwell.local.conf)
+        pytest --tag transcriptome --symlink --kwd --basetemp ../pytest_temp

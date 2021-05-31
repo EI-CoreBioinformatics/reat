@@ -101,6 +101,7 @@
       - "required version"
 - name: Transcriptome_module_portcullis_grouped
   tags:
+    - transcriptome
     - portcullis_grouped
   command: >-
     reat --computational_resources tests/integration/transcriptome/computational_resources.json
