@@ -53,7 +53,7 @@ workflow portcullis {
             }
         }
         Array[File] def_grouped_pass = groupedFull.pass_tab
-        Array[File] def_grouped_fail = groupedFull.pass_tab
+        Array[File] def_grouped_fail = groupedFull.fail_tab
     }
 
     if (!defined(group_to_samples)) {
@@ -67,7 +67,7 @@ workflow portcullis {
             }
         }
         Array[File] def_ungrouped_pass = Full.pass_tab
-        Array[File] def_ungrouped_fail = Full.pass_tab
+        Array[File] def_ungrouped_fail = Full.fail_tab
     }
 
     Array[File] to_merge_pass = select_first([def_grouped_pass, def_ungrouped_pass])
