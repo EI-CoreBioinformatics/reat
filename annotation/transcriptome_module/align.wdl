@@ -48,8 +48,11 @@ workflow wf_align {
         String? PR_stringtie_extra_parameters
         String? PR_scallop_extra_parameters
 
-        Int? assembly_filter_min_coverage
-        Int? assembly_filter_min_identity
+        Int? HQ_min_coverage
+        Int? HQ_min_identity
+
+        Int? LQ_min_coverage
+        Int? LQ_min_identity
 
         RuntimeAttr? short_read_alignment_resources
         RuntimeAttr? short_read_alignment_sort_resources
@@ -101,6 +104,8 @@ workflow wf_align {
             aligned_samples = wf_align_short.aligned_samples,
             reference_annotation = wf_sanitise.annotation,
             skip_scallop = skip_scallop,
+            stringtie_extra_parameters = PR_stringtie_extra_parameters,
+            scallop_extra_parameters = PR_scallop_extra_parameters,
             scallop_assembly_resources = short_read_scallop_assembly_resources,
             stringtie_assembly_resources = short_read_stringtie_assembly_resources
         }
@@ -145,6 +150,9 @@ workflow wf_align {
             reference_annotation = wf_sanitise.annotation,
             aligned_samples = LQ_align.bams,
             assembler = LQ_assembler,
+            min_coverage = LQ_min_coverage,
+            min_identity = LQ_min_identity,
+            assembler_extra_parameters = LQ_assembler_extra_parameters,
             assembly_resources = long_read_assembly_resources,
             stats_output_prefix = "LQ_read_samples"
         }
@@ -179,6 +187,9 @@ workflow wf_align {
             reference_annotation = wf_sanitise.annotation,
             aligned_samples = HQ_align.bams,
             assembler = HQ_assembler,
+            min_coverage = HQ_min_coverage,
+            min_identity = HQ_min_identity,
+            assembler_extra_parameters = HQ_assembler_extra_parameters,
             assembly_resources = long_read_assembly_resources,
             stats_output_prefix = "HQ_read_samples"
         }

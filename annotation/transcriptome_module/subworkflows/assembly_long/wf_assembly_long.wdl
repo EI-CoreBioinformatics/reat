@@ -11,6 +11,9 @@ workflow wf_assembly_long {
         Array[AlignedSample] aligned_samples
         String assembler = "filter"
         String stats_output_prefix
+        String? assembler_extra_parameters
+        Int? min_coverage
+        Int? min_identity
         RuntimeAttr? assembly_resources
     }
     String output_directory = "assembly_long"
@@ -26,6 +29,8 @@ workflow wf_assembly_long {
             call FilterGFF {
                 input:
                 gff = Sam2gff.gff,
+                min_coverage = min_coverage,
+                min_identity = min_identity,
                 output_directory = output_directory
             }
         }
@@ -33,6 +38,7 @@ workflow wf_assembly_long {
             call GffreadMerge {
                 input:
                 aligned_sample = sample,
+                extra_parameters = assembler_extra_parameters,
                 runtime_attr_override = assembly_resources,
                 output_directory = output_directory
             }
@@ -42,6 +48,7 @@ workflow wf_assembly_long {
                 input:
                 reference_annotation = reference_annotation,
                 aligned_sample = sample,
+                extra_parameters = assembler_extra_parameters,
                 runtime_attr_override = assembly_resources,
                 output_directory = output_directory
             }
@@ -52,6 +59,7 @@ workflow wf_assembly_long {
                 reference_annotation = reference_annotation,
                 collapse = true,
                 aligned_sample = sample,
+                extra_parameters = assembler_extra_parameters,
                 runtime_attr_override = assembly_resources,
                 output_directory = output_directory
             }
@@ -93,8 +101,8 @@ workflow wf_assembly_long {
 task FilterGFF {
     input {
         File gff
-        String min_coverage = "80"
-        String min_identity = "95"
+        Int? min_coverage = 80
+        Int? min_identity = 95
         String output_directory
     }
 
@@ -150,6 +158,7 @@ task GffreadMerge {
     input {
         String output_directory
         AlignedSample aligned_sample
+        String? extra_parameters
         RuntimeAttr? runtime_attr_override
     }
 
@@ -162,7 +171,7 @@ task GffreadMerge {
         mkdir ~{output_directory}
         cd ~{output_directory}
         for bam in ~{sep=" " aligned_sample.bam}; do
-        samtools view -F 4 -F 0x900 $bam; done | sam2gff -s ~{aligned_sample.name} | gffread -T -M -K -o ~{aligned_sample.name}.~{aligned_sample.aligner}.gffread_merge.gtf
+        samtools view -F 4 -F 0x900 $bam; done | sam2gff -s ~{aligned_sample.name} | gffread -T -M -K ~{extra_parameters} -o ~{aligned_sample.name}.~{aligned_sample.aligner}.gffread_merge.gtf
     >>>
 
     RuntimeAttr default_attr = object {

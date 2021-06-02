@@ -9,6 +9,7 @@ workflow wf_stringtie_long {
         Boolean collapse = false
         String collapse_string = if (collapse==true) then "-R " else "-L "
         AlignedSample aligned_sample
+		String? extra_parameters
         String output_directory
         RuntimeAttr? runtime_attr_override
 	}
@@ -19,9 +20,11 @@ workflow wf_stringtie_long {
 			name = aligned_sample.name,
 			aligner = aligned_sample.aligner,
 			bam = bam,
+			strand = aligned_sample.strand,
 			reference_annotation = reference_annotation,
 			output_directory = "assembly_long",
 			collapse = collapse,
+			extra_parameters = extra_parameters,
 			runtime_attr_override = runtime_attr_override
 		}
 	}
@@ -61,7 +64,9 @@ task StringtieLong {
         Boolean collapse = false
 		String name
 		String aligner
+        String strand
         File bam
+		String? extra_parameters
         String output_directory
         RuntimeAttr? runtime_attr_override
     }
@@ -83,9 +88,18 @@ task StringtieLong {
 
     command <<<
         set -euxo pipefail
+        strandness=""
+        case ~{strand} in
+            fr-firststrand)
+            strandness="--rf"
+            ;;
+            fr-secondstrand)
+            strandness="--fr"
+            ;;
+        esac
         mkdir ~{output_directory}
         cd ~{output_directory}
-        stringtie ~{bam} -p "~{task_cpus}"~{" -G " + reference_annotation} ~{if(collapse) then "-R " else "-L "} -o "~{name}.~{aligner}.stringtie.gtf"
+        stringtie ~{bam} ${strandness} -p "~{task_cpus}"~{" -G " + reference_annotation} ~{extra_parameters} ~{if(collapse) then "-R " else "-L "} -o "~{name}.~{aligner}.stringtie.gtf"
     >>>
 
     runtime {

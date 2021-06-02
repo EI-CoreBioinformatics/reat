@@ -312,10 +312,22 @@ def parse_arguments():
                                           "- stringtie: Assembles the long reads alignments into transcripts"
                                           "- stringtie_collapse: Cleans and collapses long reads but does not "
                                           "assembles them", default='stringtie_collapse')
+    assembly_parameters.add_argument("--HQ_min_identity",
+                                     help="When the 'filter' option is selected, this parameter defines the minimum "
+                                          "identity used to filtering")
+    assembly_parameters.add_argument("--HQ_min_coverage",
+                                     help="When the 'filter' option is selected, this parameter defines the minimum "
+                                          "coverage used for filtering")
     assembly_parameters.add_argument("--HQ_assembler_extra_parameters",
                                      help="Extra parameters for the long reads assembler, please note that extra "
                                           "parameters are not validated and will have to match the parameters "
                                           "available for the selected assembler")
+    assembly_parameters.add_argument("--LQ_min_identity",
+                                     help="When the 'filter' option is selected, this parameter defines the minimum "
+                                          "identity used to filtering")
+    assembly_parameters.add_argument("--LQ_min_coverage",
+                                     help="When the 'filter' option is selected, this parameter defines the minimum "
+                                          "coverage used for filtering")
     assembly_parameters.add_argument("--LQ_assembler_extra_parameters",
                                      help="Extra parameters for the long reads assembler, please note that extra "
                                           "parameters are not validated and will have to match the parameters "

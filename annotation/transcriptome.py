@@ -303,6 +303,12 @@ def combine_arguments(cli_arguments):
         "ei_annotation.wf_align.PR_stringtie_extra_parameters"] = cli_arguments.PR_stringtie_extra_parameters
     cromwell_inputs["ei_annotation.wf_align.PR_scallop_extra_parameters"] = cli_arguments.PR_scallop_extra_parameters
 
+    cromwell_inputs["ei_annotation.wf_align.LQ_min_identity"] = cli_arguments.LQ_min_identity
+    cromwell_inputs["ei_annotation.wf_align.LQ_min_coverage"] = cli_arguments.LQ_min_coverage
+
+    cromwell_inputs["ei_annotation.wf_align.HQ_min_identity"] = cli_arguments.HQ_min_identity
+    cromwell_inputs["ei_annotation.wf_align.HQ_min_coverage"] = cli_arguments.HQ_min_coverage
+
     cromwell_inputs["ei_annotation.wf_align.skip_scallop"] = cli_arguments.skip_scallop
 
     # Reference annotation parameters

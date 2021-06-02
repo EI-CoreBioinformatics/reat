@@ -1,3 +1,34 @@
+- name: Transcriptome_Module
+  tags:
+    - transcriptome
+    - principal
+  command: >-
+    reat --computational_resources tests/integration/transcriptome/computational_resources.json
+    --workflow_options_file tests/integration/transcriptome/options.json
+    transcriptome
+    --orf_caller prodigal
+    --orf_calling_proteins tests/integration/transcriptome/inputs/proteins_db/cross_species_all.3pc.fa.gz
+    --homology_proteins tests/integration/transcriptome/inputs/proteins_db/cross_species_all.3pc.fa.gz
+    --LQ_aligner minimap2
+    --LQ_assembler stringtie
+    --LQ_assembler_extra_parameters="-E 2"
+    --HQ_assembler filter
+    --HQ_min_coverage 78
+    --HQ_min_identity 80
+    --PR_hisat_extra_parameters="-t"
+    --PR_star_extra_parameters="-outFilterScoreMin 4"
+    --PR_stringtie_extra_parameters="-a 4"
+    --PR_scallop_extra_parameters="--min_mapping_quality 4 --min_flank_length 5"
+    --all_scoring_file "tests/integration/transcriptome/inputs/plant.yaml"
+    --long_scoring_file "tests/integration/transcriptome/inputs/plant.yaml"
+    --reference "tests/integration/transcriptome/inputs/Athaliana_447_TAIR10_Chr3_1065466-1464870.fa"
+    --csv_paired "tests/integration/transcriptome/paired_samples.csv"
+    --csv_long "tests/integration/transcriptome/long_samples.csv"
+  files:
+    - path: "log.out"
+      contains:
+      - "SingleWorkflowRunnerActor workflow finished with status 'Succeeded'"
+
 - name: Transcriptome_Module_no_short_2pass_both
   tags:
     - transcriptome
@@ -11,6 +42,7 @@
     --LQ_aligner 2pass_merged
     --HQ_aligner 2pass
     --LQ_assembler stringtie
+    --LQ_assembler_extra_parameters "-E 2"
     --HQ_assembler merge
     --all_scoring_file "tests/integration/transcriptome/inputs/plant.yaml"
     --long_scoring_file "tests/integration/transcriptome/inputs/plant.yaml"
@@ -21,50 +53,6 @@
       contains:
       - "SingleWorkflowRunnerActor workflow finished with status 'Succeeded'"
 
-- name: Transcriptome_Module_no_short_2pass
-  tags:
-    - transcriptome
-  command: >-
-    reat --computational_resources tests/integration/transcriptome/computational_resources.json
-    --workflow_options_file tests/integration/transcriptome/options.json
-    transcriptome
-    --orf_caller prodigal
-    --orf_calling_proteins tests/integration/transcriptome/inputs/proteins_db/cross_species_all.3pc.fa.gz
-    --homology_proteins tests/integration/transcriptome/inputs/proteins_db/cross_species_all.3pc.fa.gz
-    --LQ_aligner 2pass
-    --HQ_aligner 2pass
-    --LQ_assembler stringtie
-    --HQ_assembler merge
-    --all_scoring_file "tests/integration/transcriptome/inputs/plant.yaml"
-    --long_scoring_file "tests/integration/transcriptome/inputs/plant.yaml"
-    --reference "tests/integration/transcriptome/inputs/Athaliana_447_TAIR10_Chr3_1065466-1464870.fa"
-    --csv_long "tests/integration/transcriptome/long_samples.csv"
-  files:
-    - path: "log.out"
-      contains:
-      - "SingleWorkflowRunnerActor workflow finished with status 'Succeeded'"
-
-- name: Transcriptome_Module
-  tags:
-    - transcriptome
-  command: >-
-    reat --computational_resources tests/integration/transcriptome/computational_resources.json
-    --workflow_options_file tests/integration/transcriptome/options.json
-    transcriptome
-    --orf_caller prodigal
-    --orf_calling_proteins tests/integration/transcriptome/inputs/proteins_db/cross_species_all.3pc.fa.gz
-    --homology_proteins tests/integration/transcriptome/inputs/proteins_db/cross_species_all.3pc.fa.gz
-    --LQ_assembler stringtie
-    --HQ_assembler merge
-    --all_scoring_file "tests/integration/transcriptome/inputs/plant.yaml"
-    --long_scoring_file "tests/integration/transcriptome/inputs/plant.yaml"
-    --reference "tests/integration/transcriptome/inputs/Athaliana_447_TAIR10_Chr3_1065466-1464870.fa"
-    --csv_paired "tests/integration/transcriptome/paired_samples.csv"
-    --csv_long "tests/integration/transcriptome/long_samples.csv"
-  files:
-    - path: "log.out"
-      contains:
-      - "SingleWorkflowRunnerActor workflow finished with status 'Succeeded'"
 - name: Transcriptome_Module_no_scallop
   tags:
     - transcriptome
@@ -87,6 +75,7 @@
     - path: "log.out"
       contains:
       - "SingleWorkflowRunnerActor workflow finished with status 'Succeeded'"
+
 - name: help
   tags:
     - cli
@@ -99,6 +88,7 @@
     must_not_contain:
       - "environment and hardware support"
       - "required version"
+
 - name: Transcriptome_module_portcullis_grouped
   tags:
     - transcriptome
@@ -115,51 +105,7 @@
     --reference tests/integration/transcriptome/inputs/Athaliana_447_TAIR10_Chr3_1065466-1464870.fa
     --csv_paired tests/integration/transcriptome/paired_samples.csv
     --parameters_file tests/integration/transcriptome/inputs/group_to_samples.json
-- name: Transcriptome_Module_no_short
-  tags:
-    - transcriptome
-  command: >-
-    reat --computational_resources tests/integration/transcriptome/computational_resources.json
-    --workflow_options_file tests/integration/transcriptome/options.json
-    transcriptome
-    --orf_caller prodigal
-    --orf_calling_proteins tests/integration/transcriptome/inputs/proteins_db/cross_species_all.3pc.fa.gz
-    --homology_proteins tests/integration/transcriptome/inputs/proteins_db/cross_species_all.3pc.fa.gz
-    --LQ_assembler stringtie
-    --HQ_assembler merge
-    --all_scoring_file tests/integration/transcriptome/inputs/plant.yaml
-    --long_scoring_file tests/integration/transcriptome/inputs/plant.yaml
-    --reference tests/integration/transcriptome/inputs/Athaliana_447_TAIR10_Chr3_1065466-1464870.fa
-    --csv_long tests/integration/transcriptome/long_samples.csv
-  files:
-    - path: "log.out"
-      contains:
-      - "SingleWorkflowRunnerActor workflow finished with status 'Succeeded'"
 
-- name: Transcriptome_Module_annotation_w_extra_junctions
-  tags:
-    - transcriptome
-    - junctions
-  command: >-
-    reat --computational_resources tests/integration/transcriptome/computational_resources.json
-    --workflow_options_file tests/integration/transcriptome/options.json
-    transcriptome
-    --skip_mikado_long
-    --annotation tests/integration/transcriptome/inputs/Athaliana_447_Araport11.gene_exons.Chr3_1065466-1464870.gtf
-    --extra_junctions tests/integration/transcriptome/inputs/athaliana_junctions.bed
-    --orf_caller prodigal
-    --orf_calling_proteins tests/integration/transcriptome/inputs/proteins_db/cross_species_all.3pc.fa.gz
-    --homology_proteins tests/integration/transcriptome/inputs/proteins_db/cross_species_all.3pc.fa.gz
-    --LQ_assembler stringtie
-    --HQ_assembler merge
-    --all_scoring_file "tests/integration/transcriptome/inputs/plant.yaml"
-    --long_scoring_file "tests/integration/transcriptome/inputs/plant.yaml"
-    --reference "tests/integration/transcriptome/inputs/Athaliana_447_TAIR10_Chr3_1065466-1464870.fa"
-    --csv_long "tests/integration/transcriptome/long_samples.csv"
-  files:
-    - path: "log.out"
-      contains:
-      - "SingleWorkflowRunnerActor workflow finished with status 'Succeeded'"
 - name: Transcriptome_basic_annotation_score10
   tags:
     - transcriptome
@@ -185,6 +131,7 @@
     - path: "log.out"
       contains:
       - "SingleWorkflowRunnerActor workflow finished with status 'Succeeded'"
+
 - name: Transcriptome_reference_update_annotation_score10
   tags:
     - transcriptome
@@ -210,31 +157,7 @@
     - path: "log.out"
       contains:
       - "SingleWorkflowRunnerActor workflow finished with status 'Succeeded'"
-- name: Transcriptome_only_update_annotation_score10
-  tags:
-    - transcriptome
-    - junctions
-  command: >-
-    reat --computational_resources tests/integration/transcriptome/computational_resources.json
-    --workflow_options_file tests/integration/transcriptome/options.json
-    transcriptome
-    --annotation tests/integration/transcriptome/inputs/Athaliana_447_Araport11.gene_exons.Chr3_1065466-1464870.gtf
-    --annotation_score 10
-    --mode only_update
-    --extra_junctions tests/integration/transcriptome/inputs/athaliana_junctions.bed
-    --orf_caller prodigal
-    --orf_calling_proteins tests/integration/transcriptome/inputs/proteins_db/cross_species_all.3pc.fa.gz
-    --homology_proteins tests/integration/transcriptome/inputs/proteins_db/cross_species_all.3pc.fa.gz
-    --LQ_assembler stringtie
-    --HQ_assembler merge
-    --all_scoring_file "tests/integration/transcriptome/inputs/plant.yaml"
-    --long_scoring_file "tests/integration/transcriptome/inputs/plant.yaml"
-    --reference "tests/integration/transcriptome/inputs/Athaliana_447_TAIR10_Chr3_1065466-1464870.fa"
-    --csv_long "tests/integration/transcriptome/long_samples.csv"
-  files:
-    - path: "log.out"
-      contains:
-      - "SingleWorkflowRunnerActor workflow finished with status 'Succeeded'"
+
 - name: Transcriptome_check_references
   tags:
     - transcriptome
