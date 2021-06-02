@@ -641,12 +641,7 @@ def transcriptome_module(cli_arguments):
     """
     # Print input file for cromwell
     cromwell_inputs = combine_arguments(cli_arguments)
-    cromwell_jar = os.environ.get('CROMWELL_JAR', None)
-    if cli_arguments.jar_cromwell:
-        cromwell_jar = cli_arguments.jar_cromwell.name
-    runtime_config = os.environ.get('CROMWELL_RUNTIME_CONFIG', None)
-    if cli_arguments.runtime_configuration:
-        runtime_config = cli_arguments.runtime_configuration
+    cromwell_jar, runtime_config = prepare_cromwell_arguments(cli_arguments)
 
     # Validate input against schema
     validate_transcriptome_inputs(cromwell_inputs)
@@ -662,6 +657,16 @@ def transcriptome_module(cli_arguments):
         if rc == 0:
             collect_transcriptome_output(RUN_METADATA)
         return rc
+
+
+def prepare_cromwell_arguments(cli_arguments):
+    cromwell_jar = os.environ.get('CROMWELL_JAR', None)
+    if cli_arguments.jar_cromwell:
+        cromwell_jar = cli_arguments.jar_cromwell.name
+    runtime_config = os.environ.get('CROMWELL_RUNTIME_CONFIG', None)
+    if cli_arguments.runtime_configuration:
+        runtime_config = cli_arguments.runtime_configuration.name
+    return cromwell_jar, runtime_config
 
 
 def collect_homology_output(run_metadata):
@@ -750,12 +755,7 @@ def homology_module(cli_arguments):
     cromwell_inputs = combine_arguments_homology(cli_arguments)
     validate_homology_inputs(cromwell_inputs)
 
-    cromwell_jar = os.environ.get('CROMWELL_JAR', None)
-    if cli_arguments.jar_cromwell:
-        cromwell_jar = cli_arguments.jar_cromwell.name
-    runtime_config = os.environ.get('CROMWELL_RUNTIME_CONFIG', None)
-    if cli_arguments.runtime_configuration:
-        runtime_config = cli_arguments.runtime_configuration.name
+    cromwell_jar, runtime_config = prepare_cromwell_arguments(cli_arguments)
 
     with open(cli_arguments.output_parameters_file, 'w') as cromwell_input_file:
         json.dump(cromwell_inputs, cromwell_input_file)
