@@ -76,7 +76,7 @@ workflow wf_main_mikado {
     Boolean run_mikado_homology = defined(homology_proteins)
 
     # combine junctions
-    if (exclude_LQ_junctions) {
+    if (!exclude_LQ_junctions) {
         call CombineAllJunctions as all {
             input:
             portcullis_junctions = junctions_bed,
@@ -85,7 +85,7 @@ workflow wf_main_mikado {
         }
     }
 
-    if (!exclude_LQ_junctions) {
+    if (exclude_LQ_junctions) {
         call CombineAllJunctions as noLQ {
             input:
             portcullis_junctions = junctions_bed,

@@ -35,6 +35,7 @@
     --orf_calling_proteins tests/integration/transcriptome/inputs/proteins_db/cross_species_all.3pc.fa.gz
     --homology_proteins tests/integration/transcriptome/inputs/proteins_db/cross_species_all.3pc.fa.gz
     --HQ_aligner minimap2
+    --exclude_LQ_junctions
     --LQ_aligner 2pass_merged
     --LQ_assembler stringtie
     --LQ_assembler_extra_parameters="-E 3"
