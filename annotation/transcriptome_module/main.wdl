@@ -11,6 +11,7 @@ workflow ei_annotation {
         Array[LRSample]? HQ_long_read_samples
         File? annotation
         Int annotation_score = 1
+        Boolean merge_all_junctions = false
         String mode
         Boolean check_reference
         File all_scoring_file
@@ -65,6 +66,8 @@ workflow ei_annotation {
         reference_genome = wf_align.clean_reference_index,
         annotation = wf_align.clean_annotation,
         junctions_bed = wf_align.pass_filtered_bed,
+        HQ_junctions_bed = wf_align.HQ_junctions,
+        LQ_junctions_bed = wf_align.LQ_junctions,
         SR_assemblies = wf_align.SR_gff,
         LQ_assemblies = wf_align.LQ_gff,
         HQ_assemblies = wf_align.HQ_gff,

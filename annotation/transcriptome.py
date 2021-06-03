@@ -310,6 +310,7 @@ def combine_arguments(cli_arguments):
     cromwell_inputs["ei_annotation.wf_align.HQ_min_coverage"] = cli_arguments.HQ_min_coverage
 
     cromwell_inputs["ei_annotation.wf_align.skip_scallop"] = cli_arguments.skip_scallop
+    cromwell_inputs["ei_annotation.wf_align.skip_2pass_alignment"] = cli_arguments.skip_2pass_alignment
 
     # Reference annotation parameters
     cromwell_inputs["ei_annotation.mode"] = cli_arguments.mode
@@ -377,6 +378,11 @@ def combine_arguments(cli_arguments):
         cromwell_inputs["ei_annotation.wf_main_mikado.separate_LQ"] = True
     else:
         cromwell_inputs["ei_annotation.wf_main_mikado.separate_LQ"] = False
+
+    if cli_arguments.exclude_LQ_junctions:
+        cromwell_inputs["ei_annotation.wf_main_mikado.exclude_LQ_junctions"] = True
+    else:
+        cromwell_inputs["ei_annotation.wf_main_mikado.exclude_LQ_junctions"] = False
 
     sample_validation(cromwell_inputs)
 

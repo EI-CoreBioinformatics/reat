@@ -28,6 +28,7 @@ workflow wf_align {
         String? portcullis_extra_parameters
 
         Boolean? skip_scallop = false
+        Boolean? skip_2pass_alignment = false
 
         String LQ_aligner = "minimap2"
         String HQ_aligner = "minimap2"
@@ -128,6 +129,7 @@ workflow wf_align {
             indexed_reference = wf_sanitise.indexed_reference,
             is_hq = false,
             aligner = LQ_aligner,
+            skip_2pass_alignment = skip_2pass_alignment,
             long_samples = def_lq_long_sample,
             min_identity = min_identity,
             min_intron_len = select_first([min_intron_len, 20]),
@@ -165,6 +167,7 @@ workflow wf_align {
             indexed_reference = wf_sanitise.indexed_reference,
             is_hq = true,
             aligner = HQ_aligner,
+            skip_2pass_alignment = skip_2pass_alignment,
             long_samples = def_hq_long_sample,
             min_identity = min_identity,
             min_intron_len = min_intron_len,
@@ -206,6 +209,9 @@ workflow wf_align {
         File? fail_filtered_tab = portcullis.fail_tab
         File? fail_filtered_bed = portcullis.fail_bed
         File? fail_filtered_gff3 = portcullis.fail_gff3
+
+        File? HQ_junctions = HQ_align.junctions
+        File? LQ_junctions = LQ_align.junctions
 
         Array[AlignedSample]? SR_bams = wf_align_short.aligned_samples
         Array[AlignedSample]? LQ_bams = LQ_align.bams

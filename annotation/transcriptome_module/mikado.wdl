@@ -20,9 +20,12 @@ workflow wf_main_mikado {
         Array[AssembledSample]? HQ_assemblies
         Array[AssembledSample]? SR_assemblies
         File? junctions_bed
+        File? HQ_junctions_bed
+        File? LQ_junctions_bed
         File? homology_proteins
         File? orf_calling_proteins
         Boolean separate_LQ = false
+        Boolean exclude_LQ_junctions = false
         Boolean skip_mikado_long = false
         String? orf_calling_program
 
@@ -72,6 +75,26 @@ workflow wf_main_mikado {
 
     Boolean run_mikado_homology = defined(homology_proteins)
 
+    # combine junctions
+    if (exclude_LQ_junctions) {
+        call CombineAllJunctions as all {
+            input:
+            portcullis_junctions = junctions_bed,
+            HQ_junctions = HQ_junctions_bed,
+            LQ_junctions = HQ_junctions_bed
+        }
+    }
+
+    if (!exclude_LQ_junctions) {
+        call CombineAllJunctions as noLQ {
+            input:
+            portcullis_junctions = junctions_bed,
+            HQ_junctions = HQ_junctions_bed
+        }
+    }
+
+    File def_junctions = select_first([all.merged_junctions, noLQ.merged_junctions])
+
     # The user can choose to run the LQ-LR datasets separately
     if (separate_LQ)
     {
@@ -89,7 +112,7 @@ workflow wf_main_mikado {
             orf_caller = orf_calling_program,
             mikado_do_homology_assessment = run_mikado_homology,
             homology_proteins = homology_proteins,
-            junctions = junctions_bed,
+            junctions = def_junctions,
             output_prefix = "mikado_all_noLQ",
             prepare_extra_config = all_prepare_cfg,
             serialise_extra_config = all_serialise_cfg,
@@ -118,7 +141,7 @@ workflow wf_main_mikado {
                 orf_caller = orf_calling_program,
                 mikado_do_homology_assessment = run_mikado_homology,
                 homology_proteins = homology_proteins,
-                junctions = junctions_bed,
+                junctions = def_junctions,
                 output_prefix = "mikado_longHQ",
                 prepare_extra_config = long_prepare_cfg,
                 serialise_extra_config = long_serialise_cfg,
@@ -144,7 +167,7 @@ workflow wf_main_mikado {
                 scoring_file = select_first([long_lq_scoring_file]),
                 indexed_reference =  reference_genome,
                 LQ_assemblies = LQ_assemblies,
-                junctions = junctions_bed,
+                junctions = def_junctions,
                 orf_calling_proteins = orf_calling_proteins,
                 orf_caller = orf_calling_program,
                 mikado_do_homology_assessment = run_mikado_homology,
@@ -177,7 +200,7 @@ workflow wf_main_mikado {
             SR_assemblies = SR_assemblies,
             LQ_assemblies = LQ_assemblies,
             HQ_assemblies = HQ_assemblies,
-            junctions = junctions_bed,
+            junctions = def_junctions,
             orf_calling_proteins = orf_calling_proteins,
             orf_caller = orf_calling_program,
             mikado_do_homology_assessment = run_mikado_homology,
@@ -207,7 +230,7 @@ workflow wf_main_mikado {
                 indexed_reference =  reference_genome,
                 LQ_assemblies = LQ_assemblies,
                 HQ_assemblies = HQ_assemblies,
-                junctions = junctions_bed,
+                junctions = def_junctions,
                 orf_calling_proteins = orf_calling_proteins,
                 orf_caller = orf_calling_program,
                 mikado_do_homology_assessment = run_mikado_homology,
@@ -275,4 +298,21 @@ workflow wf_main_mikado {
 
         File mikado_stats_summary = TranscriptAssemblySummaryStats.summary
     }
+}
+
+task CombineAllJunctions {
+	input {
+		File? portcullis_junctions
+		File? HQ_junctions
+		File? LQ_junctions
+	}
+
+	output {
+		File merged_junctions = "all_junctions.bed"
+	}
+
+	command <<<
+		cat ~{portcullis_junctions} ~{HQ_junctions} ~{LQ_junctions} > merged_junctions.bed
+		junctools convert -if bed -of ebed -s -d merged_junctions.bed -o all_junctions.bed
+	>>>
 }

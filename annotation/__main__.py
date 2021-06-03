@@ -244,12 +244,18 @@ def parse_arguments():
                                    help="Specify whether or not to analyse low-quality long reads separately from "
                                         "high-quality, this option generates an extra set of mikado analyses "
                                         "including low-quality data")
+    mikado_parameters.add_argument("--exclude_LQ_junctions", action='store_true', default=False,
+                                   help="When this parameter is defined, junctions derived from low-quality long reads "
+                                        "will not be included in the set of valid junctions for the mikado analyses")
 
     # Aligner choices
     alignment_parameters = transcriptome_ap.add_argument_group("Alignment",
                                                                "Parameters for alignment of short and long reads")
     alignment_parameters.add_argument("--short_reads_aligner", choices=['hisat', 'star'],
                                       help="Choice of short read aligner", default='hisat')
+    alignment_parameters.add_argument("--skip_2pass_alignment", action='store_true', default=False,
+                                      help="If not required, the second round of alignments for 2passtools can be "
+                                           "skipped when this parameter is active")
     alignment_parameters.add_argument("--HQ_aligner", choices=LONG_READ_ALIGNER_CHOICES,
                                       help="Choice of aligner for high-quality long reads", default='minimap2')
     alignment_parameters.add_argument("--LQ_aligner", choices=LONG_READ_ALIGNER_CHOICES,
