@@ -424,41 +424,13 @@ def convert_sam_rec_to_gff3_rec(r, source, qid_seen=None):
         return None
     seq = Seq('A')
     rec = SeqRecord(seq, r.sID)
-    strand = 1 if r.flag.strand == '+' else -1
-    seen_ts = False
-
-    for x in r.record_line.split('\t')[11:]:
-        if x.startswith('NH:i:'):
-            seen_ts = True
-        elif x.startswith('ts:A:'):  # mm2 strand information
-            seen_ts = True
-            _s = x[5:]
-            if _s == '?':
-                strand = None
-        elif x.startswith('XS:A:'):  # gmap strand information
-            _s = x[5:]
-            if _s != '?':
-                seen_ts = True
-                _s = x[5:]
-                if _s == '?':
-                    strand = None
-
-    if len(r.segments) == 1 and not seen_ts:
-        strand = None
-    if not seen_ts:
-        strand = None
+    strand = determine_strand(r)
 
     indels = r.num_ins + r.num_del
     mismatches = r.num_nonmatches
     matches = r.num_mat_or_sub - r.num_nonmatches
 
-    if qid_seen is not None:
-        if r.qID in qid_seen: 
-            qid_seen[r.qID] += 1
-            r.qID += '.path' + str(qid_seen[r.qID])
-        else: 
-            r.qID += '.path1'
-            qid_seen[r.qID] += 1
+    make_unique_qid(qid_seen, r)
 
     gene_qualifiers = {"source": source, "ID": r.qID, "Name": r.qID}  # for gene record
     mRNA_qualifiers = {"source": source, "ID": r.qID + '.mRNA', "Name": r.qID + '.mRNA', "Parent": r.qID,
@@ -484,10 +456,46 @@ def convert_sam_rec_to_gff3_rec(r, source, qid_seen=None):
     return rec
 
 
+def make_unique_qid(qid_seen, r):
+    if qid_seen is not None:
+        if r.qID in qid_seen:
+            qid_seen[r.qID] += 1
+            r.qID += '.path' + str(qid_seen[r.qID])
+        else:
+            r.qID += '.path1'
+            qid_seen[r.qID] += 1
+
+
+def determine_strand(r):
+    strand = 1 if r.flag.strand == '+' else -1
+    seen_ts = False
+    for x in r.record_line.split('\t')[11:]:
+        if x.startswith('NH:i:'):
+            seen_ts = True
+        elif x.startswith('ts:A:'):  # mm2 strand information
+            seen_ts = True
+            _s = x[5:]
+            if _s == '?':
+                strand = None
+        elif x.startswith('XS:A:'):  # gmap strand information
+            _s = x[5:]
+            if _s != '?':
+                seen_ts = True
+                _s = x[5:]
+                if _s == '?':
+                    strand = None
+    if len(r.segments) == 1 and not seen_ts:
+        strand = None
+    if not seen_ts:
+        strand = None
+    return strand
+
+
 def main():
     parser = ArgumentParser("Convert SAM to GFF3 format")
     parser.add_argument("-i", "--sam_filename")
-    parser.add_argument("-o", "--gff3_output")
+    parser.add_argument("-o", "--output")
+    parser.add_argument("--gtf", action='store_true', default=False)
     parser.add_argument("-s", "--source", required=True, help="source name for gff3 file")
     parser.add_argument("--min_coverage", help="Coverage filter 0-100", type=int, default=0)
     parser.add_argument("--min_identity", help="Identity filter 0-100", type=int, default=0)
@@ -504,21 +512,56 @@ def main():
         input_file_handle = open(args.sam_filename, "r")
         has_header = True
 
-    if not args.gff3_output:
-        output_gff3 = sys.stdout
+    if not args.output:
+        output_file = sys.stdout
     else:
-        output_gff3 = open(args.gff3_output, 'w')
+        output_file = open(args.gff3_output, 'w')
 
     qid_seen = Counter()
-    writer = GFF3Writer(output_gff3)
+    writer = GFF3Writer(output_file)
     for r0 in GMAPSAMReader(input_file_handle, has_header):
         if r0.identity*100 > args.min_identity and r0.qCoverage*100 > args.min_coverage:
-            rec = convert_sam_rec_to_gff3_rec(r0, args.source, qid_seen)
-            if rec is not None:
-                writer.write(rec)
+            if args.gtf:
+                write_record_gtf(args, output_file, qid_seen, r0)
+            else:
+                rec = convert_sam_rec_to_gff3_rec(r0, args.source, qid_seen)
+                if rec is not None:
+                    writer.write(rec)
 
-    if args.gff3_output:
+    if args.output:
         print("Output written to {0}.".format(args.gff3_output), file=sys.stderr)
+
+
+def write_record_gtf(args, output_file, qid_seen, r0):
+    make_unique_qid(qid_seen, r0)
+    strand = determine_strand(r0)
+    if strand == 1:
+        strand = '+'
+    elif strand == -1:
+        strand = '-'
+    elif strand is None:
+        strand = '.'
+    else:
+        strand = '.'
+    base_attributes = f"transcript_id \"{r0.qID}.mRNA\"; gene_id \"{r0.qID}\";"
+
+    indels = r0.num_ins + r0.num_del
+    mismatches = r0.num_nonmatches
+    matches = r0.num_mat_or_sub - r0.num_nonmatches
+    extra_attributes = f"coverage \"{r0.qCoverage * 100:.1f}\"; " \
+                       f"identity \"{r0.identity * 100:.1f}\"; " \
+                       f"indels \"{indels}\"; " \
+                       f"matches \"{matches}\"; " \
+                       f"mismatches \"{mismatches}\";"
+    print('\t'.join(
+        (r0.sID, args.source, 'transcript', str(r0.sStart + 1), str(r0.sEnd), '.', strand, '.',
+         base_attributes + ' ' + extra_attributes)
+    ), file=output_file)
+    for i, e in enumerate(r0.segments):  # if strand == '-' else enumerate(reversed(r0.segments)):
+        print('\t'.join(
+            (r0.sID, args.source, 'exon', str(e.start + 1), str(e.end), '.', strand, '.',
+             base_attributes)
+        ), file=output_file)
 
 
 if __name__ == "__main__":
