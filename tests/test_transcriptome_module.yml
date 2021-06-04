@@ -221,3 +221,27 @@
     - path: "log.out"
       contains:
       - "SingleWorkflowRunnerActor workflow finished with status 'Succeeded'"
+
+- name: Transcriptome_Module_no_long
+  tags:
+    - transcriptome
+    - no_long
+  command: >-
+    reat --computational_resources tests/integration/transcriptome/computational_resources.json
+    --workflow_options_file tests/integration/transcriptome/options.json
+    transcriptome
+    --orf_caller prodigal
+    --orf_calling_proteins tests/integration/transcriptome/inputs/proteins_db/cross_species_all.3pc.fa.gz
+    --homology_proteins tests/integration/transcriptome/inputs/proteins_db/cross_species_all.3pc.fa.gz
+    --PR_hisat_extra_parameters="-t"
+    --short_reads_aligner "star"
+    --PR_star_extra_parameters="-outFilterScoreMin 3"
+    --PR_stringtie_extra_parameters="-a 3"
+    --PR_scallop_extra_parameters="--min_mapping_quality 3 --min_flank_length 5"
+    --all_scoring_file "tests/integration/transcriptome/inputs/plant.yaml"
+    --reference "tests/integration/transcriptome/inputs/Athaliana_447_TAIR10_Chr3_1065466-1464870.fa"
+    --csv_paired "tests/integration/transcriptome/paired_samples.csv"
+  files:
+    - path: "log.out"
+      contains:
+      - "SingleWorkflowRunnerActor workflow finished with status 'Succeeded'"
