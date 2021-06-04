@@ -23,14 +23,9 @@ workflow wf_assembly_long {
             call Sam2gff {
                 input:
                 aligned_sample = sample,
-                runtime_attr_override = assembly_resources,
-                output_directory = output_directory
-            }
-            call FilterGFF {
-                input:
-                gff = Sam2gff.gff,
                 min_coverage = min_coverage,
                 min_identity = min_identity,
+                runtime_attr_override = assembly_resources,
                 output_directory = output_directory
             }
         }
@@ -65,7 +60,7 @@ workflow wf_assembly_long {
             }
         }
 
-        File def_gff = select_first([FilterGFF.filtered_gff, GffreadMerge.gff, stringtie_assemble.gff, stringtie_collapse.gff])
+        File def_gff = select_first([Sam2gff.gff, GffreadMerge.gff, stringtie_assemble.gff, stringtie_collapse.gff])
         AssembledSample assembled_long = object { name: sample.name+"."+sample.aligner+"."+assembler, strand: sample.strand, assembly: def_gff,
                                          score: sample.score,
                                          is_ref: sample.is_ref,
@@ -98,34 +93,17 @@ workflow wf_assembly_long {
     }
 }
 
-task FilterGFF {
-    input {
-        File gff
-        Int? min_coverage = 80
-        Int? min_identity = 95
-        String output_directory
-    }
-
-    output {
-        File filtered_gff = output_directory + "/" + basename(gff)+"."+min_identity+"id"+min_coverage+"cov.gff"
-    }
-
-    command <<<
-    mkdir ~{output_directory}
-    cd ~{output_directory}
-    filter_gmap_hardFilter_v0.1.pl --gff ~{gff} --identity ~{min_identity} --coverage ~{min_coverage} > ~{basename(gff)}.~{min_identity}id~{min_coverage}cov.gff
-    >>>
-}
-
 task Sam2gff {
     input {
         String output_directory
+        Int? min_coverage = 80
+        Int? min_identity = 95
         AlignedSample aligned_sample
         RuntimeAttr? runtime_attr_override
     }
     
     output {
-        File gff = output_directory + "/" + aligned_sample.name+"."+aligned_sample.aligner+".sam2gff.gff"
+        File gff = output_directory + "/" + aligned_sample.name+"."+aligned_sample.aligner+".sam2gff.gtf"
     }
 
     command <<<
@@ -133,7 +111,8 @@ task Sam2gff {
         mkdir ~{output_directory}
         cd ~{output_directory}
         for bam in ~{sep=" " aligned_sample.bam}; do
-        samtools view -F 4 -F 0x900 $bam; done | sam2gff -s ~{aligned_sample.name} > ~{aligned_sample.name}.~{aligned_sample.aligner}.sam2gff.gff
+        samtools view -F 4 -F 0x900 $bam; done | sam2gff --gtf -s ~{aligned_sample.name} \
+        -u ~{aligned_sample.name}.~{aligned_sample.aligner}.unfiltered.gtf ~{'--min_coverage=' + min_coverage} ~{'--min_identity=' + min_identity} > ~{aligned_sample.name}.~{aligned_sample.aligner}.sam2gff.gtf
     >>>
 
     RuntimeAttr default_attr = object {

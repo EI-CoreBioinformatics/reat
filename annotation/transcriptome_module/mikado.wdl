@@ -27,6 +27,8 @@ workflow wf_main_mikado {
         Boolean separate_LQ = false
         Boolean exclude_LQ_junctions = false
         Boolean skip_mikado_long = false
+        Boolean filter_HQ_assemblies = false
+        Boolean filter_LQ_assemblies = false
         String? orf_calling_program
 
         File? all_prepare_cfg
@@ -95,6 +97,52 @@ workflow wf_main_mikado {
 
     File def_junctions = select_first([all.merged_junctions, noLQ.merged_junctions])
 
+    if (filter_HQ_assemblies && defined(HQ_assemblies)) {
+        scatter (sample in select_first([HQ_assemblies])){
+            call FilterWithJunctions as HQ_filtered {
+                input:
+                bed_junctions = def_junctions,
+                gtf = sample.assembly,
+                name = sample.name
+            }
+            AssembledSample hq_filtered = object {
+                                                 name: sample.name+".filtered",
+                                                 strand: sample.strand,
+                                                 assembly: HQ_filtered.filtered_gtf,
+                                                 score: sample.score,
+                                                 is_ref: sample.is_ref,
+                                                 exclude_redundant: sample.exclude_redundant
+                                             }
+        }
+    }
+
+    if (filter_LQ_assemblies && defined(LQ_assemblies)) {
+        scatter (sample in select_first([LQ_assemblies])){
+            call FilterWithJunctions as LQ_filtered {
+                input:
+                bed_junctions = def_junctions,
+                gtf = sample.assembly,
+                name = sample.name
+            }
+            AssembledSample lq_filtered = object {
+                                                 name: sample.name+".filtered",
+                                                 strand: sample.strand,
+                                                 assembly: LQ_filtered.filtered_gtf,
+                                                 score: sample.score,
+                                                 is_ref: sample.is_ref,
+                                                 exclude_redundant: sample.exclude_redundant
+                                             }
+        }
+    }
+
+    if (defined(HQ_assemblies)) {
+        Array[AssembledSample] def_hq_assemblies = select_first([hq_filtered, HQ_assemblies])
+    }
+
+    if (defined(LQ_assemblies)) {
+        Array[AssembledSample] def_lq_assemblies = select_first([lq_filtered, LQ_assemblies])
+    }
+
     # The user can choose to run the LQ-LR datasets separately
     if (separate_LQ)
     {
@@ -106,7 +154,7 @@ workflow wf_main_mikado {
             check_reference = check_reference,
             indexed_reference =  reference_genome,
             SR_assemblies = SR_assemblies,
-            HQ_assemblies = HQ_assemblies,
+            HQ_assemblies = def_hq_assemblies,
             scoring_file = all_scoring_file,
             orf_calling_proteins = orf_calling_proteins,
             orf_caller = orf_calling_program,
@@ -135,7 +183,7 @@ workflow wf_main_mikado {
                 mode = mode,
                 check_reference = check_reference,
                 indexed_reference =  reference_genome,
-                HQ_assemblies = HQ_assemblies,
+                HQ_assemblies = def_hq_assemblies,
                 scoring_file = long_scoring_file,
                 orf_calling_proteins = orf_calling_proteins,
                 orf_caller = orf_calling_program,
@@ -166,7 +214,7 @@ workflow wf_main_mikado {
                 check_reference = check_reference,
                 scoring_file = select_first([long_lq_scoring_file]),
                 indexed_reference =  reference_genome,
-                LQ_assemblies = LQ_assemblies,
+                LQ_assemblies = def_lq_assemblies,
                 junctions = def_junctions,
                 orf_calling_proteins = orf_calling_proteins,
                 orf_caller = orf_calling_program,
@@ -198,8 +246,8 @@ workflow wf_main_mikado {
             scoring_file = all_scoring_file,
             indexed_reference =  reference_genome,
             SR_assemblies = SR_assemblies,
-            LQ_assemblies = LQ_assemblies,
-            HQ_assemblies = HQ_assemblies,
+            LQ_assemblies = def_lq_assemblies,
+            HQ_assemblies = def_hq_assemblies,
             junctions = def_junctions,
             orf_calling_proteins = orf_calling_proteins,
             orf_caller = orf_calling_program,
@@ -228,8 +276,8 @@ workflow wf_main_mikado {
                 check_reference = check_reference,
                 scoring_file = long_scoring_file,
                 indexed_reference =  reference_genome,
-                LQ_assemblies = LQ_assemblies,
-                HQ_assemblies = HQ_assemblies,
+                LQ_assemblies = def_lq_assemblies,
+                HQ_assemblies = def_hq_assemblies,
                 junctions = def_junctions,
                 orf_calling_proteins = orf_calling_proteins,
                 orf_caller = orf_calling_program,
@@ -315,4 +363,20 @@ task CombineAllJunctions {
 		cat ~{portcullis_junctions} ~{HQ_junctions} ~{LQ_junctions} > merged_junctions.bed
 		junctools convert -if bed -of ebed -s -d merged_junctions.bed -o all_junctions.bed
 	>>>
+}
+
+task FilterWithJunctions {
+    input {
+        String name
+        File gtf
+        File bed_junctions
+    }
+
+    output {
+        File filtered_gtf = name + ".filtered.gtf"
+    }
+
+    command <<<
+        junctools gtf filter -o ~{name}.filtered.gtf -j ~{bed_junctions} ~{gtf}
+    >>>
 }

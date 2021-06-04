@@ -218,6 +218,10 @@ def parse_arguments():
                                        " short read samples have been provided as part of the input datasets")
     transcriptome_ap.add_argument("--skip_mikado_long", action='store_true', default=False,
                                   help="Disables generation of the long read only mikado run")
+    transcriptome_ap.add_argument("--filter_HQ_assemblies", action='store_true', default=False,
+                                  help="Use all the junctions available to filter the HQ_assemblies before mikado")
+    transcriptome_ap.add_argument("--filter_LQ_assemblies", action='store_true', default=False,
+                                  help="Use all the junctions available to filter the LQ_assemblies before mikado")
     transcriptome_ap.add_argument("--parameters_file", type=argparse.FileType('r'),
                                   help="Base parameters file, this file can be the output of a previous REAT run "
                                        "which will be used as the base for a new parameters file written to the"

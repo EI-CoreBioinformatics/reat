@@ -326,6 +326,11 @@ def combine_arguments(cli_arguments):
     if cli_arguments.skip_mikado_long:
         cromwell_inputs["ei_annotation.wf_main_mikado.skip_mikado_long"] = cli_arguments.skip_mikado_long
 
+    if cli_arguments.filter_HQ_assemblies:
+        cromwell_inputs["ei_annotation.wf_main_mikado.filter_HQ_assemblies"] = cli_arguments.filter_HQ_assemblies
+    if cli_arguments.filter_LQ_assemblies:
+        cromwell_inputs["ei_annotation.wf_main_mikado.filter_LQ_assemblies"] = cli_arguments.filter_LQ_assemblies
+
     cromwell_inputs["ei_annotation.wf_align.HQ_assembler"] = cli_arguments.HQ_assembler
     cromwell_inputs["ei_annotation.wf_align.LQ_assembler"] = cli_arguments.LQ_assembler
 

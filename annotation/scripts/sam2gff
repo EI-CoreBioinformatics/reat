@@ -495,6 +495,7 @@ def main():
     parser = ArgumentParser("Convert SAM to GFF3 format")
     parser.add_argument("-i", "--sam_filename")
     parser.add_argument("-o", "--output")
+    parser.add_argument("-u", "--unfiltered_output", help="unfiltered output file")
     parser.add_argument("--gtf", action='store_true', default=False)
     parser.add_argument("-s", "--source", required=True, help="source name for gff3 file")
     parser.add_argument("--min_coverage", help="Coverage filter 0-100", type=int, default=0)
@@ -515,21 +516,36 @@ def main():
     if not args.output:
         output_file = sys.stdout
     else:
-        output_file = open(args.gff3_output, 'w')
+        output_file = open(args.output, 'w')
 
     qid_seen = Counter()
+
+    unfiltered_file = None
+    if (args.min_coverage > 0 or args.min_identity > 0) and args.unfiltered_output:
+        unf_qid_seen = Counter()
+        unfiltered_file = open(args.unfiltered_output, 'w')
+        unfiltered_writer = GFF3Writer(unfiltered_file)
+
     writer = GFF3Writer(output_file)
     for r0 in GMAPSAMReader(input_file_handle, has_header):
-        if r0.identity*100 > args.min_identity and r0.qCoverage*100 > args.min_coverage:
-            if args.gtf:
+        if r0.sID == '*':
+            continue
+        if args.gtf:
+            if unfiltered_file:
+                write_record_gtf(args, unfiltered_file, unf_qid_seen, r0)
+            if r0.identity * 100 > args.min_identity and r0.qCoverage * 100 > args.min_coverage:
                 write_record_gtf(args, output_file, qid_seen, r0)
-            else:
-                rec = convert_sam_rec_to_gff3_rec(r0, args.source, qid_seen)
-                if rec is not None:
-                    writer.write(rec)
+        else:
+            rec = convert_sam_rec_to_gff3_rec(r0, args.source, qid_seen)
+            if unfiltered_file:
+                unfiltered_writer.write(rec)
+            if r0.identity * 100 > args.min_identity and r0.qCoverage * 100 > args.min_coverage:
+                writer.write(rec)
 
     if args.output:
-        print("Output written to {0}.".format(args.gff3_output), file=sys.stderr)
+        print(f"Output written to {args.output}", file=sys.stderr)
+    if unfiltered_file:
+        print(f"Unfiltered output written to {unfiltered_file.name}", file=sys.stderr)
 
 
 def write_record_gtf(args, output_file, qid_seen, r0):
