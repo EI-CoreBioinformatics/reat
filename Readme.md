@@ -1,3 +1,4 @@
+
 # REAT - Robust and Extendable eukaryotic Annotation Toolkit
 
 REAT is a robust easy-to-use genome annotation toolkit for turning high-quality genome assemblies into usable and informative resources. REAT makes use of state-of-the-art annotation tools and is robust to varying quality and sources of molecular evidence.
@@ -33,8 +34,13 @@ Cromwell can be obtained from the original repository at https://github.com/broa
 For ease of development, Singularity is recommended. In case this is not available (you are working on MacOS and haven't got https://sylabs.io/guides/3.5/admin-guide/installation.html#mac available), please follow the instructions in the `REAT-REAT-Singularity.def` for building and installing the binary dependencies.
 
 #### Java 8
+
 #### Singularity (optional)
+
+
 #### Cromwell >= v48
+
+You will need to download this from the Cromwell [repository](https://github.com/broadinstitute/cromwell/releases)
 
 ### Installing
 
@@ -46,6 +52,13 @@ cd reat
 ```
 
 You should now have the latest development version, in which you will find the `reat_singularity.def`. This allows you to build a Singularity container. 
+
+We also provide a conda environment which you can use to install dependencies if you prefer.
+
+```shell
+conda env create -f reat.yaml --name reat
+```
+
 Alternatively, install the following software dependencies on your system, so that the executables are available  in your `$PATH` environment variable.
 
 * DIAMOND - 0.9.31
