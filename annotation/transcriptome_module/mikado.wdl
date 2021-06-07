@@ -83,7 +83,7 @@ workflow wf_main_mikado {
             input:
             portcullis_junctions = junctions_bed,
             HQ_junctions = HQ_junctions_bed,
-            LQ_junctions = HQ_junctions_bed
+            LQ_junctions = LQ_junctions_bed
         }
     }
 

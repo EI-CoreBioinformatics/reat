@@ -191,25 +191,36 @@ workflow wf_align_long {
         prefix = if(is_hq) then "HQ" else "LQ"
     }
 
+	if (defined(twopass_merge.merged_filtered_junctions)) {
+		Array[File] twopass_merged_junctions = [select_first([twopass_merge.merged_filtered_junctions])]
+	}
+
 	if (aligner == "2pass" || aligner == "2pass_merged") {
 		Array[File] filtered_junctions = select_all(select_first([twopass_score.filtered_junctions]))
 	}
 
-    if (defined(JunctionUnion.combined_junctions) ||
-        defined(twopass_junctions) ||
-        defined(twopass_merge.merged_filtered_junctions)) {
+
+
+    if (defined(twopass_merged_junctions) ||
+        defined(filtered_junctions)) {
         call MergeAllJunctions as final_junctions {
             input:
 				combined_junctions = JunctionUnion.combined_junctions,
-				twopass_indv = filtered_junctions,
-				twopass_merged = twopass_merge.merged_filtered_junctions
-        }
+				twopass = select_first([twopass_merged_junctions, filtered_junctions])
+		}
     }
+
+	if (defined(JunctionUnion.combined_junctions) ||
+		defined(twopass_junctions) ||
+        defined(twopass_merge.merged_filtered_junctions)) {
+		File output_junctions = select_first([final_junctions.merged_junctions, JunctionUnion.combined_junctions])
+	}
+
     output {
         Array[AlignedSample] bams = def_alignments
         Array[File] summary_stats = summary_alignment_stats
         File summary_stats_table = CollectAlignmentStats.summary_stats_table
-        File? junctions = final_junctions.merged_junctions
+        File? junctions = output_junctions
     }
 
 }
@@ -217,8 +228,7 @@ workflow wf_align_long {
 task MergeAllJunctions {
 	input {
 		File? combined_junctions
-		Array[File]? twopass_indv
-		File? twopass_merged
+		Array[File]? twopass
 	}
 
 	output {
@@ -226,7 +236,7 @@ task MergeAllJunctions {
 	}
 
 	command <<<
-		cat ~{combined_junctions} ~{sep=" " twopass_indv} ~{twopass_merged} > merged_junctions.bed
+		cat ~{combined_junctions} ~{sep=" " twopass} > merged_junctions.bed
 		junctools convert -if bed -of ebed -s -d merged_junctions.bed -o final_merged_junctions.bed
 	>>>
 }
