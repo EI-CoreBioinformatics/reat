@@ -4,6 +4,7 @@ import "../common/tasks.wdl"
 import "../common/structs.wdl"
 import "../common/rt_struct.wdl"
 import "wf_stringtie.wdl" as wstl
+import "wf_merge.wdl" as wmrg
 
 workflow wf_assembly_long {
     input {
@@ -30,13 +31,13 @@ workflow wf_assembly_long {
             }
         }
         if (assembler == "merge") {
-            call GffreadMerge {
-                input:
-                aligned_sample = sample,
-                extra_parameters = assembler_extra_parameters,
-                runtime_attr_override = assembly_resources,
-                output_directory = output_directory
-            }
+                call wmrg.wf_merge_long as GffreadMerge {
+                    input:
+                    aligned_sample = sample,
+                    extra_parameters = assembler_extra_parameters,
+                    runtime_attr_override = assembly_resources,
+                    output_directory = output_directory
+                }
         }
         if (assembler == "stringtie") {
             call wstl.wf_stringtie_long as stringtie_assemble {
