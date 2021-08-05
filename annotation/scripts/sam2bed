@@ -1,0 +1,86 @@
+#!/usr/bin/env python3
+import sys
+
+import numpy as np
+from Mikado.parsers import BED12
+from Mikado.transcripts.transcript import Transcript
+from Mikado.parsers.bam_parser import BamParser
+
+
+class RBED12(BED12):
+    def __str__(self):
+        line = [self.chrom, self.start - 1, self.end]
+        name = "ID={}".format(self.id)
+        line.append(name)
+        if not self.score:
+            line.append(0)
+        else:
+            line.append(self.score)
+        if self.strand is None:
+            line.append(".")
+        else:
+            line.append(self.strand)
+        line.extend([self.start - 1, self.end])
+        line.append(0)
+        line.append(self.__block_count)
+        line.append(",".join([str(x) for x in self.block_sizes]))
+        line.append(",".join([str(x) for x in self.block_starts]))
+
+
+class HashableTranscript(Transcript):
+    def __hash__(self):
+        return hash((self.start, self.end, self.chrom, self.strand))
+
+    def __eq__(self, altr):
+        return (self.start, self.end, self.chrom, self.strand, self.exons) == (
+            altr.start, altr.end, altr.chrom, altr.strand, altr.exons)
+
+    def __str__(self, to_cds=False, print_cds=True):
+        line = [self.chrom, str(self.start - 1), str(self.end)]
+        line.append(self.id)
+        line.append('100')
+        if self.strand is None:
+            line.append(".")
+        else:
+            line.append(self.strand)
+        line.extend([str(self.start - 1), str(self.end)])
+        line.append('0,0,0')
+        block_count = self.exon_num
+        block_sizes = [exon[1] - exon[0] + 1 for exon in self.exons]
+        _introns = np.concatenate([np.array([intron[1] - intron[0] + 1 for intron in sorted(self.introns)],
+                                            dtype=np.int64),
+                                   np.zeros(1, dtype=np.int64)])
+        block_starts = np.concatenate([np.zeros(1, dtype=np.int64), (block_sizes + _introns).cumsum()[:-1]], axis=0)
+        line.append(str(block_count))
+        line.append(','.join(map(str, block_sizes))+',')
+        line.append(','.join(map(str, block_starts))+',')
+        return '\t'.join(line)
+
+
+def overlap(t, n):
+    lend = max(t.start, n.start)
+    rend = min(t.end, n.end)
+    return rend - lend
+
+
+with open(sys.argv[1]) as bam_fh:
+    merge = sys.argv[2] == 'true'
+    bp = BamParser(bam_fh)
+    total_reads = 0
+    try:
+        t = HashableTranscript(next(bp))
+        unique = {t}
+        while t:
+            n = HashableTranscript(next(bp))
+            while overlap(t, n) > 0 and merge:
+                unique.add(n)
+                n = HashableTranscript(next(bp))
+            print(*sorted(unique), sep='\n')
+            t = n
+            unique = {t}
+    except StopIteration as e:
+        if unique:
+            print(*sorted(unique), sep='\n')
+    finally:
+        print(f"Processed {total_reads} transcripts", file=sys.stderr)
+
