@@ -2,7 +2,8 @@
 
 import sys
 import re
-from collections import namedtuple, Counter
+from collections import namedtuple, Counter, defaultdict
+
 from six.moves import urllib
 from argparse import ArgumentParser
 
@@ -119,6 +120,7 @@ class SAMReader:
     def __init__(self, filehandle, has_header):
         self.f = filehandle
         self.header = ''
+        self.n_records = 0
         if has_header:
             while True:
                 cur = self.f.tell()
@@ -354,10 +356,22 @@ class GMAPSAMReader(SAMReader):
                 raise StopIteration
             if not line.startswith('@'):  # header can occur at file end if the SAM was sorted
                 break
+        self.n_records += 1
         return GMAPSAMRecord(line)
 
 
 class GMAPSAMRecord(SAMRecord):
+
+    def __str__(self):
+        return f"{self.qID}\t{self.sID}-{self.sStart}:{self.sEnd}\t{self.flag.strand}\t{self.segments}"
+
+    def __hash__(self):
+        return hash((self.sStart, self.sEnd, self.sID, self.flag.strand))
+
+    def __eq__(self, altr):
+        return (self.sStart, self.sEnd, self.sID, self.flag.strand, self.segments) == (
+            altr.sStart, altr.sEnd, altr.sID, altr.flag.strand, altr.segments)
+
     def process(self, record_line):
         """
         SAM files from pbalign.py have following optional fields:
@@ -433,7 +447,7 @@ def convert_sam_rec_to_gff3_rec(r, source, qid_seen=None):
     make_unique_qid(qid_seen, r)
 
     gene_qualifiers = {"source": source, "ID": r.qID, "Name": r.qID}  # for gene record
-    mRNA_qualifiers = {"source": source, "ID": r.qID + '.mRNA', "Name": r.qID + '.mRNA', "Parent": r.qID,
+    mRNA_qualifiers = {"source": source, "ID": r.qID + '.t', "Name": r.qID + '.t', "Parent": r.qID,
                        "coverage": "{0:.1f}".format(r.qCoverage * 10 ** 2) if r.qCoverage is not None else "NA",
                        "identity": "{0:.1f}".format(r.identity * 10 ** 2),
                        "matches": matches, "mismatches": mismatches, "indels": indels}
@@ -443,12 +457,12 @@ def convert_sam_rec_to_gff3_rec(r, source, qid_seen=None):
     # mRNA line, one per record
     top_feature.sub_features = []
     top_feature.sub_features = [
-        SeqFeature(FeatureLocation(r.sStart, r.sEnd), type="mRNA", strand=strand, qualifiers=mRNA_qualifiers)]
+        SeqFeature(FeatureLocation(r.sStart, r.sEnd), type="transcript", strand=strand, qualifiers=mRNA_qualifiers)]
     top_feature.sub_features[0].sub_features = []
 
     # exon lines, as many exons per record
     for i, e in enumerate(r.segments) if strand == 1 else enumerate(reversed(r.segments)):
-        _id = "{0}.exon{1}".format(r.qID, i + 1)
+        _id = "{0}.e{1}".format(r.qID, i + 1)
         exon_qual = {"source": source, "ID": _id, "Name": _id}
         top_feature.sub_features[0].sub_features.append(
             SeqFeature(FeatureLocation(e.start, e.end), type="exon", strand=strand, qualifiers=exon_qual))
@@ -460,9 +474,9 @@ def make_unique_qid(qid_seen, r):
     if qid_seen is not None:
         if r.qID in qid_seen:
             qid_seen[r.qID] += 1
-            r.qID += '.path' + str(qid_seen[r.qID])
+            r.qID += '.p' + str(qid_seen[r.qID])
         else:
-            r.qID += '.path1'
+            r.qID += '.p1'
             qid_seen[r.qID] += 1
 
 
@@ -490,12 +504,20 @@ def determine_strand(r):
         strand = None
     return strand
 
+def overlap(t, n):
+    lend = max(t.sStart, n.sStart)
+    rend = min(t.sEnd, n.sEnd)
+    return rend - lend
+
 
 def main():
     parser = ArgumentParser("Convert SAM to GFF3 format")
     parser.add_argument("-i", "--sam_filename")
     parser.add_argument("-o", "--output")
     parser.add_argument("-u", "--unfiltered_output", help="unfiltered output file")
+    parser.add_argument("-e", "--equivalence_file", default=None,
+                        help="File with the list of reads that were merged against a transcript")
+    parser.add_argument("-nm", "--no_merge", action='store_true', default=False)
     parser.add_argument("--gtf", action='store_true', default=False)
     parser.add_argument("-s", "--source", required=True, help="source name for gff3 file")
     parser.add_argument("--min_coverage", help="Coverage filter 0-100", type=int, default=0)
@@ -521,32 +543,72 @@ def main():
     qid_seen = Counter()
 
     unfiltered_file = None
+    unfiltered_writer = None
+    equivalence_file = open(args.equivalence_file, 'w') if args.equivalence_file else None
+    unf_qid_seen = Counter()
     if (args.min_coverage > 0 or args.min_identity > 0) and args.unfiltered_output:
-        unf_qid_seen = Counter()
         unfiltered_file = open(args.unfiltered_output, 'w')
         unfiltered_writer = GFF3Writer(unfiltered_file)
 
     writer = GFF3Writer(output_file)
-    for r0 in GMAPSAMReader(input_file_handle, has_header):
-        if r0.sID == '*':
-            continue
-        if args.gtf:
-            if unfiltered_file:
-                write_record_gtf(args, unfiltered_file, unf_qid_seen, r0)
-            if r0.identity * 100 > args.min_identity and r0.qCoverage * 100 > args.min_coverage:
-                write_record_gtf(args, output_file, qid_seen, r0)
-        else:
-            rec = convert_sam_rec_to_gff3_rec(r0, args.source, qid_seen)
-            if unfiltered_file:
-                unfiltered_writer.write(rec)
-            if r0.identity * 100 > args.min_identity and r0.qCoverage * 100 > args.min_coverage:
-                writer.write(rec)
+    merge = not args.no_merge
+    bp = GMAPSAMReader(input_file_handle, has_header)
+    unique = set()
+    equivalent = dict()
+    try:
+        t = next(bp)
+        while t.sID == '*':
+            t = next(bp)
+        unique = {t}
+        equivalent = {t: [t]}
+        while t:
+            n = next(bp)
+            if n.sID == '*':
+                continue
+            while overlap(t, n) > 0 and merge:
+                if n not in unique:
+                    unique.add(n)
+                else:
+                    equivalent[t].append(n)
+                n = next(bp)
+            else:
+                if equivalence_file:
+                    for k, v in equivalent.items():
+                        print(k.qID, *[o.qID for o in v])
+                print_results(args, output_file, qid_seen, unf_qid_seen, unfiltered_file, unique, writer, unfiltered_writer,
+                          equivalence_file)
+            t = n
+            unique = {t}
+            equivalent = {t: [t]}
+    except StopIteration as e:
+        if unique:
+            if equivalence_file:
+                for k, v in equivalent.items():
+                    print(k.qID, *[o.qID for o in v])
+            print_results(args, output_file, qid_seen, unf_qid_seen, unfiltered_file, unique, writer, unfiltered_writer,
+                          equivalence_file)
+    finally:
+        print(f"Processed {bp.n_records} transcripts", file=sys.stderr)
 
     if args.output:
         print(f"Output written to {args.output}", file=sys.stderr)
     if unfiltered_file:
         print(f"Unfiltered output written to {unfiltered_file.name}", file=sys.stderr)
 
+
+def print_results(args, output_file, qid_seen, unf_qid_seen, unfiltered_file, unique, writer, unfiltered_writer,
+                  equivalence_file):
+    for ut in unique:
+        if args.gtf:
+            if unfiltered_file:
+                write_record_gtf(args, unfiltered_file, unf_qid_seen, ut)
+            if ut.identity * 100 > args.min_identity and ut.qCoverage * 100 > args.min_coverage:
+                write_record_gtf(args, output_file, qid_seen, ut)
+        else:
+            if unfiltered_writer:
+                unfiltered_writer.write(convert_sam_rec_to_gff3_rec(ut, args.source, unf_qid_seen))
+            if ut.identity * 100 > args.min_identity and ut.qCoverage * 100 > args.min_coverage:
+                writer.write(convert_sam_rec_to_gff3_rec(ut, args.source, qid_seen))
 
 def write_record_gtf(args, output_file, qid_seen, r0):
     make_unique_qid(qid_seen, r0)
