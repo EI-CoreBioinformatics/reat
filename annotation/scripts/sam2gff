@@ -372,6 +372,10 @@ class GMAPSAMRecord(SAMRecord):
         return (self.sStart, self.sEnd, self.sID, self.flag.strand, self.segments) == (
             altr.sStart, altr.sEnd, altr.sID, altr.flag.strand, altr.segments)
 
+    def __lt__(self, altr):
+        return (self.sStart, self.sEnd, self.sID, self.flag.strand, self.segments) < (
+            altr.sStart, altr.sEnd, altr.sID, altr.flag.strand, altr.segments)
+
     def process(self, record_line):
         """
         SAM files from pbalign.py have following optional fields:
@@ -553,40 +557,52 @@ def main():
     writer = GFF3Writer(output_file)
     merge = not args.no_merge
     bp = GMAPSAMReader(input_file_handle, has_header)
-    unique = set()
-    equivalent = dict()
+    chunk = []
     try:
         t = next(bp)
         while t.sID == '*':
             t = next(bp)
-        unique = {t}
-        equivalent = {t: [t]}
+        chunk = [t]
         while t:
             n = next(bp)
             if n.sID == '*':
                 continue
             while overlap(t, n) > 0 and merge:
-                if n not in unique:
-                    unique.add(n)
-                else:
-                    equivalent[t].append(n)
+                chunk.append(n)
                 n = next(bp)
             else:
-                if equivalence_file:
-                    for k, v in equivalent.items():
-                        print(k.qID, *[o.qID for o in v])
-                print_results(args, output_file, qid_seen, unf_qid_seen, unfiltered_file, unique, writer, unfiltered_writer,
-                          equivalence_file)
+                chunk.sort()
+                c = 0
+                cn = 1
+                while c < len(chunk):
+                    if cn < len(chunk) and chunk[c] == chunk[cn]:
+                        if equivalence_file:
+                            print(chunk[c].qID, end='\t', file=equivalence_file)
+                        while cn < len(chunk) and chunk[c] == chunk[cn]:
+                            if equivalence_file:
+                                print(chunk[cn].qID, end=',', file=equivalence_file)
+                            cn += 1
+                    print_results(args, output_file, qid_seen, unf_qid_seen, unfiltered_file, chunk[c], writer,
+                                  unfiltered_writer)
+                    c = cn
             t = n
-            unique = {t}
-            equivalent = {t: [t]}
+            chunk = [t]
     except StopIteration as e:
-        if unique:
-            if equivalence_file:
-                for k, v in equivalent.items():
-                    print(k.qID, *[o.qID for o in v])
-            print_results(args, output_file, qid_seen, unf_qid_seen, unfiltered_file, unique, writer, unfiltered_writer,
-                          equivalence_file)
+        if chunk:
+            chunk.sort()
+            c = 0
+            cn = 1
+            while c < len(chunk):
+                if cn < len(chunk) and chunk[c] == chunk[cn]:
+                    if equivalence_file:
+                        print(chunk[c].qID, end='\t', file=equivalence_file)
+                    while cn < len(chunk) and chunk[c] == chunk[cn]:
+                        if equivalence_file:
+                            print(chunk[cn].qID, end=',', file=equivalence_file)
+                        cn += 1
+                print_results(args, output_file, qid_seen, unf_qid_seen, unfiltered_file, chunk[c], writer,
+                              unfiltered_writer)
+                c = cn
     finally:
         print(f"Processed {bp.n_records} transcripts", file=sys.stderr)
 
@@ -596,19 +612,18 @@ def main():
         print(f"Unfiltered output written to {unfiltered_file.name}", file=sys.stderr)
 
 
-def print_results(args, output_file, qid_seen, unf_qid_seen, unfiltered_file, unique, writer, unfiltered_writer,
-                  equivalence_file):
-    for ut in unique:
-        if args.gtf:
-            if unfiltered_file:
-                write_record_gtf(args, unfiltered_file, unf_qid_seen, ut)
-            if ut.identity * 100 > args.min_identity and ut.qCoverage * 100 > args.min_coverage:
-                write_record_gtf(args, output_file, qid_seen, ut)
-        else:
-            if unfiltered_writer:
-                unfiltered_writer.write(convert_sam_rec_to_gff3_rec(ut, args.source, unf_qid_seen))
-            if ut.identity * 100 > args.min_identity and ut.qCoverage * 100 > args.min_coverage:
-                writer.write(convert_sam_rec_to_gff3_rec(ut, args.source, qid_seen))
+def print_results(args, output_file, qid_seen, unf_qid_seen, unfiltered_file, ut, writer, unfiltered_writer):
+    if args.gtf:
+        if unfiltered_file:
+            write_record_gtf(args, unfiltered_file, unf_qid_seen, ut)
+        if ut.identity * 100 > args.min_identity and ut.qCoverage * 100 > args.min_coverage:
+            write_record_gtf(args, output_file, qid_seen, ut)
+    else:
+        if unfiltered_writer:
+            unfiltered_writer.write(convert_sam_rec_to_gff3_rec(ut, args.source, unf_qid_seen))
+        if ut.identity * 100 > args.min_identity and ut.qCoverage * 100 > args.min_coverage:
+            writer.write(convert_sam_rec_to_gff3_rec(ut, args.source, qid_seen))
+
 
 def write_record_gtf(args, output_file, qid_seen, r0):
     make_unique_qid(qid_seen, r0)
