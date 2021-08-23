@@ -437,12 +437,14 @@ class Gene(UniquelyIdentifiableSegment):
                 c.start -= mrna.start
                 c.start += new_start
 
-            if mrna.strand == '-':
-                mrna.ces = mrna.cds_exons[-1].start
-                mrna.css = mrna.cds_exons[0].end
-            else:
-                mrna.ces = mrna.cds_exons[-1].end
-                mrna.css = mrna.cds_exons[0].start
+            if mrna.cds_exons:
+                if mrna.strand == '-':
+                    mrna.ces = mrna.cds_exons[-1].start
+                    mrna.css = mrna.cds_exons[0].end
+                else:
+                    mrna.ces = mrna.cds_exons[-1].end
+                    mrna.css = mrna.cds_exons[0].start
+
             mrna.chrom = chrom
             mrna.end -= mrna.start
             mrna.end += new_start

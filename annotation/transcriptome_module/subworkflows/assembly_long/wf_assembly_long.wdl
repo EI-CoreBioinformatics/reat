@@ -30,13 +30,15 @@ workflow wf_assembly_long {
             }
         }
         if (assembler == "merge") {
-            call GffreadMerge {
-                input:
-                aligned_sample = sample,
-                extra_parameters = assembler_extra_parameters,
-                runtime_attr_override = assembly_resources,
-                output_directory = output_directory
-            }
+                call GffreadMerge {
+                    input:
+                    aligned_sample = sample,
+                    min_coverage = min_coverage,
+                    min_identity = min_identity,
+                    extra_parameters = assembler_extra_parameters,
+                    runtime_attr_override = assembly_resources,
+                    output_directory = output_directory
+                }
         }
         if (assembler == "stringtie") {
             call wstl.wf_stringtie_long as stringtie_assemble {
@@ -137,6 +139,8 @@ task GffreadMerge {
     input {
         String output_directory
         AlignedSample aligned_sample
+        Int? min_coverage
+        Int? min_identity
         String? extra_parameters
         RuntimeAttr? runtime_attr_override
     }
@@ -149,8 +153,9 @@ task GffreadMerge {
         set -euxo pipefail
         mkdir ~{output_directory}
         cd ~{output_directory}
-        for bam in ~{sep=" " aligned_sample.bam}; do
-        samtools view -F 4 -F 0x900 $bam; done | sam2gff -s ~{aligned_sample.name} | gffread -T -M -K ~{extra_parameters} -o ~{aligned_sample.name}.~{aligned_sample.aligner}.gffread_merge.gtf
+        samtools merge - ~{sep=" " aligned_sample.bam} | samtools view -F 4 -F 0x900 | sam2gff -s ~{aligned_sample.name} \
+        -u ~{aligned_sample.name}.~{aligned_sample.aligner}.unfiltered.gtf --gtf \
+        ~{'--min_coverage=' + min_coverage} ~{'--min_identity=' + min_identity} | gffread --stream -T -M -K ~{extra_parameters} -o ~{aligned_sample.name}.~{aligned_sample.aligner}.gffread_merge.gtf
     >>>
 
     RuntimeAttr default_attr = object {

@@ -14,7 +14,8 @@ struct GenomeProteins {
 
 workflow ei_homology {
     input {
-        Array[GenomeAnnotation] annotations
+        Array[GenomeAnnotation]? annotations
+        Array[File]? protein_sequence_files
         File genome_to_annotate
         File mikado_scoring
         File mikado_config
@@ -32,65 +33,80 @@ workflow ei_homology {
         runtime_attr_override = index_attr
     }
 
-    scatter (annotation in annotations) {
-        call PrepareAnnotations {
-            input:
-            annotation = annotation
-        }
-
-        GenomeProteins cleaned_up = object { genome: annotation.genome, annotation_gff: PrepareAnnotations.cleaned_up_gff, protein_sequences: PrepareAnnotations.proteins}
-        String out_prefix = sub(basename(cleaned_up.annotation_gff), "\.[^/.]+$", "")
-        String ref_prefix = sub(basename(cleaned_up.genome), "\.[^/.]+$", "")
-
-        call AlignProteins {
-            input:
+    if (defined(protein_sequence_files)) {
+        scatter (protein_sequence_file in select_first([protein_sequence_files])) {
+            call AlignProteinSequences {
+                input:
                 genome_index = IndexGenome.genome_index,
-                genome_to_annotate = genome_to_annotate,
-                genome_proteins = cleaned_up,
-                ref_prefix = ref_prefix,
-                out_prefix = out_prefix,
+                proteins = protein_sequence_file,
                 species = species,
+                out_prefix = sub(basename(protein_sequence_file), "\.[^/.]+$", ""),
                 runtime_attr_override = aln_attr
-        }
-
-        call PrepareAlignments {
-            input:
-            annotation_cdnas = PrepareAnnotations.cdnas,
-            annotation_bed = PrepareAnnotations.bed,
-            ref_prefix = ref_prefix,
-            raw_alignments = AlignProteins.raw_alignments,
-            genome_to_annotate = genome_to_annotate
-        }
-
-        String aln_prefix = sub(basename(PrepareAlignments.clean_alignments), "\.[^/.]+$", "")
-
-        call ScoreAlignments {
-            input:
-            cdnas = PrepareAlignments.cdnas,
-            bed = PrepareAlignments.bed,
-            groups = PrepareAlignments.groups,
-            aln_prefix = aln_prefix,
-            ref_prefix = ref_prefix,
-            runtime_attr_override = score_attr
-        }
-
-        call CombineResults {
-            input:
-            alignment_compare_detail = ScoreAlignments.alignment_compare_detail,
-            alignment_gff = PrepareAlignments.clean_alignments
+            }
         }
     }
 
-    call ScoreSummary {
-        input:
-        alignments_compare = ScoreAlignments.alignment_compare_detail
+    if (defined(annotations)) {
+        scatter (annotation in select_first([annotations])) {
+            call PrepareAnnotations {
+                input:
+                annotation = annotation
+            }
+
+            GenomeProteins cleaned_up = object { genome: annotation.genome, annotation_gff: PrepareAnnotations.cleaned_up_gff, protein_sequences: PrepareAnnotations.proteins}
+            String out_prefix = sub(basename(cleaned_up.annotation_gff), "\.[^/.]+$", "")
+            String ref_prefix = sub(basename(cleaned_up.genome), "\.[^/.]+$", "")
+
+            call AlignProteins {
+                input:
+                    genome_index = IndexGenome.genome_index,
+                    genome_to_annotate = genome_to_annotate,
+                    genome_proteins = cleaned_up,
+                    ref_prefix = ref_prefix,
+                    out_prefix = out_prefix,
+                    species = species,
+                    runtime_attr_override = aln_attr
+            }
+
+            call PrepareAlignments {
+                input:
+                annotation_cdnas = PrepareAnnotations.cdnas,
+                annotation_bed = PrepareAnnotations.bed,
+                ref_prefix = ref_prefix,
+                raw_alignments = AlignProteins.raw_alignments,
+                genome_to_annotate = genome_to_annotate
+            }
+
+            String aln_prefix = sub(basename(PrepareAlignments.clean_alignments), "\.[^/.]+$", "")
+
+            call ScoreAlignments {
+                input:
+                cdnas = PrepareAlignments.cdnas,
+                bed = PrepareAlignments.bed,
+                groups = PrepareAlignments.groups,
+                aln_prefix = aln_prefix,
+                ref_prefix = ref_prefix,
+                runtime_attr_override = score_attr
+            }
+
+            call CombineResults {
+                input:
+                alignment_compare_detail = ScoreAlignments.alignment_compare_detail,
+                alignment_gff = PrepareAlignments.clean_alignments
+            }
+        }
+        call ScoreSummary {
+            input:
+            alignments_compare = ScoreAlignments.alignment_compare_detail
+        }
     }
 
-    scatter (alignment in CombineResults.augmented_alignments_gff) {
+    Array[File] all_alignments = flatten(select_all([CombineResults.augmented_alignments_gff, AlignProteinSequences.raw_alignments]))
+    scatter (alignment in all_alignments) {
         call CombineXspecies {
             input:
             alignment = alignment,
-            alignments = CombineResults.augmented_alignments_gff
+            alignments = all_alignments
         }
     }
 
@@ -123,13 +139,13 @@ workflow ei_homology {
     }
 
     output {
-        Array[File] xspecies_combined_alignments = CombineXspecies.xspecies_scored_alignment
-        Array[File] clean_annotations = PrepareAnnotations.cleaned_up_gff
-        Array[File] mgc_evaluation = ScoreAlignments.alignment_compare
-        Array[File] mgc_evaluation_detail = ScoreAlignments.alignment_compare_detail
-        Array[File] annotation_filter_stats = PrepareAnnotations.stats
-        Array[File] alignment_filter_stats = PrepareAlignments.stats
-        File        mgc_score_summary = ScoreSummary.summary_table
+        Array[File]? xspecies_combined_alignments = CombineXspecies.xspecies_scored_alignment
+        Array[File]? clean_annotations = PrepareAnnotations.cleaned_up_gff
+        Array[File]? mgc_evaluation = ScoreAlignments.alignment_compare
+        Array[File]? mgc_evaluation_detail = ScoreAlignments.alignment_compare_detail
+        Array[File]? annotation_filter_stats = PrepareAnnotations.stats
+        Array[File]? alignment_filter_stats = PrepareAlignments.stats
+        File?        mgc_score_summary = ScoreSummary.summary_table
         File loci = MikadoPick.loci
         File scores = MikadoPick.scores
         File metrics = MikadoPick.metrics
@@ -484,6 +500,55 @@ task AlignProteins {
         spaln -t~{task_cpus} -KP -O0,12 -Q~{recursion_level} -M~{max_per_query}.~{max_per_query} ~{"-T"+species} -dgenome_to_annotate -o ~{out_prefix} -yL~{min_spaln_exon_len} ~{basename(genome_proteins.protein_sequences)}
         sortgrcd -O4 ~{out_prefix}.grd | tee ~{out_prefix}.s | spaln2gff --min_coverage ~{min_coverage} --min_identity ~{min_identity} -s "spaln" > ~{ref_prefix}.alignment.gff
     >>>
+
+    runtime {
+        cpu: task_cpus
+        memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
+        maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+        queue: select_first([runtime_attr.queue, default_attr.queue])
+    }
+
+}
+
+
+task AlignProteinSequences {
+    input {
+        Array[File] genome_index
+        File proteins
+        String species
+        Int min_spaln_exon_len = 20
+        Int min_coverage = 80
+        Int min_identity = 50
+        Int max_per_query = 4
+        Int recursion_level = 6
+        String out_prefix
+        RuntimeAttr? runtime_attr_override
+    }
+
+    Int cpus = 8
+    RuntimeAttr default_attr = object {
+        cpu_cores: "~{cpus}",
+        mem_gb: 32,
+        max_retries: 1,
+        queue: ""
+    }
+
+    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
+
+    Int task_cpus = select_first([runtime_attr.cpu_cores, cpus])
+
+    output {
+        File raw_alignments = basename(proteins)+".alignment.gff"
+    }
+
+    command <<<
+        set -euxo pipefail
+        ln ~{sub(genome_index[0], "\.[^/.]+$", "")}.* .
+        ln -s ~{proteins} .
+        spaln -t~{task_cpus} -KP -O0,12 -Q~{recursion_level} -M~{max_per_query}.~{max_per_query} ~{"-T"+species} -dgenome_to_annotate -o ~{out_prefix} -yL~{min_spaln_exon_len} ~{basename(proteins)}
+        sortgrcd -O4 ~{out_prefix}.grd | tee ~{out_prefix}.s | spaln2gff --min_coverage ~{min_coverage} --min_identity ~{min_identity} -s "spaln" > ~{basename(proteins)}.alignment.gff
+    >>>
+
 
     runtime {
         cpu: task_cpus
