@@ -298,46 +298,7 @@ task MikadoSerialise {
         queue: select_first([runtime_attr.queue, default_attr.queue])
     }
 }
-
-task GTCDS {
-    input {
-        File prepared_transcripts
-        File gtf
-        RuntimeAttr? runtime_attr_override
-    }
-
-    output {
-        File orfs = "mikado_prepared.gt_cds.trans.bed12"
-        File gff3 = "mikado_prepared.gt_cds.gff3"
-    }
-
-    command <<<
-        set -euxo pipefail
-        awk '$3!~\"(CDS|UTR)\"' ~{gtf} \
-        | mikado util convert -if gtf -of gff3 - \
-        | gt gff3 -tidy -retainids -addids | gt cds -seqfile ~{prepared_transcripts} - matchdesc \
-        | gff3_name_to_id.py - mikado_prepared.gt_cds.gff3 && \
-        mikado util convert -t -of bed12 "mikado_prepared.gt_cds.gff3" "mikado_prepared.gt_cds.trans.bed12"
-    >>>
-
-    RuntimeAttr default_attr = object {
-        cpu_cores: 1,
-        mem_gb: 4,
-        max_retries: 1,
-        queue: ""
-    }
-
-    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
-
-    runtime {
-        cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
-        memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
-        maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
-        queue: select_first([runtime_attr.queue, default_attr.queue])
-    }
-
-}
-
+    
 task GenerateModelsList {
     input {
         AssembledSample assembly

@@ -74,7 +74,6 @@ def check_environment(force_quit=True):
         "gffread": {"command": "gffread --version".split(' '), "result": "0.12.2"},
         "gmap": {"command": "gmap --version".split(' '), "result": "version 2019-02-15"},
         "minimap2": {"command": "minimap2 --version".split(' '), "result": "2.17-r941"},
-        "genometools": {"command": "gt --version".split(' '), "result": "gt (GenomeTools) 1.5.10"},
         "hisat2": {"command": "hisat2 --version".split(' '), "result": "version 2.1.0"},
         "star": {"command": "STAR --version".split(' '), "result": "2.7.3a"},
         "seqtk": {"command": ["seqtk"], "result": "Version: 1.3-r116-dirty"},

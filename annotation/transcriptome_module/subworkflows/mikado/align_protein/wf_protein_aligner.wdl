@@ -30,7 +30,7 @@ task SanitiseProteinBlastDB {
 
     command <<<
         set -euxo pipefail
-        sanitize_sequence_db -cstop ~{db} | gt seqtransform -addstopaminos -width "60" > "output.db"
+        sanitize_sequence_db -cstop ~{db} > "output.db"
 
     >>>
 }
