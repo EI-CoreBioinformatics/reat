@@ -1,5 +1,5 @@
 set -euxo
-version=0.2.3
+version=0.3.0
 rundir=$(dirname "$(realpath "$0")")
 cd "$(mktemp -d)"
 cp "${rundir}"/reat_singularity.def reat.def
