@@ -574,38 +574,14 @@ def main():
                 chunk.append(n)
                 n = next(bp)
             else:
-                chunk.sort()
-                c = 0
-                cn = 1
-                while c < len(chunk):
-                    if cn < len(chunk) and chunk[c] == chunk[cn]:
-                        if equivalence_file:
-                            print(chunk[c].qID, end='\t', file=equivalence_file)
-                        while cn < len(chunk) and chunk[c] == chunk[cn]:
-                            if equivalence_file:
-                                print(chunk[cn].qID, end=',', file=equivalence_file)
-                            cn += 1
-                    print_results(args, output_file, qid_seen, unf_qid_seen, unfiltered_file, chunk[c], writer,
-                                  unfiltered_writer)
-                    c = cn
+                process_chunk(args, chunk, equivalence_file, output_file, qid_seen, unf_qid_seen, unfiltered_file,
+                              unfiltered_writer, writer)
             t = n
             chunk = [t]
     except StopIteration as e:
         if chunk:
-            chunk.sort()
-            c = 0
-            cn = 1
-            while c < len(chunk):
-                if cn < len(chunk) and chunk[c] == chunk[cn]:
-                    if equivalence_file:
-                        print(chunk[c].qID, end='\t', file=equivalence_file)
-                    while cn < len(chunk) and chunk[c] == chunk[cn]:
-                        if equivalence_file:
-                            print(chunk[cn].qID, end=',', file=equivalence_file)
-                        cn += 1
-                print_results(args, output_file, qid_seen, unf_qid_seen, unfiltered_file, chunk[c], writer,
-                              unfiltered_writer)
-                c = cn
+            process_chunk(args, chunk, equivalence_file, output_file, qid_seen, unf_qid_seen, unfiltered_file,
+                          unfiltered_writer, writer)
     finally:
         print(f"Processed {bp.n_records} transcripts", file=sys.stderr)
 
@@ -613,6 +589,27 @@ def main():
         print(f"Output written to {args.output}", file=sys.stderr)
     if unfiltered_file:
         print(f"Unfiltered output written to {unfiltered_file.name}", file=sys.stderr)
+
+
+def process_chunk(args, chunk, equivalence_file, output_file, qid_seen, unf_qid_seen, unfiltered_file,
+                  unfiltered_writer, writer):
+    chunk.sort()
+    c = 0
+    cn = 1
+    while c < len(chunk):
+        if cn < len(chunk) and chunk[c] == chunk[cn]:
+            if equivalence_file and len(chunk) > 1:
+                print(chunk[c].qID, end='\t', file=equivalence_file)
+            while cn < len(chunk) and chunk[c] == chunk[cn]:
+                if equivalence_file:
+                    print(chunk[cn].qID, end=',', file=equivalence_file)
+                cn += 1
+            else:
+                print(file=equivalence_file)
+        print_results(args, output_file, qid_seen, unf_qid_seen, unfiltered_file, chunk[c], writer,
+                      unfiltered_writer)
+        c = cn
+        cn += 1
 
 
 def print_results(args, output_file, qid_seen, unf_qid_seen, unfiltered_file, ut, writer, unfiltered_writer):
