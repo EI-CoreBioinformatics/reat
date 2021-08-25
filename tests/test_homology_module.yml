@@ -1,4 +1,4 @@
-- name: REAT_Homology
+- name: Homology
   tags:
     - homology
   command: >-
@@ -9,6 +9,7 @@
     --alignment_species arabthal
     --output_prefix homology_test
     --annotations_csv tests/integration/homology/annotations.csv
+    --protein_sequences tests/integration/homology/inputs/Cgrandiflora_Chr3_1065466-1464870.faa
     --mikado_config tests/integration/homology/inputs/config.yaml
     --mikado_scoring tests/integration/homology/inputs/plant.protein.wport_wex.percentage.yaml
   files:
