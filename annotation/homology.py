@@ -22,6 +22,9 @@ def combine_arguments_homology(cli_arguments):
     cromwell_inputs["ei_homology.mikado_scoring"] = cli_arguments.mikado_scoring.name
     cromwell_inputs["ei_homology.output_prefix"] = cli_arguments.output_prefix
 
+    if cli_arguments.protein_sequences:
+        cromwell_inputs["ei_homology.protein_sequence_files"] = cli_arguments.protein_sequences
+
     # Optional extra parameters
     if cli_arguments.pick_extra_config:
         cromwell_inputs['ei_homology.MikadoPick.extra_config'] = cli_arguments.pick_extra_config.name

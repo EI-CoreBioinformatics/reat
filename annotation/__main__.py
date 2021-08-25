@@ -377,8 +377,9 @@ def parse_arguments():
     homology_ap.add_argument("--annotations_csv", type=argparse.FileType('r'),
                              help="CSV file with reference annotations to extract proteins/cdnas for spliced alignments"
                                   " in csv format. The CSV fields are as follows genome_fasta,annotation_gff  "
-                                  "e.g Athaliana.fa,Athaliana.gff",
-                             required=True)
+                                  "e.g Athaliana.fa,Athaliana.gff")
+    homology_ap.add_argument("--protein_sequences", type=str, nargs='*',
+                             help="List of files containing protein sequences to use as evidence")
     homology_ap.add_argument("--annotation_filters",
                              choices=['all', 'none', 'exon_len', 'intron_len', 'internal_stop', 'aa_len',
                                       'splicing'],
