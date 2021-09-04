@@ -9,7 +9,6 @@ workflow wf_prodigal {
         RuntimeAttr? prodigal_runtime_attr
     }
 
-    # TODO: Chunk input, train first then subdivide transcripts for parallel processing
     call Prodigal {
         input:
         prepared_transcripts = prepared_transcripts,
@@ -27,33 +26,6 @@ task Prodigal {
     input {
         File prepared_transcripts
         Int gencode_id
-# gencode_name list (id, names):
-#    1  ['Standard', 'SGC0']
-#    2  ['Vertebrate Mitochondrial', 'SGC1']
-#    3  ['Yeast Mitochondrial', 'SGC2']
-#    4  ['Mold Mitochondrial', 'Protozoan Mitochondrial', 'Coelenterate Mitochondrial', 'Mycoplasma', 'Spiroplasma', 'SGC3']
-#    5  ['Invertebrate Mitochondrial', 'SGC4']
-#    6  ['Ciliate Nuclear', 'Dasycladacean Nuclear', 'Hexamita Nuclear', 'SGC5']
-#    9  ['Echinoderm Mitochondrial', 'Flatworm Mitochondrial', 'SGC8']
-#    10 ['Euplotid Nuclear', 'SGC9']
-#    11 ['Bacterial', 'Archaeal', 'Plant Plastid']
-#    12 ['Alternative Yeast Nuclear']
-#    13 ['Ascidian Mitochondrial']
-#    14 ['Alternative Flatworm Mitochondrial']
-#    15 ['Blepharisma Macronuclear']
-#    16 ['Chlorophycean Mitochondrial']
-#    21 ['Trematode Mitochondrial']
-#    22 ['Scenedesmus obliquus Mitochondrial']
-#    23 ['Thraustochytrium Mitochondrial']
-#    24 ['Pterobranchia Mitochondrial']
-#    25 ['Candidate Division SR1', 'Gracilibacteria']
-#    26 ['Pachysolen tannophilus Nuclear']
-#    27 ['Karyorelict Nuclear']
-#    28 ['Condylostoma Nuclear']
-#    29 ['Mesodinium Nuclear']
-#    30 ['Peritrich Nuclear']
-#    31 ['Blastocrithidia Nuclear']
-#    32 ['Balanophoraceae Plastid']
 
         String output_directory
         RuntimeAttr? runtime_attr_override
