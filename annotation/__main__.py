@@ -38,7 +38,8 @@ from textwrap import wrap
 
 from annotation import VERSION
 from annotation.homology import combine_arguments_homology, validate_homology_inputs
-from annotation.transcriptome import combine_arguments, validate_transcriptome_inputs
+from annotation.transcriptome import combine_arguments, validate_transcriptome_inputs, transcriptome_cli_validation, \
+    genetic_code_str_to_int
 
 LONG_READ_ALIGNER_CHOICES = ['minimap2', 'gmap', '2pass', '2pass_merged']
 RUN_METADATA = "run_details.json"
@@ -225,6 +226,12 @@ def parse_arguments():
                                   help="Base parameters file, this file can be the output of a previous REAT run "
                                        "which will be used as the base for a new parameters file written to the"
                                        " output_parameters_file argument")
+    transcriptome_ap.add_argument("--genetic_code",
+                                  help=f"Parameter for the translation table used in Mikado for translating CDS "
+                                       f"sequences, and for ORF calling, can take values in the genetic code range of "
+                                       f"NCBI as an integer. E.g 1, 6, 10 "
+                                       f"or when using TransDecoder as ORF caller, one of: "
+                                       f"{', '.join(genetic_code_str_to_int.keys())}", default='1')
 
     # Mikado arguments
     mikado_parameters = transcriptome_ap.add_argument_group("Mikado", "Parameters for Mikado runs")
@@ -440,18 +447,11 @@ def parse_arguments():
 
     args = reat_ap.parse_args()
 
+    genetic_code = 0
+    mikado_genetic_code = 0
     if args.reat_module == 'transcriptome':
-        if args.separate_mikado_LQ:
-            if not args.long_lq_scoring_file:
-                reat_ap.error("When '--separate_mikado_LQ' is enabled, --long_lq_scoring_file is required, please "
-                              "provide it.")
-
-        if args.samples and (args.csv_paired_samples or args.csv_long_samples):
-            reat_ap.error("Conflicting arguments '--samples' and ['--csv_paired_samples' or '--csv_long_samples'] "
-                          "provided, please choose one of csv or json sample input format")
-        if not args.samples and not args.csv_paired_samples and not args.csv_long_samples:
-            reat_ap.error("Please provide at least one of --samples, --csv_paired_samples, --csv_long_samples")
-    return args
+        genetic_code, mikado_genetic_code = transcriptome_cli_validation(args, reat_ap)
+    return args, genetic_code, mikado_genetic_code
 
 
 def symlink(path, out_file):
@@ -642,7 +642,7 @@ def link_bams(outputs, outputs_path, bams_array, stats_array, stats_table):
         symlink(alignments_path, outputs[stats_table])
 
 
-def transcriptome_module(cli_arguments):
+def transcriptome_module(cli_arguments, genetic_code='1', mikado_genetic_code=1):
     """
     Collects the CLI arguments and combines them with CLI defined input files.
     The resulting object is validated and the final inputs are written to a json Cromwell input file.
@@ -651,6 +651,8 @@ def transcriptome_module(cli_arguments):
     """
     # Print input file for cromwell
     cromwell_inputs = combine_arguments(cli_arguments)
+    cromwell_inputs['ei_annotation.mikado_genetic_code'] = mikado_genetic_code
+    cromwell_inputs['ei_annotation.genetic_code'] = str(genetic_code)
     cromwell_jar, runtime_config = prepare_cromwell_arguments(cli_arguments)
 
     # Validate input against schema
@@ -880,7 +882,7 @@ def main():
     print("\n")
 
     start_time = time.time()
-    cli_arguments = parse_arguments()
+    cli_arguments, genetic_code, mikado_genetic_code = parse_arguments()
     check_environment()
 
     # Check options.json
@@ -893,7 +895,7 @@ def main():
         print('... ' if start else '', snippet, ' ...' if stop < len(err.doc) else '', sep="")
 
     if cli_arguments.reat_module == "transcriptome":
-        rc = transcriptome_module(cli_arguments)
+        rc = transcriptome_module(cli_arguments, genetic_code, mikado_genetic_code)
     elif cli_arguments.reat_module == "homology":
         rc = homology_module(cli_arguments)
     else:

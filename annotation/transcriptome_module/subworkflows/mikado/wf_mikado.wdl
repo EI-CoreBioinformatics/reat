@@ -15,6 +15,8 @@ workflow wf_mikado {
         File? annotation
         Int annotation_score
         String mode
+        String genetic_code
+        Int mikado_genetic_code
         Boolean check_reference
 
         File scoring_file
@@ -49,6 +51,7 @@ workflow wf_mikado {
         reference_fasta = indexed_reference.fasta,
         blast_targets = homology_proteins,
         mode = mode,
+        mikado_genetic_code = mikado_genetic_code,
         jsamples = jsamples,
         annotation = annotation,
         annotation_score = annotation_score,
@@ -71,7 +74,7 @@ workflow wf_mikado {
         if (def_orf_caller == "prodigal") {
             call pdg.wf_prodigal {
                 input:
-                gencode = prodigal_gencode,
+                gencode = genetic_code,
                 prepared_transcripts = select_first([FilterPrepare.filtered_prepared_fasta, MikadoPrepare.prepared_fasta]),
                 output_directory = output_prefix,
                 prodigal_runtime_attr = orf_calling_resources
@@ -84,7 +87,7 @@ workflow wf_mikado {
                 prepared_transcripts = select_first([FilterPrepare.filtered_prepared_fasta, MikadoPrepare.prepared_fasta]),
                 orf_proteins = orf_calling_proteins,
                 orf_calling_resources = orf_calling_resources,
-                genetic_code = transdecoder_genetic_code,
+                genetic_code = genetic_code,
                 index_resources = orf_protein_index_resources,
                 output_prefix = output_prefix,
                 orf_alignment_resources = orf_protein_alignment_resources,
@@ -340,6 +343,7 @@ task MikadoPrepare {
     input {
         File reference_fasta
         String mode
+        Int mikado_genetic_code
         Boolean check_reference
 
         Array[Array[AssembledSample]] jsamples
@@ -400,6 +404,7 @@ task MikadoPrepare {
         mikado configure ${mode_parameter} ~{if(check_reference) then "--check-references" else ""} \
         ~{"-bt " + blast_targets} \
         --list=model.list \
+        --codon-table=~{mikado_genetic_code} \
         ~{"--reference=" + reference_fasta} \
         ~{output_prefix}-mikado.yaml
 

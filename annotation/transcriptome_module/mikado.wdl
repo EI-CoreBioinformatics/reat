@@ -11,6 +11,8 @@ workflow wf_main_mikado {
 
         Int annotation_score = 1
         String mode
+        String genetic_code
+        Int mikado_genetic_code
         Boolean check_reference
 
         File all_scoring_file
@@ -158,6 +160,8 @@ workflow wf_main_mikado {
             scoring_file = all_scoring_file,
             orf_calling_proteins = orf_calling_proteins,
             orf_caller = orf_calling_program,
+            genetic_code = genetic_code,
+            mikado_genetic_code = mikado_genetic_code,
             mikado_do_homology_assessment = run_mikado_homology,
             homology_proteins = homology_proteins,
             junctions = def_junctions,
@@ -187,6 +191,8 @@ workflow wf_main_mikado {
                 scoring_file = long_scoring_file,
                 orf_calling_proteins = orf_calling_proteins,
                 orf_caller = orf_calling_program,
+                genetic_code = genetic_code,
+                mikado_genetic_code = mikado_genetic_code,
                 mikado_do_homology_assessment = run_mikado_homology,
                 homology_proteins = homology_proteins,
                 junctions = def_junctions,
@@ -218,6 +224,8 @@ workflow wf_main_mikado {
                 junctions = def_junctions,
                 orf_calling_proteins = orf_calling_proteins,
                 orf_caller = orf_calling_program,
+                genetic_code = genetic_code,
+                mikado_genetic_code = mikado_genetic_code,
                 mikado_do_homology_assessment = run_mikado_homology,
                 homology_proteins = homology_proteins,
                 output_prefix = "mikado_longLQ",
@@ -251,6 +259,8 @@ workflow wf_main_mikado {
             junctions = def_junctions,
             orf_calling_proteins = orf_calling_proteins,
             orf_caller = orf_calling_program,
+            genetic_code = genetic_code,
+            mikado_genetic_code = mikado_genetic_code,
             mikado_do_homology_assessment = run_mikado_homology,
             homology_proteins = homology_proteins,
             output_prefix = "mikado_all",
@@ -281,6 +291,8 @@ workflow wf_main_mikado {
                 junctions = def_junctions,
                 orf_calling_proteins = orf_calling_proteins,
                 orf_caller = orf_calling_program,
+                genetic_code = genetic_code,
+                mikado_genetic_code = mikado_genetic_code,
                 mikado_do_homology_assessment = run_mikado_homology,
                 homology_proteins = homology_proteins,
                 output_prefix = "mikado_long",

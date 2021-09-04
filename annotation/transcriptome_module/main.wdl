@@ -11,6 +11,8 @@ workflow ei_annotation {
         Array[LRSample]? HQ_long_read_samples
         File? annotation
         Int annotation_score = 1
+        String genetic_code
+        Int mikado_genetic_code
         Boolean merge_all_junctions = false
         String mode
         Boolean check_reference
@@ -72,6 +74,8 @@ workflow ei_annotation {
         LQ_assemblies = wf_align.LQ_gff,
         HQ_assemblies = wf_align.HQ_gff,
         orf_calling_proteins = orf_calling_proteins,
+        genetic_code = genetic_code,
+        mikado_genetic_code = mikado_genetic_code,
         homology_proteins = homology_proteins,
         annotation_score = annotation_score,
         mode = mode,

@@ -12,6 +12,20 @@ from jsonschema import ValidationError, Draft7Validator, validators
 
 from annotation import report_errors
 
+UNSUPPORTED_GENETIC_CODES_INT = [2, 3, 4, 5, 9, 11, 13, 14, 16, 21, 22, 23, 24]
+
+genetic_code_str_to_int = {'Universal': 1,
+                           'Tetrahymena': 6,
+                           'Acetabularia': 6,
+                           'Ciliate': 6,
+                           'Dasycladacean': 6,
+                           'Hexamita': 6,
+                           'Candida': 1,
+                           'Euplotid': 10,
+                           'SR1_Gracilibacteria': 25,
+                           'Pachysolen_tannophilus': 1,
+                           'Peritrich': 6}
+
 try:
     from yaml import CLoader as Loader, CDumper as Dumper, load, dump
 except ImportError:
@@ -49,15 +63,15 @@ def separate_mikado_config(mikado_config, mikado_run):
     if any((prepare, serialise, pick)):
         Path(mikado_run).mkdir(exist_ok=True)
         if prepare != previous_prepare:
-            prepare_path = Path(mikado_run).joinpath(ctimestamp+"-prepare.yaml")
+            prepare_path = Path(mikado_run).joinpath(ctimestamp + "-prepare.yaml")
             print(dump({'prepare': prepare}, default_flow_style=False),
                   file=open(prepare_path, 'w'))
         if serialise != previous_serialise:
-            serialise_path = Path(mikado_run).joinpath(ctimestamp+"-serialise.yaml")
+            serialise_path = Path(mikado_run).joinpath(ctimestamp + "-serialise.yaml")
             print(dump({'serialise': serialise}, default_flow_style=False),
                   file=open(serialise_path, 'w'))
         if pick != previous_pick:
-            pick_path = Path(mikado_run).joinpath(ctimestamp+"-pick.yaml")
+            pick_path = Path(mikado_run).joinpath(ctimestamp + "-pick.yaml")
             print(dump({'pick': pick}, default_flow_style=False),
                   file=open(pick_path, 'w'))
 
@@ -218,7 +232,8 @@ def validate_paired_samples(samples):
         if name in names:
             errors[line].append(("Non-unique label specified: '{}'".format(name)))
         if strand.lower() not in strands:
-            errors[line].append(("Incorrect strand '{}' specification, please choose one of {}".format(strand, strands)))
+            errors[line].append(
+                ("Incorrect strand '{}' specification, please choose one of {}".format(strand, strands)))
 
         merge = merge.lower()
         if merge in ("true", "false"):
@@ -464,3 +479,36 @@ def validate_transcriptome_inputs(cromwell_inputs):
     all_validators["is_name"] = is_valid_name
     reat_validator = validators.create(meta_schema=reat_schema, validators=all_validators)
     reat_validator(reat_schema).validate(cromwell_inputs)
+
+
+def transcriptome_cli_validation(args, reat_ap):
+    if args.separate_mikado_LQ:
+        if not args.long_lq_scoring_file:
+            reat_ap.error("When '--separate_mikado_LQ' is enabled, --long_lq_scoring_file is required, please "
+                          "provide it.")
+    if args.samples and (args.csv_paired_samples or args.csv_long_samples):
+        reat_ap.error("Conflicting arguments '--samples' and ['--csv_paired_samples' or '--csv_long_samples'] "
+                      "provided, please choose one of csv or json sample input format")
+    if not args.samples and not args.csv_paired_samples and not args.csv_long_samples:
+        reat_ap.error("Please provide at least one of --samples, --csv_paired_samples, --csv_long_samples")
+
+    if args.genetic_code.isdigit():
+        genetic_code = int(args.genetic_code)
+        if genetic_code in UNSUPPORTED_GENETIC_CODES_INT or genetic_code > 25:
+            reat_ap.error(
+                f"Sorry, genetic_code={args.genetic_code} is not supported, please use one of "
+                f"{set(range(0, 25)) - set(UNSUPPORTED_GENETIC_CODES_INT)}")
+        if args.orf_caller == 'transdecoder':
+            reat_ap.error(f"Please use one of {', '.join(genetic_code_str_to_int.keys())}, as these define "
+                          f"more specific genetic codes when using TransDecoder as the ORF caller")
+    else:
+        genetic_code = 0
+        try:
+            genetic_code = genetic_code_str_to_int[args.genetic_code]
+        except KeyError:
+            reat_ap.error(
+                f"Sorry, genetic_code={args.genetic_code} is not supported, please use one of "
+                f"{', '.join(genetic_code_str_to_int.keys())}")
+    mikado_genetic_code = genetic_code
+
+    return genetic_code, mikado_genetic_code
