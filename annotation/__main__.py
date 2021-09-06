@@ -231,7 +231,8 @@ def parse_arguments():
                                        f"sequences, and for ORF calling, can take values in the genetic code range of "
                                        f"NCBI as an integer. E.g 1, 6, 10 "
                                        f"or when using TransDecoder as ORF caller, one of: "
-                                       f"{', '.join(genetic_code_str_to_int.keys())}", default='1')
+                                       f"{', '.join(genetic_code_str_to_int.keys())}. 0 is equivalent to Standard, NCBI "
+                                       f"#1, but only ATG is considered a valid start codon.", default='0')
 
     # Mikado arguments
     mikado_parameters = transcriptome_ap.add_argument_group("Mikado", "Parameters for Mikado runs")
@@ -642,7 +643,7 @@ def link_bams(outputs, outputs_path, bams_array, stats_array, stats_table):
         symlink(alignments_path, outputs[stats_table])
 
 
-def transcriptome_module(cli_arguments, genetic_code='1', mikado_genetic_code=1):
+def transcriptome_module(cli_arguments, genetic_code='0', mikado_genetic_code=0):
     """
     Collects the CLI arguments and combines them with CLI defined input files.
     The resulting object is validated and the final inputs are written to a json Cromwell input file.

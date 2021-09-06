@@ -492,23 +492,36 @@ def transcriptome_cli_validation(args, reat_ap):
     if not args.samples and not args.csv_paired_samples and not args.csv_long_samples:
         reat_ap.error("Please provide at least one of --samples, --csv_paired_samples, --csv_long_samples")
 
-    if args.genetic_code.isdigit():
-        genetic_code = int(args.genetic_code)
-        if genetic_code in UNSUPPORTED_GENETIC_CODES_INT or genetic_code > 25:
-            reat_ap.error(
-                f"Sorry, genetic_code={args.genetic_code} is not supported, please use one of "
-                f"{set(range(0, 25)) - set(UNSUPPORTED_GENETIC_CODES_INT)}")
-        if args.orf_caller == 'transdecoder':
-            reat_ap.error(f"Please use one of {', '.join(genetic_code_str_to_int.keys())}, as these define "
-                          f"more specific genetic codes when using TransDecoder as the ORF caller")
-    else:
-        genetic_code = 0
-        try:
-            genetic_code = genetic_code_str_to_int[args.genetic_code]
-        except KeyError:
-            reat_ap.error(
-                f"Sorry, genetic_code={args.genetic_code} is not supported, please use one of "
-                f"{', '.join(genetic_code_str_to_int.keys())}")
-    mikado_genetic_code = genetic_code
-
+    genetic_code = 0
+    mikado_genetic_code = 0
+    if args.orf_caller == 'transdecoder':
+        if args.genetic_code != '0':
+            try:
+                mikado_genetic_code = genetic_code_str_to_int[args.genetic_code]
+                genetic_code = args.genetic_code
+            except KeyError:
+                reat_ap.error(
+                    f"Sorry, genetic_code={args.genetic_code} is not supported when orf caller is TransDecoder, please "
+                    f"use one of {', '.join(genetic_code_str_to_int.keys())}")
+        else:
+            genetic_code = 'Universal'
+            mikado_genetic_code = 0
+    elif args.orf_caller == 'prodigal':
+        if not args.genetic_code.isdigit():
+            try:
+                mikado_genetic_code = genetic_code_str_to_int[args.genetic_code]
+                genetic_code = args.genetic_code
+            except KeyError:
+                reat_ap.error(
+                    f"Sorry, genetic_code={args.genetic_code} is not supported, please "
+                    f"use one of {', '.join(genetic_code_str_to_int.keys())}")
+        else:
+            genetic_code = int(args.genetic_code)
+            if genetic_code in UNSUPPORTED_GENETIC_CODES_INT or genetic_code > 25:
+                reat_ap.error(
+                    f"Sorry, genetic_code={args.genetic_code} is not supported, please use one of "
+                    f"{set(range(0, 25)) - set(UNSUPPORTED_GENETIC_CODES_INT)}")
+            mikado_genetic_code = genetic_code
+            if int(genetic_code) == 0:
+                genetic_code = 1
     return genetic_code, mikado_genetic_code
