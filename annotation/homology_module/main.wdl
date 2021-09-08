@@ -496,8 +496,8 @@ task AlignProteins {
     command <<<
         set -euxo pipefail
         ln ~{sub(genome_index[0], "\.[^/.]+$", "")}.* .
-        ln -s ~{genome_proteins.protein_sequences} .
-        spaln -t~{task_cpus} -KP -O0,12 -Q~{recursion_level} -M~{max_per_query}.~{max_per_query} ~{"-T"+species} -dgenome_to_annotate -o ~{out_prefix} -yL~{min_spaln_exon_len} ~{basename(genome_proteins.protein_sequences)}
+        ln -s ~{genome_proteins.protein_sequences} "./~{basename(genome_proteins.protein_sequences)}"
+        spaln -t~{task_cpus} -KP -O0,12 -Q~{recursion_level} -M~{max_per_query}.~{max_per_query} ~{"-T"+species} -dgenome_to_annotate -o ~{out_prefix} -yL~{min_spaln_exon_len} "~{basename(genome_proteins.protein_sequences)+" P"}"
         sortgrcd -O4 ~{out_prefix}.grd | tee ~{out_prefix}.s | spaln2gff --min_coverage ~{min_coverage} --min_identity ~{min_identity} -s "spaln" > ~{ref_prefix}.alignment.gff
     >>>
 
