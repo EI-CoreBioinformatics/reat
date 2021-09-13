@@ -184,7 +184,7 @@ class GFFReader(object):
         else:
             gene_features.append(self.line)
             print("WARNING: Unhandled type {0}, in file {3} at position {1}\nLine:\n{2}"
-                  .format(entry_type, cur, self.line, self.filename), file=sys.stderr)
+                  .format(entry_type, cur, self.line, self.filename.name), file=sys.stderr)
 
     def parse_attributes(self, attr, entry_type):
         # Parent, Alias, Note, Dbxref and Ontology_term attributes can have multiple values
