@@ -1,0 +1,53 @@
+#!/usr/bin/env python3
+import argparse
+from collections import namedtuple
+
+CDSPart = namedtuple('CDSPart', ('start', 'end', 'strand', 'phase'))
+
+
+def zff_to_gff(zff_file, source):
+    current_chrom = ""
+    cds_parts = []
+    first = True
+    with open(zff_file) as zff:
+        for line in zff:
+            if line[0] == '#':
+                continue
+            if line[0] == '>':
+                current_chrom = line[1:-1]
+                continue
+            feature, start, end, strand, score, fp_overhang, tp_overhang, phase, group = line.strip().split('\t')
+            start = int(start)
+            end = int(end)
+            if first:
+                first = False
+                print("#gff-version\t3")
+            if feature == 'Esngl':
+                print(f"{current_chrom}\t{source}\tgene\t{start}\t{end}\t.\t{strand}\t.\tID={group}.g;Name={group}")
+                print(f"{current_chrom}\t{source}\tmRNA\t{start}\t{end}\t.\t{strand}\t.\tID={group}.m;Parent={group}.g")
+                print(f"{current_chrom}\t{source}\tCDS\t{start}\t{end}\t.\t{strand}\t{phase}\tID={group}.1;Parent={group}.m")
+            elif feature == 'Einit':
+                cds_parts.append(CDSPart(start, end, strand, phase))
+            elif feature == 'Exon':
+                cds_parts.append(CDSPart(start, end, strand, phase))
+            elif feature == 'Eterm':
+                cds_parts.append(CDSPart(start, end, strand, phase))
+                print(f"{current_chrom}\t{source}\tgene\t{start}\t{end}\t.\t{strand}\t.\tID={group}.g;Name={group}")
+                print(f"{current_chrom}\t{source}\tmRNA\t{start}\t{end}\t.\t{strand}\t.\tID={group}.m;Parent={group}.g")
+                for i, c in enumerate(cds_parts):
+                    print(f"{current_chrom}\t{source}\tCDS\t{c.start}\t{c.end}\t.\t{c.strand}\t{c.phase}\t"
+                          f"ID={group}.{i};Parent={group}.m")
+                cds_parts.clear()
+
+
+def main():
+    p = argparse.ArgumentParser()
+    p.add_argument("-z", "--prediction", type=argparse.FileType('r'),
+                   help="ZFF SNAP gene predictions file")
+    p.add_argument("-s", "--source", help="Source field for GFF file", default="SNAP")
+    args = p.parse_args()
+    zff_to_gff(args.prediction.name, args.source)
+
+
+if __name__ == "__main__":
+    main()

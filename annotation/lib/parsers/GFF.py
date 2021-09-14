@@ -3,6 +3,7 @@
 Module to serialize GFF files.
 """
 import sys
+from io import TextIOWrapper
 
 from ..models.Transcript import Exon, Gene, Transcript
 from ..parsers import get_handle
@@ -26,6 +27,8 @@ class GFFReader(object):
     """
 
     def __init__(self, filename):
+        if isinstance(filename, TextIOWrapper):
+            filename = filename.name
         self.filename = filename
         self.fh = get_handle(filename)
         self.line = ""
@@ -184,7 +187,7 @@ class GFFReader(object):
         else:
             gene_features.append(self.line)
             print("WARNING: Unhandled type {0}, in file {3} at position {1}\nLine:\n{2}"
-                  .format(entry_type, cur, self.line, self.filename.name), file=sys.stderr)
+                  .format(entry_type, cur, self.line, self.filename), file=sys.stderr)
 
     def parse_attributes(self, attr, entry_type):
         # Parent, Alias, Note, Dbxref and Ontology_term attributes can have multiple values
