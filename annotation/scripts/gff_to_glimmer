@@ -16,7 +16,10 @@ def gff_to_glimmer(gff_file):
             else:
                 first = False
             for c in mrna.cds_exons:
-                print(f"{gene.chrom} {c.start} {c.end}")
+                if gene.strand == '-':
+                    print(f"{gene.chrom} {c.end} {c.start}")
+                else:
+                    print(f"{gene.chrom} {c.start} {c.end}")
 
 
 def main():
