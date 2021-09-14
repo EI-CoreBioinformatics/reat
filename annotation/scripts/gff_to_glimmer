@@ -5,14 +5,18 @@ from annotation.lib.parsers.GFF import GFFReader
 
 
 def gff_to_glimmer(gff_file):
+    first = True
     for gene in GFFReader(gff_file):
         for mrna in gene.mrnas.values():
             num_coding_exons = len(mrna.cds_exons)
             if num_coding_exons == 0:
                 continue
+            if not first:
+                print()
+            else:
+                first = False
             for c in mrna.cds_exons:
                 print(f"{gene.chrom} {c.start} {c.end}")
-            print()
 
 
 def main():
