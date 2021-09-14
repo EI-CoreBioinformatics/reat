@@ -1,0 +1,28 @@
+#!/usr/bin/env python3
+import argparse
+
+from annotation.lib.parsers.GFF import GFFReader
+
+
+def gff_to_glimmer(gff_file):
+    for gene in GFFReader(gff_file):
+        for mrna in gene.mrnas.values():
+            num_coding_exons = len(mrna.cds_exons)
+            if num_coding_exons == 0:
+                continue
+            for c in mrna.cds_exons:
+                print(f"{gene.chrom} {c.start} {c.end}")
+            print()
+
+
+def main():
+    p = argparse.ArgumentParser()
+    p.add_argument("-a", "--annotation", type=argparse.FileType('r'),
+                   help="GFF file of the annotated species to extract proteins from")
+    args = p.parse_args()
+    gff_file = args.annotation
+    gff_to_glimmer(gff_file)
+
+
+if __name__ == "__main__":
+    main()
