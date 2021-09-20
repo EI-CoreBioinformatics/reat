@@ -507,7 +507,7 @@ def transcriptome_cli_validation(args, reat_ap):
             genetic_code = 'Universal'
             mikado_genetic_code = 0
     elif args.orf_caller == 'prodigal':
-        if not args.genetic_code != '0' and args.genetic_code.isdigit():
+        if args.genetic_code != '0' and not args.genetic_code.isdigit():
             try:
                 mikado_genetic_code = genetic_code_str_to_int[args.genetic_code]
                 genetic_code = args.genetic_code
