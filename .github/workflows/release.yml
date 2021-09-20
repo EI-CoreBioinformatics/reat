@@ -12,20 +12,20 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
       - name: Install system development tools
-      if: startsWith(runner.os, 'Linux')
-      run: |
-        export DEBIAN_FRONTEND=noninteractive
-        sudo apt update
-        sudo apt install -y build-essential zlib1g-dev zlib1g
+        if: startsWith(runner.os, 'Linux')
+        run: |
+          export DEBIAN_FRONTEND=noninteractive
+          sudo apt update
+          sudo apt install -y build-essential zlib1g-dev zlib1g
       - name: Cache conda
-      id: cache-miniconda
-      uses: actions/cache@v2
-      env:
-        CACHE_NUMBER: 0
-      with:
-        path: ~/conda_pkgs_dir
-        key:
-          ${{ runner.os }}-conda-${{ env.CACHE_NUMBER }}-${{ hashFiles('./reat.yml') }}
+        id: cache-miniconda
+        uses: actions/cache@v2
+        env:
+          CACHE_NUMBER: 0
+        with:
+          path: ~/conda_pkgs_dir
+          key:
+            ${{ runner.os }}-conda-${{ env.CACHE_NUMBER }}-${{ hashFiles('./reat.yml') }}
       - uses: conda-incubator/setup-miniconda@v2
         with:
           python-version: ${{ matrix.python-version }}
