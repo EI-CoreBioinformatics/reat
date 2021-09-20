@@ -231,8 +231,8 @@ def parse_arguments():
                                        f"sequences, and for ORF calling, can take values in the genetic code range of "
                                        f"NCBI as an integer. E.g 1, 6, 10 "
                                        f"or when using TransDecoder as ORF caller, one of: "
-                                       f"{', '.join(genetic_code_str_to_int.keys())}. 0 is equivalent to Standard, NCBI "
-                                       f"#1, but only ATG is considered a valid start codon.", default='0')
+                                       f"{', '.join(genetic_code_str_to_int.keys())}. 0 is equivalent to Standard, NCBI"
+                                       f" #1, but only ATG is considered a valid start codon.", default='0')
 
     # Mikado arguments
     mikado_parameters = transcriptome_ap.add_argument_group("Mikado", "Parameters for Mikado runs")
