@@ -1,0 +1,265 @@
+#!/usr/bin/env python3
+from argparse import ArgumentParser, FileType
+from Mikado.serializers.blast_serializer import btop_parser
+from Mikado.serializers.blast_serializer.tabular_utils import Matrices
+import numpy as np
+import pandas as pd
+from math import log10
+from collections import Counter, defaultdict
+import itertools
+from Mikado.parsers import parser_factory
+from Mikado.transcripts import Transcript, Gene
+
+GOLD = 0
+SILVER = 1
+BRONZE = 2
+STONE = 3
+TRANSCRIPT_CLASS = ['Gold', 'Silver', 'Bronze', 'Stone']
+
+matrices = Matrices()
+matrix = matrices.get(None, matrices["blosum62"])  # Exact score doesn't matter, so any matrix would do
+
+col_names = "qseqid\tsseqid\tqlen\tslen\tpident\tlength\tmismatch\tgapopen\tqstart\tqend\tsstart\tsend\tevalue" \
+            "\tbitscore\tppos\tbtop"
+
+COMPLETE = 0
+PUTATIVE = 1
+PARTIAL = 2
+FL_CATEGORY = ["Complete", "Putative", "Partial"]
+
+max_distance_start_query = (10, 5, 30)  # 10bp for hard filter, max_score 5, 30bp from start for score
+max_distance_end_query = (10, 5, 30)  # 5
+max_distance_start_target = (10, 5, 30)  # 5
+max_distance_end_target = (10, 5, 30)  # 5
+min_coverage_query = (90, 5, 70)  # 5 * %cov_qry
+min_coverage_target = (90, 5, 70)  # 5 * %cov_tgt
+max_single_qgap_length = (20, 5, 50)  # 5 * %long_gap_len/qlen
+
+# Filtering parameters
+evalue_filter = 10e-7
+evalue_filter_difference = 10
+top_n_hits = 10
+
+best_score = sum([x[1] for x in [max_distance_start_query,
+                                 max_distance_end_query,
+                                 max_distance_start_target,
+                                 max_distance_end_target,
+                                 min_coverage_query,
+                                 min_coverage_target,
+                                 max_single_qgap_length]])
+
+
+def minimal_gxf_parser(parser):
+    genes = dict()
+    tid2gid = dict()
+    for row in parser:
+        if row.header is True:
+            continue
+        elif row.is_gene is True:
+            genes[row.id] = Gene(row)
+        elif row.is_transcript is True:
+            assert len(row.parent) == 1
+            parent = row.parent[0]
+            tid2gid[row.id] = parent
+            genes[parent].add(Transcript(row))
+        elif row.is_exon is True:
+            if row.gene is None:
+                gene = tid2gid[row.parent[0]]
+            else:
+                gene = row.gene
+            genes[gene].add_exon(row)
+
+    for gene in genes:
+        genes[gene].finalize()
+    return genes, tid2gid
+
+
+def collect_transcript_metrics(row, genes, tid2gid):
+    transcript = genes[tid2gid[row.qseqid]][row.qseqid]
+    return {
+        'five_utr_num_complete': transcript.five_utr_num_complete,
+        'three_utr_num_complete': transcript.three_utr_num_complete,
+        'five_utr_num': transcript.five_utr_num,
+        'three_utr_num': transcript.three_utr_num,
+        'combined_cds_length': transcript.combined_cds_length,
+        'selected_cds_length': transcript.selected_cds_length,
+        'max_intron_length': transcript.max_intron_length,
+        'locus': transcript.attributes.get('locus', 'NA'),
+        'partialness': transcript.attributes.get('partialness', '')
+    }
+
+
+def calc_coverage(row):
+    query_array = np.zeros([3, row['qlen']], dtype=int)
+    target_array = np.zeros([3, row['slen']], dtype=int)
+    query_array, target_array, aln_span, match = btop_parser.parse_btop(row['btop'],
+                                                                        query_array=query_array,
+                                                                        target_array=target_array,
+                                                                        qpos=row['qstart'],
+                                                                        spos=row['sstart'],
+                                                                        qmult=1,
+                                                                        tmult=1,
+                                                                        matrix=matrix)
+    gap_runs = list(
+        filter(lambda x: x > 10, [len(list(g)) for _, g in itertools.groupby(query_array[1][1:]) if _ == 0]))
+    return gap_runs
+
+
+def scoring_function(row):
+    score = 0
+
+    mtsq = max_distance_start_query[2]
+    stsq = max_distance_start_query[1]
+    dtsq = row['qstart'] - 1
+    score += ((mtsq - dtsq) / mtsq) * stsq if dtsq < mtsq else 0
+
+    dteq = row['qlen'] - row['qend']
+    mteq = max_distance_end_query[2]
+    steq = max_distance_end_query[1]
+    score += ((mteq - dteq) / mteq) * steq if dteq < mteq else 0
+
+    mtst = max_distance_start_target[2]
+    stst = max_distance_start_target[1]
+    dtst = row['sstart'] - 1
+    score += ((mtst - dtst) / mtst) * stst if dtst < mtst else 0
+
+    mtet = max_distance_end_target[2]
+    stet = max_distance_end_target[1]
+    dtet = row['slen'] - row['send']
+    score += ((mtet - dtet) / mtet) * stet if dtet < mtet else 0
+
+    query_coverage = row['query_coverage']
+    score += ((query_coverage - min_coverage_query[2]) / (100.0 - min_coverage_query[2])) * min_coverage_query[
+        1] if query_coverage >= min_coverage_query[2] else 0
+
+    subject_coverage = row['subject_coverage']
+    score += ((subject_coverage - min_coverage_target[2]) / (100.0 - min_coverage_target[2])) * min_coverage_target[
+        1] if subject_coverage >= min_coverage_target[2] else 0
+
+    max_gap = max(row['gap_runs'], default=0)
+    score += ((max_single_qgap_length[2] - max_gap) / (max_single_qgap_length[2])) * max_single_qgap_length[
+        1] if max_gap < max_single_qgap_length[2] else 0
+
+    return score
+
+
+def evaluate_completeness(row):
+    if row['partialness'] != '':
+        return FL_CATEGORY[PARTIAL]
+
+    if row['score'] == best_score and row['partialness'] == '':
+        return FL_CATEGORY[COMPLETE]
+
+    if (row['send_dist_gt_lim'] or row['qend_dist_gt_lim']
+            or row['qstart_dist_gt_lim'] or row['sstart_dist_gt_lim']
+            or max(row['gap_runs'], default=0) > max_single_qgap_length[0]
+            or row['query_coverage'] < min_coverage_query[0]
+            or row['subject_coverage'] < min_coverage_target[0]
+            or row['partialness'] != ''):
+        return FL_CATEGORY[PARTIAL]
+
+    return FL_CATEGORY[PUTATIVE]
+
+
+def main():
+    parser = ArgumentParser()
+    parser.add_argument('-b', '--blast', type=FileType('r'), help="Transcripts hits against curated proteins")
+    parser.add_argument('-t', '--transcripts_gff', type=FileType('r'), help='Transcripts being analysed in GFF format')
+
+    args = parser.parse_args()
+
+    df = pd.read_csv(args.blast, delimiter='\t',
+                     names=col_names.split('\t'), comment="#")
+    names = df['qseqid'].unique().tolist()
+    print(len(names))
+    print("Before evalue filtering")
+    print(df.shape)
+    df = df[df.evalue.lt(evalue_filter)]
+    print("After evalue filtering")
+    print(df.shape)
+    mlog10 = lambda x: -1000 if x == 0 else int(log10(x))
+    df['evalue'] = df['evalue'].apply(mlog10)
+    print('Applied evalue transformation')
+    df["subject_coverage"] = 100 * (df.send - df.sstart + 1) / df.slen
+    df["query_coverage"] = 100 * (df.qend - df.qstart + 1) / df.qlen
+    df["min_coverage"] = df[["subject_coverage", "query_coverage"]].apply(min, axis=1)
+    df['send_dist_gt_lim'] = (df["slen"] - df["send"]) > max_distance_end_target[0]
+    df['qend_dist_gt_lim'] = (df['qlen'] - df['qend']) > max_distance_end_query[0]
+    df['qstart_dist_gt_lim'] = df.qstart > max_distance_start_query[0]
+    df['sstart_dist_gt_lim'] = df.sstart > max_distance_start_target[0]
+    df['gap_runs'] = df.apply(calc_coverage, axis=1)
+    df['score'] = df.apply(scoring_function, axis=1)
+
+    # get a list of names
+    names = df['qseqid'].unique().tolist()
+    parser = parser_factory(args.transcripts_gff.name)
+    genes, tid2gid = minimal_gxf_parser(parser)
+
+    appiled_df = df.apply(collect_transcript_metrics, args=(genes, tid2gid), axis='columns', result_type='expand')
+    df = pd.concat([df, appiled_df], axis='columns')
+    df['full_length'] = df.apply(evaluate_completeness, axis=1)
+    df['full_length'] = pd.Categorical(df['full_length'], categories=FL_CATEGORY, ordered=True)
+    df.sort_values(['qseqid', 'full_length', 'score', 'evalue'], ascending=(False, True, False, True), inplace=True)
+
+    print("Done")
+
+    stdev_param = 2.0
+    gdfl = []
+    outputs = defaultdict(list)
+    for name in names:
+        query = df.loc[df.qseqid == name]
+        score = query.score.values[0]
+        best_evalue = query.evalue.values[0]
+        beval_filter = int((best_evalue - (best_evalue / evalue_filter_difference)))
+        if query.shape[0] > top_n_hits:
+            beval_filt = query[query.evalue < beval_filter][:top_n_hits]
+        else:
+            beval_filt = query
+
+        qlen = beval_filt.qlen.values[0]
+        fl_category = FL_CATEGORY[PARTIAL]
+        if any(beval_filt.full_length != FL_CATEGORY[PARTIAL]):
+            if abs(qlen - beval_filt.slen.mean()) <= stdev_param * beval_filt.slen.std():
+                fl_category = beval_filt.full_length.values[0]
+        outputs[fl_category].append((name, beval_filt.score.mean()))
+        txct = genes[tid2gid[name]][name]
+        txct_reqs = (
+                0 < txct.five_utr_num <= 3 and txct.five_utr_num_complete <= 2 and  # 5' is complete or not too many
+                0 < txct.three_utr_num <= 2 and txct.three_utr_num_complete <= 1 and  # 3' is complete or not too many
+                txct.combined_cds_fraction >= 0.5  # The cDNA is not twice as long as the CDS (indicating too much UTR)
+        )
+        category = TRANSCRIPT_CLASS[STONE]
+        if fl_category == FL_CATEGORY[COMPLETE] and txct_reqs:
+            category = TRANSCRIPT_CLASS[GOLD]
+        elif txct_reqs and txct.selected_cds_length >= 900:
+            category = TRANSCRIPT_CLASS[SILVER]
+        elif fl_category == FL_CATEGORY[COMPLETE]:
+            category = TRANSCRIPT_CLASS[BRONZE]
+        gdfl.append((txct.chrom, txct.strand, txct.start, txct.end, name, fl_category,
+                     category, score))
+
+    gdfl.sort(key=lambda x: (x[0], x[1], x[2], x[3]))
+
+    gdf = pd.DataFrame(gdfl, columns=['chrom', 'strand', 'start', 'end', 'qseqid', 'full_length', 'category', 'score'])
+    gdf['category'] = pd.Categorical(gdf['category'], TRANSCRIPT_CLASS, ordered=True)
+
+    gdf.sort_values(by=["category", "score"], ascending=[True, False], inplace=True)
+
+    print("Generating output")
+
+    gdf.to_csv("transcripts.classification.tsv", sep='\t')
+
+    # Print Gold, Silver and Bronze to different files?
+    for category in TRANSCRIPT_CLASS[:-1]:
+        with open(category.lower()+".gff", "w") as category_gff:
+            cat_names = set(gdf[gdf.category == category].qseqid.values)
+            for gene in genes.values():
+                for txct in gene:
+                    if txct.id in cat_names:
+                        print(gene.__str__().split('\n')[0], file=category_gff)
+                        print(txct.format("gff"), file=category_gff)
+                print('###', file=category_gff)
+
+
+if __name__ == "__main__":
+    main()

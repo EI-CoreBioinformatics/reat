@@ -10,7 +10,8 @@ from pathlib import Path
 
 from jsonschema import ValidationError, Draft7Validator, validators
 
-from annotation import report_errors
+from utils import symlink, link_mikado, link_assemblies, link_bams
+from annotation import RUN_METADATA, report_errors, prepare_cromwell_arguments, execute_cromwell
 
 UNSUPPORTED_GENETIC_CODES_INT = [2, 3, 4, 5, 9, 11, 13, 14, 16, 21, 22, 23, 24]
 
@@ -525,3 +526,181 @@ def transcriptome_cli_validation(args, reat_ap):
         if int(genetic_code) == 0:
             genetic_code = 1
     return genetic_code, mikado_genetic_code
+
+
+def transcriptome_module(cli_arguments, genetic_code='0', mikado_genetic_code=0):
+    """
+    Collects the CLI arguments and combines them with CLI defined input files.
+    The resulting object is validated and the final inputs are written to a json Cromwell input file.
+    :param cli_arguments: Validated CLI values with un-inspected files
+    :return: Return code from Cromwell
+    """
+    # Print input file for cromwell
+    cromwell_inputs = combine_arguments(cli_arguments)
+    cromwell_inputs['ei_annotation.mikado_genetic_code'] = mikado_genetic_code
+    cromwell_inputs['ei_annotation.genetic_code'] = str(genetic_code)
+    cromwell_jar, runtime_config = prepare_cromwell_arguments(cli_arguments)
+
+    # Validate input against schema
+    validate_transcriptome_inputs(cromwell_inputs)
+    with open(cli_arguments.output_parameters_file, 'w') as cromwell_input_file:
+        json.dump(cromwell_inputs, cromwell_input_file)
+    # Submit pipeline to server or run locally depending on the arguments
+    with pkg_resources.path("annotation.transcriptome_module", "main.wdl") as wdl_file:
+        workflow_options_file = None
+        if cli_arguments.workflow_options_file is not None:
+            workflow_options_file = cli_arguments.workflow_options_file.name
+        rc = execute_cromwell(runtime_config, cromwell_jar,
+                              cli_arguments.output_parameters_file, workflow_options_file, wdl_file)
+        if rc == 0:
+            collect_transcriptome_output(RUN_METADATA)
+        return rc
+
+
+def collect_transcriptome_output(RUN_METADATA, output_path="outputs"):
+    # Get the outputs and symlink them to the output folder
+    run_metadata = json.load(open(RUN_METADATA))
+    outputs = run_metadata["outputs"]
+    prfx = "ei_annotation."
+    outputs_path = output_path
+    if not os.path.exists(outputs_path):
+        os.mkdir(outputs_path)
+
+    # reat/outputs
+    # ├── align_long.HQ_read_samples.summary.stats.tsv
+    # ├── alignments/
+    # ├── align_short.SR_read_samples.summary.stats.tsv
+    # ├── assembly_long/
+    # ├── assembly_short/
+    # ├── assembly_short.scallop.summary.stats.tsv
+    # ├── assembly_short.stringtie.summary.stats.tsv
+    # ├── plots/
+    # ├── Mikado_long-permissive.loci.gff3
+    # ├── Mikado_long-permissive.loci.gff3.stats
+    # ├── Mikado_long-permissive.loci.metrics.tsv
+    # ├── Mikado_long-permissive.loci.scores.tsv
+    # ├── Mikado_short_and_long-permissive.loci.gff3
+    # ├── Mikado_short_and_long-permissive.loci.gff3.stats
+    # ├── Mikado_short_and_long-permissive.loci.metrics.tsv
+    # ├── Mikado_short_and_long-permissive.loci.scores.tsv
+    # ├── mikado.summary.stats.tsv
+    # └── portcullis/
+
+    # Alignments
+    # Array[AlignedSample]? SR_bams = wf_align.SR_bams
+    # Array[File]? SR_alignment_summary_stats = wf_align.SR_summary_stats
+    # File? SR_alignment_summary_stats_table = wf_align.SR_summary_stats_table
+    link_bams(outputs, outputs_path, prfx + 'SR_bams', prfx + 'SR_alignment_summary_stats',
+              prfx + 'SR_alignment_summary_stats_table')
+    # Array[AlignedSample]? LQ_bams = wf_align.LQ_bams
+    # Array[File]? LQ_alignment_summary_stats = wf_align.LQ_summary_stats
+    # File? LQ_alignment_summary_stats_table = wf_align.LQ_summary_stats_table
+    link_bams(outputs, outputs_path, prfx + 'LQ_bams', prfx + 'LQ_alignment_summary_stats',
+              prfx + 'LQ_alignment_summary_stats_table')
+    # Array[AlignedSample]? HQ_bams = wf_align.HQ_bams
+    # Array[File]? HQ_alignment_summary_stats = wf_align.HQ_summary_stats
+    # File? HQ_alignment_summary_stats_table = wf_align.HQ_summary_stats_table
+    link_bams(outputs, outputs_path, prfx + 'HQ_bams', prfx + 'HQ_alignment_summary_stats',
+              prfx + 'HQ_alignment_summary_stats_table')
+
+    # assembly_short
+    # Array[AssembledSample]? SR_asms = wf_align.SR_gff
+    # Array[File]? SR_assembly_stats = wf_align.SR_assembly_stats
+    link_assemblies(prfx + 'SR_asms', os.path.join(outputs_path, 'assembly_short'), prfx + 'SR_assembly_stats', outputs)
+
+    # assembly_long
+    # Array[AssembledSample]? LQ_asms = wf_align.LQ_gff
+    # Array[File]? LQ_assembly_stats = wf_align.LQ_assembly_stats
+    link_assemblies(prfx + 'LQ_asms', os.path.join(outputs_path, 'assembly_long'), prfx + 'LQ_assembly_stats', outputs)
+    # Array[AssembledSample]? HQ_asms = wf_align.HQ_gff
+    # Array[File]? HQ_assembly_stats = wf_align.HQ_assembly_stats
+    link_assemblies(prfx + 'HQ_asms', os.path.join(outputs_path, 'assembly_long'), prfx + 'HQ_assembly_stats', outputs)
+
+    # portcullis
+    if any((outputs[prfx + 'portcullis_pass_tab'], outputs[prfx + 'portcullis_pass_bed'],
+            outputs[prfx + 'portcullis_pass_gff3'],
+            outputs[prfx + 'portcullis_fail_tab'], outputs[prfx + 'portcullis_fail_bed'],
+            outputs[prfx + 'portcullis_fail_gff3'])):
+        portcullis_path = os.path.join(outputs_path, 'portcullis')
+        os.mkdir(portcullis_path) if not os.path.exists(portcullis_path) else ""
+        # File? portcullis_pass_tab = wf_align.pass_filtered_tab
+        if outputs[prfx + 'portcullis_pass_tab']:
+            symlink(portcullis_path, outputs[prfx + 'portcullis_pass_tab'])
+        # File? portcullis_pass_bed = wf_align.pass_filtered_bed
+        if outputs[prfx + 'portcullis_pass_bed']:
+            symlink(portcullis_path, outputs[prfx + 'portcullis_pass_bed'])
+        # File? portcullis_pass_gff3 = wf_align.pass_filtered_gff3
+        if outputs[prfx + 'portcullis_pass_gff3']:
+            symlink(portcullis_path, outputs[prfx + 'portcullis_pass_gff3'])
+        # File? portcullis_fail_tab = wf_align.fail_filtered_tab
+        if outputs[prfx + 'portcullis_fail_tab']:
+            symlink(portcullis_path, outputs[prfx + 'portcullis_fail_tab'])
+        # File? portcullis_fail_bed = wf_align.fail_filtered_bed
+        if outputs[prfx + 'portcullis_fail_bed']:
+            symlink(portcullis_path, outputs[prfx + 'portcullis_fail_bed'])
+        # File? portcullis_fail_gff3 = wf_align.fail_filtered_gff3
+        if outputs[prfx + 'portcullis_fail_gff3']:
+            symlink(portcullis_path, outputs[prfx + 'portcullis_fail_gff3'])
+
+    # TODO
+    #  Plots
+    #  Array[Array[File]]? stats = wf_align.stats
+    #  Array[Array[File]]? actg_cycles_plots = wf_align.actg_cycles_plots
+    #  Array[Array[File]]? coverage_plots = wf_align.coverage_plots
+    #  Array[Array[File]]? gc_content_plots = wf_align.gc_content_plots
+    #  Array[Array[File]]? gc_depth_plots = wf_align.gc_depth_plots
+    #  Array[Array[File]]? htmls = wf_align.htmls
+    #  Array[Array[File]]? indel_cycles_plots = wf_align.indel_cycles_plots
+    #  Array[Array[File]]? indel_dist_plots = wf_align.indel_dist_plots
+    #  Array[Array[File]]? insert_size_plots = wf_align.insert_size_plots
+    #  Array[Array[File]]? quals_plots = wf_align.quals_plots
+    #  Array[Array[File]]? quals2_plots = wf_align.quals2_plots
+    #  Array[Array[File]]? quals3_plots = wf_align.quals3_plots
+    #  Array[Array[File]]? quals_hm_plots = wf_align.quals_hm_plots
+
+    # File? SR_stringtie_summary_stats = wf_align.SR_stringtie_summary_stats
+    if outputs[prfx + 'SR_stringtie_summary_stats']:
+        symlink(outputs_path, outputs[prfx + 'SR_stringtie_summary_stats'])
+    # File? SR_scallop_summary_stats = wf_align.SR_scallop_summary_stats
+    if outputs[prfx + 'SR_scallop_summary_stats']:
+        symlink(outputs_path, outputs[prfx + 'SR_scallop_summary_stats'])
+    # File? LQ_assembly_summary_stats = wf_align.LQ_assembly_summary_stats
+    if outputs[prfx + 'LQ_assembly_summary_stats']:
+        symlink(outputs_path, outputs[prfx + 'LQ_assembly_summary_stats'])
+    # File? HQ_assembly_summary_stats = wf_align.HQ_assembly_summary_stats
+    if outputs[prfx + 'HQ_assembly_summary_stats']:
+        symlink(outputs_path, outputs[prfx + 'HQ_assembly_summary_stats'])
+
+    # File? mikado_long_loci = wf_main_mikado.long_loci
+    # File? mikado_long_scores = wf_main_mikado.long_scores
+    # File? mikado_long_metrics = wf_main_mikado.long_metrics
+    # File? mikado_long_stats = wf_main_mikado.long_stats
+    link_mikado(outputs, outputs_path, prfx + 'mikado_long_')
+    #
+    # File? mikado_short_loci = wf_main_mikado.short_loci
+    # File? mikado_short_scores = wf_main_mikado.short_scores
+    # File? mikado_short_metrics = wf_main_mikado.short_metrics
+    # File? mikado_short_stats = wf_main_mikado.short_stats
+    link_mikado(outputs, outputs_path, prfx + 'mikado_short_')
+    #
+    # File? mikado_short_and_long_noLQ_loci = wf_main_mikado.short_and_long_noLQ_loci
+    # File? mikado_short_and_long_noLQ_scores = wf_main_mikado.short_and_long_noLQ_scores
+    # File? mikado_short_and_long_noLQ_metrics = wf_main_mikado.short_and_long_noLQ_metrics
+    # File? mikado_short_and_long_noLQ_stats = wf_main_mikado.short_and_long_noLQ_stats
+    link_mikado(outputs, outputs_path, prfx + 'mikado_short_and_long_noLQ_')
+    #
+    # File? mikado_longHQ_loci = wf_main_mikado.longHQ_loci
+    # File? mikado_longHQ_scores = wf_main_mikado.longHQ_scores
+    # File? mikado_longHQ_metrics = wf_main_mikado.longHQ_metrics
+    # File? mikado_longHQ_stats = wf_main_mikado.longHQ_stats
+    link_mikado(outputs, outputs_path, prfx + 'mikado_longHQ_')
+    #
+    # File? mikado_longLQ_loci = wf_main_mikado.longLQ_loci
+    # File? mikado_longLQ_scores = wf_main_mikado.longLQ_scores
+    # File? mikado_longLQ_metrics = wf_main_mikado.longLQ_metrics
+    # File? mikado_longLQ_stats = wf_main_mikado.longLQ_stats
+    link_mikado(outputs, outputs_path, prfx + 'mikado_longLQ_')
+
+    # File mikado_summary_stats = wf_main_mikado.mikado_stats_summary
+    if outputs[prfx + 'mikado_summary_stats']:
+        symlink(outputs_path, outputs[prfx + 'mikado_summary_stats'])

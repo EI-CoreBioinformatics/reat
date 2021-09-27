@@ -1,0 +1,23 @@
+#!/usr/bin/env python3
+from argparse import ArgumentParser, FileType
+
+
+def main():
+    parser = ArgumentParser()
+    parser.add_argument('-h', '--blast_hits', type=FileType('r'), help='Hits from self blast check')
+    parser.add_argument('-t', '--transcripts', type=FileType('r'), help='Transcripts checking for self hits')
+    args = parser.parse_args()
+    print(args.blast_hits.name, args.transcripts.name)
+
+
+    # Parse transcripts and hits
+
+    # If hit matches something else with 80cov 80id add edge to graph
+
+    # From connected components pick one element to print and 'filter' the rest
+
+    # Output all models not in the 'filtered' list
+
+
+if __name__ == "__main__":
+    main()
