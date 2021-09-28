@@ -67,37 +67,64 @@ workflow ei_prediction {
 		input:
 		genome = reference_genome,
 		clustered_models = LengthChecker.clustered_models,
-		classification = LengthChecker.classification
+		classification = LengthChecker.nr_classification
 	}
 
-	# Generate CodingQuarry predictions
+	# If we have enough models we train with UTR, otherwise we use the 'extended' training set and train without UTR
+	if (SelfBlastFilter.num_utr_models >= 1200) {
+		File maybe_utr = SelfBlastFilter.non_redundant_models_with_utr
+		Int maybe_num_utr = SelfBlastFilter.num_utr_models
+		Boolean maybe_train_utr = true
+	}
 
-	call CodingQuarry {
-		input:
-		genome = reference_genome,
-		transcripts = LengthChecker.clustered_models
+	if (SelfBlastFilter.num_utr_models < 1200) {
+		File maybe_no_utr = SelfBlastFilter.non_redundant_models_without_utr
+		Int maybe_num_no_utr = SelfBlastFilter.num_noutr_models
+		Boolean maybe_train_no_utr = false
+	}
+
+	File def_training_models = select_first([maybe_utr, maybe_no_utr])
+	Int num_models = select_first([maybe_num_utr, maybe_num_no_utr])
+	Boolean train_utr = select_first([maybe_train_utr, maybe_train_no_utr])
+
+	# Generate CodingQuarry predictions
+	if (num_models > 1500) {
+		call CodingQuarry {
+			input:
+			genome = reference_genome,
+			transcripts = def_training_models
+		}
 	}
 
 	# Generate SNAP predictions
-
-	call SNAP {
-		input:
-		genome = reference_genome,
-		transcripts = LengthChecker.clustered_models
+	if (num_models > 1300) {
+		call SNAP {
+			input:
+			genome = reference_genome,
+			transcripts = def_training_models
+		}
 	}
 
 	# Generate GlimmerHMM predictions
-
-	call GlimmerHMM {
-		input:
-		genome = reference_genome,
-		transcripts = LengthChecker.clustered_models
+	if (num_models > 2000) {
+		call GlimmerHMM {
+			input:
+			genome = reference_genome,
+			transcripts = def_training_models
+		}
 	}
 
 	# Feed all to Augustus in the various configurations
 
-	output {
 
+	output {
+		File gold_models = LengthChecker.gold
+		File silver_models = LengthChecker.silver
+		File  bronze_models = LengthChecker.bronze
+		File training_models = def_training_models
+		File? coding_quarry_predictions = CodingQuarry.predictions
+		File? snap_predictions = SNAP.predictions
+		File? glimmerhmm_predictions = GlimmerHMM.predictions
 	}
 }
 
@@ -114,8 +141,9 @@ task CodingQuarry {
 	Int num_cpus = 8
 
 	command <<<
+
 		CodingQuarry -p ~{num_cpus} -f ~{genome} -t ~{transcripts}
-		mv codingquarry.gff codingquarry.predictions.gff
+		mv out/PredictedPass.gff3 codingquarry.predictions.gff
 	>>>
 }
 
@@ -152,7 +180,7 @@ task SNAP {
 		forge ../export.ann ../export.dna
 		cd ..
 		hmm-assembler.pl ~{genome} params > ~{genome}.hmm
-		snap ~{genome}.hmm ~{genome}
+		snap ~{genome}.hmm ~{genome} > snap.prediction.zff
 		zff_to_gff -z snap.prediction.zff > snap.predictions.gff
 	>>>
 }
@@ -228,6 +256,7 @@ task LengthChecker {
 
 	output {
 		File classification = "transcripts.classification.tsv"
+		File nr_classification = "transcript.locus.classification.tsv"
 		File clustered_models = "all_models.clustered.gff"
 		File gold = "gold.gff"
 		File silver = "silver.gff"
@@ -248,13 +277,18 @@ task SelfBlastFilter{
 	}
 
 	output {
-		File non_redundant_models = "nr_models_80cov_80id.gff"
+		File non_redundant_models_with_utr = "with_utr.gff"
+		File non_redundant_models_without_utr = "without_utr.gff"
+		Int num_utr_models = read_int("num_models_utr.int")
+		Int num_noutr_models = read_int("num_models_noutr.int")
 	}
 
 	command <<<
 		gffread -y proteins.faa -g ~{genome} ~{clustered_models}
 		diamond makedb --db self -p 8 --in proteins.faa
-		diamond blastp -p 8 -d self -q proteins.faa -f6 > self.hits.tsv
-		filter_self_hits -b self.hits.tsv -t ~{clustered_models} > nr_models_80cov_80id.gff
+		diamond blastp -p 8 -d self -q proteins.faa -f6 qseqid sseqid qlen slen pident length mismatch gapopen qstart qend sstart send evalue bitscore ppos btop > self.hits.tsv
+		filter_self_hits -b self.hits.tsv -t ~{clustered_models} -c ~{classification}
+		awk '$3 == "gene"' with_utr.gff|wc -l > num_models_utr.int
+		awk '$3 == "gene"' without_utr.gff|wc -l > num_models_noutr.int
 	>>>
 }

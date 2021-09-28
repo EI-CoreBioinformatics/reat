@@ -236,22 +236,20 @@ def main():
         elif fl_category == FL_CATEGORY[COMPLETE]:
             category = TRANSCRIPT_CLASS[BRONZE]
         gdfl.append((txct.chrom, txct.strand, txct.start, txct.end, name, fl_category,
-                     category, score))
-
-    gdfl.sort(key=lambda x: (x[0], x[1], x[2], x[3]))
-
-    gdf = pd.DataFrame(gdfl, columns=['chrom', 'strand', 'start', 'end', 'qseqid', 'full_length', 'category', 'score'])
-    gdf['category'] = pd.Categorical(gdf['category'], TRANSCRIPT_CLASS, ordered=True)
-
-    gdf.sort_values(by=["category", "score"], ascending=[True, False], inplace=True)
+                     category, txct.attributes['locus'], score))
 
     print("Generating output")
-
-    gdf.to_csv("transcripts.classification.tsv", sep='\t')
+    gdf = pd.DataFrame(gdfl, columns=['chrom', 'strand', 'start', 'end', 'qseqid', 'full_length', 'category', 'locus',
+                                      'score'])
+    gdf['category'] = pd.Categorical(gdf['category'], TRANSCRIPT_CLASS, ordered=True)
+    gdf.sort_values(by=["category", "score"], ascending=[True, False], inplace=True)
+    gdf.to_csv("transcripts.classification.tsv", sep='\t', index=False)
+    gdf.drop_duplicates(subset='locus', inplace=True)
+    gdf.to_csv("transcript.locus.classification.tsv", sep='\t', index=False)
 
     # Print Gold, Silver and Bronze to different files?
     for category in TRANSCRIPT_CLASS[:-1]:
-        with open(category.lower()+".gff", "w") as category_gff:
+        with open(category.lower() + ".gff", "w") as category_gff:
             cat_names = set(gdf[gdf.category == category].qseqid.values)
             for gene in genes.values():
                 for txct in gene:

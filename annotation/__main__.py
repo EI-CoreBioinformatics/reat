@@ -97,6 +97,8 @@ def check_environment(force_quit=True):
         except RuntimeError as e:
             print(f"When executing {key}, found the following error:\n{e}\n"
                   f"Please ensure your environment and hardware support REAT's requirements", file=sys.stderr)
+        except KeyboardInterrupt:
+            exit(10)
         output = result.stdout.decode()
         output += result.stderr.decode()
         item["rc"] = result.returncode
