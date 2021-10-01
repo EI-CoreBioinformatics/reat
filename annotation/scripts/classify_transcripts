@@ -5,10 +5,9 @@ from Mikado.serializers.blast_serializer.tabular_utils import Matrices
 import numpy as np
 import pandas as pd
 from math import log10
-from collections import Counter, defaultdict
+from collections import defaultdict
 import itertools
-from Mikado.parsers import parser_factory
-from Mikado.transcripts import Transcript, Gene
+from annotation import minimal_gxf_parser
 
 GOLD = 0
 SILVER = 1
@@ -47,31 +46,6 @@ best_score = sum([x[1] for x in [max_distance_start_query,
                                  min_coverage_query,
                                  min_coverage_target,
                                  max_single_qgap_length]])
-
-
-def minimal_gxf_parser(parser):
-    genes = dict()
-    tid2gid = dict()
-    for row in parser:
-        if row.header is True:
-            continue
-        elif row.is_gene is True:
-            genes[row.id] = Gene(row)
-        elif row.is_transcript is True:
-            assert len(row.parent) == 1
-            parent = row.parent[0]
-            tid2gid[row.id] = parent
-            genes[parent].add(Transcript(row))
-        elif row.is_exon is True:
-            if row.gene is None:
-                gene = tid2gid[row.parent[0]]
-            else:
-                gene = row.gene
-            genes[gene].add_exon(row)
-
-    for gene in genes:
-        genes[gene].finalize()
-    return genes, tid2gid
 
 
 def collect_transcript_metrics(row, genes, tid2gid):
@@ -192,11 +166,10 @@ def main():
 
     # get a list of names
     names = df['qseqid'].unique().tolist()
-    parser = parser_factory(args.transcripts_gff.name)
-    genes, tid2gid = minimal_gxf_parser(parser)
+    genes, tid2gid = minimal_gxf_parser(args.transcripts_gff.name)
 
-    appiled_df = df.apply(collect_transcript_metrics, args=(genes, tid2gid), axis='columns', result_type='expand')
-    df = pd.concat([df, appiled_df], axis='columns')
+    applied_df = df.apply(collect_transcript_metrics, args=(genes, tid2gid), axis='columns', result_type='expand')
+    df = pd.concat([df, applied_df], axis='columns')
     df['full_length'] = df.apply(evaluate_completeness, axis=1)
     df['full_length'] = pd.Categorical(df['full_length'], categories=FL_CATEGORY, ordered=True)
     df.sort_values(['qseqid', 'full_length', 'score', 'evalue'], ascending=(False, True, False, True), inplace=True)

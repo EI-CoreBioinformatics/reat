@@ -5,6 +5,7 @@ workflow ei_prediction {
 		File reference_genome
 		Array[File]? transcriptome_models
 		Array[File]? homology_models
+		Int flank = 200
 
 		File protein_validation_database
 	}
@@ -114,7 +115,18 @@ workflow ei_prediction {
 		}
 	}
 
+	call SelectAugustusTestAndTrain {
+		input:
+		models = def_training_models,
+		reference = reference_genome,
+		flank = flank
+	}
+
+	if (num_models > 1000) {
 	# Feed all to Augustus in the various configurations
+	# Generate training input for augustus (training + test sets)
+	# Transform tranining set to GeneBank format
+	}
 
 
 	output {
@@ -126,6 +138,25 @@ workflow ei_prediction {
 		File? snap_predictions = SNAP.predictions
 		File? glimmerhmm_predictions = GlimmerHMM.predictions
 	}
+}
+
+task SelectAugustusTestAndTrain {
+	input {
+		File models
+		File reference
+		Int flank = 200
+	}
+
+	output {
+		File test = "test.gb"
+		File train = "train.gb"
+	}
+
+	command <<<
+		generate_augustus_test_and_train ~{models}
+		gff2gbSmallDNA.pl test.gff ~{reference} ~{flank} test.gb
+		gff2gbSmallDNA.pl train.gff ~{reference} ~{flank} train.gb
+	>>>
 }
 
 task CodingQuarry {

@@ -1,34 +1,8 @@
 #!/usr/bin/env python3
 from argparse import ArgumentParser, FileType
-
-from Mikado.parsers import parser_factory
-from Mikado.transcripts import Transcript, Gene
 from networkx import Graph, connected_components
 
-
-def minimal_gxf_parser(parser):
-    genes = dict()
-    tid2gid = dict()
-    for row in parser:
-        if row.header is True:
-            continue
-        elif row.is_gene is True:
-            genes[row.id] = Gene(row)
-        elif row.is_transcript is True:
-            assert len(row.parent) == 1
-            parent = row.parent[0]
-            tid2gid[row.id] = parent
-            genes[parent].add(Transcript(row))
-        elif row.is_exon is True:
-            if row.gene is None:
-                gene = tid2gid[row.parent[0]]
-            else:
-                gene = row.gene
-            genes[gene].add_exon(row)
-
-    for gene in genes:
-        genes[gene].finalize()
-    return genes, tid2gid
+from annotation import minimal_gxf_parser
 
 
 def main():
@@ -36,15 +10,15 @@ def main():
     parser.add_argument('-b', '--blast_hits', type=FileType('r'), help='Hits from self blast check')
     parser.add_argument('-c', '--classification', type=FileType('r'), help='Transcript full length classification')
     parser.add_argument('-t', '--transcripts', type=FileType('r'), help='Transcripts checking for self hits')
-    parser.add_argument('-n', '--top_n', type=int, default=2000, help='Only output the top N transcripts')
+    parser.add_argument('-n', '--top_n', type=int, default=0, help='Only output the top N transcripts')
     args = parser.parse_args()
 
     print(f"Parsing input transcripts {args.transcripts.name}")
 
     # Parse transcripts and hits
-    genes, tid2gid = minimal_gxf_parser(parser_factory(args.transcripts.name))
+    genes, tid2gid = minimal_gxf_parser(args.transcripts.name)
 
-    print(f"Found {len(tid2gid)} transcripts")
+    print(f"Found {len(tid2gid)} transcripts in {len(genes)} genes")
     print(f"Calculating 80cov80id redundant groups")
     # If hit matches something else with 80cov 80id add edge to graph
     edges = []
@@ -90,7 +64,7 @@ def main():
                 continue
             if scores[2] not in piles[1]:
                 continue
-            if num_output >= args.top_n:
+            if args.top_n and num_output >= args.top_n:
                 break
             gene = genes[tid2gid[tid]]
             print(gene.__str__().split('\n')[0], file=piles[0])

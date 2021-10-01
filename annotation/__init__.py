@@ -4,9 +4,13 @@ import signal
 import subprocess
 import sys
 
+from Mikado.parsers import parser_factory
+from Mikado.transcripts import Gene, Transcript
+
 VERSION = '0.4.2'
 
 RUN_METADATA = "run_details.json"
+
 
 def report_errors(errors, samples):
     if any([len(error_list) for error_list in errors.values()]):
@@ -106,3 +110,29 @@ def cromwell_run(workflow_configuration_file, jar_cromwell, input_parameters_fil
 
 def kill_cromwell(sig, frame):
     raise KeyboardInterrupt
+
+
+def minimal_gxf_parser(file):
+    parser = parser_factory(file)
+    genes = dict()
+    tid2gid = dict()
+    for row in parser:
+        if row.header is True:
+            continue
+        elif row.is_gene is True:
+            genes[row.id] = Gene(row)
+        elif row.is_transcript is True:
+            assert len(row.parent) == 1
+            parent = row.parent[0]
+            tid2gid[row.id] = parent
+            genes[parent].add(Transcript(row))
+        elif row.is_exon is True:
+            if row.gene is None:
+                gene = tid2gid[row.parent[0]]
+            else:
+                gene = row.gene
+            genes[gene].add_exon(row)
+
+    for gene in genes:
+        genes[gene].finalize()
+    return genes, tid2gid

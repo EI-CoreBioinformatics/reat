@@ -17,6 +17,7 @@ dependencies:
   - gmap=2021.03.08
   - star=2.7.8a
   - spaln>=2.4.3
+  - augustus=3.4.0
   - scallop=0.10.5
   - gffread=0.12.1
   - seqtk=1.3
