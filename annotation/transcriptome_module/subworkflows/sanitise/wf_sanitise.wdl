@@ -7,17 +7,20 @@ workflow wf_sanitise {
     input {
         File reference_genome
         File? in_annotation
+        RuntimeAttr? sanitise_resources
     }
 
     call tsk.SanitiseFasta {
         input:
-            reference = reference_genome
+            reference = reference_genome,
+            runtime_attr_override = sanitise_resources
     }
 
     if (defined(in_annotation)) {
         call SanitizeAnnotation {
             input:
-            annotation = in_annotation
+            annotation = in_annotation,
+            runtime_attr_override = sanitise_resources
         }
         File wf_maybe_clean_annotation = SanitizeAnnotation.sanitised_annotation
     }
