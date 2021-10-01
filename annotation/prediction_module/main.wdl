@@ -316,6 +316,7 @@ task SelfBlastFilter{
 
 	command <<<
 		gffread -y proteins.faa -g ~{genome} ~{clustered_models}
+
 		diamond makedb --db self -p 8 --in proteins.faa
 		diamond blastp -p 8 -d self -q proteins.faa -f6 qseqid sseqid qlen slen pident length mismatch gapopen qstart qend sstart send evalue bitscore ppos btop > self.hits.tsv
 		filter_self_hits -b self.hits.tsv -t ~{clustered_models} -c ~{classification}

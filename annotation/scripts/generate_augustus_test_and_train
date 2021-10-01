@@ -1,0 +1,74 @@
+#!/usr/bin/env python3
+import argparse
+import random
+from pprint import pprint
+
+from annotation import minimal_gxf_parser
+
+
+def main():
+    parser = argparse.ArgumentParser(prog='generate_augustus_test_and_train')
+    parser.add_argument('models', type=argparse.FileType('r'), help='Input genome models from which to select')
+    parser.add_argument('--train_max', type=int, default=1000, help="Maximum number of models to generate for training")
+    parser.add_argument('--train_min', type=int, default=400, help="Minimum number of training models for success")
+    parser.add_argument('--test_max', type=int, default=200, help="Number of models to generate for testing")
+    parser.add_argument('--min_mono_exonic_pct', type=int, default=20,
+                        help="Minimum percentage of mono-exonic models in the training set")
+    parser.add_argument('-f', '--force', action='store_true',
+                        help="Succeeds even if the number of models requested for test or train is not reached")
+    args = parser.parse_args()
+    force = args.force
+    mono_min_num_models = int(args.train_max * (1 + args.min_mono_exonic_pct/100.))
+
+    genes, tid2gid = minimal_gxf_parser(args.models.name)  # At this stage the models are sorted by quality (best at the top)
+
+    # First generate the test+train dataset
+    mult_models = list()
+    mono_models = list()
+    for tid in tid2gid:
+        txct = genes[tid2gid[tid]][tid]
+        txct_num_exons = txct.exon_num
+        if txct_num_exons == 1:
+            mono_models.append(txct)
+        else:
+            mult_models.append(txct)
+
+    # Sample all the genes required (mono or multi exonic) in one list
+    # at the same time, sample only the mono-exonic in another list
+    # Check the ratio mono/multi and draw from the mono list until the desired ratio is achieved
+
+    total_models = len(mono_models) + len(mult_models)
+    train_models = set()
+    if total_models == 0:
+        return -3  # Not even a single model!
+
+    if total_models < args.train_min:
+        if not force:
+            return -1  # Not enough models to train
+        train_models = mult_models + mono_models
+    else:
+        train_models = mult_models[:args.train_max]
+        if len(mono_models) < mono_min_num_models:
+            if not force:
+                return -4  # Not enough mono-models
+            train_models[:-len(mono_models)] = mono_models
+        else:
+            train_models[:-mono_min_num_models] = mono_models[:mono_min_num_models]
+
+    test_models = set(random.sample(train_models, args.test_max))
+    train_models = set(train_models) - test_models
+
+    # Separate the test models from the test+train by sampling and then readjusting the ratio of monoexonic
+    # by traversing again the test+train and picking monoexonic models until the desired ratio is achieved
+    # this would be limited by a maximum number of mono-exonic genes available
+
+    pprint(f"Number of train models: {len(train_models)}")
+    # pprint(f"Train models: {train_models}")
+    pprint(f"Number of test models: {len(test_models)}")
+    # pprint(f"Test models: {test_models}")
+
+    return 0
+
+
+if __name__ == "__main__":
+    main()

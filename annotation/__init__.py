@@ -112,6 +112,14 @@ def kill_cromwell(sig, frame):
     raise KeyboardInterrupt
 
 
+class HashableTranscript(Transcript):
+    def __repr__(self):
+        return self.id
+
+    def __hash__(self):
+        return hash(self.id)
+
+
 def minimal_gxf_parser(file):
     parser = parser_factory(file)
     genes = dict()
@@ -125,7 +133,7 @@ def minimal_gxf_parser(file):
             assert len(row.parent) == 1
             parent = row.parent[0]
             tid2gid[row.id] = parent
-            genes[parent].add(Transcript(row))
+            genes[parent].add(HashableTranscript(row))
         elif row.is_exon is True:
             if row.gene is None:
                 gene = tid2gid[row.parent[0]]
