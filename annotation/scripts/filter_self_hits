@@ -58,6 +58,7 @@ def main():
         (open('with_utr.gff', 'w'), {'Gold', 'Silver'}),
         (open('without_utr.gff', 'w'), {'Gold', 'Silver', 'Bronze'})
     ]:
+        print('##gff-version 3', file=piles[0])
         num_output = 0
         for tid, scores in txct_scores.items():
             if tid in discard:
