@@ -37,15 +37,5 @@ jobs:
           export CROMWELL_JAR=$(readlink -f cromwell.jar)
           export CROMWELL_RUNTIME_CONFIG=$(readlink -f cromwell_configuration/cromwell.local.conf)
           pytest --tag cli --symlink --kwd --basetemp ../pytest_temp
-      - name: Homology test
-        run: |
-          export CROMWELL_JAR=$(readlink -f cromwell.jar)
-          export CROMWELL_RUNTIME_CONFIG=$(readlink -f cromwell_configuration/cromwell.local.conf)
-          pytest --tag homology --symlink --kwd --basetemp ../pytest_temp
-      - name: Transcriptome test
-        run: |
-          export CROMWELL_JAR=$(readlink -f cromwell.jar)
-          export CROMWELL_RUNTIME_CONFIG=$(readlink -f cromwell_configuration/cromwell.local.conf)
-          pytest --tag transcriptome --symlink --kwd --basetemp ../pytest_temp
       - name: Release
         uses: softprops/action-gh-release@v1
