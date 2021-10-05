@@ -1,11 +1,17 @@
-version 1.0
+version development
 
 workflow ei_prediction {
 	input {
 		File reference_genome
+		String species
+		Directory augustus_config_path
 		Array[File]? transcriptome_models
 		Array[File]? homology_models
+		File? intron_hints
 		Int flank = 200
+		Int kfold = 8
+		Boolean optimise_augustus = false
+		Boolean force_train = false
 
 		File protein_validation_database
 	}
@@ -126,18 +132,154 @@ workflow ei_prediction {
 	# Feed all to Augustus in the various configurations
 	# Generate training input for augustus (training + test sets)
 	# Transform tranining set to GeneBank format
+
+		call Species {
+			input:
+			base_config = augustus_config_path,
+			species = species
+		}
+
+		if (!Species.existing_species && !force_train) {
+			call etraining as base_training {
+				input:
+				models = SelectAugustusTestAndTrain.train,
+				species = species,
+				config_path = Species.config_path,
+				with_utr = train_utr
+			}
+
+			call Augustus as AugustusTest {
+				input:
+				reference = reference_genome,
+				models = SelectAugustusTestAndTrain.test,
+				species = species,
+				config_path = base_training.improved_config_path
+			}
+
+			if (optimise_augustus) {
+				call OptimiseAugustus {
+					input:
+					num_fold = kfold,
+					with_utr = train_utr,
+					species = species,
+					config_path = base_training.improved_config_path,
+					models = SelectAugustusTestAndTrain.train
+				}
+
+				call etraining as train_after_optimise {
+					input:
+					models = SelectAugustusTestAndTrain.train,
+					species = species,
+					config_path = OptimiseAugustus.optimised_config_path,
+					with_utr = train_utr
+				}
+			}
+		}
+
+		Directory final_augustus_config = select_first([train_after_optimise.improved_config_path, base_training.improved_config_path, Species.config_path])
+
+		call Augustus as AugustusGold {
+			input:
+			reference = reference_genome,
+			models = LengthChecker.gold,
+			species = species,
+			config_path = final_augustus_config
+		}
 	}
 
 
 	output {
 		File gold_models = LengthChecker.gold
 		File silver_models = LengthChecker.silver
-		File  bronze_models = LengthChecker.bronze
+		File bronze_models = LengthChecker.bronze
 		File training_models = def_training_models
 		File? coding_quarry_predictions = CodingQuarry.predictions
 		File? snap_predictions = SNAP.predictions
 		File? glimmerhmm_predictions = GlimmerHMM.predictions
+		File? augustus_predictions = AugustusGold.predictions
+		Directory? augustus_config = final_augustus_config
 	}
+}
+
+task OptimiseAugustus {
+	input {
+		Int num_fold
+		String species
+		Directory config_path
+		File models
+		Boolean with_utr
+	}
+
+	output {
+		Directory optimised_config_path = "config"
+	}
+
+	command <<<
+		set -euxo pipefail
+		ln -s ~{config_path} config
+		optimize_augustus.pl --AUGUSTUS_CONFIG_PATH=config --species=~{species} ~{models} --cpus=~{num_fold} --kfold=~{num_fold} ~{if with_utr then "--UTR=on" else ""}
+	>>>
+}
+
+task Augustus {
+	input {
+		File reference
+		Directory config_path
+		String species
+		File models
+	}
+
+	output {
+		File predictions = "augustus.predictions.txt"
+	}
+
+	command <<<
+		ln -s ~{config_path} config
+		head ~{models}
+		augustus --AUGUSTUS_CONFIG_PATH=~{config_path} --species=~{species} ~{reference} > augustus.predictions.txt
+	>>>
+}
+
+task Species {
+	input {
+		Directory base_config
+		String species
+	}
+
+	output {
+		Directory config_path = "config"
+		Boolean existing_species = read_boolean("existed")
+	}
+
+	command <<<
+		set -euxo pipefail
+		cp -r ~{base_config} config
+		if [ ! -d "config/~{species}" ];
+		then
+			new_species.pl --species=~{species} --AUGUSTUS_CONFIG_PATH=config
+			echo "false" > existed
+		else
+			echo "true" > existed
+		fi
+	>>>
+}
+
+task etraining {
+	input {
+		File models
+		String species
+		Boolean with_utr
+		Directory config_path
+	}
+
+	output {
+		Directory improved_config_path = "config"
+	}
+
+	command <<<
+		ln -s ~{config_path} config
+		etraining ~{models} --AUGUSTUS_CONFIG_PATH=config --species=~{species} --stopCodonExcludedFromCDS=~{with_utr}
+	>>>
 }
 
 task SelectAugustusTestAndTrain {
@@ -153,6 +295,7 @@ task SelectAugustusTestAndTrain {
 	}
 
 	command <<<
+		set -euxo pipefail
 		generate_augustus_test_and_train ~{models}
 		gff2gbSmallDNA.pl test.gff ~{reference} ~{flank} test.gb
 		gff2gbSmallDNA.pl train.gff ~{reference} ~{flank} train.gb
@@ -172,7 +315,7 @@ task CodingQuarry {
 	Int num_cpus = 8
 
 	command <<<
-
+		set -euxo pipefail
 		CodingQuarry -p ~{num_cpus} -f ~{genome} -t ~{transcripts}
 		mv out/PredictedPass.gff3 codingquarry.predictions.gff
 	>>>
@@ -188,6 +331,7 @@ task PreprocessFiles {
 	}
 
 	command <<<
+		set -euxo pipefail
 		gffread -F --cluster-only --keep-genes ~{models} > ~{basename(models)}.clustered.gtf
 	>>>
 }
@@ -203,6 +347,7 @@ task SNAP {
 	}
 
 	command <<<
+		set -euxo pipefail
 		gff_to_zff -a ~{transcripts} > ~{transcripts}.ann
 		fathom ~{transcripts}.ann ~{genome} -categorize 1000
 		fathom uni.ann uni.dna -export 1000 -plus
@@ -227,6 +372,7 @@ task GlimmerHMM {
 	}
 
 	command <<<
+		set -euxo pipefail
 		gff_to_glimmer -a ~{transcripts} > ~{transcripts}.cds
 		trainGlimmerHMM ~{genome} ~{transcripts}.cds -d glimmer_training
 		glimmhmm.pl $(which glimmerhmm) ~{genome} glimmer_training -g | gffread -g ~{genome} -vE --keep-genes -P > glimmer.predictions.gff
@@ -244,6 +390,7 @@ task GenerateModelProteins {
 	}
 
 	command <<<
+		set -euxo pipefail
 		cat ~{sep=" " models} | gffread --stream -g ~{genome} -y proteins.faa
 	>>>
 }
@@ -258,6 +405,7 @@ task IndexProteinsDatabase {
 	}
 
 	command <<<
+		set -euxo pipefail
 		diamond makedb -d ~{basename(db)}.dmnd --in ~{db}
 	>>>
 }
@@ -273,6 +421,7 @@ task AlignProteins {
 	}
 
 	command <<<
+		set -euxo pipefail
 		diamond blastp -d ~{db} -q ~{proteins} -f6 qseqid sseqid qlen slen pident length mismatch gapopen qstart qend sstart send evalue bitscore ppos btop > diamond.hits.tsv
 	>>>
 }
@@ -295,6 +444,7 @@ task LengthChecker {
 	}
 
 	command <<<
+		set -euxo pipefail
 		gffread -g ~{genome} -F --cluster-only --keep-genes -P ~{sep=" " models} > all_models.clustered.gff
 		classify_transcripts -b ~{hits} -t all_models.clustered.gff
 	>>>
@@ -315,6 +465,7 @@ task SelfBlastFilter{
 	}
 
 	command <<<
+		set -euxo pipefail
 		gffread -y proteins.faa -g ~{genome} ~{clustered_models}
 
 		diamond makedb --db self -p 8 --in proteins.faa

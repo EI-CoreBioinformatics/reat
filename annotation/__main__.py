@@ -450,15 +450,28 @@ def parse_arguments():
     prediction_ap = subparsers.add_parser('prediction', help="Prediction module",
                                           formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-    prediction_ap.add_argument("--genome", type=argparse.FileType('r'),
+    prediction_ap.add_argument("--genome", type=argparse.FileType('r'), required=True,
                                help="Genome fasta file")
+    prediction_ap.add_argument("--augustus_config_path", type=str, required=True,
+                               help="Template path for augustus config, this path will not be modified as a copy will "
+                                    "be created internally for the workflow's use")
+    prediction_ap.add_argument("--species", type=str, required=True,
+                               help="Name of the species to train models for, if it does not exist in the augustus "
+                                    "config path it will be created.")
     prediction_ap.add_argument("--transcriptome_models", type=argparse.FileType('r'), nargs='*',
                                help="Models derived from transcriptomic data")
     prediction_ap.add_argument("--homology_models", type=argparse.FileType('r'), nargs='*',
                                help="Models derived from protein alignments")
+    prediction_ap.add_argument("--introns", type=argparse.FileType('r'),
+                               help="Introns to be used as hints for Augustus")
     prediction_ap.add_argument("--homology_proteins", type=argparse.FileType('r'),
                                help="Protein sequences used for determining whether the evidence provided is "
                                     "full-length or not")
+    prediction_ap.add_argument('--optimise_augustus', action='store_true',
+                               help="Enable augustus metaparameter optimisation")
+    prediction_ap.add_argument('--kfold', type=int, default=8, help="Number of batches for augustus optimisation")
+    prediction_ap.add_argument('--force_train', action='store_true',
+                               help="Re-train augustus even if the species is found in the \'augustus_config_path\'")
 
     args = reat_ap.parse_args()
 

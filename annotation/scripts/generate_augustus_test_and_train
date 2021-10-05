@@ -29,9 +29,9 @@ def main():
         txct = genes[tid2gid[tid]][tid]
         txct_num_exons = txct.exon_num
         if txct_num_exons == 1:
-            mono_models.append(txct)
+            mono_models.append(tid)
         else:
-            mult_models.append(txct)
+            mult_models.append(tid)
 
     # Sample all the genes required (mono or multi exonic) in one list
     # at the same time, sample only the mono-exonic in another list
@@ -63,9 +63,15 @@ def main():
     # this would be limited by a maximum number of mono-exonic genes available
 
     pprint(f"Number of train models: {len(train_models)}")
-    # pprint(f"Train models: {train_models}")
     pprint(f"Number of test models: {len(test_models)}")
-    # pprint(f"Test models: {test_models}")
+
+    for model_file_pair in [(test_models, open("test.gff", 'w')), (train_models, open("train.gff", 'w'))]:
+        print("##gff-version\t3", file=model_file_pair[1])
+        for m in model_file_pair[0]:
+            gene = genes[tid2gid[m]]
+            print(gene.__str__().split('\n')[0], file=model_file_pair[1])
+            print(gene[m].format('gff'), file=model_file_pair[1])
+            print('###', file=model_file_pair[1])
 
     return 0
 

@@ -11,6 +11,18 @@ def combine_arguments_prediction(cli_arguments):
     cromwell_inputs = computational_resources
 
     cromwell_inputs['ei_prediction.reference_genome'] = cli_arguments.genome.name
+    cromwell_inputs['ei_prediction.augustus_config_path'] = cli_arguments.augustus_config_path
+    cromwell_inputs['ei_prediction.species'] = cli_arguments.species
+    cromwell_inputs['ei_prediction.kfold'] = cli_arguments.kfold
+
+    if cli_arguments.introns:
+        cromwell_inputs['ei_prediction.intron_hints'] = cli_arguments.introns
+
+    if cli_arguments.force_train:
+        cromwell_inputs['ei_prediction.force_train'] = cli_arguments.force_train
+
+    if cli_arguments.optimise_augustus:
+        cromwell_inputs['ei_prediction.optimise_augustus'] = cli_arguments.optimise_augustus
 
     if cli_arguments.transcriptome_models:
         cromwell_inputs['ei_prediction.transcriptome_models'] = [f.name for f in cli_arguments.transcriptome_models]
@@ -20,6 +32,7 @@ def combine_arguments_prediction(cli_arguments):
 
     if cli_arguments.homology_proteins:
         cromwell_inputs['ei_prediction.protein_validation_database'] = cli_arguments.homology_proteins.name
+
 
     return cromwell_inputs
 
