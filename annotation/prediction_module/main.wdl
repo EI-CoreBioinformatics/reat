@@ -254,7 +254,7 @@ task Species {
 	command <<<
 		set -euxo pipefail
 		cp -r ~{base_config} config
-		if [ ! -d "config/~{species}" ];
+		if [ ! -d "config/species/~{species}" ];
 		then
 			new_species.pl --species=~{species} --AUGUSTUS_CONFIG_PATH=config
 			echo "false" > existed
