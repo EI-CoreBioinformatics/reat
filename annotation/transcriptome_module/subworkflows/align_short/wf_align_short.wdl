@@ -15,6 +15,7 @@ workflow wf_align_short {
         String aligner = "hisat"
         Int min_intron_len
         Int max_intron_len
+        RuntimeAttr? indexing_resources
         RuntimeAttr? alignment_resources
         RuntimeAttr? sort_resources
         RuntimeAttr? merge_resources
@@ -39,7 +40,9 @@ workflow wf_align_short {
 
     if (aligner == "hisat") {
         call tasks.Hisat2Index {
-            input: reference = reference_genome
+            input:
+                reference = reference_genome,
+                runtime_attr_override = indexing_resources
         }
 
         scatter (sample in samples) {
@@ -60,7 +63,8 @@ workflow wf_align_short {
     if (aligner == "star") {
         call tasks.StarIndex {
             input:
-            reference = reference_genome
+            reference = reference_genome,
+            runtime_attr_override = indexing_resources
         }
         scatter (sample in samples) {
             scatter(PR in sample.read_pair) {

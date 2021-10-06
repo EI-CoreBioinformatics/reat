@@ -12,29 +12,20 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
       - name: Install system development tools
-        if: startsWith(runner.os, 'Linux')
         run: |
           export DEBIAN_FRONTEND=noninteractive
           sudo apt update
           sudo apt install -y build-essential zlib1g-dev zlib1g
-      - name: Cache conda
-        id: cache-miniconda
-        uses: actions/cache@v2
-        env:
-          CACHE_NUMBER: 0
+      - name: Conda setup
+        uses: conda-incubator/setup-miniconda@v2
         with:
-          path: ~/conda_pkgs_dir
-          key:
-            ${{ runner.os }}-conda-${{ env.CACHE_NUMBER }}-${{ hashFiles('./reat.yml') }}
-      - uses: conda-incubator/setup-miniconda@v2
-        with:
-          python-version: ${{ matrix.python-version }}
+          python-version: 3.8
           miniconda-version: "latest"
           environment-file: ./reat.yml
           mamba-version: "*"
           use-mamba: true
           channels: conda-forge, defaults
-          use-only-tar-bz2: true  # IMPORTANT: This needs to be set for caching to work properly!
+          use-only-tar-bz2: true
           activate-environment: "REAT"
       - name: Install dependencies
         run: |
@@ -46,15 +37,5 @@ jobs:
           export CROMWELL_JAR=$(readlink -f cromwell.jar)
           export CROMWELL_RUNTIME_CONFIG=$(readlink -f cromwell_configuration/cromwell.local.conf)
           pytest --tag cli --symlink --kwd --basetemp ../pytest_temp
-      - name: Homology test
-        run: |
-          export CROMWELL_JAR=$(readlink -f cromwell.jar)
-          export CROMWELL_RUNTIME_CONFIG=$(readlink -f cromwell_configuration/cromwell.local.conf)
-          pytest --tag homology --symlink --kwd --basetemp ../pytest_temp
-      - name: Transcriptome test
-        run: |
-          export CROMWELL_JAR=$(readlink -f cromwell.jar)
-          export CROMWELL_RUNTIME_CONFIG=$(readlink -f cromwell_configuration/cromwell.local.conf)
-          pytest --tag transcriptome --symlink --kwd --basetemp ../pytest_temp
       - name: Release
         uses: softprops/action-gh-release@v1

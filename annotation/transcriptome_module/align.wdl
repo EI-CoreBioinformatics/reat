@@ -55,6 +55,8 @@ workflow wf_align {
         Int? LQ_min_coverage
         Int? LQ_min_identity
 
+        RuntimeAttr? sanitise_reference_resources
+        RuntimeAttr? short_read_indexing_resources
         RuntimeAttr? short_read_alignment_resources
         RuntimeAttr? short_read_alignment_sort_resources
         RuntimeAttr? short_read_stats_resources
@@ -80,7 +82,8 @@ workflow wf_align {
     call san.wf_sanitise {
         input:
         reference_genome = reference_genome,
-        in_annotation = reference_annotation
+        in_annotation = reference_annotation,
+        sanitise_resources = sanitise_reference_resources
     }
 
     if (defined(paired_samples)) {
@@ -94,6 +97,7 @@ workflow wf_align {
             star_extra_parameters = PR_star_extra_parameters,
             min_intron_len = select_first([min_intron_len, 20]),
             max_intron_len = select_first([max_intron_len, 200000]),
+            indexing_resources = short_read_indexing_resources,
             alignment_resources = short_read_alignment_resources,
             sort_resources = short_read_alignment_sort_resources,
             merge_resources = short_read_merge_resources,
