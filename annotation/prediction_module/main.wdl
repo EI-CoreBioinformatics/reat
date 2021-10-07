@@ -139,7 +139,7 @@ workflow ei_prediction {
 			species = species
 		}
 
-		if (!Species.existing_species && !force_train) {
+		if (!Species.existing_species || force_train) {
 			call etraining as base_training {
 				input:
 				models = SelectAugustusTestAndTrain.train,

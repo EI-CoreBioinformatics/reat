@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 import argparse
 import random
-from pprint import pprint
 
 from annotation import minimal_gxf_parser
 
@@ -9,6 +8,7 @@ from annotation import minimal_gxf_parser
 def main():
     parser = argparse.ArgumentParser(prog='generate_augustus_test_and_train')
     parser.add_argument('models', type=argparse.FileType('r'), help='Input genome models from which to select')
+    parser.add_argument('--seed', type=int, default=42, help="Random number generator seed")
     parser.add_argument('--train_max', type=int, default=1000, help="Maximum number of models to generate for training")
     parser.add_argument('--train_min', type=int, default=400, help="Minimum number of training models for success")
     parser.add_argument('--test_max', type=int, default=200, help="Number of models to generate for testing")
@@ -17,10 +17,13 @@ def main():
     parser.add_argument('-f', '--force', action='store_true',
                         help="Succeeds even if the number of models requested for test or train is not reached")
     args = parser.parse_args()
-    force = args.force
-    mono_min_num_models = int(args.train_max * (1 + args.min_mono_exonic_pct/100.))
 
-    genes, tid2gid = minimal_gxf_parser(args.models.name)  # At this stage the models are sorted by quality (best at the top)
+    force = args.force
+    mono_min_num_models = int((args.train_max + args.test_max) * (args.min_mono_exonic_pct / 100.))
+    print(f"Requested minimum number of mono-exonic models: {mono_min_num_models}")
+
+    genes, tid2gid = minimal_gxf_parser(
+        args.models.name)  # At this stage the models are sorted by quality (best at the top)
 
     # First generate the test+train dataset
     mult_models = list()
@@ -38,7 +41,7 @@ def main():
     # Check the ratio mono/multi and draw from the mono list until the desired ratio is achieved
 
     total_models = len(mono_models) + len(mult_models)
-    train_models = set()
+    train_models = []
     if total_models == 0:
         return -3  # Not even a single model!
 
@@ -47,23 +50,65 @@ def main():
             return -1  # Not enough models to train
         train_models = mult_models + mono_models
     else:
-        train_models = mult_models[:args.train_max]
+        train_models = mult_models[:args.train_max + args.test_max]
         if len(mono_models) < mono_min_num_models:
             if not force:
                 return -4  # Not enough mono-models
             train_models[:-len(mono_models)] = mono_models
         else:
-            train_models[:-mono_min_num_models] = mono_models[:mono_min_num_models]
+            train_models[-mono_min_num_models:] = mono_models[:mono_min_num_models]
 
+    random.seed(args.seed)
     test_models = set(random.sample(train_models, args.test_max))
-    train_models = set(train_models) - test_models
+
+    train_models = sorted(list(set(train_models) - test_models))  # This is sorted to ensure reproducibility
+
+    mono_min_based_on_train = int(len(train_models) * (args.min_mono_exonic_pct / 100.))
+
+    print(f"Real possible minimum number of mono-exonic models: "
+          f"{min(mono_min_num_models, mono_min_based_on_train)}")
 
     # Separate the test models from the test+train by sampling and then readjusting the ratio of monoexonic
     # by traversing again the test+train and picking monoexonic models until the desired ratio is achieved
     # this would be limited by a maximum number of mono-exonic genes available
 
-    pprint(f"Number of train models: {len(train_models)}")
-    pprint(f"Number of test models: {len(test_models)}")
+    print(f"Number of train models: {len(train_models)}")
+    mono_exonic_tids, total_mono_exonic = count_monoexonic(genes, tid2gid, train_models)
+    if total_mono_exonic > mono_min_based_on_train:
+        tidx = 0
+        multid = 0
+        while tidx < len(train_models) and multid < len(mult_models) and total_mono_exonic > mono_min_based_on_train:
+            tid = train_models[tidx]
+            while tidx < len(train_models) and genes[tid2gid[tid]][tid].exon_num != 1:
+                tidx += 1
+                tid = train_models[tidx]
+            while multid < len(mult_models) and mult_models[multid] in train_models:
+                multid += 1
+            # Add this model to the training list and remove a mono-exonic model
+            if tidx >= len(train_models):
+                break
+            if multid >= len(mult_models):
+                break
+            train_models[tidx] = mult_models[multid]
+            tidx += 1
+            multid += 1
+            total_mono_exonic -= 1
+
+    mono_exonic_tids, total_mono_exonic = count_monoexonic(genes, tid2gid, train_models)
+    print(f"Number of mono-exonic models in train set: {total_mono_exonic}")
+
+    test_models = random.sample(train_models, args.test_max)
+    _, total_test_mono_exonic = count_monoexonic(genes, tid2gid, test_models)
+    while (total_test_mono_exonic < len(train_models) * args.min_mono_exonic_pct and
+           total_mono_exonic > len(train_models) * (args.min_mono_exonic_pct + 5)):
+        test_models = random.sample(train_models, args.test_max)
+        _, total_test_mono_exonic = count_monoexonic(genes, tid2gid, test_models)
+
+    print(f"Mono-exonic train ratio: {int(100 * (total_mono_exonic / len(train_models)))} %")
+    print(f"Number of test models: {len(test_models)}")
+    mono_exonic_tids, total_mono_exonic = count_monoexonic(genes, tid2gid, test_models)
+    print(f"Number of mono-exonic models in test set: {total_mono_exonic}")
+    print(f"Mono-exonic test ratio: {int(100 * (total_mono_exonic / len(test_models)))} %")
 
     for model_file_pair in [(test_models, open("test.gff", 'w')), (train_models, open("train.gff", 'w'))]:
         print("##gff-version\t3", file=model_file_pair[1])
@@ -74,6 +119,18 @@ def main():
             print('###', file=model_file_pair[1])
 
     return 0
+
+
+def count_monoexonic(genes, tid2gid, train_models):
+    total_mono_exonic = 0
+    mono_exonic = []
+    for tid in train_models:
+        txct = genes[tid2gid[tid]][tid]
+        txct_num_exons = txct.exon_num
+        if txct_num_exons == 1:
+            mono_exonic.append(tid)
+            total_mono_exonic += 1
+    return mono_exonic, total_mono_exonic
 
 
 if __name__ == "__main__":
