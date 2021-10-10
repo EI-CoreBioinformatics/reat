@@ -365,7 +365,7 @@ def parse_arguments():
     # Orf calling
     orf_calling_parameters = transcriptome_ap.add_argument_group("ORF Caller", "Parameters for ORF calling programs")
     orf_calling_parameters.add_argument("--orf_caller", choices=['prodigal', 'transdecoder', 'none'],
-                                        help="Choice of available orf calling softwares", default='none')
+                                        help="Choice of available orf calling softwares", default='prodigal')
     orf_calling_parameters.add_argument("--orf_calling_proteins", type=argparse.FileType('r'),
                                         help="Set of proteins to be aligned to the genome for orf prediction by "
                                              "Transdecoder")
