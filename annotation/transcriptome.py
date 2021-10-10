@@ -492,6 +492,11 @@ def transcriptome_cli_validation(args, reat_ap):
     if not args.samples and not args.csv_paired_samples and not args.csv_long_samples:
         reat_ap.error("Please provide at least one of --samples, --csv_paired_samples, --csv_long_samples")
 
+    genetic_code, mikado_genetic_code = validate_genetic_code(args, reat_ap)
+    return genetic_code, mikado_genetic_code
+
+
+def validate_genetic_code(args, reat_ap):
     genetic_code = 0
     mikado_genetic_code = 0
     if args.orf_caller == 'transdecoder':
