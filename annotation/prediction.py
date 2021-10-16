@@ -1,3 +1,4 @@
+import os.path
 from importlib import resources as pkg_resources
 import json
 
@@ -10,7 +11,9 @@ def combine_arguments_prediction(cli_arguments):
         computational_resources = json.load(cli_arguments.computational_resources)
     cromwell_inputs = computational_resources
 
-    cromwell_inputs['ei_prediction.reference_genome'] = cli_arguments.genome.name
+    cromwell_inputs['ei_prediction.reference_genome'] = {'fasta': cli_arguments.genome.name}
+    if os.path.isfile(cli_arguments.genome.name + '.fai'):
+        cromwell_inputs['ei_prediction.reference_genome']['index'] = cli_arguments.genome.name + '.fai'
     cromwell_inputs['ei_prediction.augustus_config_path'] = cli_arguments.augustus_config_path
     cromwell_inputs['ei_prediction.species'] = cli_arguments.species
     cromwell_inputs['ei_prediction.kfold'] = cli_arguments.kfold
