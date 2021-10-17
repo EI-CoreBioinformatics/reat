@@ -402,12 +402,15 @@ task Species {
 
 	command <<<
 		set -euxo pipefail
-		cp -r ~{base_config} config
-		if [ ! -d "config/species/~{species}" ];
+		cp -r ~{base_config}/{cgp,extrinsic,model,profile} config/
+		if [ ! -d "~{base_config}/species/~{species}" ];
 		then
 			new_species.pl --species=~{species} --AUGUSTUS_CONFIG_PATH=config
+			sed '/^UTR/s/.*/UTR\ton/' config/species/~{species}/~{species}_parameters.cfg > config/species/~{species}/~{species}_parameters.cfg.utr
+			mv config/species/~{species}/~{species}_parameters.cfg.utr config/species/~{species}/~{species}_parameters.cfg
 			echo "false" > existed
 		else
+			cp -r ~{base_config}/species/~{species} config/species/~{species}
 			echo "true" > existed
 		fi
 	>>>
@@ -427,7 +430,7 @@ task etraining {
 
 	command <<<
 		ln -s ~{config_path} config
-		etraining ~{models} --AUGUSTUS_CONFIG_PATH=config --species=~{species} --stopCodonExcludedFromCDS=~{with_utr}
+		etraining --AUGUSTUS_CONFIG_PATH=config --species=~{species} ~{models}
 	>>>
 }
 
