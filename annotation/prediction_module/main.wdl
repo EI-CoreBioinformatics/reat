@@ -13,6 +13,7 @@ struct IndexedBAM {
 workflow ei_prediction {
 	input {
 		IndexedReference reference_genome
+		File extrinsic_config
 		String species
 		Directory augustus_config_path
 		Array[File]? transcriptome_models  # Classify and divide into Gold, Silver and Bronze
@@ -180,10 +181,64 @@ workflow ei_prediction {
 		}
 
 		if (defined(homology_models)) {
-			call PrepareProteinHints {
+			call PrepareProteinHints as protein_hints_P4{
 				input:
 				aligned_proteins_gffs = select_first([homology_models])
 			}
+
+			call PrepareProteinHints as protein_hints_P9{
+				input:
+				aligned_proteins_gffs = select_first([homology_models]),
+				priority = 9
+			}
+		}
+
+		call PrepareTranscriptHints as gold {
+			input:
+			transcripts = [LengthChecker.gold],
+			category = "gold",
+			source = 'M',
+			priority = 10
+		}
+
+		call PrepareTranscriptHints as gold_e {
+			input:
+			transcripts = [LengthChecker.gold],
+			category = "gold",
+			source = 'E',
+			priority = 10
+		}
+
+		call PrepareTranscriptHints as silver {
+			input:
+			transcripts = [LengthChecker.silver],
+			category = "silver",
+			source = 'F',
+			priority = 9
+		}
+
+		call PrepareTranscriptHints as silver_e {
+			input:
+			transcripts = [LengthChecker.silver],
+			category = "silver",
+			source = 'E',
+			priority = 9
+		}
+
+		call PrepareTranscriptHints as bronze {
+			input:
+			transcripts = [LengthChecker.bronze],
+			category = "bronze",
+			source = 'E',
+			priority = 8
+		}
+
+		call PrepareTranscriptHints as all {
+			input:
+			transcripts = all_models,
+			category = "all",
+			source = 'E',
+			priority = 7
 		}
 
 	# Feed all to Augustus in the various configurations
@@ -208,6 +263,7 @@ workflow ei_prediction {
 			call Augustus as AugustusTest {
 				input:
 				reference = def_reference_genome,
+				extrinsic_config = extrinsic_config,
 				with_utr = train_utr,
 				species = species,
 				config_path = base_training.improved_config_path
@@ -248,17 +304,22 @@ workflow ei_prediction {
 		# Proteins Source P; Priority 4;
 		# Normalised Wig Hints Source W; Priority 3;
 		# Repeats Source RM; Priority 1;
+
 		call cat as run1_hints {
 			input:
-			files = select_all([LengthChecker.gold, LengthChecker.silver, LengthChecker.bronze,
-					PrepareIntronHints.gold_intron_hints, PrepareIntronHints.silver_intron_hints,
-					PrepareProteinHints.protein_hints,
-					PrepareExonHints.expression_gff, repeats_gff]),
+			files = select_all([gold.result, silver.result, bronze.result, all.result,
+							   PrepareIntronHints.gold_intron_hints, PrepareIntronHints.silver_intron_hints,
+							   protein_hints_P4.protein_hints,
+							   PrepareExonHints.expression_gff,
+							   repeats_gff
+							   ]
+					),
 			out_filename = "run1_hints.gff"
 		}
 		call Augustus as run1 {
 			input:
 			reference = def_reference_genome,
+			extrinsic_config = extrinsic_config,
 			hints = run1_hints.out,
 			with_utr = train_utr,
 			species = species,
@@ -277,6 +338,26 @@ workflow ei_prediction {
 		# Portcullis Pass Silver Junctions Source E; Priority 4;
 		# Proteins Source P; Priority 4;
 		# Repeats Source RM; Priority 1;
+		call cat as run2_hints {
+			input:
+			files = select_all([gold.result, silver.result, bronze.result, all.result,
+							   PrepareIntronHints.gold_intron_hints, PrepareIntronHints.silver_intron_hints,
+							   protein_hints_P4.protein_hints,
+							   repeats_gff
+							   ]
+					),
+			out_filename = "run2_hints.gff"
+		}
+
+		call Augustus as run2 {
+			input:
+			reference = def_reference_genome,
+			extrinsic_config = extrinsic_config,
+			hints = run2_hints.out,
+			with_utr = train_utr,
+			species = species,
+			config_path = final_augustus_config
+		}
 
 		# Prepare run3 evidence:
 		# Mikado Gold Source E; Priority 10;
@@ -290,12 +371,22 @@ workflow ei_prediction {
 		# Portcullis Pass Silver Junctions Source E; Priority 4;
 		# Proteins Source P; Priority 4;
 		# Repeats Source RM; Priority 1;
+		call cat as run3_hints {
+			input:
+			files = select_all([gold_e.result, silver_e.result, bronze.result, all.result,
+							   PrepareIntronHints.gold_intron_hints, PrepareIntronHints.silver_intron_hints,
+							   protein_hints_P9.protein_hints,
+							   repeats_gff
+							   ]
+					),
+			out_filename = "run3_hints.gff"
+		}
 
-
-		call Augustus as AugustusGold {
+		call Augustus as run3 {
 			input:
 			reference = def_reference_genome,
-			hints = LengthChecker.gold,
+			extrinsic_config = extrinsic_config,
+			hints = run3_hints.out,
 			with_utr = train_utr,
 			species = species,
 			config_path = final_augustus_config
@@ -311,7 +402,7 @@ workflow ei_prediction {
 		File? coding_quarry_predictions = CodingQuarry.predictions
 		File? snap_predictions = SNAP.predictions
 		File? glimmerhmm_predictions = GlimmerHMM.predictions
-		File? augustus_predictions = AugustusGold.predictions
+		File? augustus_predictions = run1.predictions
 		Directory? augustus_config = final_augustus_config
 	}
 }
@@ -369,6 +460,7 @@ task OptimiseAugustus {
 task Augustus {
 	input {
 		IndexedReference reference
+		File extrinsic_config
 		Directory config_path
 		Boolean with_utr
 		String species
@@ -384,7 +476,7 @@ task Augustus {
 		augustus --AUGUSTUS_CONFIG_PATH=~{config_path} \
 		--UTR=~{if with_utr then "ON" else "OFF"} --stopCodonExcludedFromCDS=true --genemodel=partial \
 		--alternatives-from-evidence=true ~{'--hintsfile=' + hints} --noInFrameStop=true \
-		--allow_hinted_splicesites=atac --errfile=run1.log \
+		--allow_hinted_splicesites=atac --errfile=run1.log --extrinsicCfgFile=~{extrinsic_config} \
 		--species=~{species} ~{reference.fasta} > augustus.predictions.gff
 	>>>
 }
@@ -402,9 +494,10 @@ task Species {
 
 	command <<<
 		set -euxo pipefail
-		cp -r ~{base_config}/{cgp,extrinsic,model,profile} config/
 		if [ ! -d "~{base_config}/species/~{species}" ];
 		then
+			mkdir -p config/species
+			cp -r ~{base_config}/species/generic config/species/generic
 			new_species.pl --species=~{species} --AUGUSTUS_CONFIG_PATH=config
 			sed '/^UTR/s/.*/UTR\ton/' config/species/~{species}/~{species}_parameters.cfg > config/species/~{species}/~{species}_parameters.cfg.utr
 			mv config/species/~{species}/~{species}_parameters.cfg.utr config/species/~{species}/~{species}_parameters.cfg
@@ -413,6 +506,7 @@ task Species {
 			cp -r ~{base_config}/species/~{species} config/species/~{species}
 			echo "true" > existed
 		fi
+		cp -R ~{base_config}/{cgp,extrinsic,model,profile} config/
 	>>>
 }
 
@@ -729,6 +823,27 @@ task PrepareProteinHints {
 		for i in ~{sep=' ' aligned_proteins_gffs}; do
 		name=$(echo ${i} | sed 's/.gff//')
 		gffread $i | gff_to_aug_hints -P ~{priority} -S ~{source} -s ${name}.protein -t CDS >> aligned_proteins.S~{source}P~{priority}.gff;
+		done
+	>>>
+
+}
+
+task PrepareTranscriptHints {
+	input {
+		Array[File] transcripts
+		String category
+		String source = "E"
+		Int priority = 4
+	}
+
+	output {
+		File result = category+'.transcripts.S'+source+'P'+priority+'.gff'
+	}
+
+	command <<<
+		for i in ~{sep=' ' transcripts}; do
+		name=$(echo ${i} | sed 's/.gff//')
+		cat $i | gff_to_aug_hints -P ~{priority} -S ~{source} -s ${name}.transcripts -t exon >> ~{category}.transcripts.S~{source}P~{priority}.gff;
 		done
 	>>>
 

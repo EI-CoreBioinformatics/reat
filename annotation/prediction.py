@@ -18,6 +18,9 @@ def combine_arguments_prediction(cli_arguments):
     cromwell_inputs['ei_prediction.species'] = cli_arguments.species
     cromwell_inputs['ei_prediction.kfold'] = cli_arguments.kfold
 
+    with pkg_resources.path("annotation.prediction_module", "extrinsic.ei_augustus_generic.cfg") as extrinsic_path:
+        cromwell_inputs['ei_prediction.extrinsic_config'] = str(extrinsic_path)
+
     if cli_arguments.introns:
         cromwell_inputs['ei_prediction.intron_hints'] = cli_arguments.introns
 
