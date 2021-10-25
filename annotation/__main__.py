@@ -37,9 +37,9 @@ from textwrap import wrap
 from annotation import VERSION
 from annotation.transcriptome import transcriptome_cli_validation, \
     genetic_code_str_to_int
-from homology import homology_module
-from prediction import prediction_module
-from transcriptome import transcriptome_module
+from annotation.homology import homology_module
+from annotation.prediction import prediction_module
+from annotation.transcriptome import transcriptome_module
 
 LONG_READ_ALIGNER_CHOICES = ['minimap2', 'gmap', '2pass', '2pass_merged']
 
