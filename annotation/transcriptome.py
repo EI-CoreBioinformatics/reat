@@ -10,7 +10,7 @@ from pathlib import Path
 
 from jsonschema import ValidationError, Draft7Validator, validators
 
-from utils import symlink, link_mikado, link_assemblies, link_bams
+from annotation.utils import symlink, link_mikado, link_assemblies, link_bams
 from annotation import RUN_METADATA, report_errors, prepare_cromwell_arguments, execute_cromwell
 
 UNSUPPORTED_GENETIC_CODES_INT = [2, 3, 4, 5, 9, 11, 13, 14, 16, 21, 22, 23, 24]

@@ -5,7 +5,7 @@ from importlib import resources as pkg_resources
 
 from jsonschema import Draft7Validator, validators
 
-from utils import symlink
+from annotation.utils import symlink
 from annotation import RUN_METADATA, report_errors, prepare_cromwell_arguments, execute_cromwell
 
 
