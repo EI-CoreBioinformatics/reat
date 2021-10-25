@@ -455,6 +455,9 @@ def parse_arguments():
     prediction_ap.add_argument("--augustus_config_path", type=str, required=True,
                                help="Template path for augustus config, this path will not be modified as a copy will "
                                     "be created internally for the workflow's use")
+    prediction_ap.add_argument("--extrinsic_config", type=argparse.FileType('r'), nargs='*',
+                               help="Augustus extrinsic configuration file, defines the boni/mali for each type of "
+                                    "feature-evidence combination")
     prediction_ap.add_argument("--species", type=str, required=True,
                                help="Name of the species to train models for, if it does not exist in the augustus "
                                     "config path it will be created.")
@@ -472,6 +475,11 @@ def parse_arguments():
     prediction_ap.add_argument('--kfold', type=int, default=8, help="Number of batches for augustus optimisation")
     prediction_ap.add_argument('--force_train', action='store_true',
                                help="Re-train augustus even if the species is found in the \'augustus_config_path\'")
+    prediction_ap.add_argument('--augustus_runs', type=argparse.FileType('r'), nargs='*',
+                               help="File composed of 9 lines with SOURCE PRIORITY pairs for each of the types of "
+                                    "evidence that can be used in an Augustus run. These evidence types are: "
+                                    "gold models, silver models, bronze models, all models, "
+                                    "gold introns, silver introns, protein models, coverage hints, and repeat hints.")
 
     args = reat_ap.parse_args()
 

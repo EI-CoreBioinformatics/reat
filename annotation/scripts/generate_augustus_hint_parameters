@@ -1,0 +1,95 @@
+#!/usr/bin/env python3
+
+import sys
+
+# This script will generate the hints' SOURCE and PRIORITY for augustus from the selected list of hints in our custom
+# extrinsic file.
+
+# There is no validation done with regards to this file as that validation happens at the CLI level up-front.
+
+# The hints defined in this file are static and match the hints expected by the pipeline, this aspect of the workflow is
+# not dynamic and would require changes both at the workflow level and on this specific file, namely on the list of
+# parameters to be parsed
+
+
+def main():
+    with open(sys.argv[1]) as hint_params:
+        for param in ('gold', 'silver', 'bronze', 'all', 'gold_intron',
+                      'silver_intron', 'protein', 'alignment', 'repeat'):
+            with open(f'{param}.s', 'w') as source_f, open(f'{param}.p', 'w') as prio_f:
+                param_pair = next(hint_params).split(maxsplit=2)
+                print(param_pair[0], file=source_f)
+                print(param_pair[1], file=prio_f)
+
+
+if __name__ == '__main__':
+    main()
+
+
+# Eg. input file:
+#
+# S 1
+# P 2
+# E 3
+# D 4
+# C 5
+# V 6
+# G 7
+# B 8
+# N 9
+
+# Example outputs:
+
+# ==> alignment.p <==
+# 8
+#
+# ==> alignment.s <==
+# B
+#
+# ==> all.p <==
+# 4
+#
+# ==> all.s <==
+# D
+#
+# ==> bronze.p <==
+# 3
+#
+# ==> bronze.s <==
+# E
+#
+# ==> gold.p <==
+# 1
+#
+# ==> gold.s <==
+# S
+#
+# ==> intron_gold.p <==
+# 5
+#
+# ==> intron_gold.s <==
+# C
+#
+# ==> intron_silver.p <==
+# 6
+#
+# ==> intron_silver.s <==
+# V
+#
+# ==> protein.p <==
+# 7
+#
+# ==> protein.s <==
+# G
+#
+# ==> repeat.p <==
+# 9
+#
+# ==> repeat.s <==
+# N
+#
+# ==> silver.p <==
+# 2
+#
+# ==> silver.s <==
+# P

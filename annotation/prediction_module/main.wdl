@@ -1,14 +1,7 @@
 version development
 
-struct IndexedReference {
-	File fasta
-	File? index
-}
-
-struct IndexedBAM {
-	File bam
-	File? index
-}
+import "structs.wdl"
+import "augustus.wdl"
 
 workflow ei_prediction {
 	input {
@@ -20,11 +13,12 @@ workflow ei_prediction {
 		Array[File]? homology_models  # Take as is
 		File? intron_hints  # Separate into gold == 1.0 score and silver (the rest)
 		IndexedBAM? expressed_exon_hints  # Transform into gff passing by bigwig
-		File? repeats_gff  # These are passed through to augustus as is
+		File? repeats_gff  # These are passed through to augustus TODO: Use them for the other predictors
 		Int flank = 200
 		Int kfold = 8
 		Boolean optimise_augustus = false
 		Boolean force_train = false
+		Array[File]? augustus_runs # File with SOURCE PRIORITY pairs defining the augustus configurations
 
 		File protein_validation_database
 	}
@@ -43,14 +37,69 @@ workflow ei_prediction {
 	# Preprocess gene models
 	if (defined(transcriptome_models)) {
 		scatter (models in select_first([transcriptome_models])) {
-			call PreprocessFiles as PreprocessTranscriptomic{
+			call PreprocessFiles as PreprocessTranscriptomic {
 				input:
 				models = models
 			}
 		}
 
 		Array[File] processed_transcriptome = PreprocessTranscriptomic.out
+		# Generate protein files for the input models
+		call GenerateModelProteins {
+			input:
+			genome = def_reference_genome,
+			models = processed_transcriptome
+		}
+
+		# TODO: Maybe split proteins for alignments?
+
+		call IndexProteinsDatabase {
+			input:
+			db = protein_validation_database
+		}
+
+		call AlignProteins {
+			input:
+			proteins = GenerateModelProteins.proteins,
+			db = IndexProteinsDatabase.diamond_index
+		}
+
+		# Check models for 'full-length'
+		call LengthChecker {
+			input:
+			genome = def_reference_genome,
+			models = processed_transcriptome,
+			protein_models = GenerateModelProteins.proteins,
+			hits = AlignProteins.hits
+		}
+
+		call SelfBlastFilter {
+			input:
+			genome = def_reference_genome,
+			clustered_models = LengthChecker.clustered_models,
+			classification = LengthChecker.nr_classification
+		}
+
+		# If we have enough models we train with UTR, otherwise we use the 'extended' training set and train without UTR
+		if (SelfBlastFilter.num_utr_models >= 1200) {
+			File maybe_utr = SelfBlastFilter.non_redundant_models_with_utr
+			Int maybe_num_utr = SelfBlastFilter.num_utr_models
+			Boolean maybe_train_utr = true
+		}
+
+		if (SelfBlastFilter.num_utr_models < 1200) {
+			File maybe_no_utr = SelfBlastFilter.non_redundant_models_without_utr
+			Int maybe_num_no_utr = SelfBlastFilter.num_noutr_models
+			Boolean maybe_train_no_utr = false
+		}
+
+		File def_training_models = select_first([maybe_utr, maybe_no_utr])
+		Int num_models = select_first([maybe_num_utr, maybe_num_no_utr])
+		Boolean train_utr_ = select_first([maybe_train_utr, maybe_train_no_utr])
 	}
+
+
+	Boolean train_utr = select_first([train_utr_, false])
 
 	if (defined(homology_models)) {
 		scatter (models in select_first([homology_models])) {
@@ -59,71 +108,15 @@ workflow ei_prediction {
 				models = models
 			}
 		}
-
 		Array[File] processed_homology = PreprocessHomology.out
 	}
-
-	Array[File] all_models = flatten(select_all([processed_transcriptome, processed_homology]))
-
-	# Generate protein files for the input models
-	call GenerateModelProteins {
-		input:
-		genome = def_reference_genome,
-		models = all_models
-	}
-
-	# TODO: Maybe split proteins for alignments?
-
-	call IndexProteinsDatabase {
-		input:
-		db = protein_validation_database
-	}
-
-	call AlignProteins {
-		input:
-		proteins = GenerateModelProteins.proteins,
-		db = IndexProteinsDatabase.diamond_index
-	}
-
-	# Check models for 'full-length'
-	call LengthChecker {
-		input:
-		genome = def_reference_genome,
-		models = all_models,
-		protein_models = GenerateModelProteins.proteins,
-		hits = AlignProteins.hits
-	}
-
-	call SelfBlastFilter {
-		input:
-		genome = def_reference_genome,
-		clustered_models = LengthChecker.clustered_models,
-		classification = LengthChecker.nr_classification
-	}
-
-	# If we have enough models we train with UTR, otherwise we use the 'extended' training set and train without UTR
-	if (SelfBlastFilter.num_utr_models >= 1200) {
-		File maybe_utr = SelfBlastFilter.non_redundant_models_with_utr
-		Int maybe_num_utr = SelfBlastFilter.num_utr_models
-		Boolean maybe_train_utr = true
-	}
-
-	if (SelfBlastFilter.num_utr_models < 1200) {
-		File maybe_no_utr = SelfBlastFilter.non_redundant_models_without_utr
-		Int maybe_num_no_utr = SelfBlastFilter.num_noutr_models
-		Boolean maybe_train_no_utr = false
-	}
-
-	File def_training_models = select_first([maybe_utr, maybe_no_utr])
-	Int num_models = select_first([maybe_num_utr, maybe_num_no_utr])
-	Boolean train_utr = select_first([maybe_train_utr, maybe_train_no_utr])
 
 	# Generate CodingQuarry predictions
 	if (num_models > 1500) {
 		call CodingQuarry {
 			input:
 			genome = def_reference_genome,
-			transcripts = def_training_models
+			transcripts = select_first([def_training_models])
 		}
 	}
 
@@ -132,7 +125,7 @@ workflow ei_prediction {
 		call SNAP {
 			input:
 			genome = def_reference_genome,
-			transcripts = def_training_models
+			transcripts = select_first([def_training_models])
 		}
 	}
 
@@ -141,105 +134,18 @@ workflow ei_prediction {
 		call GlimmerHMM {
 			input:
 			genome = def_reference_genome,
-			transcripts = def_training_models
+			transcripts = select_first([def_training_models])
 		}
 	}
 
 	call SelectAugustusTestAndTrain {
 		input:
-		models = def_training_models,
+		models = select_first([def_training_models]),
 		reference = def_reference_genome,
 		flank = flank
 	}
 
 	if (num_models > 1000) {
-
-		if (defined(intron_hints)) {
-			call PrepareIntronHints {
-				input:
-				intron_gff = select_first([intron_hints])
-			}
-		}
-
-		if (defined(expressed_exon_hints)) {
-			IndexedBAM def_exon = select_first([expressed_exon_hints])
-			if (!defined(def_exon.index)) {
-				call IndexBAM {
-					input:
-					bam = def_exon.bam
-				}
-				IndexedBAM def_calc_index = object {bam: def_exon.bam, index: IndexBAM.index}
-			}
-
-			IndexedBAM def_indexed_bam = select_first([def_calc_index, def_exon])
-
-			call PrepareExonHints {
-				input:
-				expression_bam = def_indexed_bam,
-				dUTP = true
-			}
-		}
-
-		if (defined(homology_models)) {
-			call PrepareProteinHints as protein_hints_P4{
-				input:
-				aligned_proteins_gffs = select_first([homology_models])
-			}
-
-			call PrepareProteinHints as protein_hints_P9{
-				input:
-				aligned_proteins_gffs = select_first([homology_models]),
-				priority = 9
-			}
-		}
-
-		call PrepareTranscriptHints as gold {
-			input:
-			transcripts = [LengthChecker.gold],
-			category = "gold",
-			source = 'M',
-			priority = 10
-		}
-
-		call PrepareTranscriptHints as gold_e {
-			input:
-			transcripts = [LengthChecker.gold],
-			category = "gold",
-			source = 'E',
-			priority = 10
-		}
-
-		call PrepareTranscriptHints as silver {
-			input:
-			transcripts = [LengthChecker.silver],
-			category = "silver",
-			source = 'F',
-			priority = 9
-		}
-
-		call PrepareTranscriptHints as silver_e {
-			input:
-			transcripts = [LengthChecker.silver],
-			category = "silver",
-			source = 'E',
-			priority = 9
-		}
-
-		call PrepareTranscriptHints as bronze {
-			input:
-			transcripts = [LengthChecker.bronze],
-			category = "bronze",
-			source = 'E',
-			priority = 8
-		}
-
-		call PrepareTranscriptHints as all {
-			input:
-			transcripts = all_models,
-			category = "all",
-			source = 'E',
-			priority = 7
-		}
 
 	# Feed all to Augustus in the various configurations
 	# Generate training input for augustus (training + test sets)
@@ -260,13 +166,14 @@ workflow ei_prediction {
 				with_utr = train_utr
 			}
 
-			call Augustus as AugustusTest {
+			call augustus.Augustus as AugustusTest {
 				input:
 				reference = def_reference_genome,
 				extrinsic_config = extrinsic_config,
 				with_utr = train_utr,
 				species = species,
-				config_path = base_training.improved_config_path
+				config_path = base_training.improved_config_path,
+				id = "test"
 			}
 
 			if (optimise_augustus) {
@@ -291,135 +198,43 @@ workflow ei_prediction {
 
 		Directory final_augustus_config = select_first([train_after_optimise.improved_config_path, base_training.improved_config_path, Species.config_path])
 
-		# Prepare run1 evidence:
-		# Mikado Gold Source M; Priority 10;
-		# Mikado Silver Source M; Priority 9;
-		# Mikado Bronze Source E; Priority 8;
-		# PacBio Mikado Gold Source M; Priority 10;
-		# PacBio Mikado Silver Source M; Priority 9;
-		# PacBio Mikado Bronze Source F; Priority 8;
-		# PacBio Canonical All Source E; Priority 7;
-		# Portcullis Pass Gold Junctions Source E; Priority 6;
-		# Portcullis Pass Silver Junctions Source E; Priority 4;
-		# Proteins Source P; Priority 4;
-		# Normalised Wig Hints Source W; Priority 3;
-		# Repeats Source RM; Priority 1;
-
-		call cat as run1_hints {
-			input:
-			files = select_all([gold.result, silver.result, bronze.result, all.result,
-							   PrepareIntronHints.gold_intron_hints, PrepareIntronHints.silver_intron_hints,
-							   protein_hints_P4.protein_hints,
-							   PrepareExonHints.expression_gff,
-							   repeats_gff
-							   ]
-					),
-			out_filename = "run1_hints.gff"
-		}
-		call Augustus as run1 {
-			input:
-			reference = def_reference_genome,
-			extrinsic_config = extrinsic_config,
-			hints = run1_hints.out,
-			with_utr = train_utr,
-			species = species,
-			config_path = final_augustus_config
-		}
-
-		# Prepare run2 evidence:
-		# Mikado Gold Source M; Priority 10;
-		# Mikado Silver Source M; Priority 9;
-		# Mikado Bronze Source E; Priority 8;
-		# PacBio Mikado Gold Source M; Priority 10;
-		# PacBio Mikado Silver Source M; Priority 9;
-		# PacBio Mikado Bronze Source F; Priority 8;
-		# PacBio Canonical All Source E; Priority 7;
-		# Portcullis Pass Gold Junctions Source E; Priority 6;
-		# Portcullis Pass Silver Junctions Source E; Priority 4;
-		# Proteins Source P; Priority 4;
-		# Repeats Source RM; Priority 1;
-		call cat as run2_hints {
-			input:
-			files = select_all([gold.result, silver.result, bronze.result, all.result,
-							   PrepareIntronHints.gold_intron_hints, PrepareIntronHints.silver_intron_hints,
-							   protein_hints_P4.protein_hints,
-							   repeats_gff
-							   ]
-					),
-			out_filename = "run2_hints.gff"
-		}
-
-		call Augustus as run2 {
-			input:
-			reference = def_reference_genome,
-			extrinsic_config = extrinsic_config,
-			hints = run2_hints.out,
-			with_utr = train_utr,
-			species = species,
-			config_path = final_augustus_config
-		}
-
-		# Prepare run3 evidence:
-		# Mikado Gold Source E; Priority 10;
-		# Mikado Silver Source E; Priority 9;
-		# Mikado Bronze Source E; Priority 8;
-		# PacBio Mikado Gold Source E; Priority 10;
-		# PacBio Mikado Silver Source E; Priority 9;
-		# PacBio Mikado Bronze Source E; Priority 8;
-		# PacBio Canonical All Source E; Priority 7;
-		# Portcullis Pass Gold Junctions Source E; Priority 6;
-		# Portcullis Pass Silver Junctions Source E; Priority 4;
-		# Proteins Source P; Priority 4;
-		# Repeats Source RM; Priority 1;
-		call cat as run3_hints {
-			input:
-			files = select_all([gold_e.result, silver_e.result, bronze.result, all.result,
-							   PrepareIntronHints.gold_intron_hints, PrepareIntronHints.silver_intron_hints,
-							   protein_hints_P9.protein_hints,
-							   repeats_gff
-							   ]
-					),
-			out_filename = "run3_hints.gff"
-		}
-
-		call Augustus as run3 {
-			input:
-			reference = def_reference_genome,
-			extrinsic_config = extrinsic_config,
-			hints = run3_hints.out,
-			with_utr = train_utr,
-			species = species,
-			config_path = final_augustus_config
+		if (defined(augustus_runs)) {
+			Array[Int] counter = range(length(select_first([augustus_runs])))
+			scatter (augustus_run_and_index in zip(select_first([augustus_runs]), counter)) {
+				call augustus.wf_augustus {
+					input:
+					reference_genome = def_reference_genome,
+					species = species,
+					augustus_config = final_augustus_config,
+					extrinsic_config = extrinsic_config,
+					intron_hints = intron_hints,
+					expressed_exon_hints = expressed_exon_hints,
+					homology_models = homology_models,
+					repeats_gff = repeats_gff,
+					train_utr = train_utr,
+					gold_models = LengthChecker.gold,
+					silver_models = LengthChecker.silver,
+					bronze_models = LengthChecker.bronze,
+					all_models = LengthChecker.clustered_models,
+					hints_source_and_priority = augustus_run_and_index.left,
+					run_id = augustus_run_and_index.right
+				}
+			}
 		}
 	}
 
 
 	output {
-		File gold_models = LengthChecker.gold
-		File silver_models = LengthChecker.silver
-		File bronze_models = LengthChecker.bronze
-		File training_models = def_training_models
+		File? gold_models = LengthChecker.gold
+		File? silver_models = LengthChecker.silver
+		File? bronze_models = LengthChecker.bronze
+		File? training_models = def_training_models
 		File? coding_quarry_predictions = CodingQuarry.predictions
 		File? snap_predictions = SNAP.predictions
 		File? glimmerhmm_predictions = GlimmerHMM.predictions
-		File? augustus_predictions = run1.predictions
+		Array[File]? augustus_predictions = wf_augustus.predictions
 		Directory? augustus_config = final_augustus_config
 	}
-}
-
-task cat {
-	input {
-		Array[File]+ files
-		String out_filename
-	}
-
-	output {
-		File out = out_filename
-	}
-
-	command <<<
-		cat ~{sep=' ' files} > ~{out_filename}
-	>>>
 }
 
 task IndexGenome {
@@ -454,30 +269,6 @@ task OptimiseAugustus {
 		set -euxo pipefail
 		ln -s ~{config_path} config
 		optimize_augustus.pl --AUGUSTUS_CONFIG_PATH=config --species=~{species} ~{models} --cpus=~{num_fold} --kfold=~{num_fold} ~{if with_utr then "--UTR=on" else ""}
-	>>>
-}
-
-task Augustus {
-	input {
-		IndexedReference reference
-		File extrinsic_config
-		Directory config_path
-		Boolean with_utr
-		String species
-		File? hints
-	}
-
-	output {
-		File predictions = "augustus.predictions.gff"
-	}
-
-	command <<<
-		ln -s ~{config_path} config
-		augustus --AUGUSTUS_CONFIG_PATH=~{config_path} \
-		--UTR=~{if with_utr then "ON" else "OFF"} --stopCodonExcludedFromCDS=true --genemodel=partial \
-		--alternatives-from-evidence=true ~{'--hintsfile=' + hints} --noInFrameStop=true \
-		--allow_hinted_splicesites=atac --errfile=run1.log --extrinsicCfgFile=~{extrinsic_config} \
-		--species=~{species} ~{reference.fasta} > augustus.predictions.gff
 	>>>
 }
 
@@ -728,123 +519,4 @@ task SelfBlastFilter{
 		awk '$3 == "gene"' with_utr.gff|wc -l > num_models_utr.int
 		awk '$3 == "gene"' without_utr.gff|wc -l > num_models_noutr.int
 	>>>
-}
-
-task PrepareIntronHints {
-	input {
-		File intron_gff
-		Int gold_priority = 6
-		Int silver_priority = 4
-	}
-
-	output {
-		File gold_intron_hints = 'gold_junctions_SEP'+gold_priority+'.gff'
-		File silver_intron_hints = 'silver_junctions_SEP'+silver_priority+'.gff'
-	}
-
-	command <<<
-		cat ~{intron_gff} | awk -F "\t" '$6==1 {print $0";pri=~{gold_priority};"}' | \
-		sed 's/\tportcullis\t/\tPortcullis_pass_gold_SEP~{gold_priority}\t/' > gold_junctions_SEP~{gold_priority}.gff
-
-		cat ~{intron_gff} | awk -F "\t" '$6<1 {print $0";pri=~{silver_priority};"}' | \
-		sed 's/\tportcullis\t/\tPortcullis_pass_silver_SEP~{silver_priority}\t/' > silver_junctions_SEP~{silver_priority}.gff
-	>>>
-}
-
-task IndexBAM {
-	input {
-		File bam
-	}
-
-	output {
-		File index = basename(bam)+'.csi'
-	}
-
-	command <<<
-		ln -s ~{bam}
-		samtools index -@ 4 -c ~{basename(bam)}
-	>>>
-}
-
-task PrepareExonHints {
-	input {
-		IndexedBAM expression_bam
-		Boolean dUTP
-	}
-
-	String bam_name = basename(expression_bam.bam, ".bam")
-	String jid = basename(expression_bam.bam)
-
-	output {
-		File expression_gff = bam_name + '.exonhints.SWP3.augustus.gff'
-	}
-
-	# Uses 2 cpus
-
-	command <<<
-		ln -s ~{expression_bam.bam}
-		ln -s ~{expression_bam.index}
-
-		if [ ~{dUTP} ];
-		then
-			strand='1+-,1-+,2++,2--'
-		else
-			strand='1++,1--,2+-,2-+'
-		fi
-		touch ~{bam_name}_Forward.wig ~{bam_name}_Reverse.wig ~{bam_name}.wig
-		samtools view -H ~{basename(expression_bam.bam)} | grep '^\@SQ'| cut -f2,3 | sed -e 's/SN://g' -e 's/LN://g' > lengths.txt
-		bam2wig.py -i ~{basename(expression_bam.bam)} -s lengths.txt -o ~{bam_name} --strand=$strand"
-
-		cat ~{bam_name}.Forward.wig | \
-		wig2hints.pl --width=10 --margin=10 --minthresh=2 --minscore=4 --prune=0.1 --src=W --type=exonpart --radius=4.5 --pri=3 --strand='+' | \
-		sed \"s/\\tw2h\\t/\\tw2h_~{jid}\\t/\" > ~{bam_name}.Forward.exonhints.SWP3.augustus.gff" &
-
-		cat ~{bam_name}.Reverse.wig | \
-		awk '/^variableStep/ {gsub(/-/,\"\");print;} !/^variableStep/ {print;}' \ |
-		wig2hints.pl --width=10 --margin=10 --minthresh=2 --minscore=4 --prune=0.1 --src=W --type=exonpart --radius=4.5 --pri=3 --strand='-' | \
-		sed \"s/\\tw2h\\t/\\tw2h_~{jid}\\t/\" > ~{bam_name}.Reverse.exonhints.SWP3.augustus.gff" &
-
-		cat ~{bam_name}.Forward.exonhints.SWP3.augustus.gff ~{bam_name}.Reverse.exonhints.SWP3.augustus.gff > ~{bam_name}.exonhints.SWP3.augustus.gff
-	>>>
-}
-
-task PrepareProteinHints {
-	input {
-		Array[File] aligned_proteins_gffs
-		String source = "P"
-		Int priority = 4
-	}
-
-	output {
-		File protein_hints = 'aligned_proteins.S'+source+'P'+priority+'.gff'
-	}
-
-	command <<<
-		for i in ~{sep=' ' aligned_proteins_gffs}; do
-		name=$(echo ${i} | sed 's/.gff//')
-		gffread $i | gff_to_aug_hints -P ~{priority} -S ~{source} -s ${name}.protein -t CDS >> aligned_proteins.S~{source}P~{priority}.gff;
-		done
-	>>>
-
-}
-
-task PrepareTranscriptHints {
-	input {
-		Array[File] transcripts
-		String category
-		String source = "E"
-		Int priority = 4
-	}
-
-	output {
-		File result = category+'.transcripts.S'+source+'P'+priority+'.gff'
-	}
-
-	command <<<
-		for i in ~{sep=' ' transcripts}; do
-		name=$(echo ${i} | sed 's/.gff//')
-		cat $i | gff_to_aug_hints -P ~{priority} -S ~{source} -s ${name}.transcripts -t exon >> ~{category}.transcripts.S~{source}P~{priority}.gff;
-		done
-	>>>
-
 }

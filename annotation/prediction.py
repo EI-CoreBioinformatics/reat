@@ -21,6 +21,14 @@ def combine_arguments_prediction(cli_arguments):
     with pkg_resources.path("annotation.prediction_module", "extrinsic.ei_augustus_generic.cfg") as extrinsic_path:
         cromwell_inputs['ei_prediction.extrinsic_config'] = str(extrinsic_path)
 
+    # NOTE: The default extrinsic file provided with REAT can be overriden by the CLI
+    if cli_arguments.extrinsic_config:
+        cromwell_inputs['ei_prediction.extrinsic_config'] = cli_arguments.extrinsic_config.name
+
+    # TODO: Parse the extrinsic_config and validate the augustus_runs SOURCEs against those available in the extrinsic
+    if cli_arguments.augustus_runs:
+        # TODO: check all files exist and are valid!
+        cromwell_inputs['ei_prediction.augustus_runs'] = [f.name for f in cli_arguments.augustus_runs]
     if cli_arguments.introns:
         cromwell_inputs['ei_prediction.intron_hints'] = cli_arguments.introns
 
@@ -38,7 +46,6 @@ def combine_arguments_prediction(cli_arguments):
 
     if cli_arguments.homology_proteins:
         cromwell_inputs['ei_prediction.protein_validation_database'] = cli_arguments.homology_proteins.name
-
 
     return cromwell_inputs
 
