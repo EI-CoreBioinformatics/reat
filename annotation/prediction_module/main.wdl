@@ -30,7 +30,7 @@ workflow ei_prediction {
 	if (! defined(reference_genome.index)) {
 		call IndexGenome {
 			input:
-			genome = SoftMaskGenome.fasta
+			genome = reference_genome
 		}
 
 		IndexedReference new_reference_genome = object {fasta: SoftMaskGenome.soft_masked_genome, index: IndexGenome.index}
@@ -257,30 +257,27 @@ task SoftMaskGenome {
 	}
 
 	output {
-		File soft_masked_genome = sub(basename(genome.fasta), "\.(fasta|fa)", ".softmasked.fa")
-		File hard_masked_genome = sub(basename(genome.fasta), "\.(fasta|fa)", ".hardmasked.fa")
-		File unmasked_genome = sub(basename(genome.fasta), "\.(fasta|fa)", ".unmasked.fa")
+		File soft_masked_genome = sub(basename(genome.fasta), "\\.(fasta|fa)$", ".softmasked.fa")
+		File hard_masked_genome = sub(basename(genome.fasta), "\\.(fasta|fa)$", ".hardmasked.fa")
+		File unmasked_genome = sub(basename(genome.fasta), "\\.(fasta|fa)$", ".unmasked.fa")
 	}
 
 	command <<<
-		cat ~{genome.fasta} | python3 -c "
-		import sys;
-		for line in sys.stdin:
-			if line.startswith('>'):
-				print(line, end='')
-        		continue
-			print(line.upper(), end='')
-		" > ~{sub(basename(genome.fasta), "\.(fasta|fa)", ".unmasked.fa")}
-
-		rep_file=~{repeats_gff}
-		if [[ ~{repeats_gff} == "" ]];
-		then
-			touch repeats.gff
-			rep_file="repeats.gff"
-		fi
-
-		bedtools maskfasta -soft -fi ~{genome.fasta} -bed <(gffread --bed $rep_file) -fo ~{sub(basename(genome.fasta), "\.(fasta|fa)", ".softmasked.fa")}
-		bedtools maskfasta -mc 'N' -fi ~{genome.fasta} -bed <(gffread --bed $rep_file) -fo ~{sub(basename(genome.fasta), "\.(fasta|fa)", ".hardmasked.fa")}
+cat ~{genome.fasta} | python3 -c "
+import sys;
+for line in sys.stdin:
+    if line.startswith('>'):
+        print(line, end='')
+        continue
+    print(line.upper(), end='')" > ~{sub(basename(genome.fasta), "\\.(fasta|fa)", ".unmasked.fa")}
+rep_file=~{repeats_gff}
+if [[ ~{repeats_gff} == "" ]];
+then
+    touch repeats.gff
+    rep_file="repeats.gff"
+fi
+bedtools maskfasta -soft -fi ~{genome.fasta} -bed <(gffread --bed $rep_file) -fo ~{sub(basename(genome.fasta), "\\.(fasta|fa)", ".softmasked.fa")}
+bedtools maskfasta -mc 'N' -fi ~{genome.fasta} -bed <(gffread --bed $rep_file) -fo ~{sub(basename(genome.fasta), "\\.(fasta|fa)", ".hardmasked.fa")}
 	>>>
 }
 
