@@ -19,20 +19,28 @@ workflow ei_prediction {
 		Boolean optimise_augustus = false
 		Boolean force_train = false
 		Array[File]? augustus_runs # File with SOURCE PRIORITY pairs defining the augustus configurations
-
 		File protein_validation_database
+	}
+
+	call SoftMaskGenome {
+		input:
+		genome = reference_genome
 	}
 
 	if (! defined(reference_genome.index)) {
 		call IndexGenome {
 			input:
-			genome = reference_genome
+			genome = SoftMaskGenome.fasta
 		}
 
-		IndexedReference new_reference_genome = object {fasta: reference_genome.fasta, index: IndexGenome.index}
+		IndexedReference new_reference_genome = object {fasta: SoftMaskGenome.soft_masked_genome, index: IndexGenome.index}
 	}
 
-	IndexedReference def_reference_genome = select_first([new_reference_genome, reference_genome])
+	IndexedReference def_reference_genome = select_first(
+											[
+											new_reference_genome,
+											object {fasta: SoftMaskGenome.soft_masked_genome, index: reference_genome.index}
+											])
 
 	# Preprocess gene models
 	if (defined(transcriptome_models)) {
@@ -112,6 +120,7 @@ workflow ei_prediction {
 	}
 
 	# Generate CodingQuarry predictions
+	# Considers lowercase as masked by default
 	if (num_models > 1500) {
 		call CodingQuarry {
 			input:
@@ -121,6 +130,7 @@ workflow ei_prediction {
 	}
 
 	# Generate SNAP predictions
+	# With the -lcmask option treats lowercase as masked nts
 	if (num_models > 1300) {
 		call SNAP {
 			input:
@@ -130,6 +140,7 @@ workflow ei_prediction {
 	}
 
 	# Generate GlimmerHMM predictions
+	# Does not consider any masking
 	if (num_models > 2000) {
 		call GlimmerHMM {
 			input:
@@ -145,8 +156,10 @@ workflow ei_prediction {
 		flank = flank
 	}
 
+	# Augustus
+	# Using --softmasking=1 considers lowercase nts as masked
 	if (num_models > 1000) {
-
+		IndexedReference augustus_genome = object {fasta: SoftMaskGenome.unmasked_genome, index: def_reference_genome.index }
 	# Feed all to Augustus in the various configurations
 	# Generate training input for augustus (training + test sets)
 	# Transform tranining set to GeneBank format
@@ -168,7 +181,7 @@ workflow ei_prediction {
 
 			call augustus.Augustus as AugustusTest {
 				input:
-				reference = def_reference_genome,
+				reference = augustus_genome,
 				extrinsic_config = extrinsic_config,
 				with_utr = train_utr,
 				species = species,
@@ -203,7 +216,7 @@ workflow ei_prediction {
 			scatter (augustus_run_and_index in zip(select_first([augustus_runs]), counter)) {
 				call augustus.wf_augustus {
 					input:
-					reference_genome = def_reference_genome,
+					reference_genome = augustus_genome,
 					species = species,
 					augustus_config = final_augustus_config,
 					extrinsic_config = extrinsic_config,
@@ -235,6 +248,40 @@ workflow ei_prediction {
 		Array[File]? augustus_predictions = wf_augustus.predictions
 		Directory? augustus_config = final_augustus_config
 	}
+}
+
+task SoftMaskGenome {
+	input {
+		IndexedReference genome
+		File? repeats_gff
+	}
+
+	output {
+		File soft_masked_genome = sub(basename(genome.fasta), "\.(fasta|fa)", ".softmasked.fa")
+		File hard_masked_genome = sub(basename(genome.fasta), "\.(fasta|fa)", ".hardmasked.fa")
+		File unmasked_genome = sub(basename(genome.fasta), "\.(fasta|fa)", ".unmasked.fa")
+	}
+
+	command <<<
+		cat ~{genome.fasta} | python3 -c "
+		import sys;
+		for line in sys.stdin:
+			if line.startswith('>'):
+				print(line, end='')
+        		continue
+			print(line.upper(), end='')
+		" > ~{sub(basename(genome.fasta), "\.(fasta|fa)", ".unmasked.fa")}
+
+		rep_file=~{repeats_gff}
+		if [[ ~{repeats_gff} == "" ]];
+		then
+			touch repeats.gff
+			rep_file="repeats.gff"
+		fi
+
+		bedtools maskfasta -soft -fi ~{genome.fasta} -bed <(gffread --bed $rep_file) -fo ~{sub(basename(genome.fasta), "\.(fasta|fa)", ".softmasked.fa")}
+		bedtools maskfasta -mc 'N' -fi ~{genome.fasta} -bed <(gffread --bed $rep_file) -fo ~{sub(basename(genome.fasta), "\.(fasta|fa)", ".hardmasked.fa")}
+	>>>
 }
 
 task IndexGenome {
