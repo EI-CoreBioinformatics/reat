@@ -271,7 +271,7 @@ for line in sys.stdin:
         continue
     print(line.upper(), end='')" > ~{sub(basename(genome.fasta), "\\.(fasta|fa)", ".unmasked.fa")}
 rep_file=~{repeats_gff}
-if [[ ~{repeats_gff} == "" ]];
+if [[ "~{repeats_gff}" == "" ]];
 then
     touch repeats.gff
     rep_file="repeats.gff"
