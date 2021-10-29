@@ -10,24 +10,37 @@ import sys
 # The hints defined in this file are static and match the hints expected by the pipeline, this aspect of the workflow is
 # not dynamic and would require changes both at the workflow level and on this specific file, namely on the list of
 # parameters to be parsed
+EXPECTED_PARAMS = ('gold', 'silver', 'bronze', 'all', 'gold_intron',
+                   'silver_intron', 'protein', 'alignment', 'repeat')
 
 
 def main():
-    with open(sys.argv[1]) as hint_params:
-        for param in ('gold', 'silver', 'bronze', 'all', 'gold_intron',
-                      'silver_intron', 'protein', 'alignment', 'repeat'):
-            with open(f'{param}.s', 'w') as source_f, open(f'{param}.p', 'w') as prio_f:
-                param_pair = next(hint_params).split(maxsplit=2)
-                print(param_pair[0], file=source_f)
-                print(param_pair[1], file=prio_f)
+    try:
+        line_num = 1
+        with open(sys.argv[1]) as hint_params:
+            for param in EXPECTED_PARAMS:
+                with open(f'{param}.s', 'w') as source_f, open(f'{param}.p', 'w') as prio_f:
+                    param_pair_l = next(hint_params)
+                    param_pair = param_pair_l.split()
+                    if len(param_pair) > 2:
+                        print(f"The current line {line_num}:\n {param_pair_l} has more than 2 parts, "
+                              f"please only use pair entries.", file=sys.stderr)
+                        return 3
+                    print(param_pair)
+                    print(param_pair[0], file=source_f)
+                    print(param_pair[1], file=prio_f)
+    except StopIteration:
+        print(f"Insufficient parameters in {sys.argv[1]}, please check this file contains "
+              f"{len(EXPECTED_PARAMS)} lines", file=sys.stderr)
+        return 1
+    return 0
 
 
 if __name__ == '__main__':
-    main()
+    exit(main())
 
 
 # Eg. input file:
-#
 # S 1
 # P 2
 # E 3

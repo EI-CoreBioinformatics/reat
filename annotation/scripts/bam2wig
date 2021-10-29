@@ -1,0 +1,265 @@
+#!/usr/bin/env python3
+
+__author__ = "Liguo Wang, Luis Yanes"
+__copyright__ = "Copyright 2010, Wei Li's Lab"
+__credits__ = []
+__license__ = "GPL"
+__version__ = "1.3.0"
+__maintainer__ = "Liguo Wang"
+__email__ = "liguow@bcm.edu"
+__status__ = "Development"  # Prototype or Production
+
+
+import sys
+import os
+from optparse import OptionParser
+from collections import defaultdict
+from pysam import Samfile
+
+
+MULTI_HIT_TAGS = ["H0", "H1", "H2", "IH", "NH"]
+
+
+def load_chromsize(file):
+    """read chrom.size file"""
+    chromSize = {}
+    for line in open(file, "r"):
+        if line.startswith("#"):
+            continue
+        if not line.strip():
+            continue
+        fields = line.strip().split()
+        chromSize[fields[0]] = int(fields[1])
+    return chromSize
+
+
+def fetch_exon(chrom, st, cigar):
+    """fetch exon regions defined by cigar. st must be zero based
+    return list of tuple of (chrom,st, end)
+    """
+    # match = re.compile(r'(\d+)(\D)')
+    chrom_st = st
+    exon_bound = []
+    for c, s in cigar:  # code and size
+        if c == 0:  # match
+            exon_bound.append((chrom, chrom_st, chrom_st + s))
+            chrom_st += s
+        elif c == 1:  # insertion to ref
+            continue
+        elif c == 2:  # deletion to ref
+            chrom_st += s
+        elif c == 3:  # gap or intron
+            chrom_st += s
+        elif c == 4:  # soft clipping. We do NOT include soft clip as part of exon
+            chrom_st += s
+        else:
+            continue
+    return exon_bound
+
+
+def bamTowig(
+    inputFile,
+    outfile,
+    chrom_sizes,
+    skip_multi=True,
+    strand_rule=None,
+    WigSumFactor=None,
+):
+    """Convert BAM/SAM file to wig file. chrom_size is dict with chrom as key and chrom_size as value
+    strandRule should be determined from \"infer_experiment\". such as \"1++,1--,2+-,2-+\". When
+    WigSumFactor is provided, output wig file will be normalized to this number"""
+
+    samfile = Samfile(inputFile, "rb")
+    # strand_rule={'1+':'-','1-':'+','2+':'+','2-':'-'}
+    strandRule = {}
+    if strand_rule is None:  # Not strand-specific
+        pass
+    elif len(strand_rule.split(",")) == 4:  # PairEnd, strand-specific
+        for i in strand_rule.split(","):
+            strandRule[i[0] + i[1]] = i[2]
+    elif len(strand_rule.split(",")) == 2:  # singeEnd, strand-specific
+        for i in strand_rule.split(","):
+            strandRule[i[0]] = i[1]
+    else:
+        print >>sys.stderr, "Unknown value of option :'strand_rule' " + strand_rule
+        sys.exit(1)
+    if len(strandRule) == 0:
+        FWO = open(outfile + ".wig", "w")
+    else:
+        FWO = open(outfile + ".Forward.wig", "w")
+        RVO = open(outfile + ".Reverse.wig", "w")
+
+    read_id = ""
+    for chr_name, chr_size in chrom_sizes.items():  # iterate each chrom
+        try:
+            samfile.fetch(chr_name, 0, chr_size)
+        except:
+            print(f"No alignments for {chr_name}. skipped", file=sys.stderr)
+            continue
+        print(f"Processing {chr_name} ...", file=sys.stderr)
+        if len(strandRule) == 0:
+            FWO.write("variableStep chrom=" + chr_name + "\n")
+        else:
+            FWO.write("variableStep chrom=" + chr_name + "\n")
+            RVO.write("variableStep chrom=" + chr_name + "\n")
+        Fwig = defaultdict(int)
+        Rwig = defaultdict(int)
+        alignedReads = samfile.fetch(chr_name, 0, chr_size)
+        for aligned_read in alignedReads:
+            flag = 0
+            if aligned_read.is_qcfail:
+                continue  # skip low quanlity
+            if aligned_read.is_duplicate:
+                continue  # skip duplicate read
+            if aligned_read.is_secondary:
+                continue  # skip non primary hit
+            if aligned_read.is_unmapped:
+                continue  # skip unmap read
+
+            if skip_multi:
+                if len(aligned_read.tags) > 0:  # ( ("NM", 1),("RG", "L1") )
+                    for i in aligned_read.tags:
+                        if i[0] in MULTI_HIT_TAGS and i[1] > 1:
+                            flag = 1  # multiple hit read
+                            break
+                if flag == 1:
+                    continue  # skip multiple map read
+
+            if aligned_read.is_paired:
+                if aligned_read.is_read1:
+                    read_id = "1"
+                if aligned_read.is_read2:
+                    read_id = "2"
+
+            if aligned_read.is_reverse:
+                map_strand = "-"
+            else:
+                map_strand = "+"
+
+            key = read_id + map_strand
+
+            hit_st = aligned_read.pos
+            for block in fetch_exon(chr_name, hit_st, aligned_read.cigar):
+                for pos in range(block[1] + 1, block[2] + 1):
+                    if len(strandRule) == 0:
+                        Fwig[
+                            pos
+                        ] += 1.0  # this is NOT strand specific. everything into Fwig
+                    else:  # this is strand specific. separate Fwig and Rwig
+                        if strandRule[key] == "+":
+                            Fwig[pos] += 1.0
+                        if strandRule[key] == "-":
+                            Rwig[pos] -= 1.0
+        if WigSumFactor is None:  # not normalize
+            if len(strandRule) == 0:  # this is NOT strand specific.
+                for pos in sorted(Fwig.keys()):
+                    print(f"{pos}\t{Fwig[pos]:.2f}", file=FWO)
+            else:
+                for pos in sorted(Fwig.keys()):
+                    print(f"{pos}\t{Fwig[pos]:.2f}", file=FWO)
+                for pos in sorted(Rwig.keys()):
+                    print(f"{pos}\t{Rwig[pos]:.2f}", file=RVO)
+        else:  # normalize wig signal to WigSumFactor
+            if len(strandRule) == 0:  # this is NOT strand specific.
+                for pos in sorted(Fwig.keys()):
+                    print(f"{pos}\t{Fwig[pos]*WigSumFactor:.2f}", file=FWO)
+            else:
+                for pos in sorted(Fwig.keys()):
+                    print(f"{pos}\t{Fwig[pos]*WigSumFactor:.2f}", file=FWO)
+                for pos in sorted(Rwig.keys()):
+                    print(f"{pos}\t{Rwig[pos]*WigSumFactor:.2f}", file=RVO)
+
+
+if __name__ == "__main__":
+    usage = "%prog [options]"
+    parser = OptionParser(usage, version="%prog " + __version__)
+    parser.add_option(
+        "-i",
+        "--input-file",
+        action="store",
+        type="string",
+        dest="input_file",
+        help="Alignment file in BAM format. BAM file must be sorted and indexed using samTools. .bam and .bai files should be placed in the same directory. HowTo: http://genome.ucsc.edu/goldenPath/help/bam.html",
+    )
+    parser.add_option(
+        "-s",
+        "--chromSize",
+        action="store",
+        type="string",
+        dest="chromSize",
+        help='Chromosome size file. Tab or space separated text file with 2 columns: first column is chromosome name, second column is size of the chromosome. Chromosome name (such as "chr1") should be consistent between this file and BAM file.',
+    )
+    parser.add_option(
+        "-o",
+        "--out-prefix",
+        action="store",
+        type="string",
+        dest="output_prefix",
+        help='Prefix of output wiggle files(s). One wiggle file will be generated for non-strand specific data, two wiggle files ("Prefix_Forward.wig" and "Prefix_Reverse.wig") will be generated for strand specific RNA-seq data.',
+    )
+    parser.add_option(
+        "-t",
+        "--wigsum",
+        action="store",
+        type="int",
+        dest="total_wigsum",
+        help="Specified wigsum. 100000000 equals to coverage of 1 million 100nt reads. Ignore this option to disable normalization",
+    )
+    parser.add_option(
+        "-u",
+        "--skip-multi-hits",
+        action="store_true",
+        dest="skip_multi",
+        help="Presence this option render the program to skip multiple hit reads.",
+    )
+    parser.add_option(
+        "-d",
+        "--strand",
+        action="store",
+        type="string",
+        dest="strand_rule",
+        default=None,
+        help="How read(s) were stranded during sequencing. For example: --strand='1++,1--,2+-,2-+' means that this is a pair-end, strand-specific RNA-seq, and the strand rule is: read1 mapped to '+' => parental gene on '+'; read1 mapped to '-' => parental gene on '-'; read2 mapped to '+' => parental gene on '-'; read2 mapped to '-' => parental gene on '+'.  If you are not sure about the strand rule, run 'infer_experiment.py' default=%default (Not a strand specific RNA-seq data).",
+    )
+
+    (options, args) = parser.parse_args()
+
+    # if options.skip_multi:print "True"
+    # else:print "False"
+
+    if not (
+        options.output_prefix
+        and options.input_file
+        and options.chromSize
+        and options.output_prefix
+    ):
+        parser.print_help()
+        sys.exit(0)
+    for file in (options.input_file, options.chromSize):
+        if not os.path.exists(file):
+            print(f"{file} does NOT exists", file=sys.stderr)
+            sys.exit(1)
+    if not os.path.exists(options.input_file + ".bai") and not os.path.exists(options.input_file + ".csi"):
+        print(f"index file {options.input_file} does not exists", file=sys.stderr)
+        sys.exit(1)
+
+    chromSizes = load_chromsize(options.chromSize)
+
+    norm_factor = None
+    # if options.total_wigsum:
+    # 	obj = SAM.ParseBAM(options.input_file)
+    # 	wig_sum = obj.calWigSum(chrom_sizes = chromSizes, skip_multi=options.skip_multi)
+    # 	print >>sys.stderr, "\n\ntotal wigsum is:" + str(wig_sum) + '\n'
+    # 	try:
+    # 		norm_factor = options.total_wigsum / wig_sum
+    # 	except:
+    # 		norm_factor = None
+
+    bamTowig(
+        inputFile=options.input_file,
+        outfile=options.output_prefix,
+        chrom_sizes=chromSizes,
+        skip_multi=options.skip_multi,
+        strand_rule=options.strand_rule,
+        WigSumFactor=norm_factor,
+    )

@@ -467,6 +467,10 @@ def parse_arguments():
                                help="Models derived from protein alignments")
     prediction_ap.add_argument("--introns", type=argparse.FileType('r'),
                                help="Introns to be used as hints for Augustus")
+    prediction_ap.add_argument("--expression", type=argparse.FileType('r'),
+                               help="RNASeq data alignments used for coverage information as exon hints")
+    prediction_ap.add_argument("--repeats", type=argparse.FileType('r'),
+                               help="Repeat annotation GFF file.")
     prediction_ap.add_argument("--homology_proteins", type=argparse.FileType('r'),
                                help="Protein sequences used for determining whether the evidence provided is "
                                     "full-length or not")

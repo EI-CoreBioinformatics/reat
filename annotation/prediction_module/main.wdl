@@ -13,7 +13,7 @@ workflow ei_prediction {
 		Array[File]? homology_models  # Take as is
 		File? intron_hints  # Separate into gold == 1.0 score and silver (the rest)
 		IndexedBAM? expressed_exon_hints  # Transform into gff passing by bigwig
-		File? repeats_gff  # These are passed through to augustus TODO: Use them for the other predictors
+		File? repeats_gff  # These are passed through to augustus
 		Int flank = 200
 		Int kfold = 8
 		Boolean optimise_augustus = false
@@ -26,6 +26,26 @@ workflow ei_prediction {
 		input:
 		genome = reference_genome
 	}
+
+	if (defined(expressed_exon_hints)) {
+		IndexedBAM def_exon = select_first([expressed_exon_hints])
+		if (!defined(def_exon.index)) {
+			call IndexBAM {
+				input:
+				bam = def_exon.bam
+			}
+			IndexedBAM def_calc_index = object {bam: def_exon.bam, index: IndexBAM.index}
+		}
+
+		IndexedBAM def_indexed_bam = select_first([def_calc_index, def_exon])
+
+		call Bam2Hints {
+			input:
+			expression_bam = def_indexed_bam,
+			dUTP = true
+		}
+	}
+
 
 	if (! defined(reference_genome.index)) {
 		call IndexGenome {
@@ -221,7 +241,7 @@ workflow ei_prediction {
 					augustus_config = final_augustus_config,
 					extrinsic_config = extrinsic_config,
 					intron_hints = intron_hints,
-					expressed_exon_hints = expressed_exon_hints,
+					expressed_exon_hints = Bam2Hints.expression_gff,
 					homology_models = homology_models,
 					repeats_gff = repeats_gff,
 					train_utr = train_utr,
@@ -278,6 +298,78 @@ then
 fi
 bedtools maskfasta -soft -fi ~{genome.fasta} -bed <(gffread --bed $rep_file) -fo ~{sub(basename(genome.fasta), "\\.(fasta|fa)", ".softmasked.fa")}
 bedtools maskfasta -mc 'N' -fi ~{genome.fasta} -bed <(gffread --bed $rep_file) -fo ~{sub(basename(genome.fasta), "\\.(fasta|fa)", ".hardmasked.fa")}
+	>>>
+}
+
+task IndexBAM {
+	input {
+		File bam
+	}
+
+	output {
+		File index = basename(bam)+'.bai'
+	}
+
+	command <<<
+		ln -s ~{bam}
+		samtools index -@ 4 ~{basename(bam)}
+	>>>
+}
+
+task Bam2Hints {
+	input {
+		IndexedBAM expression_bam
+		Boolean? dUTP
+	}
+
+	String bam_name = basename(expression_bam.bam, ".bam")
+	String jid = basename(expression_bam.bam)
+
+	output {
+		File expression_gff = bam_name + '.exonhints.gff'
+	}
+
+	# Uses 2 cpus
+
+	command <<<
+		ln -s ~{expression_bam.bam}
+		ln -s ~{expression_bam.index}
+
+		touch ~{bam_name}.unstranded.exonhints.augustus.gff \
+		~{bam_name}.Forward.exonhints.augustus.gff \
+		~{bam_name}.Reverse.exonhints.augustus.gff
+
+		if [[ "~{dUTP}" != "" ]];
+		then
+			if [ ~{dUTP} ];
+			then
+				strand='1+-,1-+,2++,2--'
+			else
+				strand='1++,1--,2+-,2-+'
+			fi
+			touch ~{bam_name}.Forward.wig ~{bam_name}.Reverse.wig ~{bam_name}.wig
+			samtools view -H ~{basename(expression_bam.bam)} | grep '^\@SQ'| cut -f2,3 | sed -e 's/SN://g' -e 's/LN://g' > lengths.txt
+			bam2wig -i ~{basename(expression_bam.bam)} -s lengths.txt -o ~{bam_name} --strand="$strand"
+
+			cat ~{bam_name}.Forward.wig | \
+			wig2hints.pl --width=10 --margin=10 --minthresh=2 --minscore=4 --prune=0.1 --src=generic_source --type=exonpart --radius=4.5 --pri=0 --strand='+' | \
+			sed 's/\\tw2h\\t/\\tw2h_~{jid}\\t/' > ~{bam_name}.Forward.exonhints.augustus.gff &
+
+			cat ~{bam_name}.Reverse.wig | \
+			awk '/^variableStep/ {gsub(/-/,\"\");print;} !/^variableStep/ {print;}' \ |
+			wig2hints.pl --width=10 --margin=10 --minthresh=2 --minscore=4 --prune=0.1 --src=generic_source --type=exonpart --radius=4.5 --pri=0 --strand='-' | \
+			sed 's/\\tw2h\\t/\\tw2h_~{jid}\\t/' > ~{bam_name}.Reverse.exonhints.augustus.gff &
+			wait
+		else
+			bam2wig ~{basename(expression_bam.bam)} | \
+			wig2hints.pl --width=10 --margin=10 --minthresh=2 \
+			--minscore=4 --prune=0.1 --src=generic_source --type=exonpart \
+			--radius=4.5 --pri=0 --strand="." > ~{bam_name}.unstranded.exonhints.augustus.gff
+		fi
+
+		cat ~{bam_name}.unstranded.exonhints.augustus.gff  \
+		~{bam_name}.Forward.exonhints.augustus.gff \
+		~{bam_name}.Reverse.exonhints.augustus.gff > ~{bam_name}.exonhints.gff
 	>>>
 }
 

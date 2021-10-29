@@ -21,6 +21,11 @@ def combine_arguments_prediction(cli_arguments):
     with pkg_resources.path("annotation.prediction_module", "extrinsic.ei_augustus_generic.cfg") as extrinsic_path:
         cromwell_inputs['ei_prediction.extrinsic_config'] = str(extrinsic_path)
 
+    if cli_arguments.expression:
+        cromwell_inputs['ei_prediction.expressed_exon_hints'] = {'bam': cli_arguments.expression.name}
+        if os.path.isfile(cli_arguments.expression.name + '.csi'):
+            cromwell_inputs['ei_prediction.expressed_exon_hints']['index'] = cli_arguments.expression.name + '.csi'
+
     # NOTE: The default extrinsic file provided with REAT can be overriden by the CLI
     if cli_arguments.extrinsic_config:
         cromwell_inputs['ei_prediction.extrinsic_config'] = cli_arguments.extrinsic_config.name
@@ -29,8 +34,12 @@ def combine_arguments_prediction(cli_arguments):
     if cli_arguments.augustus_runs:
         # TODO: check all files exist and are valid!
         cromwell_inputs['ei_prediction.augustus_runs'] = [f.name for f in cli_arguments.augustus_runs]
+
     if cli_arguments.introns:
-        cromwell_inputs['ei_prediction.intron_hints'] = cli_arguments.introns
+        cromwell_inputs['ei_prediction.intron_hints'] = cli_arguments.introns.name
+
+    if cli_arguments.repeats:
+        cromwell_inputs['ei_prediction.repeats_gff'] = cli_arguments.repeats.name
 
     if cli_arguments.force_train:
         cromwell_inputs['ei_prediction.force_train'] = cli_arguments.force_train
