@@ -18,13 +18,16 @@ def combine_arguments_prediction(cli_arguments):
     cromwell_inputs['ei_prediction.species'] = cli_arguments.species
     cromwell_inputs['ei_prediction.kfold'] = cli_arguments.kfold
 
-    with pkg_resources.path("annotation.prediction_module", "extrinsic.ei_augustus_generic.cfg") as extrinsic_path:
-        cromwell_inputs['ei_prediction.extrinsic_config'] = str(extrinsic_path)
-
     if cli_arguments.expression:
         cromwell_inputs['ei_prediction.expressed_exon_hints'] = {'bam': cli_arguments.expression.name}
         if os.path.isfile(cli_arguments.expression.name + '.csi'):
             cromwell_inputs['ei_prediction.expressed_exon_hints']['index'] = cli_arguments.expression.name + '.csi'
+
+    if cli_arguments.EVM_weights:
+        cromwell_inputs['ei_prediction.EVM_weights'] = cli_arguments.EVM_weights.name
+
+    with pkg_resources.path("annotation.prediction_module", "extrinsic.ei_augustus_generic.cfg") as extrinsic_path:
+        cromwell_inputs['ei_prediction.extrinsic_config'] = str(extrinsic_path)
 
     # NOTE: The default extrinsic file provided with REAT can be overriden by the CLI
     if cli_arguments.extrinsic_config:

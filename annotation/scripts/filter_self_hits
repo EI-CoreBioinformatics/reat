@@ -54,6 +54,8 @@ def main():
     print(f"Discarding {len(discard)} transcripts as redundant by sequence content")
     print("Generating output files")
     # Output the top N models models not in the 'discard' pile from (gold+silver), (gold+silver+bronze)
+    # gold+silver are models with utr which can be used for training "with utr" donwstream
+    # gold+silver+bronze are simply models that meet the 'train' requirements
     for piles in [
         (open('with_utr.gff', 'w'), {'Gold', 'Silver'}),
         (open('without_utr.gff', 'w'), {'Gold', 'Silver', 'Bronze'})

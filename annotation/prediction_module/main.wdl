@@ -11,6 +11,10 @@ workflow ei_prediction {
 		Directory augustus_config_path
 		Array[File]? transcriptome_models  # Classify and divide into Gold, Silver and Bronze
 		Array[File]? homology_models  # Take as is
+		File? HQ_protein_alignments
+		File? LQ_protein_alignments
+		File? HQ_assembly
+		File? LQ_assembly
 		File? intron_hints  # Separate into gold == 1.0 score and silver (the rest)
 		IndexedBAM? expressed_exon_hints  # Transform into gff passing by bigwig
 		File? repeats_gff  # These are passed through to augustus
@@ -20,11 +24,41 @@ workflow ei_prediction {
 		Boolean force_train = false
 		Array[File]? augustus_runs # File with SOURCE PRIORITY pairs defining the augustus configurations
 		File protein_validation_database
+		File EVM_weights
 	}
 
 	call SoftMaskGenome {
 		input:
 		genome = reference_genome
+	}
+
+	if (defined(HQ_protein_alignments)) {
+		call ChangeSource as hq_protein {
+			input:
+			gff = select_first([HQ_protein_alignments]),
+			source = "hq_protein"
+		}
+	}
+	if (defined(LQ_protein_alignments)) {
+		call ChangeSource as lq_protein {
+			input:
+			gff = select_first([LQ_protein_alignments]),
+			source = "lq_protein"
+		}
+	}
+	if (defined(HQ_assembly)) {
+		call ChangeSource as hq_assembly {
+			input:
+			gff = select_first([HQ_assembly]),
+			source = "hq_assembly"
+		}
+	}
+	if (defined(LQ_assembly)) {
+		call ChangeSource as lq_assembly {
+			input:
+			gff = select_first([LQ_assembly]),
+			source = "lq_assembly"
+		}
 	}
 
 	if (defined(expressed_exon_hints)) {
@@ -147,6 +181,13 @@ workflow ei_prediction {
 			genome = def_reference_genome,
 			transcripts = select_first([def_training_models])
 		}
+
+		call CodingQuarry as CodingQuarryFresh {
+			input:
+			genome = def_reference_genome,
+			transcripts = select_first([def_training_models]),
+			fresh_prediction = true
+		}
 	}
 
 	# Generate SNAP predictions
@@ -164,20 +205,12 @@ workflow ei_prediction {
 	if (num_models > 2000) {
 		call GlimmerHMM {
 			input:
-			genome = def_reference_genome,
+			genome = object {fasta: SoftMaskGenome.hard_masked_genome, index: def_reference_genome.index},
 			transcripts = select_first([def_training_models])
 		}
 	}
 
-	call SelectAugustusTestAndTrain {
-		input:
-		models = select_first([def_training_models]),
-		reference = def_reference_genome,
-		flank = flank
-	}
-
 	# Augustus
-	# Using --softmasking=1 considers lowercase nts as masked
 	if (num_models > 1000) {
 		IndexedReference augustus_genome = object {fasta: SoftMaskGenome.unmasked_genome, index: def_reference_genome.index }
 	# Feed all to Augustus in the various configurations
@@ -191,6 +224,13 @@ workflow ei_prediction {
 		}
 
 		if (!Species.existing_species || force_train) {
+			call SelectAugustusTestAndTrain {
+				input:
+				models = select_first([def_training_models]),
+				reference = def_reference_genome,
+				flank = flank
+			}
+
 			call etraining as base_training {
 				input:
 				models = SelectAugustusTestAndTrain.train,
@@ -234,7 +274,7 @@ workflow ei_prediction {
 		if (defined(augustus_runs)) {
 			Array[Int] counter = range(length(select_first([augustus_runs])))
 			scatter (augustus_run_and_index in zip(select_first([augustus_runs]), counter)) {
-				call augustus.wf_augustus {
+				call augustus.wf_augustus as Augustus {
 					input:
 					reference_genome = augustus_genome,
 					species = species,
@@ -250,12 +290,41 @@ workflow ei_prediction {
 					bronze_models = LengthChecker.bronze,
 					all_models = LengthChecker.clustered_models,
 					hints_source_and_priority = augustus_run_and_index.left,
-					run_id = augustus_run_and_index.right
+					run_id = augustus_run_and_index.right + 1
 				}
 			}
 		}
 	}
 
+
+	call EVM {
+		input:
+		genome = def_reference_genome.fasta,
+		augustus_predictions = Augustus.predictions,
+		predictions = select_all([GlimmerHMM.predictions, SNAP.predictions, CodingQuarry.predictions, CodingQuarryFresh.predictions]),
+		hq_protein_alignments = hq_protein.processed_gff,
+		lq_protein_alignments = lq_protein.processed_gff,
+		hq_assembly = hq_assembly.processed_gff,
+		lq_assembly = lq_assembly.processed_gff,
+		weights = EVM_weights,
+		segment_size = 500000,
+		overlap_size = 50000,
+		partition_listing = "partitions_list.out"
+	}
+
+	scatter(emv_part in read_lines(EVM.evm_commands)) {
+		call ExecuteCommand {
+			input:
+			command_to_run = emv_part
+		}
+	}
+
+	call CombineEVM {
+		input:
+		genome = def_reference_genome.fasta,
+		dummy = ExecuteCommand.done,
+		partitions = EVM.partitions_list
+	}
 
 	output {
 		File? gold_models = LengthChecker.gold
@@ -265,9 +334,41 @@ workflow ei_prediction {
 		File? coding_quarry_predictions = CodingQuarry.predictions
 		File? snap_predictions = SNAP.predictions
 		File? glimmerhmm_predictions = GlimmerHMM.predictions
-		Array[File]? augustus_predictions = wf_augustus.predictions
+		Array[File]? augustus_predictions = Augustus.predictions
+		File evm_predictions = CombineEVM.predictions
 		Directory? augustus_config = final_augustus_config
 	}
+}
+
+task CombineEVM {
+	input {
+		File genome
+		Array[String] dummy
+		File partitions
+	}
+
+	output {
+		File predictions = "evm.out.gff3"
+	}
+
+	command <<<
+		$EVM_HOME/EvmUtils/recombine_EVM_partial_outputs.pl --partitions ~{partitions} --output_file_name evm.out
+		cat $($EVM_HOME/EvmUtils/convert_EVM_outputs_to_GFF3.pl  --partitions ~{partitions} --output evm.out --genome ~{genome} | awk -F',' '{printf $2"/evm.out.gff3"} END{print ""}') > evm.out.gff3
+	>>>
+}
+
+task ExecuteCommand {
+	input {
+		String command_to_run
+	}
+
+	output {
+		String done = "yes"
+	}
+
+	command <<<
+		~{command_to_run}
+	>>>
 }
 
 task SoftMaskGenome {
@@ -313,6 +414,21 @@ task IndexBAM {
 	command <<<
 		ln -s ~{bam}
 		samtools index -@ 4 ~{basename(bam)}
+	>>>
+}
+
+task ChangeSource {
+	input {
+		File gff
+		String source
+	}
+
+	output {
+		File processed_gff = sub(basename(gff), "\\.(gff|gtf)" , "") + ".post.gff"
+	}
+
+	command <<<
+		awk -v 'OFS=\t' '$2="~{source}"' ~{gff} > ~{sub(basename(gff), "\\.(gff|gtf)" , "") + ".post.gff"}
 	>>>
 }
 
@@ -478,6 +594,7 @@ task SelectAugustusTestAndTrain {
 task CodingQuarry {
 	input {
 		IndexedReference genome
+		Boolean fresh_prediction = false
 		File transcripts
 	}
 
@@ -489,7 +606,7 @@ task CodingQuarry {
 
 	command <<<
 		set -euxo pipefail
-		CodingQuarry -p ~{num_cpus} -f ~{genome.fasta} -t ~{transcripts}
+		CodingQuarry -p ~{num_cpus} -f ~{genome.fasta} -a ~{transcripts} ~{if fresh_prediction then "-n" else ""}
 		mv out/PredictedPass.gff3 codingquarry.predictions.gff
 	>>>
 }
@@ -654,5 +771,61 @@ task SelfBlastFilter{
 		filter_self_hits -b self.hits.tsv -t ~{clustered_models} -c ~{classification}
 		awk '$3 == "gene"' with_utr.gff|wc -l > num_models_utr.int
 		awk '$3 == "gene"' without_utr.gff|wc -l > num_models_noutr.int
+	>>>
+}
+
+task EVM {
+	input {
+		File genome
+		Array[File]? augustus_predictions
+		Array[File]? predictions
+		File? hq_protein_alignments
+		File? lq_protein_alignments
+		File? hq_assembly
+		File? lq_assembly
+		Int segment_size
+		Int overlap_size
+		File weights
+		String partition_listing
+	}
+
+	output {
+		File evm_commands = "commands.list"
+		File partitions_list = "partitions_list.out"
+	}
+
+	command <<<
+		cat ~{if defined(hq_protein_alignments) then hq_protein_alignments else "/dev/null"} >> protein_alignments.gff
+		cat ~{if defined(lq_protein_alignments) then hq_protein_alignments else "/dev/null"} >> protein_alignments.gff
+
+		cat ~{if defined(hq_assembly) then hq_assembly else "/dev/null"} >> transcript_alignments.gff
+		cat ~{if defined(lq_assembly) then lq_assembly else "/dev/null"} >> transcript_alignments.gff
+
+		transcript_alignments_param=''
+		protein_alignments_param=''
+		if [ ! -s protein_alignments.gff ];
+		then
+			protein_alignment_param='--protein_alignments protein_alignments.gff'
+		fi
+
+		if [ ! -s protein_alignments.gff ];
+		then
+			transcript_alignments_param='--transcript_alignments transcript_alignments.gff'
+		fi
+
+		cat ~{sep=" " predictions} ~{sep=" " augustus_predictions} | grep -v '^#' >> predictions.gff
+		$EVM_HOME/EvmUtils/partition_EVM_inputs.pl --genome ~{genome} \
+		--gene_predictions predictions.gff ${protein_alignments_param} ${transcript_alignments_param} \
+		--segmentSize ~{segment_size} \
+		--overlapSize ~{overlap_size} \
+		--partition_listing partitions_list.out
+
+
+		$EVM_HOME/EvmUtils/write_EVM_commands.pl --genome ~{genome} \
+		--gene_predictions predictions.gff ${protein_alignments_param} ${transcript_alignments_param} \
+		--weights ~{weights} \
+		--search_long_introns 5000 \
+		--output_file_name evm.out \
+		--partitions partitions_list.out > commands.list
 	>>>
 }

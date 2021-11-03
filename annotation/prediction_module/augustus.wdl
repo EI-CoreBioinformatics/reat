@@ -171,12 +171,12 @@ task PrepareIntronHints {
 	}
 
 	command <<<
-		if [[ '#' != ~{gold_source} ]]; then
+		if [[ '#' != '~{gold_source}' ]]; then
 			cat ~{intron_gff} | awk -F "\t" '$6==1 {print $0";pri=~{gold_priority};"}' | \
 			sed 's/\tportcullis\t/\tPortcullis_pass_gold_S~{gold_source}P~{gold_priority}\t/' > gold_junctions_S~{gold_source}P~{gold_priority}.gff
 		fi
 
-		if [[ '#' != ~{silver_source} ]]; then
+		if [[ '#' != '~{silver_source}' ]]; then
 			cat ~{intron_gff} | awk -F "\t" '$6<1 {print $0";pri=~{silver_priority};"}' | \
 			sed 's/\tportcullis\t/\tPortcullis_pass_silver_S~{silver_source}P~{silver_priority}\t/' > silver_junctions_S~{silver_source}P~{silver_priority}.gff
 		fi
@@ -271,10 +271,10 @@ task Augustus {
 
 	command <<<
 		ln -s ~{config_path} config
-		augustus --AUGUSTUS_CONFIG_PATH=~{config_path} \
+		augustus --AUGUSTUS_CONFIG_PATH=~{config_path} --gff3=on \
 		--UTR=~{if with_utr then "ON" else "OFF"} --stopCodonExcludedFromCDS=true --genemodel=partial \
 		--alternatives-from-evidence=true ~{'--hintsfile=' + hints} --noInFrameStop=true \
 		--allow_hinted_splicesites=atac --errfile=run~{id}.log --extrinsicCfgFile=~{extrinsic_config} \
-		--species=~{species} ~{reference.fasta} > augustus_~{id}.predictions.gff
+		--species=~{species} ~{reference.fasta} | grep -v '^#' | awk -v 'OFS=\t' '$2="AUGUSTUS_RUN~{id}"' > augustus_~{id}.predictions.gff
 	>>>
 }

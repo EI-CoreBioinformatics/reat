@@ -484,6 +484,9 @@ def parse_arguments():
                                     "evidence that can be used in an Augustus run. These evidence types are: "
                                     "gold models, silver models, bronze models, all models, "
                                     "gold introns, silver introns, protein models, coverage hints, and repeat hints.")
+    prediction_ap.add_argument('--EVM_weights', type=argparse.FileType('r'), required=True,
+                               help="Evidence modeler requires a weighting to be provided for each source of evidence,"
+                                    " this file is the means to do so.")
 
     args = reat_ap.parse_args()
 
