@@ -25,6 +25,8 @@ workflow ei_prediction {
 		Array[File]? augustus_runs # File with SOURCE PRIORITY pairs defining the augustus configurations
 		File protein_validation_database
 		File EVM_weights
+		File? mikado_config
+		File? mikado_scoring
 	}
 
 	call SoftMaskGenome {
@@ -324,6 +326,36 @@ workflow ei_prediction {
 		genome = def_reference_genome.fasta,
 		dummy = ExecuteCommand.done,
 		partitions = EVM.partitions_list
+	}
+
+	call augustus.cat as GoldSilver {
+		input:
+			files = select_all([LengthChecker.gold, LengthChecker.silver]),
+			out_filename = "models_with_utrs.gff3"
+	}
+
+	call Mikado {
+		input:
+			reference = def_reference_genome,
+			extra_config = mikado_config,
+			prediction = CombineEVM.predictions,
+			utrs = GoldSilver.out,
+			output_prefix = "mikado"
+	}
+
+	call MikadoPick {
+		input:
+			config_file = Mikado.mikado_config,
+			scoring_file = mikado_scoring,
+			mikado_db = Mikado.mikado_db,
+			transcripts = Mikado.prepared_gtf,
+			output_prefix = "mikado"
+	}
+
+	call MikadoSummaryStats {
+		input:
+			stats = [MikadoPick.stats],
+			output_prefix = "mikado"
 	}
 
 	output {
@@ -827,5 +859,159 @@ task EVM {
 		--search_long_introns 5000 \
 		--output_file_name evm.out \
 		--partitions partitions_list.out > commands.list
+	>>>
+}
+
+
+task Mikado {
+	input {
+		IndexedReference reference
+		File? extra_config
+		Int min_cdna_length = 100
+		Int max_intron_length = 1000000
+		File prediction
+		File utrs
+		File? junctions
+		String output_prefix
+		RuntimeAttr? runtime_attr_override
+	}
+
+	output {
+		File mikado_config = output_prefix+"-mikado.yaml"
+		File prepared_fasta = output_prefix+"-mikado/mikado_prepared.fasta"
+		File prepared_gtf = output_prefix+"-mikado/mikado_prepared.gtf"
+		File mikado_db = output_prefix+"-mikado/mikado.db"
+	}
+
+	Int cpus = 8
+	RuntimeAttr default_attr = object {
+								   cpu_cores: "~{cpus}",
+								   mem_gb: 16,
+								   max_retries: 1,
+								   queue: ""
+							   }
+
+	RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
+
+	Int task_cpus = select_first([runtime_attr.cpu_cores, cpus])
+
+	command <<<
+		set -euxo pipefail
+		export TMPDIR=/tmp
+		# Create the lists file
+		bname=$(basename ~{prediction})
+		label=${bname%%.*}
+		echo -e "~{prediction}\t${label}\tTrue\t0\tTrue" >> list.txt
+
+		if [ "" != "~{utrs}" ]
+		then
+			label="UTRs"
+			echo -e "~{utrs}\t${label}\tTrue\t0\tFalse" >> list.txt
+		fi
+
+		# mikado configure
+		mikado configure --only-reference-update --scoring plant.yaml --copy-scoring plant.yaml \
+		--max-intron-length ~{max_intron_length} --minimum-cdna-length ~{min_cdna_length} \
+		--reference ~{reference.fasta} --list=list.txt original-mikado.yaml
+
+		yaml-merge -s original-mikado.yaml ~{"-m " + extra_config} -o ~{output_prefix}-mikado.yaml
+
+		# mikado prepare
+		mikado prepare --procs=~{task_cpus} --json-conf ~{output_prefix}-mikado.yaml -od ~{output_prefix}-mikado
+
+		gffread --nc -T -o mikado_prepared.nc.gtf -w mikado_prepared.nc.fasta -g ~{reference.fasta} ~{output_prefix}-mikado/mikado_prepared.gtf
+
+		if [ -s mikado_prepared.nc.fasta ];
+		then
+			prodigal -g 1 -f gff -i mikado_prepared.nc.fasta -o mikado_prepared.cds.gff
+		else
+			touch mikado_prepared.cds.gff
+		fi
+
+		# mikado serialise
+		mikado serialise --force ~{"--junctions " + junctions} \
+		--transcripts ~{output_prefix}-mikado/mikado_prepared.fasta \
+		--orfs mikado_prepared.cds.gff \
+		--json-conf=~{output_prefix}-mikado.yaml --start-method=spawn -od ~{output_prefix}-mikado --procs=~{task_cpus}
+
+	>>>
+
+	runtime {
+		cpu: task_cpus
+		memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
+		maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+		queue: select_first([runtime_attr.queue, default_attr.queue])
+	}
+
+}
+
+task MikadoPick {
+	input {
+		File? config_file
+		File? extra_config
+		File? scoring_file
+		File transcripts
+		File mikado_db
+		String output_prefix
+		RuntimeAttr? runtime_attr_override
+	}
+
+	Int cpus = 8
+	RuntimeAttr default_attr = object {
+								   cpu_cores: "~{cpus}",
+								   mem_gb: 16,
+								   max_retries: 1,
+								   queue: ""
+							   }
+
+	RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
+
+	Int task_cpus = select_first([runtime_attr.cpu_cores, cpus])
+
+	output {
+		File index_log  = output_prefix + "-index_loci.log"
+		File loci_index = output_prefix + ".loci.gff3.midx"
+		File loci       = output_prefix + ".loci.gff3"
+		File scores     = output_prefix + ".loci.scores.tsv"
+		File metrics    = output_prefix + ".loci.metrics.tsv"
+		File stats      = output_prefix + ".loci.gff3.stats"
+		File subloci    = output_prefix + ".subloci.gff3"
+		File monoloci   = output_prefix + ".monoloci.gff3"
+	}
+
+	command <<<
+		set -euxo pipefail
+		export TMPDIR=/tmp
+		yaml-merge -s ~{config_file} ~{"-m " + extra_config} -o pick_config.yaml
+		mikado pick --source Mikado_~{output_prefix} --procs=~{task_cpus} ~{"--scoring-file" + scoring_file} \
+		--start-method=spawn --json-conf=pick_config.yaml \
+		--loci-out ~{output_prefix}.loci.gff3 -lv INFO ~{"-db " + mikado_db} \
+		--subloci-out ~{output_prefix}.subloci.gff3 --monoloci-out ~{output_prefix}.monoloci.gff3 \
+		~{transcripts}
+		mikado compare -r ~{output_prefix}.loci.gff3 -l ~{output_prefix}-index_loci.log --index
+		mikado util stats  ~{output_prefix}.loci.gff3 ~{output_prefix}.loci.gff3.stats
+	>>>
+
+	runtime {
+		cpu: task_cpus
+		memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
+		maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+		queue: select_first([runtime_attr.queue, default_attr.queue])
+	}
+
+}
+
+task MikadoSummaryStats {
+	input {
+		Array[File] stats
+		String output_prefix
+	}
+
+	output {
+		File summary = output_prefix + ".summary.stats.tsv"
+	}
+
+	command <<<
+		mikado_summary_stats ~{sep=" " stats} > ~{output_prefix}.summary.stats.tsv
 	>>>
 }
