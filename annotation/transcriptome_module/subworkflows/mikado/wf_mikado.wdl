@@ -39,7 +39,7 @@ workflow wf_mikado {
         File? junctions
         Int prodigal_gencode = 1
         String transdecoder_genetic_code = "universal"
-        String? orf_caller = "prodigal"
+        String? orf_caller
         String transdecoder_alignment_program = "blast"
         String homology_alignment_program = "diamond"
         Boolean mikado_do_homology_assessment

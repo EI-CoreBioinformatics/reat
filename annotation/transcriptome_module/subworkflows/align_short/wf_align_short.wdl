@@ -271,7 +271,7 @@ task MergeAlignments {
     mkdir alignments
     cd alignments
     samtools merge -@ ~{task_cpus} ~{name}.merged.bam ~{sep=" " bams}
-    samtools index ~{name}.merged.bam
+    samtools index -c ~{name}.merged.bam
     >>>
 
     runtime {
@@ -302,7 +302,7 @@ task Sort {
     Int task_cpus = select_first([runtime_attr.cpu_cores, cpus])
 
     output {
-        IndexedBam indexed_bam = object { bam: "alignments/" + name + ".sorted.bam", index: "alignments/" + name + ".sorted.bam.bai" }
+        IndexedBam indexed_bam = object { bam: "alignments/" + name + ".sorted.bam", index: "alignments/" + name + ".sorted.bam.csi" }
         File sorted_bam = "alignments/" + name + ".sorted.bam"
     }
 
@@ -311,7 +311,7 @@ task Sort {
         mkdir alignments
         cd alignments
         samtools sort -@~{task_cpus} ~{bam} > ~{name + ".sorted.bam"}
-        samtools index ~{name + ".sorted.bam"}
+        samtools index -c ~{name + ".sorted.bam"}
     >>>
 
     runtime {

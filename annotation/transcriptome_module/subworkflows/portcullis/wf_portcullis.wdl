@@ -5,7 +5,7 @@ import "../common/rt_struct.wdl"
 
 workflow portcullis {
     input {
-        File reference
+        IndexedReference reference
         String merge_operator = "max"
         Map[String, Array[String]]? group_to_samples # Consider applying "localization_optional" to the preparation task
         Array[AlignedSample] aligned_samples
@@ -117,7 +117,7 @@ task PrepareGroups {
 
 task Full {
     input {
-        File reference
+        IndexedReference reference
         File? reference_bed
         AlignedSample sample
         Int min_coverage = 2
@@ -155,9 +155,11 @@ task Full {
         strandedness="unstranded"
         ;;
     esac
-    portcullis full -t~{task_cpus} --save_bad --exon_gff --intron_gff --strandedness=$strandedness \
+    ln -s ~{reference.fasta}
+    ln -s ~{reference.fai}
+    portcullis full -t~{task_cpus} --use_csi --save_bad --exon_gff --intron_gff --strandedness=$strandedness \
     ~{"-r " + reference_bed} --canonical=C,S --min_cov=~{min_coverage} \
-    ~{reference} ~{sep=" " sample.bam}
+    ~{basename(reference.fasta)} ~{sep=" " sample.bam}
     >>>
 
     runtime {

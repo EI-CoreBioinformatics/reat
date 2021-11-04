@@ -7,7 +7,7 @@ import sys
 from Mikado.parsers import parser_factory
 from Mikado.transcripts import Gene, Transcript
 
-VERSION = '0.4.5'
+VERSION = '0.4.6'
 RUN_METADATA = "run_details.json"
 
 

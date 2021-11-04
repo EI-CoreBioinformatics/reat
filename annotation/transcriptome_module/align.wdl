@@ -117,7 +117,7 @@ workflow wf_align {
 
         call portcullis_s.portcullis {
             input:
-            reference = wf_sanitise.reference,
+            reference = wf_sanitise.indexed_reference,
             annotation = wf_sanitise.annotation,
             merge_operator = portcullis_merge_operator,
             group_to_samples = group_to_samples,
