@@ -20,6 +20,8 @@ workflow ei_prediction {
 		File? repeats_gff  # These are passed through to augustus
 		Int flank = 200
 		Int kfold = 8
+		Int chunk_size = 3000000
+		Int overlap_size = 100000
 		Boolean optimise_augustus = false
 		Boolean force_train = false
 		Array[File]? augustus_runs # File with SOURCE PRIORITY pairs defining the augustus configurations
@@ -162,7 +164,6 @@ workflow ei_prediction {
 		Boolean train_utr_ = select_first([maybe_train_utr, maybe_train_no_utr])
 	}
 
-
 	Boolean train_utr = select_first([train_utr_, false])
 
 	if (defined(homology_models)) {
@@ -214,10 +215,15 @@ workflow ei_prediction {
 
 	# Augustus
 	if (num_models > 1000) {
-		IndexedReference augustus_genome = object {fasta: SoftMaskGenome.unmasked_genome, index: def_reference_genome.index }
-	# Feed all to Augustus in the various configurations
-	# Generate training input for augustus (training + test sets)
-	# Transform tranining set to GeneBank format
+		IndexedReference augustus_genome = object { fasta: SoftMaskGenome.unmasked_genome, index: def_reference_genome.index }
+
+		call GenerateGenomeChunks {
+			input:
+			reference = augustus_genome,
+		}
+		# Feed all to Augustus in the various configurations
+		# Generate training input for augustus (training + test sets)
+		# Transform tranining set to GeneBank format
 
 		call Species {
 			input:
@@ -241,14 +247,18 @@ workflow ei_prediction {
 				with_utr = train_utr
 			}
 
-			call augustus.Augustus as AugustusTest {
+			call augustus.wf_augustus as AugustusAbinitio {
 				input:
-				reference = augustus_genome,
+				single_seqs = GenerateGenomeChunks.single_seqs,
+				many_seqs = GenerateGenomeChunks.many_seqs,
 				extrinsic_config = extrinsic_config,
-				with_utr = train_utr,
+				train_utr = train_utr,
 				species = species,
-				config_path = base_training.improved_config_path,
-				id = "test"
+				augustus_config = base_training.improved_config_path,
+				with_hints = false,
+				chunk_size = chunk_size,
+				overlap_size = overlap_size,
+				run_id = "_ABINITIO"
 			}
 
 			if (optimise_augustus) {
@@ -278,7 +288,8 @@ workflow ei_prediction {
 			scatter (augustus_run_and_index in zip(select_first([augustus_runs]), counter)) {
 				call augustus.wf_augustus as Augustus {
 					input:
-					reference_genome = augustus_genome,
+					single_seqs = GenerateGenomeChunks.single_seqs,
+					many_seqs = GenerateGenomeChunks.many_seqs,
 					species = species,
 					augustus_config = final_augustus_config,
 					extrinsic_config = extrinsic_config,
@@ -292,9 +303,12 @@ workflow ei_prediction {
 					bronze_models = LengthChecker.bronze,
 					all_models = LengthChecker.clustered_models,
 					hints_source_and_priority = augustus_run_and_index.left,
+					chunk_size = chunk_size,
+					overlap_size = overlap_size,
 					run_id = augustus_run_and_index.right + 1
 				}
 			}
+			Array[File] def_augustus_predictions = select_all(Augustus.predictions)
 		}
 	}
 
@@ -302,7 +316,7 @@ workflow ei_prediction {
 	call EVM {
 		input:
 		genome = def_reference_genome.fasta,
-		augustus_predictions = Augustus.predictions,
+		augustus_predictions = def_augustus_predictions,
 		predictions = select_all([GlimmerHMM.predictions, SNAP.predictions, CodingQuarry.predictions, CodingQuarryFresh.predictions]),
 		hq_protein_alignments = hq_protein.processed_gff,
 		lq_protein_alignments = lq_protein.processed_gff,
@@ -366,7 +380,7 @@ workflow ei_prediction {
 		File? coding_quarry_predictions = CodingQuarry.predictions
 		File? snap_predictions = SNAP.predictions
 		File? glimmerhmm_predictions = GlimmerHMM.predictions
-		Array[File]? augustus_predictions = Augustus.predictions
+		Array[File]? augustus_predictions = def_augustus_predictions
 		File evm_predictions = CombineEVM.predictions
 		Directory? augustus_config = final_augustus_config
 	}
@@ -658,6 +672,21 @@ task PreprocessFiles {
 	>>>
 }
 
+task GenerateGenomeChunks {
+	input {
+		IndexedReference reference
+	}
+
+	output {
+		Array[File]? single_seqs = glob("single_seqs_*.fa")
+		Array[File]? many_seqs = glob("many_seqs_*.fa")
+	}
+
+	command <<<
+		partition_genome --reference ~{reference.fasta}
+	>>>
+}
+
 task SNAP {
 	input {
 		IndexedReference genome
@@ -753,7 +782,7 @@ task AlignProteins {
 }
 
 task LengthChecker {
-	input{
+	input {
 		IndexedReference genome
 		Array[File] models
 		File protein_models
@@ -778,7 +807,7 @@ task LengthChecker {
 	>>>
 }
 
-task SelfBlastFilter{
+task SelfBlastFilter {
 	input {
 		IndexedReference genome
 		File clustered_models
@@ -861,7 +890,6 @@ task EVM {
 		--partitions partitions_list.out > commands.list
 	>>>
 }
-
 
 task Mikado {
 	input {
