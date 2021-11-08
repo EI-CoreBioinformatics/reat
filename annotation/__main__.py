@@ -40,9 +40,7 @@ from annotation.transcriptome import transcriptome_cli_validation, \
 from annotation.homology import homology_module
 from annotation.prediction import prediction_module
 from annotation.transcriptome import transcriptome_module
-from annotation.scripts import UTR_SELECTION_OPTIONS
-
-LONG_READ_ALIGNER_CHOICES = ['minimap2', 'gmap', '2pass', '2pass_merged']
+from annotation import UTR_SELECTION_OPTIONS, LONG_READ_ALIGNER_CHOICES
 
 try:
     import importlib.resources as pkg_resources
