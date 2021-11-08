@@ -11,7 +11,8 @@ import sys
 # not dynamic and would require changes both at the workflow level and on this specific file, namely on the list of
 # parameters to be parsed
 EXPECTED_PARAMS = ('gold', 'silver', 'bronze', 'all', 'gold_intron',
-                   'silver_intron', 'protein', 'alignment', 'repeat')
+                   'silver_intron', 'protein', 'alignment', 'repeat', 'hq_assembly',
+                   'lq_assembly', 'hq_protein_alignments', 'lq_protein_alignments')
 
 
 def main():
@@ -31,7 +32,7 @@ def main():
                     print(param_pair[1], file=prio_f)
     except StopIteration:
         print(f"Insufficient parameters in {sys.argv[1]}, please check this file contains "
-              f"{len(EXPECTED_PARAMS)} lines", file=sys.stderr)
+              f"{len(EXPECTED_PARAMS)} lines for the following (in order): {[print(p) for p in EXPECTED_PARAMS]}", file=sys.stderr)
         return 1
     return 0
 

@@ -9,6 +9,10 @@ workflow ei_prediction {
 		File extrinsic_config
 		String species
 		Directory augustus_config_path
+		Boolean do_codingquarry = false
+		Boolean do_glimmer = false
+		Boolean do_snap = false
+		Boolean do_augustus = true
 		Array[File]? transcriptome_models  # Classify and divide into Gold, Silver and Bronze
 		Array[File]? homology_models  # Take as is
 		File? HQ_protein_alignments
@@ -27,13 +31,23 @@ workflow ei_prediction {
 		Array[File]? augustus_runs # File with SOURCE PRIORITY pairs defining the augustus configurations
 		File protein_validation_database
 		File EVM_weights
+		String? mikado_utr_files
 		File? mikado_config
 		File? mikado_scoring
 	}
 
 	call SoftMaskGenome {
 		input:
-		genome = reference_genome
+		genome = reference_genome,
+		repeats_gff = repeats_gff
+	}
+
+	if (defined(repeats_gff)) {
+		call PreprocessRepeats {
+			input:
+			gff = select_first([repeats_gff]),
+			source = "repeat"
+		}
 	}
 
 	if (defined(HQ_protein_alignments)) {
@@ -178,7 +192,7 @@ workflow ei_prediction {
 
 	# Generate CodingQuarry predictions
 	# Considers lowercase as masked by default
-	if (num_models > 1500) {
+	if (num_models > 1500 && do_codingquarry) {
 		call CodingQuarry {
 			input:
 			genome = def_reference_genome,
@@ -195,7 +209,7 @@ workflow ei_prediction {
 
 	# Generate SNAP predictions
 	# With the -lcmask option treats lowercase as masked nts
-	if (num_models > 1300) {
+	if (num_models > 1300 && do_snap) {
 		call SNAP {
 			input:
 			genome = def_reference_genome,
@@ -205,7 +219,7 @@ workflow ei_prediction {
 
 	# Generate GlimmerHMM predictions
 	# Does not consider any masking
-	if (num_models > 2000) {
+	if (num_models > 2000 && do_glimmer) {
 		call GlimmerHMM {
 			input:
 			genome = object {fasta: SoftMaskGenome.hard_masked_genome, index: def_reference_genome.index},
@@ -214,7 +228,7 @@ workflow ei_prediction {
 	}
 
 	# Augustus
-	if (num_models > 1000) {
+	if (num_models > 1000 && do_augustus) {
 		IndexedReference augustus_genome = object { fasta: SoftMaskGenome.unmasked_genome, index: def_reference_genome.index }
 
 		call GenerateGenomeChunks {
@@ -255,7 +269,7 @@ workflow ei_prediction {
 				train_utr = train_utr,
 				species = species,
 				augustus_config = base_training.improved_config_path,
-				with_hints = false,
+				repeats_gff = PreprocessRepeats.processed_gff,
 				chunk_size = chunk_size,
 				overlap_size = overlap_size,
 				run_id = "_ABINITIO"
@@ -296,12 +310,16 @@ workflow ei_prediction {
 					intron_hints = intron_hints,
 					expressed_exon_hints = Bam2Hints.expression_gff,
 					homology_models = homology_models,
-					repeats_gff = repeats_gff,
+					repeats_gff = PreprocessRepeats.processed_gff,
 					train_utr = train_utr,
 					gold_models = LengthChecker.gold,
 					silver_models = LengthChecker.silver,
 					bronze_models = LengthChecker.bronze,
 					all_models = LengthChecker.clustered_models,
+					hq_assembly_models = hq_assembly.processed_gff,
+					lq_assembly_models = lq_assembly.processed_gff,
+					hq_protein_alignment_models = hq_protein.processed_gff,
+					lq_protein_alignment_models = lq_protein.processed_gff,
 					hints_source_and_priority = augustus_run_and_index.left,
 					chunk_size = chunk_size,
 					overlap_size = overlap_size,
@@ -342,9 +360,18 @@ workflow ei_prediction {
 		partitions = EVM.partitions_list
 	}
 
-	call augustus.cat as GoldSilver {
+	# Configurable list of inputs from (gold, silver, bronze, all, hq/lq assemblies)
+	call DefineMikadoUTRs {
 		input:
-			files = select_all([LengthChecker.gold, LengthChecker.silver]),
+			files_selection = select_first([mikado_utr_files, "gold silver"]),
+			gold = LengthChecker.gold,
+			silver = LengthChecker.silver,
+			bronze = LengthChecker.bronze,
+			all = LengthChecker.clustered_models,
+			hq_assembly = hq_assembly.processed_gff,
+			lq_assembly = lq_assembly.processed_gff,
+#			files = select_all([LengthChecker.gold, LengthChecker.silver, LengthChecker.bronze, LengthChecker.clustered_models,
+#							   hq_assembly.processed_gff, lq_assembly.processed_gff, hq_protein.processed_gff, lq_protein.processed_gff]),
 			out_filename = "models_with_utrs.gff3"
 	}
 
@@ -353,7 +380,7 @@ workflow ei_prediction {
 			reference = def_reference_genome,
 			extra_config = mikado_config,
 			prediction = CombineEVM.predictions,
-			utrs = GoldSilver.out,
+			utrs = DefineMikadoUTRs.out,
 			output_prefix = "mikado"
 	}
 
@@ -381,6 +408,7 @@ workflow ei_prediction {
 		File? snap_predictions = SNAP.predictions
 		File? glimmerhmm_predictions = GlimmerHMM.predictions
 		Array[File]? augustus_predictions = def_augustus_predictions
+		File? augustus_abinitio_predictions = AugustusAbinitio.predictions
 		File evm_predictions = CombineEVM.predictions
 		Directory? augustus_config = final_augustus_config
 	}
@@ -463,6 +491,20 @@ task IndexBAM {
 	>>>
 }
 
+task PreprocessRepeats {
+	input {
+		File gff
+		String source
+	}
+
+	output {
+		File processed_gff = "repeats.gff"
+	}
+
+	command <<<
+	awk 'BEGIN{OFS="\t"} $3=="match" {print $1, "repmask", "nonexonpart", $4, $5, $6, $7, $8, "src=RM;pri=0"}' ~{gff} > repeats.gff
+	>>>
+}
 task ChangeSource {
 	input {
 		File gff
@@ -474,7 +516,10 @@ task ChangeSource {
 	}
 
 	command <<<
-		awk -v 'OFS=\t' '$2="~{source}"' ~{gff} > ~{sub(basename(gff), "\\.(gff|gtf)" , "") + ".post.gff"}
+		awk -v 'OFS=\t' '
+		$3=="exon" {print $1, "~{source}", "exon", $4, $5, $6, $7, $8, "src=generic_source;pri=0"}
+		$3=="CDS" {print $1, "~{source}", "CDS", $4, $5, $6, $7, $8, "src=generic_source;pri=0"}
+		' ~{gff} > ~{sub(basename(gff), "\\.(gff|gtf)" , "") + ".post.gff"}
 	>>>
 }
 
@@ -890,6 +935,28 @@ task EVM {
 		--partitions partitions_list.out > commands.list
 	>>>
 }
+
+task DefineMikadoUTRs {
+	input {
+		String files_selection
+		File? gold
+		File? silver
+		File? bronze
+		File? all
+		File? hq_assembly
+		File? lq_assembly
+		String out_filename
+	}
+
+	output {
+		File out = out_filename
+	}
+
+	command <<<
+		combine_utr_hint_files ~{"--gold " + gold} ~{"--silver " + silver} ~{"--bronze " + bronze} ~{"--all " + all} ~{"--hq_assembly " + hq_assembly} ~{"--lq_assembly " + lq_assembly} --selection ~{files_selection} > ~{out_filename}
+	>>>
+}
+
 
 task Mikado {
 	input {

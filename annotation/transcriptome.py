@@ -358,7 +358,7 @@ def combine_arguments(cli_arguments):
     cromwell_inputs["ei_annotation.wf_align.min_intron_len"] = cli_arguments.min_intron_len
     cromwell_inputs["ei_annotation.wf_align.max_intron_len"] = cli_arguments.max_intron_len
     cromwell_inputs["ei_annotation.wf_align.max_intron_len_ends"] = cli_arguments.max_intron_len_ends
-    cromwell_inputs["ei_annotation.wf_align.min_identity"] = cli_arguments.min_identity
+    cromwell_inputs["ei_annotation.wf_align.min_identity"] = cli_arguments.min_identity / 100.0
 
     # Separate these config files onto multiple files one for each mikado step and point the workflow to the files
     if cli_arguments.all_extra_config is not None:

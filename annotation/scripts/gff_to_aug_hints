@@ -78,7 +78,7 @@ def main():
                              "the - strand coordinates increase or decrease from one line to the following")
     parser.add_argument('-s', '--source', type=str, help='GFF source')
     parser.add_argument('-t', '--type', choices=("CDS", "exon"), help='Feature type to be parsed, protein data would '
-                                                                      'typically use CDS and transcript data \'exon\'')
+                                                                      'typically use \'CDS\' and transcript data \'exon\'')
     parser.add_argument('GFF', nargs='?', default=sys.stdin, type=argparse.FileType('r'), help='GFF file')
 
     args = parser.parse_args()

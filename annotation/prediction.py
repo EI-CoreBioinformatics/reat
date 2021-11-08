@@ -59,6 +59,33 @@ def combine_arguments_prediction(cli_arguments):
     if cli_arguments.homology_proteins:
         cromwell_inputs['ei_prediction.protein_validation_database'] = cli_arguments.homology_proteins.name
 
+    if cli_arguments.hq_protein_alignments:
+        cromwell_inputs['ei_prediction.HQ_protein_alignments'] = cli_arguments.hq_protein_alignments.name
+
+    if cli_arguments.lq_protein_alignments:
+        cromwell_inputs['ei_prediction.LQ_protein_alignments'] = cli_arguments.lq_protein_alignments.name
+
+    if cli_arguments.hq_assembly:
+        cromwell_inputs['ei_prediction.HQ_assembly'] = cli_arguments.hq_assembly.name
+
+    if cli_arguments.lq_assembly:
+        cromwell_inputs['ei_prediction.LQ_assembly'] = cli_arguments.lq_assembly.name
+
+    if cli_arguments.mikado_utr_files:
+        cromwell_inputs['ei_prediction.mikado_utr_files'] = ' '.join(cli_arguments.mikado_utr_files)
+
+    if cli_arguments.do_glimmer:
+        cromwell_inputs['ei_prediction.do_glimmer'] = 'true'
+
+    if cli_arguments.do_snap:
+        cromwell_inputs['ei_prediction.do_snap'] = 'true'
+
+    if cli_arguments.do_codingquarry:
+        cromwell_inputs['ei_prediction.do_codingquarry'] = 'true'
+
+    if cli_arguments.no_augustus and cli_arguments.no_augustus == False:
+        cromwell_inputs['ei_prediction.do_augustus'] = 'false'
+
     return cromwell_inputs
 
 

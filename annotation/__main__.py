@@ -40,6 +40,7 @@ from annotation.transcriptome import transcriptome_cli_validation, \
 from annotation.homology import homology_module
 from annotation.prediction import prediction_module
 from annotation.transcriptome import transcriptome_module
+from annotation.scripts import UTR_SELECTION_OPTIONS
 
 LONG_READ_ALIGNER_CHOICES = ['minimap2', 'gmap', '2pass', '2pass_merged']
 
@@ -272,8 +273,8 @@ def parse_arguments():
                                       help="Choice of aligner for high-quality long reads", default='minimap2')
     alignment_parameters.add_argument("--LQ_aligner", choices=LONG_READ_ALIGNER_CHOICES,
                                       help="Choice of aligner for low-quality long reads", default='minimap2')
-    alignment_parameters.add_argument("--min_identity", type=float,
-                                      help="Minimum alignment identity to retain transcript", default=0.9)
+    alignment_parameters.add_argument("--min_identity", type=int, choices=range(0, 101), metavar='[0-100]',
+                                      help="Minimum alignment identity (passed only to gmap)", default=90)
     alignment_parameters.add_argument("--min_intron_len", type=int,
                                       help="Where available, the minimum intron length allowed will be specified for "
                                            "the aligners", default=20)
@@ -330,20 +331,20 @@ def parse_arguments():
                                           "- stringtie: Assembles the long reads alignments into transcripts"
                                           "- stringtie_collapse: Cleans and collapses long reads but does not "
                                           "assembles them", default='stringtie_collapse')
-    assembly_parameters.add_argument("--HQ_min_identity",
+    assembly_parameters.add_argument("--HQ_min_identity", choices=range(0,101), metavar='[0-100]',
                                      help="When the 'filter' option is selected, this parameter defines the minimum "
                                           "identity used to filtering")
-    assembly_parameters.add_argument("--HQ_min_coverage",
+    assembly_parameters.add_argument("--HQ_min_coverage", choices=range(0,101), metavar='[0-100]',
                                      help="When the 'filter' option is selected, this parameter defines the minimum "
                                           "coverage used for filtering")
     assembly_parameters.add_argument("--HQ_assembler_extra_parameters",
                                      help="Extra parameters for the long reads assembler, please note that extra "
                                           "parameters are not validated and will have to match the parameters "
                                           "available for the selected assembler")
-    assembly_parameters.add_argument("--LQ_min_identity",
+    assembly_parameters.add_argument("--LQ_min_identity", choices=range(0,101), metavar='[0-100]',
                                      help="When the 'filter' option is selected, this parameter defines the minimum "
                                           "identity used to filtering")
-    assembly_parameters.add_argument("--LQ_min_coverage",
+    assembly_parameters.add_argument("--LQ_min_coverage", choices=range(0,101), metavar='[0-100]',
                                      help="When the 'filter' option is selected, this parameter defines the minimum "
                                           "coverage used for filtering")
     assembly_parameters.add_argument("--LQ_assembler_extra_parameters",
@@ -487,6 +488,22 @@ def parse_arguments():
     prediction_ap.add_argument('--EVM_weights', type=argparse.FileType('r'), required=True,
                                help="Evidence modeler requires a weighting to be provided for each source of evidence,"
                                     " this file is the means to do so.")
+    prediction_ap.add_argument('--hq_protein_alignments', type=argparse.FileType('r'),
+                               help="High confidence protein alignments to be used as hints for Augustus runs")
+    prediction_ap.add_argument('--lq_protein_alignments', type=argparse.FileType('r'),
+                               help="Low confidence protein alignments to be used as hints for Augustus runs")
+    prediction_ap.add_argument('--hq_assembly', type=argparse.FileType('r'),
+                               help="High confidence assemblies (for example from HiFi source) to be used as hints for "
+                                    "Augustus runs")
+    prediction_ap.add_argument('--lq_assembly', type=argparse.FileType('r'),
+                               help="Low confidence assemblies (short reads or low quality long reads) to be used as "
+                                    "hints for Augustus runs")
+    prediction_ap.add_argument('--mikado_utr_files', choices=UTR_SELECTION_OPTIONS, nargs='*',
+                               default=['gold', 'silver'])
+    prediction_ap.add_argument('--do_glimmer', action='store_true')
+    prediction_ap.add_argument('--do_snap', action='store_true')
+    prediction_ap.add_argument('--do_codingquarry', action='store_true')
+    prediction_ap.add_argument('--no_augustus', action='store_false')
 
     args = reat_ap.parse_args()
 

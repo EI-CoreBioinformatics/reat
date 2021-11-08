@@ -7,22 +7,25 @@ workflow wf_augustus {
 		Array[File]? single_seqs
 		Array[File]? many_seqs
 		String species
-		Directory augustus_config
+		Boolean train_utr
 		File extrinsic_config
+		Directory augustus_config
+		Int chunk_size = 3000000
+		Int overlap_size = 100000
+		String run_id
 		File? intron_hints
 		File? expressed_exon_hints
 		Array[File]? homology_models
 		File? repeats_gff
-		Boolean train_utr
 		File? gold_models
 		File? silver_models
 		File? bronze_models
 		File? all_models
+		File? hq_assembly_models
+		File? lq_assembly_models
+		File? hq_protein_alignment_models
+		File? lq_protein_alignment_models
 		File? hints_source_and_priority
-		Int chunk_size = 3000000
-		Int overlap_size = 100000
-		Boolean with_hints = true
-		String run_id
 	}
 
 	if (defined(hints_source_and_priority)) {
@@ -48,6 +51,15 @@ workflow wf_augustus {
 	Int bronze_model_hints_priority = select_first([ReadSourceAndPriority.bronze_model_hints_priority, 0])
 	String all_model_hints_source = select_first([ReadSourceAndPriority.all_model_hints_source, '#'])
 	Int all_model_hints_priority = select_first([ReadSourceAndPriority.all_model_hints_priority, 0])
+
+	String hq_assembly_hints_source = select_first([ReadSourceAndPriority.hq_assembly_hints_source, '#'])
+	Int hq_assembly_hints_priority = select_first([ReadSourceAndPriority.hq_assembly_hints_priority, 0])
+	String lq_assembly_hints_source = select_first([ReadSourceAndPriority.lq_assembly_hints_source, '#'])
+	Int lq_assembly_hints_priority = select_first([ReadSourceAndPriority.lq_assembly_hints_priority, 0])
+	String hq_protein_alignments_hints_source = select_first([ReadSourceAndPriority.hq_protein_alignment_hints_source, '#'])
+	Int hq_protein_alignments_hints_priority = select_first([ReadSourceAndPriority.hq_protein_alignment_hints_priority, 0])
+	String lq_protein_alignments_hints_source = select_first([ReadSourceAndPriority.lq_protein_alignment_hints_source, '#'])
+	Int lq_protein_alignments_hints_priority = select_first([ReadSourceAndPriority.lq_protein_alignment_hints_priority, 0])
 
 	if (defined(expressed_exon_hints) && alignment_hints_source != '#') {
 		call UpdateExonPartSourceAndPriority {
@@ -118,15 +130,66 @@ workflow wf_augustus {
 		}
 	}
 
-	if (with_hints) {
+	if (defined(hq_assembly_models) && hq_assembly_hints_source != '#') {
+		call PrepareTranscriptHints as hq_assembly {
+			input:
+			transcripts = [select_first([hq_assembly_models])],
+			category = "hq_assembly",
+			source = hq_assembly_hints_source,
+			priority = hq_assembly_hints_priority
+		}
+	}
+
+	if (defined(lq_assembly_models) && lq_assembly_hints_source != '#') {
+		call PrepareTranscriptHints as lq_assembly {
+			input:
+			transcripts = [select_first([lq_assembly_models])],
+			category = "lq_assembly",
+			source = lq_assembly_hints_source,
+			priority = lq_assembly_hints_priority
+		}
+	}
+
+
+	if (defined(hq_protein_alignment_models) && hq_protein_alignments_hints_source != '#') {
+		call PrepareTranscriptHints as hq_protein_alignments {
+			input:
+			transcripts = [select_first([hq_protein_alignment_models])],
+			category = "hq_protein_alignments",
+			source = hq_protein_alignments_hints_source,
+			priority = hq_protein_alignments_hints_priority
+		}
+	}
+
+	if (defined(lq_protein_alignment_models) && lq_protein_alignments_hints_source != '#') {
+		call PrepareTranscriptHints as lq_protein_alignments {
+			input:
+			transcripts = [select_first([lq_protein_alignment_models])],
+			category = "lq_protein_alignments",
+			source = lq_protein_alignments_hints_source,
+			priority = lq_protein_alignments_hints_priority
+		}
+	}
+
+	Array[File] hints_files = select_first([select_all([gold.result, silver.result, bronze.result, all.result,
+							   PrepareIntronHints.gold_intron_hints, PrepareIntronHints.silver_intron_hints,
+							   PrepareProteinHints.protein_hints,
+							   UpdateExonPartSourceAndPriority.sp_gff,
+							   hq_assembly.result, lq_assembly.result,
+							   hq_protein_alignments.result, lq_protein_alignments.result,
+							   repeats_gff]), []])
+	Boolean with_hints = length(hints_files) > 0
+	if (with_hints)
+	{
 		call cat as augustus_hints {
 			input:
 			files = select_all([gold.result, silver.result, bronze.result, all.result,
 							   PrepareIntronHints.gold_intron_hints, PrepareIntronHints.silver_intron_hints,
 							   PrepareProteinHints.protein_hints,
 							   UpdateExonPartSourceAndPriority.sp_gff,
-							   repeats_gff]
-					),
+							   hq_assembly.result, lq_assembly.result,
+							   hq_protein_alignments.result, lq_protein_alignments.result,
+							   repeats_gff]),
 			out_filename = "hints_" + run_id + ".gff"
 		}
 		if (defined(single_seqs)) {
@@ -372,12 +435,20 @@ task ReadSourceAndPriority {
 		Int 	alignment_hints_priority = read_int("alignment.p")
 		String 	repeat_hints_source = read_string("repeat.s")
 		Int 	repeat_hints_priority = read_int("repeat.p")
-		String 	protein_hints_source = read_string("protein.s")
-		Int 	protein_hints_priority = read_int("protein.p")
-		String 	gold_intron_hints_source = read_string("gold_intron.s")
-		Int 	gold_intron_hints_priority = read_int("gold_intron.p")
-		String 	silver_intron_hints_source = read_string("silver_intron.s")
-		Int 	silver_intron_hints_priority = read_int("silver_intron.p")
+		String	protein_hints_source = read_string("protein.s")
+		Int		protein_hints_priority = read_int("protein.p")
+		String	gold_intron_hints_source = read_string("gold_intron.s")
+		Int		gold_intron_hints_priority = read_int("gold_intron.p")
+		String	silver_intron_hints_source = read_string("silver_intron.s")
+		Int		silver_intron_hints_priority = read_int("silver_intron.p")
+		String	hq_assembly_hints_source = read_string("hq_assembly.s")
+		Int		hq_assembly_hints_priority = read_int("hq_assembly.p")
+		String	lq_assembly_hints_source = read_string("lq_assembly.s")
+		Int		lq_assembly_hints_priority = read_int("lq_assembly.p")
+		String	hq_protein_alignment_hints_source = read_string("hq_protein_alignments.s")
+		Int		hq_protein_alignment_hints_priority = read_int("hq_protein_alignments.p")
+		String	lq_protein_alignment_hints_source = read_string("lq_protein_alignments.s")
+		Int		lq_protein_alignment_hints_priority = read_int("lq_protein_alignments.p")
 	}
 
 	command <<<
@@ -419,8 +490,8 @@ task PrepareTranscriptHints {
 
 	command <<<
 		for i in ~{sep=' ' transcripts}; do
-		name=$(echo ${basename i} | sed 's/.gff//')
-		cat $i | gff_to_aug_hints -P ~{priority} -S ~{source} -s ${name}.transcripts -t exon >> ~{category}.transcripts.S~{source}P~{priority}.gff;
+		name=$(echo ${basename $i} | sed 's/.gff//')
+		cat $i | gff_to_aug_hints -P ~{priority} -S ~{source} -s ~{category}.transcripts -t exon >> ~{category}.transcripts.S~{source}P~{priority}.gff;
 		done
 	>>>
 }
