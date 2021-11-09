@@ -30,7 +30,7 @@ def transform_gff_to_hint(gff_file, order, priority, source_hint, source_gff, fe
     introns = []
     tmp_gid = ''
     for line in gff_file:
-        if line.startswith('#') or line.isspace():
+        if line.startswith('#') or line.isspace() or len(line) == 0:
             continue
         seqid, source, ftype, start, end, score, strand, phase, attributes = line.strip().split('\t', maxsplit=9)
         start = int(start)
@@ -38,7 +38,11 @@ def transform_gff_to_hint(gff_file, order, priority, source_hint, source_gff, fe
         start, end = (end, start) if end < start else (start, end)
         if ftype not in ('exon', 'match_part'):
             continue
-        gid = re.search('Parent *= *([^;]+)', attributes).group(1)
+        try:
+            gid = re.search('Parent *= *([^;]+)', attributes).group(1)
+        except AttributeError:
+            print(f"The feature:\n{line.strip()}\nin {gff_file.name} is missing the Parent attribute, please make sure this file is valid", file=sys.stderr)
+            sys.exit(1)
         if gid != tmp_gid:
             new_attributes = f"src={source_hint};grp={gid};pri={priority};"
             #  output results

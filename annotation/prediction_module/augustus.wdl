@@ -490,7 +490,7 @@ task PrepareTranscriptHints {
 
 	command <<<
 		for i in ~{sep=' ' transcripts}; do
-		name=$(echo ${basename $i} | sed 's/.gff//')
+		name=$(echo $(basename $i) | sed 's/.gff//')
 		cat $i | gff_to_aug_hints -P ~{priority} -S ~{source} -s ~{category}.transcripts -t exon >> ~{category}.transcripts.S~{source}P~{priority}.gff;
 		done
 	>>>

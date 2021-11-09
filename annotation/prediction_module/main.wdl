@@ -517,8 +517,9 @@ task ChangeSource {
 
 	command <<<
 		awk -v 'OFS=\t' '
-		$3=="exon" {print $1, "~{source}", "exon", $4, $5, $6, $7, $8, "src=generic_source;pri=0"}
-		$3=="CDS" {print $1, "~{source}", "CDS", $4, $5, $6, $7, $8, "src=generic_source;pri=0"}
+		$3=="exon" {print $1, "~{source}", "exon", $4, $5, $6, $7, $8, $9";src=generic_source;pri=0"}
+		$3=="CDS" {print $1, "~{source}", "CDS", $4, $5, $6, $7, $8, $9";src=generic_source;pri=0"}
+		($3 != "exon" && $3 != "CDS") {print $1, "~{source}", $3, $4, $5, $6, $7, $8, $9}
 		' ~{gff} > ~{sub(basename(gff), "\\.(gff|gtf)" , "") + ".post.gff"}
 	>>>
 }
