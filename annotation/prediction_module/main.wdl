@@ -910,26 +910,28 @@ task EVM {
 
 		transcript_alignments_param=''
 		protein_alignments_param=''
-		if [ ! -s protein_alignments.gff ];
+		if [ -s protein_alignments.gff ];
 		then
-			protein_alignment_param='--protein_alignments protein_alignments.gff'
+			protein_alignments_param='--protein_alignments '$(realpath protein_alignments.gff)
 		fi
 
-		if [ ! -s protein_alignments.gff ];
+		if [ -s transcript_alignments.gff ];
 		then
-			transcript_alignments_param='--transcript_alignments transcript_alignments.gff'
+			transcript_alignments_param='--transcript_alignments '$(realpath transcript_alignments.gff)
 		fi
 
 		cat ~{sep=" " predictions} ~{sep=" " augustus_predictions} | grep -v '^#' >> predictions.gff
+
+		predictions_fp=$(realpath predictions.gff)
 		$EVM_HOME/EvmUtils/partition_EVM_inputs.pl --genome ~{genome} \
-		--gene_predictions predictions.gff ${protein_alignments_param} ${transcript_alignments_param} \
+		--gene_predictions ${predictions_fp} ${protein_alignments_param} ${transcript_alignments_param} \
 		--segmentSize ~{segment_size} \
 		--overlapSize ~{overlap_size} \
 		--partition_listing partitions_list.out
 
 
 		$EVM_HOME/EvmUtils/write_EVM_commands.pl --genome ~{genome} \
-		--gene_predictions predictions.gff ${protein_alignments_param} ${transcript_alignments_param} \
+		--gene_predictions ${predictions_fp} ${protein_alignments_param} ${transcript_alignments_param} \
 		--weights ~{weights} \
 		--search_long_introns 5000 \
 		--output_file_name evm.out \
