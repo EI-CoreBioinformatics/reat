@@ -1,16 +1,18 @@
 #!/usr/bin/env python3
-from argparse import ArgumentParser, FileType
+from argparse import ArgumentParser, FileType, ArgumentDefaultsHelpFormatter
 from networkx import Graph, connected_components
 
 from annotation import minimal_gxf_parser
 
 
 def main():
-    parser = ArgumentParser()
+    parser = ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)
     parser.add_argument('-b', '--blast_hits', type=FileType('r'), help='Hits from self blast check')
     parser.add_argument('-c', '--classification', type=FileType('r'), help='Transcript full length classification')
     parser.add_argument('-t', '--transcripts', type=FileType('r'), help='Transcripts checking for self hits')
-    parser.add_argument('-n', '--top_n', type=int, default=0, help='Only output the top N transcripts')
+    parser.add_argument('-n', '--top_n', type=int, default=0, help='Only output the top N transcripts, if 0 output all')
+    parser.add_argument('--max_identity', type=int, default=80, help='Maximum identity allowed between hits')
+    parser.add_argument('--max_coverage', type=int, default=80, help='Maximum coverage allowed between hits')
     args = parser.parse_args()
 
     print(f"Parsing input transcripts {args.transcripts.name}")
@@ -19,7 +21,7 @@ def main():
     genes, tid2gid = minimal_gxf_parser(args.transcripts.name)
 
     print(f"Found {len(tid2gid)} transcripts in {len(genes)} genes")
-    print(f"Calculating 80cov80id redundant groups")
+    print(f"Calculating {args.max_coverage}cov{args.max_identity}id redundant groups")
     # If hit matches something else with 80cov 80id add edge to graph
     edges = []
     for hit_line in args.blast_hits:
@@ -30,7 +32,7 @@ def main():
         scov = 100 * (int(send) - int(sstart) + 1) / int(slen)
         qcov = 100 * (int(qend) - int(qstart) + 1) / int(qlen)
         cov = min(scov, qcov)
-        if float(pident) > 80 and cov > 80:
+        if float(pident) > args.max_identity and cov > args.max_coverage:
             edges.append(sorted((qseqid, sseqid)))
 
     # Parse the classification to obtain the scores

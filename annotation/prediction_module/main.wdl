@@ -334,16 +334,19 @@ workflow ei_prediction {
 	call EVM {
 		input:
 		genome = def_reference_genome.fasta,
+		augustus_abinitio = AugustusAbinitio.predictions,
 		augustus_predictions = def_augustus_predictions,
-		predictions = select_all([GlimmerHMM.predictions, SNAP.predictions, CodingQuarry.predictions, CodingQuarryFresh.predictions]),
+		snap_predictions = SNAP.predictions,
+		glimmer_predictions = GlimmerHMM.predictions,
+		codingquarry_predictions = CodingQuarry.predictions,
+		codingquarry_fresh_predictions = CodingQuarryFresh.predictions,
 		hq_protein_alignments = hq_protein.processed_gff,
 		lq_protein_alignments = lq_protein.processed_gff,
 		hq_assembly = hq_assembly.processed_gff,
 		lq_assembly = lq_assembly.processed_gff,
 		weights = EVM_weights,
 		segment_size = 500000,
-		overlap_size = 50000,
-		partition_listing = "partitions_list.out"
+		overlap_size = 50000
 	}
 
 	scatter(emv_part in read_lines(EVM.evm_commands)) {
@@ -833,6 +836,34 @@ task LengthChecker {
 		Array[File] models
 		File protein_models
 		File hits
+		Float? min_pct_cds_fraction
+		Int? max_tp_utr_complete
+		Int? max_tp_utr
+		Int? min_tp_utr
+		Int? max_fp_utr_complete
+		Int? max_fp_utr
+		Int? min_fp_utr
+		Int? query_start_hard_filter_distance
+		Int? query_start_score
+		Int? query_start_scoring_distance
+		Int? query_end_hard_filter_distance
+		Int? query_end_score
+		Int? query_end_scoring_distance
+		Int? target_start_hard_filter_distance
+		Int? target_start_score
+		Int? target_start_scoring_distance
+		Int? target_end_hard_filter_distance
+		Int? target_end_score
+		Int? target_end_scoring_distance
+		Int? min_query_coverage_hard_filter
+		Int? min_query_coverage_score
+		Int? min_query_coverage_scoring_percentage
+		Int? min_target_coverage_hard_filter
+		Int? min_target_coverage_score
+		Int? min_target_coverage_scoring_percentage
+		Int? max_single_gap_hard_filter
+		Int? max_single_gap_score
+		Int? max_single_gap_scoring_length
 	}
 
 	output {
@@ -849,7 +880,9 @@ task LengthChecker {
 		ln -s ~{genome.fasta}
 		ln -s ~{genome.index}
 		gffread -g ~{basename(genome.fasta)} -F --cluster-only --keep-genes -P ~{sep=" " models} > all_models.clustered.gff
-		classify_transcripts -b ~{hits} -t all_models.clustered.gff
+		classify_transcripts ~{"--min_pct_cds_fraction " + min_pct_cds_fraction} ~{"--max_tp_utr_complete " + max_tp_utr_complete} ~{"--max_tp_utr " + max_tp_utr} ~{"--min_tp_utr " + min_tp_utr} ~{"--max_fp_utr_complete " + max_fp_utr_complete} ~{"--max_fp_utr " + max_fp_utr} ~{"--min_fp_utr " + min_fp_utr} \
+		-b ~{hits} ~{"--query_start_hard_filter_distance " + query_start_hard_filter_distance} ~{"--query_start_score " + query_start_score} ~{"--query_start_scoring_distance " + query_start_scoring_distance} ~{"--query_end_hard_filter_distance " + query_end_hard_filter_distance} ~{"--query_end_score " + query_end_score} ~{"--query_end_scoring_distance " + query_end_scoring_distance} \
+		-t all_models.clustered.gff ~{"--target_start_hard_filter_distance " + target_start_hard_filter_distance} ~{"--target_start_score " + target_start_score} ~{"--target_start_scoring_distance " + target_start_scoring_distance} ~{"--target_end_hard_filter_distance " + target_end_hard_filter_distance} ~{"--target_end_score " + target_end_score} ~{"--target_end_scoring_distance " + target_end_scoring_distance} ~{"--min_query_coverage_hard_filter " + min_query_coverage_hard_filter} ~{"--min_query_coverage_score " + min_query_coverage_score} ~{"--min_query_coverage_scoring_percentage " + min_query_coverage_scoring_percentage} ~{"--min_target_coverage_hard_filter " + min_target_coverage_hard_filter} ~{"--min_target_coverage_score " + min_target_coverage_score} ~{"--min_target_coverage_scoring_percentage " + min_target_coverage_scoring_percentage} ~{"--max_single_gap_hard_filter " + max_single_gap_hard_filter} ~{"--max_single_gap_score " + max_single_gap_score} ~{"--max_single_gap_scoring_length " + max_single_gap_scoring_length}
 	>>>
 }
 
@@ -858,6 +891,9 @@ task SelfBlastFilter {
 		IndexedReference genome
 		File clustered_models
 		File classification
+		Int? top_n
+		Int? identity
+		Int? coverage
 	}
 
 	output {
@@ -875,7 +911,7 @@ task SelfBlastFilter {
 
 		diamond makedb --db self -p 8 --in proteins.faa
 		diamond blastp -p 8 -d self -q proteins.faa -f6 qseqid sseqid qlen slen pident length mismatch gapopen qstart qend sstart send evalue bitscore ppos btop > self.hits.tsv
-		filter_self_hits -b self.hits.tsv -t ~{clustered_models} -c ~{classification}
+		filter_self_hits -b self.hits.tsv -t ~{clustered_models} -c ~{classification} ~{"--top_n " + top_n} ~{"--max_identity " + identity} ~{"--max_coverage " + coverage}
 		awk '$3 == "gene"' with_utr.gff|wc -l > num_models_utr.int
 		awk '$3 == "gene"' without_utr.gff|wc -l > num_models_noutr.int
 	>>>
@@ -885,7 +921,11 @@ task EVM {
 	input {
 		File genome
 		Array[File]? augustus_predictions
-		Array[File]? predictions
+		File? augustus_abinitio
+		File? snap_predictions
+		File? glimmer_predictions
+		File? codingquarry_predictions
+		File? codingquarry_fresh_predictions
 		File? hq_protein_alignments
 		File? lq_protein_alignments
 		File? hq_assembly
@@ -893,7 +933,6 @@ task EVM {
 		Int segment_size
 		Int overlap_size
 		File weights
-		String partition_listing
 	}
 
 	output {
@@ -920,7 +959,29 @@ task EVM {
 			transcript_alignments_param='--transcript_alignments '$(realpath transcript_alignments.gff)
 		fi
 
-		cat ~{sep=" " predictions} ~{sep=" " augustus_predictions} | grep -v '^#' >> predictions.gff
+		if [ "~{snap_predictions}" != "" ]; then
+			$EVM_HOME/EvmUtils/misc/SNAP_to_GFF3.pl ~{snap_predictions} | awk '$2="SNAP"' >> predictions.gff
+		fi
+		if [ "~{glimmer_predictions}" != "" ]; then
+			$EVM_HOME/EvmUtils/misc/glimmerHMM_to_GFF3.pl ~{glimmer_predictions} | awk '$2="GlimmerHMM"' >> predictions.gff
+		fi
+
+#		if [ "~{codingquarry_predictions}" != ""]; then
+#			$EVM_HOME/EvmUtils/misc/
+#		fi
+#		if [ "~{codingquarry_fresh_predictions}" != ""]; then
+#			$EVM_HOME/EvmUtils/misc/
+#		fi
+
+		if [ "~{augustus_abinitio}" != "" ]; then
+			$EVM_HOME/EvmUtils/misc/augustus_GFF3_to_EVM_GFF3.pl ~{augustus_abinitio} | awk -v OFS="\t" '($2="AUGUSTUS_RUN_ABINITIO") && NF>8' >> predictions.gff
+		fi
+
+		augustus_run=0
+		for i in ~{sep=" " augustus_predictions}; do
+			((augustus_run++))
+			$EVM_HOME/EvmUtils/misc/augustus_GFF3_to_EVM_GFF3.pl $i | awk -v OFS="\t" -v RUN=${augustus_run} '($2="AUGUSTUS_RUN"RUN) && NF>8' >> predictions.gff
+		done
 
 		predictions_fp=$(realpath predictions.gff)
 		$EVM_HOME/EvmUtils/partition_EVM_inputs.pl --genome ~{genome} \
@@ -929,8 +990,7 @@ task EVM {
 		--overlapSize ~{overlap_size} \
 		--partition_listing partitions_list.out
 
-
-		$EVM_HOME/EvmUtils/write_EVM_commands.pl --genome ~{genome} \
+		$EVM_HOME/EvmUtils/write_EVM_commands.pl -S --debug --genome ~{genome} \
 		--gene_predictions ${predictions_fp} ${protein_alignments_param} ${transcript_alignments_param} \
 		--weights ~{weights} \
 		--search_long_introns 5000 \

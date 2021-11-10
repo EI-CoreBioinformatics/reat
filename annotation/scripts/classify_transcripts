@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from argparse import ArgumentParser, FileType
+from argparse import ArgumentParser, FileType, ArgumentDefaultsHelpFormatter
 from Mikado.serializers.blast_serializer import btop_parser
 from Mikado.serializers.blast_serializer.tabular_utils import Matrices
 import numpy as np
@@ -8,6 +8,31 @@ from math import log10
 from collections import defaultdict
 import itertools
 from annotation import minimal_gxf_parser
+
+# Filtering parameters relating to transcript requirements
+from prediction_module import add_classification_parser_parameters
+
+min_pct_cds_fraction = 0.5
+max_tp_utr_complete = 1
+max_tp_utr = 2
+min_tp_utr = 1
+max_fp_utr_complete = 2
+max_fp_utr = 3
+min_fp_utr = 1
+
+# Scoring parameters
+max_distance_start_query = [10, 5, 30]  # 10bp for hard filter, max_score 5, 30bp from start for score
+max_distance_end_query = [10, 5, 30]  #  10bp for hard filter, max_score 5, 30bp from end for score
+max_distance_start_target = [10, 5, 30]  # 10bp for hard filter, max_score 5, 30bp from start for score
+max_distance_end_target = [10, 5, 30]  # 10bp for hard filter, max_score 5, 30bp from end for score
+min_coverage_query = [90, 5, 70]  # 90% for hard filter, max_score 5 * %cov_qry, 70% to start scoring
+min_coverage_target = [90, 5, 70]  # 90% for hard filter, max_score 5 * %cov_tgt, 70% to start scoring
+max_single_qgap_length = [20, 5, 50]  # 20bp for hard filter, max_score 5 * %long_gap_len/qlen, 50bp to start scoring
+
+# Filtering parameters relating to blast hits
+evalue_filter = 10e-7  #  Maximum evalue allowed
+evalue_filter_difference = 10  #  Filter any hits with evalue < best_evalue - (best_evalue/filter_difference)
+top_n_hits = 10  #  After evalue filtering how many hits to take if more than top_n_hits
 
 GOLD = 0
 SILVER = 1
@@ -25,28 +50,6 @@ COMPLETE = 0
 PUTATIVE = 1
 PARTIAL = 2
 FL_CATEGORY = ["Complete", "Putative", "Partial"]
-
-max_distance_start_query = (10, 5, 30)  # 10bp for hard filter, max_score 5, 30bp from start for score
-max_distance_end_query = (10, 5, 30)  # 5
-max_distance_start_target = (10, 5, 30)  # 5
-max_distance_end_target = (10, 5, 30)  # 5
-min_coverage_query = (90, 5, 70)  # 5 * %cov_qry
-min_coverage_target = (90, 5, 70)  # 5 * %cov_tgt
-max_single_qgap_length = (20, 5, 50)  # 5 * %long_gap_len/qlen
-
-# Filtering parameters
-evalue_filter = 10e-7
-evalue_filter_difference = 10
-top_n_hits = 10
-
-best_score = sum([x[1] for x in [max_distance_start_query,
-                                 max_distance_end_query,
-                                 max_distance_start_target,
-                                 max_distance_end_target,
-                                 min_coverage_query,
-                                 min_coverage_target,
-                                 max_single_qgap_length]])
-
 
 def collect_transcript_metrics(row, genes, tid2gid):
     transcript = genes[tid2gid[row.qseqid]][row.qseqid]
@@ -79,28 +82,32 @@ def calc_coverage(row):
     return gap_runs
 
 
+def score_distance(dtsq, mtsq, stsq):
+    return ((mtsq - dtsq) / mtsq) * stsq if dtsq < mtsq else 0
+
+
 def scoring_function(row):
     score = 0
 
     mtsq = max_distance_start_query[2]
     stsq = max_distance_start_query[1]
     dtsq = row['qstart'] - 1
-    score += ((mtsq - dtsq) / mtsq) * stsq if dtsq < mtsq else 0
+    score += score_distance(dtsq, mtsq, stsq)
 
     dteq = row['qlen'] - row['qend']
     mteq = max_distance_end_query[2]
     steq = max_distance_end_query[1]
-    score += ((mteq - dteq) / mteq) * steq if dteq < mteq else 0
+    score += score_distance(dteq, mteq, steq)
 
     mtst = max_distance_start_target[2]
     stst = max_distance_start_target[1]
     dtst = row['sstart'] - 1
-    score += ((mtst - dtst) / mtst) * stst if dtst < mtst else 0
+    score += score_distance(dtst, mtst, stst)
 
     mtet = max_distance_end_target[2]
     stet = max_distance_end_target[1]
     dtet = row['slen'] - row['send']
-    score += ((mtet - dtet) / mtet) * stet if dtet < mtet else 0
+    score += score_distance(dtet, mtet, stet)
 
     query_coverage = row['query_coverage']
     score += ((query_coverage - min_coverage_query[2]) / (100.0 - min_coverage_query[2])) * min_coverage_query[
@@ -117,7 +124,7 @@ def scoring_function(row):
     return score
 
 
-def evaluate_completeness(row):
+def evaluate_completeness(row, best_score):
     if row['partialness'] != '':
         return FL_CATEGORY[PARTIAL]
 
@@ -136,11 +143,102 @@ def evaluate_completeness(row):
 
 
 def main():
-    parser = ArgumentParser()
+    parser = ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)
     parser.add_argument('-b', '--blast', type=FileType('r'), help="Transcripts hits against curated proteins")
     parser.add_argument('-t', '--transcripts_gff', type=FileType('r'), help='Transcripts being analysed in GFF format')
+    add_classification_parser_parameters(parser)
 
     args = parser.parse_args()
+
+    if args.min_pct_cds_fraction:
+        min_pct_cds_fraction = args.min_pct_cds_fraction
+
+    if args.max_tp_utr_complete:
+        max_tp_utr_complete = args.max_tp_utr_complete
+
+    if args.max_tp_utr:
+        max_tp_utr = args.max_tp_utr
+
+    if args.min_tp_utr:
+        min_tp_utr = args.min_tp_utr
+
+    if args.max_fp_utr_complete:
+        max_fp_utr_complete = args.max_fp_utr_complete
+
+    if args.max_fp_utr:
+        max_fp_utr = args.max_fp_utr
+
+    if args.min_fp_utr:
+        min_fp_utr = args.min_fp_utr
+###
+    if args.query_start_hard_filter_distance:
+        max_distance_start_query[0] = args.query_start_hard_filter_distance
+
+    if args.query_start_score:
+        max_distance_start_query[1] = args.query_start_score
+
+    if args.query_start_scoring_distance:
+        max_distance_start_query[2] = args.query_start_scoring_distance
+####
+    if args.target_start_hard_filter_distance:
+        max_distance_start_target[0] = args.target_start_hard_filter_distance
+
+    if args.target_start_score:
+        max_distance_start_target[1] = args.target_start_score
+
+    if args.target_start_scoring_distance:
+        max_distance_start_target[2] = args.target_start_scoring_distance
+####
+    if args.query_end_hard_filter_distance:
+        max_distance_end_query[0] = args.query_end_hard_filter_distance
+
+    if args.query_end_score:
+        max_distance_end_query[1] = args.query_end_score
+
+    if args.query_end_scoring_distance:
+        max_distance_end_query[2] = args.query_end_scoring_distance
+####
+    if args.target_end_hard_filter_distance:
+        max_distance_end_target[0] = args.target_end_hard_filter_distance
+
+    if args.target_end_score:
+        max_distance_end_target[1] = args.target_end_score
+
+    if args.target_end_scoring_distance:
+        max_distance_end_target[2] = args.target_end_scoring_distance
+###
+    if args.min_query_coverage_hard_filter:
+        min_coverage_query[0] = args.min_query_coverage_hard_filter
+
+    if args.min_query_coverage_score:
+        min_coverage_query[1] = args.min_query_coverage_score
+
+    if args.min_query_coverage_scoring_percentage:
+        min_coverage_query[2] = args.min_query_coverage_scoring_percentage
+###
+    if args.min_target_coverage_hard_filter:
+        min_coverage_target[0] = args.min_target_coverage_hard_filter
+
+    if args.min_target_coverage_score:
+        min_coverage_target[1] = args.min_target_coverage_score
+
+    if args.min_target_coverage_scoring_percentage:
+        min_coverage_target[2] = args.min_target_coverage_scoring_percentage
+###
+    if args.max_single_gap_hard_filter:
+        max_single_qgap_length[0] = args.max_single_gap_hard_filter
+    if args.max_single_gap_score:
+        max_single_qgap_length[1] = args.max_single_gap_score
+    if args.max_single_gap_scoring_length:
+        max_single_qgap_length[2] = args.max_single_gap_scoring_length
+
+    best_score = sum([x[1] for x in [max_distance_start_query,
+                                 max_distance_end_query,
+                                 max_distance_start_target,
+                                 max_distance_end_target,
+                                 min_coverage_query,
+                                 min_coverage_target,
+                                 max_single_qgap_length]])
 
     df = pd.read_csv(args.blast, delimiter='\t',
                      names=col_names.split('\t'), comment="#")
@@ -170,7 +268,7 @@ def main():
 
     applied_df = df.apply(collect_transcript_metrics, args=(genes, tid2gid), axis='columns', result_type='expand')
     df = pd.concat([df, applied_df], axis='columns')
-    df['full_length'] = df.apply(evaluate_completeness, axis=1)
+    df['full_length'] = df.apply(evaluate_completeness, axis=1, args=(best_score,))
     df['full_length'] = pd.Categorical(df['full_length'], categories=FL_CATEGORY, ordered=True)
     df.sort_values(['qseqid', 'full_length', 'score', 'evalue'], ascending=(False, True, False, True), inplace=True)
 
@@ -197,9 +295,9 @@ def main():
         outputs[fl_category].append((name, beval_filt.score.mean()))
         txct = genes[tid2gid[name]][name]
         txct_reqs = (
-                0 < txct.five_utr_num <= 3 and txct.five_utr_num_complete <= 2 and  # 5' is complete or not too many
-                0 < txct.three_utr_num <= 2 and txct.three_utr_num_complete <= 1 and  # 3' is complete or not too many
-                txct.combined_cds_fraction >= 0.5  # The cDNA is not twice as long as the CDS (indicating too much UTR)
+                min_fp_utr <= txct.five_utr_num <= max_fp_utr and txct.five_utr_num_complete <= max_fp_utr_complete and  # 5' is complete or not too many
+                min_tp_utr <= txct.three_utr_num <= max_tp_utr and txct.three_utr_num_complete <= max_tp_utr_complete and  # 3' is complete or not too many
+                txct.combined_cds_fraction >= min_pct_cds_fraction  # The cDNA is not twice as long as the CDS (indicating too much UTR)
         )
         category = TRANSCRIPT_CLASS[STONE]
         if fl_category == FL_CATEGORY[COMPLETE] and txct_reqs:

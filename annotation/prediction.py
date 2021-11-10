@@ -86,6 +86,95 @@ def combine_arguments_prediction(cli_arguments):
     if cli_arguments.no_augustus and cli_arguments.no_augustus == False:
         cromwell_inputs['ei_prediction.do_augustus'] = 'false'
 
+    if cli_arguments.min_pct_cds_fraction:
+        cromwell_inputs['ei_prediction.LengthChecker.min_pct_cds_fraction'] = cli_arguments.min_pct_cds_fraction
+
+    if cli_arguments.max_tp_utr_complete:
+        cromwell_inputs['ei_prediction.LengthChecker.max_tp_utr_complete'] = cli_arguments.max_tp_utr_complete
+
+    if cli_arguments.max_tp_utr:
+        cromwell_inputs['ei_prediction.LengthChecker.max_tp_utr'] = cli_arguments.max_tp_utr
+
+    if cli_arguments.min_tp_utr:
+        cromwell_inputs['ei_prediction.LengthChecker.min_tp_utr'] = cli_arguments.min_tp_utr
+
+    if cli_arguments.max_fp_utr_complete:
+        cromwell_inputs['ei_prediction.LengthChecker.max_fp_utr_complete'] = cli_arguments.max_fp_utr_complete
+
+    if cli_arguments.max_fp_utr:
+        cromwell_inputs['ei_prediction.LengthChecker.max_fp_utr'] = cli_arguments.max_fp_utr
+
+    if cli_arguments.min_fp_utr:
+        cromwell_inputs['ei_prediction.LengthChecker.min_fp_utr'] = cli_arguments.min_fp_utr
+    ###
+    if cli_arguments.query_start_hard_filter_distance:
+        cromwell_inputs['ei_prediction.LengthChecker.query_start_hard_filter_distance'] = cli_arguments.query_start_hard_filter_distance
+
+    if cli_arguments.query_start_score:
+        cromwell_inputs['ei_prediction.LengthChecker.query_start_score'] = cli_arguments.query_start_score
+
+    if cli_arguments.query_start_scoring_distance:
+        cromwell_inputs['ei_prediction.LengthChecker.query_start_scoring_distance'] = cli_arguments.query_start_scoring_distance
+    ####
+    if cli_arguments.target_start_hard_filter_distance:
+        cromwell_inputs['ei_prediction.LengthChecker.target_start_hard_filter_distance'] = cli_arguments.target_start_hard_filter_distance
+
+    if cli_arguments.target_start_score:
+        cromwell_inputs['ei_prediction.LengthChecker.target_start_score'] = cli_arguments.target_start_score
+
+    if cli_arguments.target_start_scoring_distance:
+        cromwell_inputs['ei_prediction.LengthChecker.target_start_scoring_distance'] = cli_arguments.target_start_scoring_distance
+    ####
+    if cli_arguments.query_end_hard_filter_distance:
+        cromwell_inputs['ei_prediction.LengthChecker.query_end_hard_filter_distance'] = cli_arguments.query_end_hard_filter_distance
+
+    if cli_arguments.query_end_score:
+        cromwell_inputs['ei_prediction.LengthChecker.query_end_score'] = cli_arguments.query_end_score
+
+    if cli_arguments.query_end_scoring_distance:
+        cromwell_inputs['ei_prediction.LengthChecker.query_end_scoring_distance'] = cli_arguments.query_end_scoring_distance
+    ####
+    if cli_arguments.target_end_hard_filter_distance:
+        cromwell_inputs['ei_prediction.LengthChecker.target_end_hard_filter_distance'] = cli_arguments.target_end_hard_filter_distance
+
+    if cli_arguments.target_end_score:
+        cromwell_inputs['ei_prediction.LengthChecker.target_end_score'] = cli_arguments.target_end_score
+
+    if cli_arguments.target_end_scoring_distance:
+        cromwell_inputs['ei_prediction.LengthChecker.target_end_scoring_distance'] = cli_arguments.target_end_scoring_distance
+    ###
+    if cli_arguments.min_query_coverage_hard_filter:
+        cromwell_inputs['ei_prediction.LengthChecker.min_query_coverage_hard_filter'] = cli_arguments.min_query_coverage_hard_filter
+
+    if cli_arguments.min_query_coverage_score:
+        cromwell_inputs['ei_prediction.LengthChecker.min_query_coverage_score'] = cli_arguments.min_query_coverage_score
+
+    if cli_arguments.min_query_coverage_scoring_percentage:
+        cromwell_inputs['ei_prediction.LengthChecker.min_query_coverage_scoring_percentage'] = cli_arguments.min_query_coverage_scoring_percentage
+    ###
+    if cli_arguments.min_target_coverage_hard_filter:
+        cromwell_inputs['ei_prediction.LengthChecker.min_target_coverage_hard_filter'] = cli_arguments.min_target_coverage_hard_filter
+
+    if cli_arguments.min_target_coverage_score:
+        cromwell_inputs['ei_prediction.LengthChecker.min_target_coverage_score'] = cli_arguments.min_target_coverage_score
+
+    if cli_arguments.min_target_coverage_scoring_percentage:
+        cromwell_inputs['ei_prediction.LengthChecker.min_target_coverage_scoring_percentage'] = cli_arguments.min_target_coverage_scoring_percentage
+    ###
+    if cli_arguments.max_single_gap_hard_filter:
+        cromwell_inputs['ei_prediction.LengthChecker.max_single_gap_hard_filter'] = cli_arguments.max_single_gap_hard_filter
+    if cli_arguments.max_single_gap_score:
+        cromwell_inputs['ei_prediction.LengthChecker.max_single_gap_score'] = cli_arguments.max_single_gap_score
+    if cli_arguments.max_single_gap_scoring_length:
+        cromwell_inputs['ei_prediction.LengthChecker.max_single_gap_scoring_length'] = cli_arguments.max_single_gap_scoring_length
+
+    if cli_arguments.filter_top_n:
+        cromwell_inputs['ei_prediction.SelfBlastFilter.top_n'] = cli_arguments.filter_top_n
+    if cli_arguments.filter_max_coverage:
+        cromwell_inputs['ei_prediction.SelfBlastFilter.coverage'] = cli_arguments.filter_max_coverage
+    if cli_arguments.filter_max_identity:
+        cromwell_inputs['ei_prediction.SelfBlastFilter.identity'] = cli_arguments.filter_max_identity
+
     return cromwell_inputs
 
 

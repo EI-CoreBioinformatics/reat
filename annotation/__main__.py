@@ -41,6 +41,7 @@ from annotation.homology import homology_module
 from annotation.prediction import prediction_module
 from annotation.transcriptome import transcriptome_module
 from annotation import UTR_SELECTION_OPTIONS, LONG_READ_ALIGNER_CHOICES
+from prediction_module import add_classification_parser_parameters
 
 try:
     import importlib.resources as pkg_resources
@@ -497,11 +498,20 @@ def parse_arguments():
                                help="Low confidence assemblies (short reads or low quality long reads) to be used as "
                                     "hints for Augustus runs")
     prediction_ap.add_argument('--mikado_utr_files', choices=UTR_SELECTION_OPTIONS, nargs='*',
-                               default=['gold', 'silver'])
+                               default=['gold', 'silver'],
+                               help=f"Choose any combination of space separated values from: "
+                                    f"{' '.join(UTR_SELECTION_OPTIONS)}")
     prediction_ap.add_argument('--do_glimmer', action='store_true')
     prediction_ap.add_argument('--do_snap', action='store_true')
     prediction_ap.add_argument('--do_codingquarry', action='store_true')
     prediction_ap.add_argument('--no_augustus', action='store_false')
+    prediction_ap.add_argument('--filter_top_n', type=int, default=0,
+                               help='Only output the top N transcripts that pass the self blast filter (0 outputs all)')
+    prediction_ap.add_argument('--filter_max_identity', type=int, default=80,
+                               help='Maximum identity between models for redundancy classification')
+    prediction_ap.add_argument('--filter_max_coverage', type=int, default=80,
+                               help='Maximum coverage between models for redundancy classification')
+    add_classification_parser_parameters(prediction_ap)
 
     args = reat_ap.parse_args()
 
