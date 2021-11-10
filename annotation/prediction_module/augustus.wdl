@@ -26,6 +26,7 @@ workflow wf_augustus {
 		File? hq_protein_alignment_models
 		File? lq_protein_alignment_models
 		File? hints_source_and_priority
+		RuntimeAttr? resources
 	}
 
 	if (defined(hints_source_and_priority)) {
@@ -212,7 +213,8 @@ workflow wf_augustus {
 					with_utr = train_utr,
 					species = species,
 					config_path = augustus_config,
-					id = run_id
+					id = run_id,
+					runtime_attr_override = resources
 					}
 				}
 			}
@@ -229,7 +231,8 @@ workflow wf_augustus {
 					with_utr = train_utr,
 					species = species,
 					config_path = augustus_config,
-					id = run_id
+					id = run_id,
+					runtime_attr_override = resources
 				}
 			}
 		}
@@ -255,7 +258,8 @@ workflow wf_augustus {
 					with_utr = train_utr,
 					species = species,
 					config_path = augustus_config,
-					id = run_id
+					id = run_id,
+					runtime_attr_override = resources
 					}
 				}
 			}
@@ -271,7 +275,8 @@ workflow wf_augustus {
 					with_utr = train_utr,
 					species = species,
 					config_path = augustus_config,
-					id = run_id
+					id = run_id,
+					runtime_attr_override = resources
 				}
 			}
 		}
@@ -340,7 +345,26 @@ task AugustusByChunk {
 		String species
 		File? hints
 		String id
+		RuntimeAttr? runtime_attr_override
 	}
+
+	Int cpus = 1
+    RuntimeAttr default_attr = object {
+        cpu_cores: "~{cpus}",
+        mem_gb: 8,
+        max_retries: 1,
+        queue: ""
+    }
+
+    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
+    Int task_cpus = select_first([runtime_attr.cpu_cores, cpus])
+
+	runtime {
+        cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
+        memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
+        maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+        queue: select_first([runtime_attr.queue, default_attr.queue])
+    }
 
 	output {
 		File predictions = "augustus_"+id+".predictions.gff"
@@ -505,7 +529,26 @@ task Augustus {
 		String species
 		File? hints
 		String id
+		RuntimeAttr? runtime_attr_override
 	}
+
+	Int cpus = 1
+    RuntimeAttr default_attr = object {
+        cpu_cores: "~{cpus}",
+        mem_gb: 8,
+        max_retries: 1,
+        queue: ""
+    }
+
+    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
+    Int task_cpus = select_first([runtime_attr.cpu_cores, cpus])
+
+	runtime {
+        cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
+        memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
+        maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+        queue: select_first([runtime_attr.queue, default_attr.queue])
+    }
 
 	output {
 		File predictions = "augustus_"+id+".predictions.gff"

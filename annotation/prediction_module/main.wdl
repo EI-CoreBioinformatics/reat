@@ -350,7 +350,7 @@ workflow ei_prediction {
 	}
 
 	scatter(emv_part in read_lines(EVM.evm_commands)) {
-		call ExecuteCommand {
+		call ExecuteEVMCommand {
 			input:
 			command_to_run = emv_part
 		}
@@ -359,7 +359,7 @@ workflow ei_prediction {
 	call CombineEVM {
 		input:
 		genome = def_reference_genome.fasta,
-		dummy = ExecuteCommand.done,
+		dummy = ExecuteEVMCommand.done,
 		partitions = EVM.partitions_list
 	}
 
@@ -434,10 +434,29 @@ task CombineEVM {
 	>>>
 }
 
-task ExecuteCommand {
+task ExecuteEVMCommand {
 	input {
 		String command_to_run
+		RuntimeAttr? resources
 	}
+
+	Int cpus = 1
+    RuntimeAttr default_attr = object {
+        cpu_cores: "~{cpus}",
+        mem_gb: 8,
+        max_retries: 1,
+        queue: ""
+    }
+
+    RuntimeAttr runtime_attr = select_first([resources, default_attr])
+    Int task_cpus = select_first([runtime_attr.cpu_cores, cpus])
+
+	runtime {
+        cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
+        memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
+        maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+        queue: select_first([runtime_attr.queue, default_attr.queue])
+    }
 
 	output {
 		String done = "yes"
@@ -864,7 +883,26 @@ task LengthChecker {
 		Int? max_single_gap_hard_filter
 		Int? max_single_gap_score
 		Int? max_single_gap_scoring_length
+		RuntimeAttr? resources
 	}
+
+	Int cpus = 1
+    RuntimeAttr default_attr = object {
+        cpu_cores: "~{cpus}",
+        mem_gb: 8,
+        max_retries: 1,
+        queue: ""
+    }
+
+    RuntimeAttr runtime_attr = select_first([resources, default_attr])
+    Int task_cpus = select_first([runtime_attr.cpu_cores, cpus])
+
+	runtime {
+        cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
+        memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
+        maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+        queue: select_first([runtime_attr.queue, default_attr.queue])
+    }
 
 	output {
 		File classification = "transcripts.classification.tsv"
@@ -894,7 +932,26 @@ task SelfBlastFilter {
 		Int? top_n
 		Int? identity
 		Int? coverage
+		RuntimeAttr? resources
 	}
+
+	Int cpus = 1
+    RuntimeAttr default_attr = object {
+        cpu_cores: "~{cpus}",
+        mem_gb: 8,
+        max_retries: 1,
+        queue: ""
+    }
+
+    RuntimeAttr runtime_attr = select_first([resources, default_attr])
+    Int task_cpus = select_first([runtime_attr.cpu_cores, cpus])
+
+	runtime {
+        cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
+        memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
+        maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+        queue: select_first([runtime_attr.queue, default_attr.queue])
+    }
 
 	output {
 		File non_redundant_models_with_utr = "with_utr.gff"
@@ -1031,7 +1088,7 @@ task Mikado {
 		File utrs
 		File? junctions
 		String output_prefix
-		RuntimeAttr? runtime_attr_override
+		RuntimeAttr? resources
 	}
 
 	output {
@@ -1049,7 +1106,7 @@ task Mikado {
 								   queue: ""
 							   }
 
-	RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
+	RuntimeAttr runtime_attr = select_first([resources, default_attr])
 
 	Int task_cpus = select_first([runtime_attr.cpu_cores, cpus])
 
@@ -1111,7 +1168,7 @@ task MikadoPick {
 		File transcripts
 		File mikado_db
 		String output_prefix
-		RuntimeAttr? runtime_attr_override
+		RuntimeAttr? resources
 	}
 
 	Int cpus = 8
@@ -1122,7 +1179,7 @@ task MikadoPick {
 								   queue: ""
 							   }
 
-	RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
+	RuntimeAttr runtime_attr = select_first([resources, default_attr])
 
 	Int task_cpus = select_first([runtime_attr.cpu_cores, cpus])
 
