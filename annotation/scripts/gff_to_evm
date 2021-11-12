@@ -1,0 +1,398 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Script to create EVM specific input GFF files
+"""
+
+# authorship information
+__author__ = "Gemy George Kaithakottil"
+__email__ = "Gemy.Kaithakottil@earlham.ac.uk"
+
+
+# import libraries
+import argparse
+from argparse import RawTextHelpFormatter
+import os
+import re
+import sys
+import logging
+
+# change logging format - https://realpython.com/python-logging/
+# format is - time, process_id, user, log level, message
+logging.basicConfig(
+    format='%(asctime)s - %(process)d - %(name)s - %(levelname)s - %(message)s', datefmt='%d-%b-%y %H:%M:%S')
+
+# get script name
+script = os.path.basename(sys.argv[0])
+SEQID, SOURCE, TYPE, START, END, SCORE, STRAND, PHASE, ATTRIBUTE = range(9)
+
+allowed_gene_models = ['augustus', 'codingquarry', 'glimmer', 'snap']
+allowed_combinations = "augustus = gene_models\n" \
+    "codingquarry = gene_models\n" \
+    "glimmer = gene_models\n" \
+    "snap = gene_models\n"
+
+# TODO: Future development, if needs integration of protein_models,transcript_models,repeats,other_predictions
+# format_list = ['gene_models', 'protein_models',
+#                'transcript_models', 'repeats', 'other_predictions']
+# allowed_transcript_models = ['stringtie', 'scallop']
+# allowed_protein_models = ['exonerate', 'spaln']
+# allowed_repeats = ['repeatmodeler', 'red']
+# allowed_other_predictions = ['ests']
+
+
+class GFFToEVM():
+
+    @staticmethod
+    def get_id(input_file, line, attribute, field):
+        # Check for GFF3 file
+        if field == "ID":
+            try:
+                id_field = re.search('ID=([^;]+)', attribute).group(1)
+            except AttributeError as err:
+                logging.error(
+                    f"Error: {err}. '{field}' cannot be extracted from the file '{input_file}' line below\n{line}")
+        elif field == "Parent":
+            try:
+                id_field = re.search('Parent=([^;]+)', attribute).group(1)
+            except AttributeError as err:
+                logging.error(
+                    f"Error: {err}. '{field}' cannot be extracted from the file '{input_file}' line below\n{line}")
+        else:
+            logging.error(
+                f"Error: Unknown field '{field}', exiting..")
+            sys.exit(1)
+
+        # Sanity check
+        try:
+            id_field
+        except NameError as err:
+            logging.error(
+                f"Error: Cannot extract field '{field}' from the file '{input_file}', exiting..")
+            sys.exit(1)
+
+        return id_field
+
+    def __init__(self, args):
+        self.args = args
+        # TODO: For future implementation
+        # check input options
+        # if self.args.model in allowed_gene_models and self.args.format not in ['gene_models']:
+        #     logging.error(
+        #         f"'--model = --format' combination not allowed, please see help. User provided '{self.args.model} = {self.args.format}'")
+        #     sys.exit(1)
+
+    def add_tag(self, id_field):
+        return self.args.tag + "." + id_field if self.args.tag else id_field
+
+    def parse_codingquarrygff(self):
+        gene_counter = 1
+        exon_counter = 1
+        skip_first = False
+        print("##gff-version 3")
+        with open(self.args.input_GFF, 'r') as filehandle:
+            for line in filehandle:
+                line = line.rstrip("\n")
+                if re.match(r'^\s*$', line) or line.startswith("#"):
+                    continue
+                x = line.split("\t")
+                if x[TYPE] not in ['gene', 'CDS']:
+                    continue
+                if self.args.source:
+                    x[SOURCE] = self.args.source
+                if re.search("^(gene)$", x[TYPE], re.I):
+                    exon_counter = 1
+                    if skip_first:
+                        print("###")
+                        # increment counter
+                        gene_counter += 1
+                    skip_first = True
+                    gene_id = GFFToEVM.get_id(
+                        self.args.input_GFF, line, x[ATTRIBUTE], "ID")
+                    # Add tag prefix if provided
+                    gene_id = self.add_tag(gene_id)
+
+                    attrib = f"ID=gene{gene_counter}.{gene_id};Name=gene{gene_counter}.{gene_id};Note={gene_id}"
+                    print(*x[:8], attrib, sep="\t")
+
+                    # print mRNA line
+                    m_attrib = f"ID=model{gene_counter}.{gene_id};Parent=gene{gene_counter}.{gene_id};Name=model{gene_counter}.{gene_id};Note=gene{gene_counter}.{gene_id}"
+                    print(*x[:2], "mRNA", *x[3:8], m_attrib, sep="\t")
+
+                elif re.search("^(CDS)$", x[TYPE], re.I):
+                    cds_id = GFFToEVM.get_id(
+                        self.args.input_GFF, line, x[ATTRIBUTE], "ID")
+                    parent = GFFToEVM.get_id(
+                        self.args.input_GFF, line, x[ATTRIBUTE], "Parent")
+                    # Add tag prefix if provided
+                    cds_id = self.add_tag(cds_id)
+                    parent = self.add_tag(parent)
+
+                    # print exon line
+                    exon_id = f"model{gene_counter}.{parent}.exon{exon_counter}"
+                    e_attrib = f"ID={exon_id};Parent=model{gene_counter}.{parent}"
+                    print(*x[:2], "exon", *x[3:8], e_attrib, sep="\t")
+
+                    # print CDS line
+                    new_cds_id = f"cds.model{gene_counter}.{parent}"
+                    c_attrib = f"ID={new_cds_id};Parent=model{gene_counter}.{parent}"
+                    print(*x[:8], c_attrib, sep="\t")
+
+                    # increment counter
+                    exon_counter += 1
+        print("###")
+
+    def parse_augustus(self):
+        gene_counter = 1
+        exon_counter = 1
+        skip_first = False
+        print("##gff-version 3")
+        with open(self.args.input_GFF, 'r') as filehandle:
+            for line in filehandle:
+                line = line.rstrip("\n")
+                if re.match(r'^\s*$', line) or line.startswith("#"):
+                    continue
+                x = line.split("\t")
+                if x[TYPE] not in ['gene', 'mRNA', 'transcript', 'exon', 'CDS']:
+                    continue
+                if self.args.source:
+                    x[SOURCE] = self.args.source
+                if re.search("^(gene)$", x[TYPE], re.I):
+                    if skip_first:
+                        print("###")
+                        # increment counter
+                        gene_counter += 1
+                    skip_first = True
+                    gene_id = GFFToEVM.get_id(
+                        self.args.input_GFF, line, x[ATTRIBUTE], "ID")
+                    # Add tag prefix if provided
+                    gene_id = self.add_tag(gene_id)
+
+                    attrib = f"ID=gene{gene_counter}.{gene_id};Name=gene{gene_counter}.{gene_id};Note={gene_id}"
+                    print(*x[:8], attrib, sep="\t")
+
+                elif re.search("^(transcript|mRNA)$", x[TYPE], re.I):
+                    exon_counter = 1
+                    gene_id = GFFToEVM.get_id(
+                        self.args.input_GFF, line, x[ATTRIBUTE], "Parent")
+                    mrna_id = GFFToEVM.get_id(
+                        self.args.input_GFF, line, x[ATTRIBUTE], "ID")
+                    # Add tag prefix if provided
+                    gene_id = self.add_tag(gene_id)
+                    mrna_id = self.add_tag(mrna_id)
+
+                    # print mRNA line
+                    m_attrib = f"ID=model{gene_counter}.{mrna_id};Parent=gene{gene_counter}.{gene_id};Name=model{gene_counter}.{mrna_id};Note=gene{gene_counter}.{gene_id}"
+                    print(*x[:2], "mRNA", *x[3:8], m_attrib, sep="\t")
+
+                elif re.search("^(exon)$", x[TYPE], re.I):
+                    parent = GFFToEVM.get_id(
+                        self.args.input_GFF, line, x[ATTRIBUTE], "Parent")
+                    # Add tag prefix if provided
+                    parent = self.add_tag(parent)
+                    # print exon line
+                    exon_id = f"model{gene_counter}.{parent}.exon{exon_counter}"
+                    e_attrib = f"ID={exon_id};Parent=model{gene_counter}.{parent}"
+                    print(*x[:2], "exon", *x[3:8], e_attrib, sep="\t")
+                    # increment counter
+                    exon_counter += 1
+
+                elif re.search("^(CDS)$", x[TYPE], re.I):
+                    parent = GFFToEVM.get_id(
+                        self.args.input_GFF, line, x[ATTRIBUTE], "Parent")
+                    # Add tag prefix if provided
+                    parent = self.add_tag(parent)
+                    # print CDS line
+                    new_cds_id = f"cds.model{gene_counter}.{parent}"
+                    c_attrib = f"ID={new_cds_id};Parent=model{gene_counter}.{parent}"
+                    print(*x[:8], c_attrib, sep="\t")
+        print("###")
+
+    def parse_glimmer(self):
+        gene_counter = 1
+        exon_counter = 1
+        skip_first = False
+        print("##gff-version 3")
+        with open(self.args.input_GFF, 'r') as filehandle:
+            for line in filehandle:
+                line = line.rstrip("\n")
+                if re.match(r'^\s*$', line) or line.startswith("#"):
+                    continue
+                x = line.split("\t")
+                if x[TYPE] not in ['mRNA', 'CDS']:
+                    continue
+                if self.args.source:
+                    x[SOURCE] = self.args.source
+                if re.search("^(mRNA)$", x[TYPE], re.I):
+                    exon_counter = 1
+                    if skip_first:
+                        print("###")
+                        # increment counter
+                        gene_counter += 1
+                    skip_first = True
+                    gene_id = GFFToEVM.get_id(
+                        self.args.input_GFF, line, x[ATTRIBUTE], "ID")
+                    # Add tag prefix if provided
+                    gene_id = self.add_tag(gene_id)
+
+                    attrib = f"ID=gene{gene_counter}.{gene_id};Name=gene{gene_counter}.{gene_id};Note={gene_id}"
+                    print(*x[:2], "gene", *x[3:8], attrib, sep="\t")
+
+                    # print mRNA line
+                    m_attrib = f"ID=model{gene_counter}.{gene_id};Parent=gene{gene_counter}.{gene_id};Name=model{gene_counter}.{gene_id};Note=gene{gene_counter}.{gene_id}"
+                    print(*x[:8], m_attrib, sep="\t")
+
+                elif re.search("^(CDS)$", x[TYPE], re.I):
+                    parent = GFFToEVM.get_id(
+                        self.args.input_GFF, line, x[ATTRIBUTE], "Parent")
+                    # Add tag prefix if provided
+                    parent = self.add_tag(parent)
+
+                    # print exon line
+                    exon_id = f"model{gene_counter}.{parent}.exon{exon_counter}"
+                    e_attrib = f"ID={exon_id};Parent=model{gene_counter}.{parent}"
+                    print(*x[:2], "exon", *x[3:8], e_attrib, sep="\t")
+
+                    # print CDS line
+                    new_cds_id = f"cds.model{gene_counter}.{parent}"
+                    c_attrib = f"ID={new_cds_id};Parent=model{gene_counter}.{parent}"
+                    print(*x[:8], c_attrib, sep="\t")
+
+                    # increment counter
+                    exon_counter += 1
+        print("###")
+
+    def parse_snap(self):
+        gene_counter = 1
+        exon_counter = 1
+        skip_first = False
+        print("##gff-version 3")
+        with open(self.args.input_GFF, 'r') as filehandle:
+            for line in filehandle:
+                line = line.rstrip("\n")
+                if re.match(r'^\s*$', line) or line.startswith("#"):
+                    continue
+                x = line.split("\t")
+                if x[TYPE] not in ['gene', 'mRNA', 'CDS']:
+                    continue
+                if self.args.source:
+                    x[SOURCE] = self.args.source
+                if re.search("^(gene)$", x[TYPE], re.I):
+                    if skip_first:
+                        print("###")
+                        # increment counter
+                        gene_counter += 1
+                    skip_first = True
+                    gene_id = GFFToEVM.get_id(
+                        self.args.input_GFF, line, x[ATTRIBUTE], "ID")
+                    # Add tag prefix if provided
+                    gene_id = self.add_tag(gene_id)
+
+                    attrib = f"ID=gene{gene_counter}.{gene_id};Name=gene{gene_counter}.{gene_id};Note={gene_id}"
+                    print(*x[:8], attrib, sep="\t")
+
+                elif re.search("^(mRNA)$", x[TYPE], re.I):
+                    exon_counter = 1
+                    gene_id = GFFToEVM.get_id(
+                        self.args.input_GFF, line, x[ATTRIBUTE], "Parent")
+                    mrna_id = GFFToEVM.get_id(
+                        self.args.input_GFF, line, x[ATTRIBUTE], "ID")
+                    # Add tag prefix if provided
+                    gene_id = self.add_tag(gene_id)
+                    mrna_id = self.add_tag(mrna_id)
+
+                    # print mRNA line
+                    m_attrib = f"ID=model{gene_counter}.{mrna_id};Parent=gene{gene_counter}.{gene_id};Name=model{gene_counter}.{mrna_id};Note=gene{gene_counter}.{gene_id}"
+                    print(*x[:8], m_attrib, sep="\t")
+
+                elif re.search("^(CDS)$", x[TYPE], re.I):
+                    parent = GFFToEVM.get_id(
+                        self.args.input_GFF, line, x[ATTRIBUTE], "Parent")
+                    # Add tag prefix if provided
+                    parent = self.add_tag(parent)
+
+                    # print exon line
+                    exon_id = f"model{gene_counter}.{parent}.exon{exon_counter}"
+                    e_attrib = f"ID={exon_id};Parent=model{gene_counter}.{parent}"
+                    print(*x[:2], "exon", *x[3:8], e_attrib, sep="\t")
+
+                    # print CDS line
+                    new_cds_id = f"cds.model{gene_counter}.{parent}"
+                    c_attrib = f"ID={new_cds_id};Parent=model{gene_counter}.{parent}"
+                    print(*x[:8], c_attrib, sep="\t")
+
+                    # increment counter
+                    exon_counter += 1
+        print("###")
+
+    def run(self):
+        if self.args.model in ['codingquarry']:
+            self.parse_codingquarrygff()
+        if self.args.model in ['augustus']:
+            self.parse_augustus()
+        if self.args.model in ['glimmer']:
+            self.parse_glimmer()
+        if self.args.model in ['snap']:
+            self.parse_snap()
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Script to create EVM specific input GFF files", formatter_class=RawTextHelpFormatter,
+                                     epilog="\n\nContact:" + __author__ + "(" + __email__ + ")")
+    parser.add_argument("model", default='augustus', choices=allowed_gene_models,
+                        help="Pick one model from where the input GFF was generated from (default: %(default)s)")
+    parser.add_argument(
+        "input_GFF", help="Provide input GFF file")
+    parser.add_argument("-s", "--source", default=None,
+                        help="New source field for GFF3 output (default: %(default)s)")
+    parser.add_argument("-t", "--tag", default=None,
+                        help="Tag to prefix each ID (default: %(default)s)")
+    # TODO: Future development, if needs integration of protein_models,transcript_models,repeats,other_predictions
+    # parser.add_argument("--format", "-f", nargs='?', default='gene_models', choices=format_list, help="Please select based on below: (--model = --format)\n" +
+    #                     allowed_combinations +
+    #                     "(default: %(default)s)"
+    #                     )
+    args = parser.parse_args()
+
+    GFFToEVM(args).run()
+
+
+if __name__ == "__main__":
+    main()
+
+
+"""
+## input format
+## gene_models
+
+# codingquary
+NC_000521.4	CodingQuarry_v2.0	gene	5425	5532	.	-	.	ID=NS.00001;Name=;
+NC_000521.4	CodingQuarry_v2.0	CDS	5425	5532	.	-	0	ID=CDS:NS.00001;Parent=NS.00001;
+NC_000521.4	CodingQuarry_v2.0	gene	5941	6273	.	+	.	ID=NS.00002;Name=;
+NC_000521.4	CodingQuarry_v2.0	CDS	5941	6273	.	+	0	ID=CDS:NS.00002;Parent=NS.00002;
+
+# augustus
+NC_036769.1	AUGUSTUS_RUN2	gene	2316	3706	0.19	+	.	ID=g1
+NC_036769.1	AUGUSTUS_RUN2	transcript	2316	3706	0.19	+	.	ID=g1.t1;Parent=g1
+NC_036769.1	AUGUSTUS_RUN2	exon	2316	3706	.	+	.	Parent=g1.t1
+NC_036769.1	AUGUSTUS_RUN2	CDS	2467	3201	1	+	0	ID=g1.t1.cds;Parent=g1.t1
+NC_036769.1	AUGUSTUS_RUN2	gene	4116	4603	0.35	+	.	ID=g2
+NC_036769.1	AUGUSTUS_RUN2	transcript	4116	4603	0.35	+	.	ID=g2.t1;Parent=g2
+NC_036769.1	AUGUSTUS_RUN2	exon	4116	4603	.	+	.	Parent=g2.t1
+NC_036769.1	AUGUSTUS_RUN2	CDS	4178	4564	1	+	0	ID=g2.t1.cds;Parent=g2.t1
+
+# glimmer
+NC_004325.2     GlimmerHMM      mRNA    1479    1760    .       +       .       ID=NC_004325.2.path1.gene1;partialness=5
+NC_004325.2     GlimmerHMM      CDS     1479    1760    .       +       0       Parent=NC_004325.2.path1.gene1
+NC_004325.2     GlimmerHMM      mRNA    1783    3001    .       -       .       ID=NC_004325.2.path1.gene2
+NC_004325.2     GlimmerHMM      CDS     1783    1936    .       -       1       Parent=NC_004325.2.path1.gene2
+NC_004325.2     GlimmerHMM      CDS     2913    3001    .       -       0       Parent=NC_004325.2.path1.gene2
+
+# snap
+NC_004325.2     SNAP    gene    3144    3332    .       +       .       ID=NC_004325.2-snap.2.g;Name=NC_004325.2-snap.2
+NC_004325.2     SNAP    mRNA    3144    3332    .       +       .       ID=NC_004325.2-snap.2.m;Parent=NC_004325.2-snap.2.g
+NC_004325.2     SNAP    CDS     3144    3332    .       +       2       ID=NC_004325.2-snap.2.1;Parent=NC_004325.2-snap.2.m
+NC_004325.2     SNAP    gene    3417    3854    .       +       .       ID=NC_004325.2-snap.3.g;Name=NC_004325.2-snap.3
+NC_004325.2     SNAP    mRNA    3417    3854    .       +       .       ID=NC_004325.2-snap.3.m;Parent=NC_004325.2-snap.3.g
+NC_004325.2     SNAP    CDS     3417    3854    .       +       2       ID=NC_004325.2-snap.3.1;Parent=NC_004325.2-snap.3.m
+"""
