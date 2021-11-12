@@ -41,7 +41,7 @@ from annotation.homology import homology_module
 from annotation.prediction import prediction_module
 from annotation.transcriptome import transcriptome_module
 from annotation import UTR_SELECTION_OPTIONS, LONG_READ_ALIGNER_CHOICES
-from prediction_module import add_classification_parser_parameters
+from annotation.prediction_module import add_classification_parser_parameters
 
 try:
     import importlib.resources as pkg_resources

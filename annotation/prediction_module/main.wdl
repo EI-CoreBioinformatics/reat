@@ -114,6 +114,16 @@ workflow ei_prediction {
 											object {fasta: SoftMaskGenome.soft_masked_genome, index: reference_genome.index}
 											])
 
+	if (defined(homology_models)) {
+		scatter (models in select_first([homology_models])) {
+			call PreprocessFiles as PreprocessHomology {
+				input:
+				models = models
+			}
+		}
+		Array[File] processed_homology = PreprocessHomology.out
+	}
+
 	# Preprocess gene models
 	if (defined(transcriptome_models)) {
 		scatter (models in select_first([transcriptome_models])) {
@@ -123,15 +133,13 @@ workflow ei_prediction {
 			}
 		}
 
-		Array[File] processed_transcriptome = PreprocessTranscriptomic.out
+		Array[File] processed_models = flatten(select_all([PreprocessTranscriptomic.out, processed_homology]))
 		# Generate protein files for the input models
 		call GenerateModelProteins {
 			input:
 			genome = def_reference_genome,
-			models = processed_transcriptome
+			models = processed_models
 		}
-
-		# TODO: Maybe split proteins for alignments?
 
 		call IndexProteinsDatabase {
 			input:
@@ -148,7 +156,7 @@ workflow ei_prediction {
 		call LengthChecker {
 			input:
 			genome = def_reference_genome,
-			models = processed_transcriptome,
+			models = processed_models,
 			protein_models = GenerateModelProteins.proteins,
 			hits = AlignProteins.hits
 		}
@@ -179,16 +187,6 @@ workflow ei_prediction {
 	}
 
 	Boolean train_utr = select_first([train_utr_, false])
-
-	if (defined(homology_models)) {
-		scatter (models in select_first([homology_models])) {
-			call PreprocessFiles as PreprocessHomology {
-				input:
-				models = models
-			}
-		}
-		Array[File] processed_homology = PreprocessHomology.out
-	}
 
 	# Generate CodingQuarry predictions
 	# Considers lowercase as masked by default
@@ -763,6 +761,7 @@ task SNAP {
 
 	output {
 		File predictions = "snap.predictions.gff"
+		File raw = "snap.predictions.zff"
 	}
 
 	command <<<
@@ -788,6 +787,7 @@ task GlimmerHMM {
 
 	output {
 		File predictions = "glimmer.predictions.gff"
+		File raw = "glimmer.raw.gff"
 	}
 
 	command <<<
@@ -796,7 +796,7 @@ task GlimmerHMM {
 		ln -s ~{genome.index}
 		gff_to_glimmer -a ~{transcripts} > ~{transcripts}.cds
 		trainGlimmerHMM ~{basename(genome.fasta)} ~{transcripts}.cds -d glimmer_training
-		glimmhmm.pl $(which glimmerhmm) ~{basename(genome.fasta)} glimmer_training -g | gffread -g ~{basename(genome.fasta)} -vE --keep-genes -P > glimmer.predictions.gff
+		glimmhmm.pl $(which glimmerhmm) ~{basename(genome.fasta)} glimmer_training -g | tee glimmer.raw.gtf | gffread -g ~{basename(genome.fasta)} -vE --keep-genes -P > glimmer.predictions.gff
 	>>>
 }
 
@@ -990,6 +990,8 @@ task EVM {
 		Int segment_size
 		Int overlap_size
 		File weights
+		Array[File]? homology_models
+		Array[File]? transcriptome_models
 	}
 
 	output {
@@ -998,11 +1000,21 @@ task EVM {
 	}
 
 	command <<<
-		cat ~{if defined(hq_protein_alignments) then hq_protein_alignments else "/dev/null"} >> protein_alignments.gff
-		cat ~{if defined(lq_protein_alignments) then hq_protein_alignments else "/dev/null"} >> protein_alignments.gff
+		cat ~{if defined(hq_protein_alignments) then hq_protein_alignments else "/dev/null"} | sed 's/CDS/nucleotide_to_protein_match/g' | sed 's/ID=.*;Parent=/ID=/g' >> protein_alignments.gff
+		cat ~{if defined(lq_protein_alignments) then hq_protein_alignments else "/dev/null"} | sed 's/CDS/nucleotide_to_protein_match/g' | sed 's/ID=.*;Parent=/ID=/g' >> protein_alignments.gff
 
 		cat ~{if defined(hq_assembly) then hq_assembly else "/dev/null"} >> transcript_alignments.gff
 		cat ~{if defined(lq_assembly) then lq_assembly else "/dev/null"} >> transcript_alignments.gff
+
+		if [ "~{if defined(homology_models) then length(select_first([homology_models])) else 0}" != "0" ];
+		then
+			cat ~{sep=" " homology_models} | awk '$2="homology_models"' >> predictions.gff
+		fi
+
+		if [ "~{if defined(transcriptome_models) then length(select_first([transcriptome_models])) else 0}" != "0" ];
+		then
+			cat ~{sep=" " transcriptome_models} | awk '$2="transcriptome_models"' >> predictions.gff
+		fi
 
 		transcript_alignments_param=''
 		protein_alignments_param=''
