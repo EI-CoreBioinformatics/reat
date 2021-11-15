@@ -105,7 +105,7 @@ task Minimap2Long {
         -L \
         --eqx -2 \
         --secondary=no \
-        ~{reference} - | samtools view -F 4 -F 0x900 -bS - | samtools sort -@ ~{task_cpus/2} -m 1G --reference ~{reference} -T minimap2.sort -o minimap2.~{name}.~{LR_basename}.bam -
+        ~{reference} - | samtools view -F 4 -F 0x900 -bS - | samtools sort -@ ~{task_cpus/2} -m 1G -T minimap2.sort -o minimap2.~{name}.~{LR_basename}.bam -
     >>>
 
     runtime {
