@@ -272,7 +272,7 @@ def parse_arguments():
                                       help="Choice of aligner for high-quality long reads", default='minimap2')
     alignment_parameters.add_argument("--LQ_aligner", choices=LONG_READ_ALIGNER_CHOICES,
                                       help="Choice of aligner for low-quality long reads", default='minimap2')
-    alignment_parameters.add_argument("--min_identity", type=int, choices=range(0, 101), metavar='[0-100]',
+    alignment_parameters.add_argument("--min_identity", type=int, choices=range(0,101), metavar='[0-100]',
                                       help="Minimum alignment identity (passed only to gmap)", default=90)
     alignment_parameters.add_argument("--min_intron_len", type=int,
                                       help="Where available, the minimum intron length allowed will be specified for "
@@ -330,20 +330,20 @@ def parse_arguments():
                                           "- stringtie: Assembles the long reads alignments into transcripts"
                                           "- stringtie_collapse: Cleans and collapses long reads but does not "
                                           "assembles them", default='stringtie_collapse')
-    assembly_parameters.add_argument("--HQ_min_identity", choices=range(0,101), metavar='[0-100]',
+    assembly_parameters.add_argument("--HQ_min_identity", type=int, choices=range(0,101), metavar='[0-100]',
                                      help="When the 'filter' option is selected, this parameter defines the minimum "
                                           "identity used to filtering")
-    assembly_parameters.add_argument("--HQ_min_coverage", choices=range(0,101), metavar='[0-100]',
+    assembly_parameters.add_argument("--HQ_min_coverage", type=int, choices=range(0,101), metavar='[0-100]',
                                      help="When the 'filter' option is selected, this parameter defines the minimum "
                                           "coverage used for filtering")
     assembly_parameters.add_argument("--HQ_assembler_extra_parameters",
                                      help="Extra parameters for the long reads assembler, please note that extra "
                                           "parameters are not validated and will have to match the parameters "
                                           "available for the selected assembler")
-    assembly_parameters.add_argument("--LQ_min_identity", choices=range(0,101), metavar='[0-100]',
+    assembly_parameters.add_argument("--LQ_min_identity", type=int, choices=range(0,101), metavar='[0-100]',
                                      help="When the 'filter' option is selected, this parameter defines the minimum "
                                           "identity used to filtering")
-    assembly_parameters.add_argument("--LQ_min_coverage", choices=range(0,101), metavar='[0-100]',
+    assembly_parameters.add_argument("--LQ_min_coverage", type=int, choices=range(0,101), metavar='[0-100]',
                                      help="When the 'filter' option is selected, this parameter defines the minimum "
                                           "coverage used for filtering")
     assembly_parameters.add_argument("--LQ_assembler_extra_parameters",

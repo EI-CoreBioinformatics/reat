@@ -536,11 +536,11 @@ task ChangeSource {
 	}
 
 	command <<<
-		awk -v 'OFS=\t' '
+		cat ~{gff} | gffread --stream -vE | awk -v 'OFS=\t' '
 		$3=="exon" {print $1, "~{source}", "exon", $4, $5, $6, $7, $8, $9";src=generic_source;pri=0"}
 		$3=="CDS" {print $1, "~{source}", "CDS", $4, $5, $6, $7, $8, $9";src=generic_source;pri=0"}
 		($3 != "exon" && $3 != "CDS") {print $1, "~{source}", $3, $4, $5, $6, $7, $8, $9}
-		' ~{gff} > ~{sub(basename(gff), "\\.(gff|gtf)" , "") + ".post.gff"}
+		' > ~{sub(basename(gff), "\\.(gff|gtf)" , "") + ".post.gff"}
 	>>>
 }
 
@@ -774,8 +774,8 @@ task SNAP {
 		forge ../export.ann ../export.dna
 		cd ..
 		hmm-assembler.pl ~{genome.fasta} params > ~{genome.fasta}.hmm
-		snap ~{genome.fasta}.hmm ~{genome.fasta} > snap.prediction.zff
-		zff_to_gff -z snap.prediction.zff > snap.predictions.gff
+		snap ~{genome.fasta}.hmm ~{genome.fasta} > snap.predictions.zff
+		zff_to_gff -z snap.predictions.zff > snap.predictions.gff
 	>>>
 }
 
@@ -787,7 +787,7 @@ task GlimmerHMM {
 
 	output {
 		File predictions = "glimmer.predictions.gff"
-		File raw = "glimmer.raw.gff"
+		File raw = "glimmer.raw.gtf"
 	}
 
 	command <<<
@@ -1029,10 +1029,10 @@ task EVM {
 		fi
 
 		if [ "~{snap_predictions}" != "" ]; then
-			$EVM_HOME/EvmUtils/misc/SNAP_to_GFF3.pl ~{snap_predictions} | awk '$2="SNAP"' >> predictions.gff
+			cat ~{snap_predictions} >> predictions.gff
 		fi
 		if [ "~{glimmer_predictions}" != "" ]; then
-			$EVM_HOME/EvmUtils/misc/glimmerHMM_to_GFF3.pl ~{glimmer_predictions} | awk '$2="GlimmerHMM"' >> predictions.gff
+			cat ~{glimmer_predictions} | awk '$3=="mRNA"{print $1,$2,"gene",$3,$4,$5,$6,$7,$8,"ID="NR".gene"; print $0";Parent="NR".gene"} $3=="CDS"{$9="ID="NR".cds;"$9' >> predictions.gff
 		fi
 
 #		if [ "~{codingquarry_predictions}" != ""]; then
