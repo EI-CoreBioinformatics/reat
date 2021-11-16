@@ -25,6 +25,7 @@ workflow ei_prediction {
 		File? intron_hints  # Separate into gold == 1.0 score and silver (the rest)
 		IndexedBAM? expressed_exon_hints  # Transform into gff passing by bigwig
 		File? repeats_gff  # These are passed through to augustus
+		File? extra_training_models  # These models are taken as-is directly as results from the training model selection
 		Int flank = 200
 		Int kfold = 8
 		Int chunk_size = 3000000
@@ -168,7 +169,8 @@ workflow ei_prediction {
 			input:
 			genome = def_reference_genome,
 			clustered_models = LengthChecker.clustered_models,
-			classification = LengthChecker.nr_classification
+			classification = LengthChecker.nr_classification,
+			extra_training_models = extra_training_models
 		}
 
 		# If we have enough models we train with UTR, otherwise we use the 'extended' training set and train without UTR
@@ -959,6 +961,7 @@ task SelfBlastFilter {
 		Int? top_n
 		Int? identity
 		Int? coverage
+		File? extra_training_models
 		RuntimeAttr? resources
 	}
 
@@ -981,8 +984,8 @@ task SelfBlastFilter {
     }
 
 	output {
-		File non_redundant_models_with_utr = "with_utr.gff"
-		File non_redundant_models_without_utr = "without_utr.gff"
+		File non_redundant_models_with_utr = "with_utr.extra.gff"
+		File non_redundant_models_without_utr = "without_utr.extra.gff"
 		Int num_utr_models = read_int("num_models_utr.int")
 		Int num_noutr_models = read_int("num_models_noutr.int")
 	}
@@ -996,8 +999,10 @@ task SelfBlastFilter {
 		diamond makedb --db self -p 8 --in proteins.faa
 		diamond blastp -p 8 -d self -q proteins.faa -f6 qseqid sseqid qlen slen pident length mismatch gapopen qstart qend sstart send evalue bitscore ppos btop > self.hits.tsv
 		filter_self_hits -b self.hits.tsv -t ~{clustered_models} -c ~{classification} ~{"--top_n " + top_n} ~{"--max_identity " + identity} ~{"--max_coverage " + coverage}
-		awk '$3 == "gene"' with_utr.gff|wc -l > num_models_utr.int
-		awk '$3 == "gene"' without_utr.gff|wc -l > num_models_noutr.int
+		gffread --keep-genes --keep-exon-attrs -F with_utr.gff ~{extra_training_models} > with_utr.extra.gff
+		gffread --keep-genes --keep-exon-attrs -F without_utr.gff ~{extra_training_models} > without_utr.extra.gff
+		awk '$3 == "gene"' with_utr.extra.gff|wc -l > num_models_utr.int
+		awk '$3 == "gene"' without_utr.extra.gff|wc -l > num_models_noutr.int
 	>>>
 }
 
