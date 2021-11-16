@@ -10,8 +10,11 @@ workflow ei_prediction {
 		String species
 		Directory augustus_config_path
 		Boolean do_codingquarry = false
+		Directory? codingquarry_training
 		Boolean do_glimmer = false
+		Directory? glimmer_training
 		Boolean do_snap = false
+		File? snap_training
 		Boolean do_augustus = true
 		Array[File]? transcriptome_models  # Classify and divide into Gold, Silver and Bronze
 		Array[File]? homology_models  # Take as is
@@ -194,13 +197,17 @@ workflow ei_prediction {
 		call CodingQuarry {
 			input:
 			genome = def_reference_genome,
-			transcripts = select_first([def_training_models])
+			transcripts = select_first([def_training_models]),
+			species = species,
+			codingquarry_training = codingquarry_training
 		}
 
 		call CodingQuarry as CodingQuarryFresh {
 			input:
 			genome = def_reference_genome,
 			transcripts = select_first([def_training_models]),
+			species = species,
+			codingquarry_training = codingquarry_training,
 			fresh_prediction = true
 		}
 	}
@@ -211,7 +218,8 @@ workflow ei_prediction {
 		call SNAP {
 			input:
 			genome = def_reference_genome,
-			transcripts = select_first([def_training_models])
+			transcripts = select_first([def_training_models]),
+			pretrained_hmm = snap_training
 		}
 	}
 
@@ -221,7 +229,8 @@ workflow ei_prediction {
 		call GlimmerHMM {
 			input:
 			genome = object {fasta: SoftMaskGenome.hard_masked_genome, index: def_reference_genome.index},
-			transcripts = select_first([def_training_models])
+			transcripts = select_first([def_training_models]),
+			training_directory = glimmer_training
 		}
 	}
 
@@ -708,6 +717,8 @@ task CodingQuarry {
 		IndexedReference genome
 		Boolean fresh_prediction = false
 		File transcripts
+		Directory? codingquarry_training
+		String? species
 	}
 
 	output {
@@ -718,7 +729,12 @@ task CodingQuarry {
 
 	command <<<
 		set -euxo pipefail
-		CodingQuarry -p ~{num_cpus} -f ~{genome.fasta} -a ~{transcripts} ~{if fresh_prediction then "-n" else ""}
+		if [ "~{codingquarry_training}" == "" ]; then
+			CodingQuarry -p ~{num_cpus} -f ~{genome.fasta} -a ~{transcripts} ~{if fresh_prediction then "-n" else ""}
+		else
+			export QUARRY_PATH=~{codingquarry_training}
+			CodingQuarry -p ~{num_cpus} -f ~{genome.fasta} -a ~{transcripts} -s ~{species} ~{if fresh_prediction then "-n" else ""}
+		fi
 		mv out/PredictedPass.gff3 codingquarry.predictions.gff
 	>>>
 }
@@ -757,6 +773,7 @@ task SNAP {
 	input {
 		IndexedReference genome
 		File transcripts
+		File? pretrained_hmm
 	}
 
 	output {
@@ -766,15 +783,19 @@ task SNAP {
 
 	command <<<
 		set -euxo pipefail
-		gff_to_zff -a ~{transcripts} > ~{transcripts}.ann
-		fathom ~{transcripts}.ann ~{genome.fasta} -categorize 1000
-		fathom uni.ann uni.dna -export 1000 -plus
-		mkdir params
-		cd params
-		forge ../export.ann ../export.dna
-		cd ..
-		hmm-assembler.pl ~{genome.fasta} params > ~{genome.fasta}.hmm
-		snap ~{genome.fasta}.hmm ~{genome.fasta} > snap.predictions.zff
+		if [ "~{pretrained_hmm}" == "" ]; then
+			gff_to_zff -a ~{transcripts} > ~{transcripts}.ann
+			fathom ~{transcripts}.ann ~{genome.fasta} -categorize 1000
+			fathom uni.ann uni.dna -export 1000 -plus
+			mkdir params
+			cd params
+			forge ../export.ann ../export.dna
+			cd ..
+			hmm-assembler.pl ~{genome.fasta} params > ~{genome.fasta}.hmm
+			snap ~{genome.fasta}.hmm ~{genome.fasta} > snap.predictions.zff
+		else
+			snap ~{pretrained_hmm} ~{genome.fasta} > snap.predictions.zff
+		fi
 		zff_to_gff -z snap.predictions.zff > snap.predictions.gff
 	>>>
 }
@@ -783,6 +804,7 @@ task GlimmerHMM {
 	input {
 		IndexedReference genome
 		File transcripts
+		Directory? training_directory
 	}
 
 	output {
@@ -794,9 +816,14 @@ task GlimmerHMM {
 		set -euxo pipefail
 		ln -s ~{genome.fasta}
 		ln -s ~{genome.index}
-		gff_to_glimmer -a ~{transcripts} > ~{transcripts}.cds
-		trainGlimmerHMM ~{basename(genome.fasta)} ~{transcripts}.cds -d glimmer_training
-		glimmhmm.pl $(which glimmerhmm) ~{basename(genome.fasta)} glimmer_training -g | tee glimmer.raw.gtf | gffread -g ~{basename(genome.fasta)} -vE --keep-genes -P > glimmer.predictions.gff
+		if [ "~{training_directory}" == "" ]; then
+			gff_to_glimmer -a ~{transcripts} > ~{transcripts}.cds
+			trainGlimmerHMM ~{basename(genome.fasta)} ~{transcripts}.cds -d glimmer_training
+			glimmhmm.pl $(which glimmerhmm) ~{basename(genome.fasta)} glimmer_training -g | tee glimmer.raw.gtf | gffread -g ~{basename(genome.fasta)} -vE --keep-genes -P > glimmer.predictions.gff
+		else
+			glimmhmm.pl $(which glimmerhmm) ~{basename(genome.fasta)} ~{training_directory} -g | tee glimmer.raw.gtf | gffread -g ~{basename(genome.fasta)} -vE --keep-genes -P > glimmer.predictions.gff
+		fi
+
 	>>>
 }
 
