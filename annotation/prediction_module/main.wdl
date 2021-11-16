@@ -1029,27 +1029,27 @@ task EVM {
 		fi
 
 		if [ "~{snap_predictions}" != "" ]; then
-			cat ~{snap_predictions} >> predictions.gff
+			cat ~{snap_predictions} | gff_to_evm snap >> predictions.gff
 		fi
 		if [ "~{glimmer_predictions}" != "" ]; then
-			cat ~{glimmer_predictions} | awk '$3=="mRNA"{print $1,$2,"gene",$3,$4,$5,$6,$7,$8,"ID="NR".gene"; print $0";Parent="NR".gene"} $3=="CDS"{$9="ID="NR".cds;"$9' >> predictions.gff
+			cat ~{glimmer_predictions} | gff_to_evm glimmer >> predictions.gff
 		fi
 
-#		if [ "~{codingquarry_predictions}" != ""]; then
-#			$EVM_HOME/EvmUtils/misc/
-#		fi
-#		if [ "~{codingquarry_fresh_predictions}" != ""]; then
-#			$EVM_HOME/EvmUtils/misc/
-#		fi
+		if [ "~{codingquarry_predictions}" != "" ]; then
+			cat ~{codingquarry_predictions} | gff_to_evm codingquarry >> predictions.gff
+		fi
+		if [ "~{codingquarry_fresh_predictions}" != "" ]; then
+			cat ~{codingquarry_fresh_predictions} | gff_to_evm codingquarry >> predictions.gff
+		fi
 
 		if [ "~{augustus_abinitio}" != "" ]; then
-			$EVM_HOME/EvmUtils/misc/augustus_GFF3_to_EVM_GFF3.pl ~{augustus_abinitio} | awk -v OFS="\t" '($2="AUGUSTUS_RUN_ABINITIO") && NF>8' >> predictions.gff
+			cat ~{augustus_abinitio} | gff_to_evm augustus | awk -v OFS="\t" '($2="AUGUSTUS_RUN_ABINITIO") && NF>8' >> predictions.gff
 		fi
 
 		augustus_run=0
 		for i in ~{sep=" " augustus_predictions}; do
 			((augustus_run++))
-			$EVM_HOME/EvmUtils/misc/augustus_GFF3_to_EVM_GFF3.pl $i | awk -v OFS="\t" -v RUN=${augustus_run} '($2="AUGUSTUS_RUN"RUN) && NF>8' >> predictions.gff
+			cat $i | gff_to_evm augustus | awk -v OFS="\t" -v RUN=${augustus_run} '($2="AUGUSTUS_RUN"RUN) && NF>8' >> predictions.gff
 		done
 
 		predictions_fp=$(realpath predictions.gff)

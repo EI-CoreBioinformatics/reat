@@ -70,6 +70,7 @@ class GFFToEVM():
 
     def __init__(self, args):
         self.args = args
+        self.input_filehandle = open(args.input_GFF, 'r') if args.input_GFF else sys.stdin
         # TODO: For future implementation
         # check input options
         # if self.args.model in allowed_gene_models and self.args.format not in ['gene_models']:
@@ -124,52 +125,51 @@ class GFFToEVM():
         exon_counter = 1
         skip_first = False
         print(self.GFF3_HEADER)
-        with open(self.args.input_GFF, 'r') as filehandle:
-            for line in filehandle:
-                line = line.rstrip("\n")
-                if line.startswith("#"):
-                    continue
-                x = line.split("\t")
-                if not len(x) == 9:
-                    continue
-                if x[TYPE] not in ('gene', 'CDS'):
-                    continue
-                x[SOURCE] = self.add_source(x[SOURCE])
-                if x[TYPE] == 'gene':
-                    exon_counter = 1
-                    if skip_first:
-                        print("###")
-                        # increment counter
-                        gene_counter += 1
-                    skip_first = True
-                    gene_id = GFFToEVM.get_field(
-                        self.args.input_GFF, line, x[ATTRIBUTE], "ID")
-                    # Add tag prefix if provided
-                    gene_id = self.add_tag(gene_id)
-                    # print gene
-                    self.print_attrib(x_type='gene', x_line=x,
-                                      model_id=gene_id, g_counter=gene_counter)
-                    # print mRNA line
-                    self.print_attrib(x_type='mRNA', x_line=x,
-                                      model_id=gene_id, g_counter=gene_counter)
-
-                elif x[TYPE] == 'CDS':
-                    cds_id = GFFToEVM.get_field(
-                        self.args.input_GFF, line, x[ATTRIBUTE], "ID")
-                    parent = GFFToEVM.get_field(
-                        self.args.input_GFF, line, x[ATTRIBUTE], "Parent")
-                    # Add tag prefix if provided
-                    cds_id = self.add_tag(cds_id)
-                    parent = self.add_tag(parent)
-                    # print exon line
-                    self.print_attrib(x_type='exon', x_line=x, model_id=parent,
-                                      g_counter=gene_counter, e_counter=exon_counter)
-                    # print CDS line
-                    self.print_attrib(x_type='CDS', x_line=x,
-                                      model_id=parent, g_counter=gene_counter)
-
+        for line in self.input_filehandle:
+            line = line.rstrip("\n")
+            if line.startswith("#"):
+                continue
+            x = line.split("\t")
+            if not len(x) == 9:
+                continue
+            if x[TYPE] not in ('gene', 'CDS'):
+                continue
+            x[SOURCE] = self.add_source(x[SOURCE])
+            if x[TYPE] == 'gene':
+                exon_counter = 1
+                if skip_first:
+                    print("###")
                     # increment counter
-                    exon_counter += 1
+                    gene_counter += 1
+                skip_first = True
+                gene_id = GFFToEVM.get_field(
+                    self.args.input_GFF, line, x[ATTRIBUTE], "ID")
+                # Add tag prefix if provided
+                gene_id = self.add_tag(gene_id)
+                # print gene
+                self.print_attrib(x_type='gene', x_line=x,
+                                  model_id=gene_id, g_counter=gene_counter)
+                # print mRNA line
+                self.print_attrib(x_type='mRNA', x_line=x,
+                                  model_id=gene_id, g_counter=gene_counter)
+
+            elif x[TYPE] == 'CDS':
+                cds_id = GFFToEVM.get_field(
+                    self.args.input_GFF, line, x[ATTRIBUTE], "ID")
+                parent = GFFToEVM.get_field(
+                    self.args.input_GFF, line, x[ATTRIBUTE], "Parent")
+                # Add tag prefix if provided
+                cds_id = self.add_tag(cds_id)
+                parent = self.add_tag(parent)
+                # print exon line
+                self.print_attrib(x_type='exon', x_line=x, model_id=parent,
+                                  g_counter=gene_counter, e_counter=exon_counter)
+                # print CDS line
+                self.print_attrib(x_type='CDS', x_line=x,
+                                  model_id=parent, g_counter=gene_counter)
+
+                # increment counter
+                exon_counter += 1
         print("###")
 
     def parse_augustus(self):
@@ -180,63 +180,62 @@ class GFFToEVM():
         exon_counter = 1
         skip_first = False
         print(self.GFF3_HEADER)
-        with open(self.args.input_GFF, 'r') as filehandle:
-            for line in filehandle:
-                line = line.rstrip("\n")
-                if line.startswith("#"):
-                    continue
-                x = line.split("\t")
-                if not len(x) == 9:
-                    continue
-                if x[TYPE] not in ('gene', 'mRNA', 'transcript', 'exon', 'CDS'):
-                    continue
-                x[SOURCE] = self.add_source(x[SOURCE])
-                if x[TYPE] == 'gene':
-                    if skip_first:
-                        print("###")
-                        # increment counter
-                        gene_counter += 1
-                    skip_first = True
-                    gene_id = GFFToEVM.get_field(
-                        self.args.input_GFF, line, x[ATTRIBUTE], "ID")
-                    # Add tag prefix if provided
-                    gene_id = self.add_tag(gene_id)
-                    # print gene
-                    self.print_attrib(x_type='gene', x_line=x,
-                                      model_id=gene_id, g_counter=gene_counter)
-
-                elif x[TYPE] in ('mRNA', 'transcript'):
-                    exon_counter = 1
-                    gene_id = GFFToEVM.get_field(
-                        self.args.input_GFF, line, x[ATTRIBUTE], "Parent")
-                    mrna_id = GFFToEVM.get_field(
-                        self.args.input_GFF, line, x[ATTRIBUTE], "ID")
-                    # Add tag prefix if provided
-                    gene_id = self.add_tag(gene_id)
-                    mrna_id = self.add_tag(mrna_id)
-                    # print mRNA line
-                    self.print_attrib(x_type='mRNA', x_line=x,
-                                      model_id=gene_id, mrna_id=mrna_id, g_counter=gene_counter)
-
-                elif x[TYPE] == 'exon':
-                    parent = GFFToEVM.get_field(
-                        self.args.input_GFF, line, x[ATTRIBUTE], "Parent")
-                    # Add tag prefix if provided
-                    parent = self.add_tag(parent)
-                    # print exon line
-                    self.print_attrib(x_type='exon', x_line=x, model_id=parent,
-                                      g_counter=gene_counter, e_counter=exon_counter)
+        for line in self.input_filehandle:
+            line = line.rstrip("\n")
+            if line.startswith("#"):
+                continue
+            x = line.split("\t")
+            if not len(x) == 9:
+                continue
+            if x[TYPE] not in ('gene', 'mRNA', 'transcript', 'exon', 'CDS'):
+                continue
+            x[SOURCE] = self.add_source(x[SOURCE])
+            if x[TYPE] == 'gene':
+                if skip_first:
+                    print("###")
                     # increment counter
-                    exon_counter += 1
+                    gene_counter += 1
+                skip_first = True
+                gene_id = GFFToEVM.get_field(
+                    self.args.input_GFF, line, x[ATTRIBUTE], "ID")
+                # Add tag prefix if provided
+                gene_id = self.add_tag(gene_id)
+                # print gene
+                self.print_attrib(x_type='gene', x_line=x,
+                                  model_id=gene_id, g_counter=gene_counter)
 
-                elif x[TYPE] == 'CDS':
-                    parent = GFFToEVM.get_field(
-                        self.args.input_GFF, line, x[ATTRIBUTE], "Parent")
-                    # Add tag prefix if provided
-                    parent = self.add_tag(parent)
-                    # print CDS line
-                    self.print_attrib(x_type='CDS', x_line=x,
-                                      model_id=parent, g_counter=gene_counter)
+            elif x[TYPE] in ('mRNA', 'transcript'):
+                exon_counter = 1
+                gene_id = GFFToEVM.get_field(
+                    self.args.input_GFF, line, x[ATTRIBUTE], "Parent")
+                mrna_id = GFFToEVM.get_field(
+                    self.args.input_GFF, line, x[ATTRIBUTE], "ID")
+                # Add tag prefix if provided
+                gene_id = self.add_tag(gene_id)
+                mrna_id = self.add_tag(mrna_id)
+                # print mRNA line
+                self.print_attrib(x_type='mRNA', x_line=x,
+                                  model_id=gene_id, mrna_id=mrna_id, g_counter=gene_counter)
+
+            elif x[TYPE] == 'exon':
+                parent = GFFToEVM.get_field(
+                    self.args.input_GFF, line, x[ATTRIBUTE], "Parent")
+                # Add tag prefix if provided
+                parent = self.add_tag(parent)
+                # print exon line
+                self.print_attrib(x_type='exon', x_line=x, model_id=parent,
+                                  g_counter=gene_counter, e_counter=exon_counter)
+                # increment counter
+                exon_counter += 1
+
+            elif x[TYPE] == 'CDS':
+                parent = GFFToEVM.get_field(
+                    self.args.input_GFF, line, x[ATTRIBUTE], "Parent")
+                # Add tag prefix if provided
+                parent = self.add_tag(parent)
+                # print CDS line
+                self.print_attrib(x_type='CDS', x_line=x,
+                                  model_id=parent, g_counter=gene_counter)
         print("###")
 
     def parse_glimmer(self):
@@ -247,48 +246,47 @@ class GFFToEVM():
         exon_counter = 1
         skip_first = False
         print(self.GFF3_HEADER)
-        with open(self.args.input_GFF, 'r') as filehandle:
-            for line in filehandle:
-                line = line.rstrip("\n")
-                if line.startswith("#"):
-                    continue
-                x = line.split("\t")
-                if not len(x) == 9:
-                    continue
-                if x[TYPE] not in ('mRNA', 'CDS'):
-                    continue
-                x[SOURCE] = self.add_source(x[SOURCE])
-                if x[TYPE] == 'mRNA':
-                    exon_counter = 1
-                    if skip_first:
-                        print("###")
-                        # increment counter
-                        gene_counter += 1
-                    skip_first = True
-                    gene_id = GFFToEVM.get_field(
-                        self.args.input_GFF, line, x[ATTRIBUTE], "ID")
-                    # Add tag prefix if provided
-                    gene_id = self.add_tag(gene_id)
-                    # print gene
-                    self.print_attrib(x_type='gene', x_line=x,
-                                      model_id=gene_id, g_counter=gene_counter)
-                    # print mRNA line
-                    self.print_attrib(x_type='mRNA', x_line=x,
-                                      model_id=gene_id, g_counter=gene_counter)
-
-                elif x[TYPE] == 'CDS':
-                    parent = GFFToEVM.get_field(
-                        self.args.input_GFF, line, x[ATTRIBUTE], "Parent")
-                    # Add tag prefix if provided
-                    parent = self.add_tag(parent)
-                    # print exon line
-                    self.print_attrib(x_type='exon', x_line=x, model_id=parent,
-                                      g_counter=gene_counter, e_counter=exon_counter)
-                    # print CDS line
-                    self.print_attrib(x_type='CDS', x_line=x,
-                                      model_id=parent, g_counter=gene_counter)
+        for line in self.input_filehandle:
+            line = line.rstrip("\n")
+            if line.startswith("#"):
+                continue
+            x = line.split("\t")
+            if not len(x) == 9:
+                continue
+            if x[TYPE] not in ('mRNA', 'CDS'):
+                continue
+            x[SOURCE] = self.add_source(x[SOURCE])
+            if x[TYPE] == 'mRNA':
+                exon_counter = 1
+                if skip_first:
+                    print("###")
                     # increment counter
-                    exon_counter += 1
+                    gene_counter += 1
+                skip_first = True
+                gene_id = GFFToEVM.get_field(
+                    self.args.input_GFF, line, x[ATTRIBUTE], "ID")
+                # Add tag prefix if provided
+                gene_id = self.add_tag(gene_id)
+                # print gene
+                self.print_attrib(x_type='gene', x_line=x,
+                                  model_id=gene_id, g_counter=gene_counter)
+                # print mRNA line
+                self.print_attrib(x_type='mRNA', x_line=x,
+                                  model_id=gene_id, g_counter=gene_counter)
+
+            elif x[TYPE] == 'CDS':
+                parent = GFFToEVM.get_field(
+                    self.args.input_GFF, line, x[ATTRIBUTE], "Parent")
+                # Add tag prefix if provided
+                parent = self.add_tag(parent)
+                # print exon line
+                self.print_attrib(x_type='exon', x_line=x, model_id=parent,
+                                  g_counter=gene_counter, e_counter=exon_counter)
+                # print CDS line
+                self.print_attrib(x_type='CDS', x_line=x,
+                                  model_id=parent, g_counter=gene_counter)
+                # increment counter
+                exon_counter += 1
         print("###")
 
     def parse_snap(self):
@@ -299,58 +297,57 @@ class GFFToEVM():
         exon_counter = 1
         skip_first = False
         print(self.GFF3_HEADER)
-        with open(self.args.input_GFF, 'r') as filehandle:
-            for line in filehandle:
-                line = line.rstrip("\n")
-                if line.startswith("#"):
-                    continue
-                x = line.split("\t")
-                if not len(x) == 9:
-                    continue
-                if x[TYPE] not in ('gene', 'mRNA', 'CDS'):
-                    continue
-                x[SOURCE] = self.add_source(x[SOURCE])
-                if x[TYPE] == 'gene':
-                    if skip_first:
-                        print("###")
-                        # increment counter
-                        gene_counter += 1
-                    skip_first = True
-                    gene_id = GFFToEVM.get_field(
-                        self.args.input_GFF, line, x[ATTRIBUTE], "ID")
-                    # Add tag prefix if provided
-                    gene_id = self.add_tag(gene_id)
-                    # print gene
-                    self.print_attrib(x_type='gene', x_line=x,
-                                      model_id=gene_id, g_counter=gene_counter)
-
-                elif x[TYPE] == 'mRNA':
-                    exon_counter = 1
-                    gene_id = GFFToEVM.get_field(
-                        self.args.input_GFF, line, x[ATTRIBUTE], "Parent")
-                    mrna_id = GFFToEVM.get_field(
-                        self.args.input_GFF, line, x[ATTRIBUTE], "ID")
-                    # Add tag prefix if provided
-                    gene_id = self.add_tag(gene_id)
-                    mrna_id = self.add_tag(mrna_id)
-                    # print mRNA line
-                    self.print_attrib(x_type='mRNA', x_line=x,
-                                      model_id=gene_id, mrna_id=mrna_id, g_counter=gene_counter)
-
-                elif x[TYPE] == 'CDS':
-                    parent = GFFToEVM.get_field(
-                        self.args.input_GFF, line, x[ATTRIBUTE], "Parent")
-                    # Add tag prefix if provided
-                    parent = self.add_tag(parent)
-
-                    # print exon line
-                    self.print_attrib(x_type='exon', x_line=x, model_id=parent,
-                                      g_counter=gene_counter, e_counter=exon_counter)
-                    # print CDS line
-                    self.print_attrib(x_type='CDS', x_line=x,
-                                      model_id=parent, g_counter=gene_counter)
+        for line in self.input_filehandle:
+            line = line.rstrip("\n")
+            if line.startswith("#"):
+                continue
+            x = line.split("\t")
+            if not len(x) == 9:
+                continue
+            if x[TYPE] not in ('gene', 'mRNA', 'CDS'):
+                continue
+            x[SOURCE] = self.add_source(x[SOURCE])
+            if x[TYPE] == 'gene':
+                if skip_first:
+                    print("###")
                     # increment counter
-                    exon_counter += 1
+                    gene_counter += 1
+                skip_first = True
+                gene_id = GFFToEVM.get_field(
+                    self.args.input_GFF, line, x[ATTRIBUTE], "ID")
+                # Add tag prefix if provided
+                gene_id = self.add_tag(gene_id)
+                # print gene
+                self.print_attrib(x_type='gene', x_line=x,
+                                  model_id=gene_id, g_counter=gene_counter)
+
+            elif x[TYPE] == 'mRNA':
+                exon_counter = 1
+                gene_id = GFFToEVM.get_field(
+                    self.args.input_GFF, line, x[ATTRIBUTE], "Parent")
+                mrna_id = GFFToEVM.get_field(
+                    self.args.input_GFF, line, x[ATTRIBUTE], "ID")
+                # Add tag prefix if provided
+                gene_id = self.add_tag(gene_id)
+                mrna_id = self.add_tag(mrna_id)
+                # print mRNA line
+                self.print_attrib(x_type='mRNA', x_line=x,
+                                  model_id=gene_id, mrna_id=mrna_id, g_counter=gene_counter)
+
+            elif x[TYPE] == 'CDS':
+                parent = GFFToEVM.get_field(
+                    self.args.input_GFF, line, x[ATTRIBUTE], "Parent")
+                # Add tag prefix if provided
+                parent = self.add_tag(parent)
+
+                # print exon line
+                self.print_attrib(x_type='exon', x_line=x, model_id=parent,
+                                  g_counter=gene_counter, e_counter=exon_counter)
+                # print CDS line
+                self.print_attrib(x_type='CDS', x_line=x,
+                                  model_id=parent, g_counter=gene_counter)
+                # increment counter
+                exon_counter += 1
         print("###")
 
     def run(self):
@@ -369,8 +366,7 @@ def main():
                                      epilog="\n\nContact:" + __author__ + "(" + __email__ + ")")
     parser.add_argument("model", default='augustus', choices=allowed_gene_models,
                         help="Pick one model from where the input GFF was generated from (default: %(default)s)")
-    parser.add_argument(
-        "input_GFF", help="Provide input GFF file")
+    parser.add_argument("--input_GFF", help="Provide input GFF file")
     parser.add_argument("-s", "--source", default=None,
                         help="New source field for GFF3 output (default: %(default)s)")
     parser.add_argument("-t", "--tag", default=None,
@@ -399,14 +395,14 @@ if __name__ == "__main__":
 # augustus
 
 # INPUT
-NC_036769.1	AUGUSTUS_RUN2	gene	2316	3706	0.19 + . ID = g1
-NC_036769.1	AUGUSTUS_RUN2	transcript	2316	3706	0.19 + . ID = g1.t1; Parent = g1
-NC_036769.1	AUGUSTUS_RUN2	exon	2316	3706	. + . Parent = g1.t1
-NC_036769.1	AUGUSTUS_RUN2	CDS	2467	3201	1 + 0 ID = g1.t1.cds; Parent = g1.t1
-NC_036769.1	AUGUSTUS_RUN2	gene	4116	4603	0.35 + . ID = g2
-NC_036769.1	AUGUSTUS_RUN2	transcript	4116	4603	0.35 + . ID = g2.t1; Parent = g2
-NC_036769.1	AUGUSTUS_RUN2	exon	4116	4603	. + . Parent = g2.t1
-NC_036769.1	AUGUSTUS_RUN2	CDS	4178	4564	1 + 0 ID = g2.t1.cds; Parent = g2.t1
+NC_036769.1	AUGUSTUS_RUN2	gene	2316	3706	0.19 + . ID=g1
+NC_036769.1	AUGUSTUS_RUN2	transcript	2316	3706	0.19 + . ID=g1.t1;Parent=g1
+NC_036769.1	AUGUSTUS_RUN2	exon	2316	3706	. + . Parent=g1.t1
+NC_036769.1	AUGUSTUS_RUN2	CDS	2467	3201	1 + 0 ID=g1.t1.cds; Parent=g1.t1
+NC_036769.1	AUGUSTUS_RUN2	gene	4116	4603	0.35 + . ID=g2
+NC_036769.1	AUGUSTUS_RUN2	transcript	4116	4603	0.35 + . ID=g2.t1;Parent=g2
+NC_036769.1	AUGUSTUS_RUN2	exon	4116	4603	. + . Parent=g2.t1
+NC_036769.1	AUGUSTUS_RUN2	CDS	4178	4564	1 + 0 ID=g2.t1.cds;Parent=g2.t1
 
 # OUTPUT
 # gff-version 3
