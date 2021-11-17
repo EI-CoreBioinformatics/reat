@@ -547,7 +547,7 @@ task ChangeSource {
 	}
 
 	command <<<
-		cat ~{gff} | gffread --stream -vE | awk -v 'OFS=\t' '
+		cat ~{gff} | gffread --keep-genes --keep-exon-attrs -F -vE | awk -v 'OFS=\t' '
 		$3=="exon" {print $1, "~{source}", "exon", $4, $5, $6, $7, $8, $9";src=generic_source;pri=0"}
 		$3=="CDS" {print $1, "~{source}", "CDS", $4, $5, $6, $7, $8, $9";src=generic_source;pri=0"}
 		($3 != "exon" && $3 != "CDS") {print $1, "~{source}", $3, $4, $5, $6, $7, $8, $9}
@@ -1032,11 +1032,11 @@ task EVM {
 	}
 
 	command <<<
-		cat ~{if defined(hq_protein_alignments) then hq_protein_alignments else "/dev/null"} | sed 's/CDS/nucleotide_to_protein_match/g' | sed 's/ID=.*;Parent=/ID=/g' >> protein_alignments.gff
-		cat ~{if defined(lq_protein_alignments) then hq_protein_alignments else "/dev/null"} | sed 's/CDS/nucleotide_to_protein_match/g' | sed 's/ID=.*;Parent=/ID=/g' >> protein_alignments.gff
+		cat ~{if defined(hq_protein_alignments) then hq_protein_alignments else "/dev/null"} | awk -v OFS="\t" '$3=="CDS" {$3="nucleotide_to_protein_match"; print} | sed 's/ID=.*;Parent=/ID=/g' >> protein_alignments.gff
+		cat ~{if defined(lq_protein_alignments) then hq_protein_alignments else "/dev/null"} | awk -v OFS="\t" '$3=="CDS" {$3="nucleotide_to_protein_match"; print} | sed 's/ID=.*;Parent=/ID=/g' >> protein_alignments.gff
 
-		cat ~{if defined(hq_assembly) then hq_assembly else "/dev/null"} >> transcript_alignments.gff
-		cat ~{if defined(lq_assembly) then lq_assembly else "/dev/null"} >> transcript_alignments.gff
+		cat ~{if defined(hq_assembly) then hq_assembly else "/dev/null"} | gff_to_evm augustus >> transcript_alignments.gff
+		cat ~{if defined(lq_assembly) then lq_assembly else "/dev/null"} | gff_to_evm augustus >> transcript_alignments.gff
 
 		if [ "~{if defined(homology_models) then length(select_first([homology_models])) else 0}" != "0" ];
 		then
