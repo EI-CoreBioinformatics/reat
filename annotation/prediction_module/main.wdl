@@ -866,7 +866,26 @@ task AlignProteins {
 	input {
 		File db
 		File proteins
+		RuntimeAttr? resources
 	}
+
+	Int cpus = 1
+    RuntimeAttr default_attr = object {
+        cpu_cores: "~{cpus}",
+        mem_gb: 8,
+        max_retries: 1,
+        queue: ""
+    }
+
+    RuntimeAttr runtime_attr = select_first([resources, default_attr])
+    Int task_cpus = select_first([runtime_attr.cpu_cores, cpus])
+
+	runtime {
+        cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
+        memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
+        maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+        queue: select_first([runtime_attr.queue, default_attr.queue])
+    }
 
 	output {
 		File hits = "diamond.hits.tsv"
@@ -874,7 +893,7 @@ task AlignProteins {
 
 	command <<<
 		set -euxo pipefail
-		diamond blastp -d ~{db} -q ~{proteins} -f6 qseqid sseqid qlen slen pident length mismatch gapopen qstart qend sstart send evalue bitscore ppos btop > diamond.hits.tsv
+		diamond blastp -p ~{task_cpus} -d ~{db} -q ~{proteins} -f6 qseqid sseqid qlen slen pident length mismatch gapopen qstart qend sstart send evalue bitscore ppos btop > diamond.hits.tsv
 	>>>
 }
 
