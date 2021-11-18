@@ -31,6 +31,7 @@ import json
 import os
 import subprocess
 import sys
+import textwrap
 import time
 from textwrap import wrap
 
@@ -53,6 +54,9 @@ try:
 except ImportError:
     from yaml import Loader, Dumper
 
+
+class ReatHelpFormatter(argparse.ArgumentDefaultsHelpFormatter, argparse.RawDescriptionHelpFormatter):
+    pass
 
 def check_environment(force_quit=True):
     """
@@ -142,7 +146,7 @@ def parse_arguments():
 
     :return: Object containing the validated CLI input arguments.
     """
-    reat_ap = argparse.ArgumentParser(add_help=True, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    reat_ap = argparse.ArgumentParser(add_help=True, formatter_class=ReatHelpFormatter)
 
     reat_ap.add_argument("-j", "--jar_cromwell", type=argparse.FileType('r'),
                          help="Cromwell server jar file")
@@ -166,7 +170,7 @@ def parse_arguments():
 
     transcriptome_ap = subparsers.add_parser('transcriptome',
                                              help="Transcriptome module",
-                                             formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+                                             formatter_class=ReatHelpFormatter)
     # General inputs
     transcriptome_ap.add_argument("--reference", type=argparse.FileType('r'),
                                   help="Reference FASTA to annotate", required=True)
@@ -174,18 +178,17 @@ def parse_arguments():
                                   help="Reads organised in the input specification for REAT, for more information "
                                        "please look at https://github.com/ei-corebioinformatics/reat for an example")
     transcriptome_ap.add_argument("--csv_paired_samples", type=argparse.FileType('r'),
-                                  help="CSV formatted input paired read samples. Without headers.\n"
-                                       "The CSV fields are as follows name, strand, files (because"
-                                       " this is an array that can contain one or more pairs, this fields' values are "
-                                       "separated by semi-colon and space. Files in a pair are separated by semi-colon"
-                                       "pairs are separated by a single space), merge, score, is_ref, "
-                                       "exclude_redundant\n\n"
-                                       "sample_strand takes values \'fr-firststrand\', \'fr-unstranded\', "
-                                       "\'fr-secondstrand\'\n"
-                                       "merge, is_ref and exclude_redundant are boolean and take values 'true', 'false'\n\n"
-                                       "Example:\n"
-                                       "PR1,fr-secondstrand,A_R1.fq;A_R2.fq /samples/paired/B1.fq;/samples/paired/B2.fq"
-                                       ",false,2")
+                                  help=textwrap.dedent('''\
+CSV formatted input paired read samples. Without headers.
+The CSV fields are as follows name, strand, files (because this is an array that can contain one or more pairs, 
+this fields' values are separated by semi-colon and space. Files in a pair are separated by semi-colon pairs are 
+separated by a single space), merge, score, is_ref, exclude_redundant.
+sample_strand takes values \'fr-firststrand\', \'fr-unstranded\', \'fr-secondstrand\'
+merge, is_ref and exclude_redundant are boolean and take values 'true', 'false'                                       
+Example:
+PR1,fr-secondstrand,A_R1.fq;A_R2.fq /samples/paired/B1.fq;/samples/paired/B2.fq,false,2
+''')
+                                  )
     transcriptome_ap.add_argument("--csv_long_samples", type=argparse.FileType('r'),
                                   help="CSV formatted input long read samples. Without headers.\n"
                                        "The CSV fields are as follows name, strand, files (space "
@@ -372,7 +375,7 @@ def parse_arguments():
                                              "Transdecoder")
 
     homology_ap = subparsers.add_parser('homology', help="Homology module",
-                                        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+                                        formatter_class=ReatHelpFormatter)
 
     homology_ap.add_argument("--genome", type=argparse.FileType('r'),
                              help="Fasta file of the genome to annotate",
@@ -448,7 +451,7 @@ def parse_arguments():
                                   "lower than this value")
 
     prediction_ap = subparsers.add_parser('prediction', help="Prediction module",
-                                          formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+                                          formatter_class=ReatHelpFormatter)
 
     prediction_ap.add_argument("--genome", type=argparse.FileType('r'), required=True,
                                help="Genome fasta file")
