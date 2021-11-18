@@ -10,7 +10,7 @@ import itertools
 from annotation import minimal_gxf_parser
 
 # Filtering parameters relating to transcript requirements
-from prediction_module import add_classification_parser_parameters
+from annotation.prediction_module import add_classification_parser_parameters
 
 min_pct_cds_fraction = 0.5
 max_tp_utr_complete = 1
