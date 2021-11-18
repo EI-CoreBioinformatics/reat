@@ -917,7 +917,7 @@ task AlignProteins {
 
 	command <<<
 		set -euxo pipefail
-		diamond blastp -p ~{task_cpus} -d ~{db} -q ~{proteins} -f6 qseqid sseqid qlen slen pident length mismatch gapopen qstart qend sstart send evalue bitscore ppos btop > diamond.hits.tsv
+		diamond blastp -p ~{cpus} -d ~{db} -q ~{proteins} -f6 qseqid sseqid qlen slen pident length mismatch gapopen qstart qend sstart send evalue bitscore ppos btop > diamond.hits.tsv
 	>>>
 }
 
