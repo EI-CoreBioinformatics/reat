@@ -672,7 +672,7 @@ task Species {
 			cp -r ~{base_config}/species/~{species} config/species/~{species}
 			echo "true" > existed
 		fi
-		cp -R ~{base_config}/{cgp,extrinsic,model,profile} config/
+		cp -R ~{base_config}/{cgp,extrinsic,model,profile,parameters} config/
 	>>>
 }
 
@@ -850,7 +850,28 @@ task GenerateModelProteins {
 task IndexProteinsDatabase {
 	input {
 		File db
+		RuntimeAttr? resources
 	}
+
+	    RuntimeAttr default_attr = object {
+        constraints: "avx|avx2|sse4",
+        cpu_cores: 1,
+        mem_gb: 4,
+        max_retries: 1,
+        queue: ""
+    }
+
+    RuntimeAttr runtime_attr = select_first([resources, default_attr])
+
+    Int cpus = select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
+
+    runtime {
+        cpu: cpus
+        memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
+        constraints: select_first([runtime_attr.constraints, default_attr.constraints])
+        maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+        queue: select_first([runtime_attr.queue, default_attr.queue])
+    }
 
 	output {
 		File diamond_index = basename(db) + ".dmnd"
@@ -869,23 +890,26 @@ task AlignProteins {
 		RuntimeAttr? resources
 	}
 
-	Int cpus = 1
     RuntimeAttr default_attr = object {
-        cpu_cores: "~{cpus}",
-        mem_gb: 8,
+        constraints: "avx|avx2|sse4",
+        cpu_cores: 1,
+        mem_gb: 4,
         max_retries: 1,
         queue: ""
     }
 
     RuntimeAttr runtime_attr = select_first([resources, default_attr])
-    Int task_cpus = select_first([runtime_attr.cpu_cores, cpus])
 
-	runtime {
-        cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
+    Int cpus = select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
+
+    runtime {
+        cpu: cpus
         memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
+        constraints: select_first([runtime_attr.constraints, default_attr.constraints])
         maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
         queue: select_first([runtime_attr.queue, default_attr.queue])
     }
+
 
 	output {
 		File hits = "diamond.hits.tsv"
