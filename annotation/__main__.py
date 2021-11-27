@@ -521,24 +521,18 @@ def collect_transcriptome_output(RUN_METADATA, output_path="outputs"):
     link_assemblies(prfx + 'HQ_asms', os.path.join(outputs_path, 'assembly_long'), prfx + 'HQ_assembly_stats', outputs)
 
     # portcullis
-    if any((outputs[prfx + 'portcullis_pass_tab'], outputs[prfx + 'portcullis_pass_bed'],
+    if any((outputs[prfx + 'portcullis_pass_bed'],
             outputs[prfx + 'portcullis_pass_gff3'],
-            outputs[prfx + 'portcullis_fail_tab'], outputs[prfx + 'portcullis_fail_bed'],
+            outputs[prfx + 'portcullis_fail_bed'],
             outputs[prfx + 'portcullis_fail_gff3'])):
         portcullis_path = os.path.join(outputs_path, 'portcullis')
         os.mkdir(portcullis_path) if not os.path.exists(portcullis_path) else ""
-        # File? portcullis_pass_tab = wf_align.pass_filtered_tab
-        if outputs[prfx + 'portcullis_pass_tab']:
-            symlink(portcullis_path, outputs[prfx + 'portcullis_pass_tab'])
         # File? portcullis_pass_bed = wf_align.pass_filtered_bed
         if outputs[prfx + 'portcullis_pass_bed']:
             symlink(portcullis_path, outputs[prfx + 'portcullis_pass_bed'])
         # File? portcullis_pass_gff3 = wf_align.pass_filtered_gff3
         if outputs[prfx + 'portcullis_pass_gff3']:
             symlink(portcullis_path, outputs[prfx + 'portcullis_pass_gff3'])
-        # File? portcullis_fail_tab = wf_align.fail_filtered_tab
-        if outputs[prfx + 'portcullis_fail_tab']:
-            symlink(portcullis_path, outputs[prfx + 'portcullis_fail_tab'])
         # File? portcullis_fail_bed = wf_align.fail_filtered_bed
         if outputs[prfx + 'portcullis_fail_bed']:
             symlink(portcullis_path, outputs[prfx + 'portcullis_fail_bed'])
