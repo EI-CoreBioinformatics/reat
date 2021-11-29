@@ -80,6 +80,8 @@ Where multiple read files correspond to a single sample (this implies they resul
    The 'reference' sample name is reserved for internal use.
    If this name is being used in any of the sample input CSV files, you will be notified with an error message.
 
+.. image:: /_static/transcriptome_workflow.png
+  :alt: Transcriptome workflow diagram
 
 Configurable computational resources available::
 

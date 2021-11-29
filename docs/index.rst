@@ -3,13 +3,6 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-.. toctree::
-   :maxdepth: 2
-   :caption: Contents:
-
-   modules/transcriptome
-   modules/homology
-
 REAT - Robust and Extendable eukaryotic Annotation Toolkit
 ===========================================================
 
@@ -54,6 +47,15 @@ The workflow options can be used to activate the caching behaviour in cromwell, 
 
 .. include:: ../workflow_options/options.json
   :literal:
+
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Contents:
+
+   modules/transcriptome/index
+   modules/homology/index
+
 
 Indices and tables
 ==================
