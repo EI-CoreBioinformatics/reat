@@ -76,7 +76,7 @@ workflow portcullis {
     call Merge as PassMerge {
         input:
         merge_operator = merge_operator,
-        tabs = to_merge_pass,
+        beds = to_merge_pass,
         output_directory = "portcullis",
         is_pass = true
     }
@@ -84,17 +84,15 @@ workflow portcullis {
     call Merge as FailMerge {
         input:
         merge_operator = merge_operator,
-        tabs = to_merge_fail,
+        beds = to_merge_fail,
         output_directory = "portcullis",
         is_pass = false
     }
 
     output {
-        File pass_tab = PassMerge.tab
         File pass_bed = PassMerge.bed
         File pass_gff3 = PassMerge.gff3
 
-        File fail_tab = FailMerge.tab
         File fail_bed = FailMerge.bed
         File fail_gff3 = FailMerge.gff3
     }
@@ -125,9 +123,9 @@ task Full {
     }
 
     output {
-        File pass_tab = "portcullis_out/3-filt/portcullis_filtered.pass.junctions.tab"
+        File pass_tab = "portcullis_out/3-filt/portcullis_filtered.pass.junctions.bed"
 
-        File fail_tab = "portcullis_out/3-filt/portcullis_filtered.fail.junctions.tab"
+        File fail_tab = "portcullis_out/3-filt/portcullis_filtered.fail.junctions.bed"
     }
 
     Int cpus = 8
@@ -159,7 +157,7 @@ task Full {
     ln -s ~{reference.fai}
     portcullis full -t~{task_cpus} --use_csi --save_bad --exon_gff --intron_gff --strandedness=$strandedness \
     ~{"-r " + reference_bed} --canonical=C,S --min_cov=~{min_coverage} \
-    ~{basename(reference.fasta)} ~{sep=" " sample.bam}
+    ~{basename(reference.fasta)} --source ~{sample.name} ~{sep=" " sample.bam}
     >>>
 
     runtime {
@@ -206,7 +204,7 @@ task PrepareRef {
 
 task Merge {
     input {
-        Array[File] tabs
+        Array[File] beds
         String merge_operator
         Boolean is_pass
         String output_directory
@@ -231,7 +229,6 @@ task Merge {
   }
 
     output {
-        File tab = output_directory + "/portcullis." + type_text + ".merged.tab"
         File bed = output_directory + "/portcullis." + type_text + ".merged.bed"
         File gff3 = output_directory + "/portcullis." + type_text + ".merged.gff3"
     }
@@ -240,8 +237,7 @@ task Merge {
         set -euxo pipefail
         mkdir ~{output_directory}
         cd ~{output_directory}
-        (junctools set --prefix=portcullis_merged --output=portcullis.~{type_text}.merged.tab --operator=~{merge_operator} union ~{sep=" " tabs} || touch portcullis.~{type_text}.merged.tab)
-        junctools convert -if portcullis -of ebed --output=portcullis.~{type_text}.merged.bed portcullis.~{type_text}.merged.tab
-        junctools convert -if portcullis -of igff --output=portcullis.~{type_text}.merged.gff3 portcullis.~{type_text}.merged.tab
+        (junctools set --prefix=portcullis_merged --output=portcullis.~{type_text}.merged.bed --operator=~{merge_operator} union ~{sep=" " beds} || touch portcullis.~{type_text}.merged.bed)
+        junctools convert -if bed -of igff --output=portcullis.~{type_text}.merged.gff3 portcullis.~{type_text}.merged.bed
     >>>
 }
