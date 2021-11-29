@@ -6,7 +6,7 @@
 import subprocess
 
 from annotation import VERSION
-import sphinx_pdj_theme
+import sphinx_rtd_theme
 
 # -- Path setup --------------------------------------------------------------
 
@@ -32,6 +32,7 @@ release = version
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
+    'sphinx_rtd_theme'
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -48,8 +49,7 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = 'sphinx_pdj_theme'
-html_theme_path = [sphinx_pdj_theme.get_html_theme_path()]
+html_theme = 'sphinx_rtd_theme'
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
@@ -59,8 +59,8 @@ html_static_path = ['_static']
 
 # Generate a full CLI help for the transcriptome command
 transcriptome_help = subprocess.run(['reat', 'transcriptome', '--help'], capture_output=True)
-print(transcriptome_help.stdout.decode(), file=open('transcriptome_help.txt', 'w'))
+print(transcriptome_help.stdout.decode(), file=open('modules/transcriptome_help.txt', 'w'))
 
 # Generate a full CLI help for the homology command
 homology_help = subprocess.run(['reat', 'homology', '--help'], capture_output=True)
-print(homology_help.stdout.decode(), file=open('homology_help.txt', 'w'))
+print(homology_help.stdout.decode(), file=open('modules/homology_help.txt', 'w'))
