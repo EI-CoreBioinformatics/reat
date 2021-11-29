@@ -721,32 +721,39 @@ def collect_homology_output(run_metadata):
     if not os.path.exists(annotations_path):
         os.mkdir(annotations_path)
     # Array[File] clean_annotations = PrepareAnnotations.cleaned_up_gff
-    for clean_annotation in outputs['ei_homology.clean_annotations']:
-        symlink(annotations_path, clean_annotation)
+    if outputs['ei_homology.clean_annotations']:
+        for clean_annotation in outputs['ei_homology.clean_annotations']:
+            symlink(annotations_path, clean_annotation)
     # Array[File] annotation_filter_stats = PrepareAnnotations.stats
-    for annotation_stats in outputs['ei_homology.annotation_filter_stats']:
-        symlink(annotations_path, annotation_stats)
+    if outputs['ei_homology.annotation_filter_stats']:
+        for annotation_stats in outputs['ei_homology.annotation_filter_stats']:
+            symlink(annotations_path, annotation_stats)
 
     # ScoreAlignments
     score_alignments_path = os.path.join(outputs_path, 'ei_homology.score_alignments')
     if not os.path.exists(score_alignments_path):
         os.mkdir(score_alignments_path)
     # Array[File] mgc_evaluation = ScoreAlignments.alignment_compare
-    for mgc_eval in outputs['ei_homology.mgc_evaluation']:
-        symlink(score_alignments_path, mgc_eval)
+    if outputs['ei_homology.mgc_evaluation']:
+        for mgc_eval in outputs['ei_homology.mgc_evaluation']:
+            symlink(score_alignments_path, mgc_eval)
     # Array[File] mgc_evaluation_detail = ScoreAlignments.alignment_compare_detail
-    for mgc_eval_detail in outputs['ei_homology.mgc_evaluation_detail']:
-        symlink(score_alignments_path, mgc_eval_detail)
+    if outputs['ei_homology.mgc_evaluation_detail']:
+        for mgc_eval_detail in outputs['ei_homology.mgc_evaluation_detail']:
+            symlink(score_alignments_path, mgc_eval_detail)
     # File        mgc_score_summary = ScoreSummary.summary_table
-    symlink(score_alignments_path, outputs['ei_homology.mgc_score_summary'])
+    if outputs['ei_homology.mgc_score_summary']:
+        symlink(score_alignments_path, outputs['ei_homology.mgc_score_summary'])
 
     # Main output folder
     # Array[File] xspecies_combined_alignments = CombineXspecies.xspecies_scored_alignment
-    for xspc_combined_aln in outputs['ei_homology.xspecies_combined_alignments']:
-        symlink(outputs_path, xspc_combined_aln)
+    if outputs['ei_homology.xspecies_combined_alignments']:
+        for xspc_combined_aln in outputs['ei_homology.xspecies_combined_alignments']:
+            symlink(outputs_path, xspc_combined_aln)
     # Array[File] alignment_filter_stats = AlignProteins.stats
-    for aln_filter_stat in outputs['ei_homology.alignment_filter_stats']:
-        symlink(outputs_path, aln_filter_stat)
+    if outputs['ei_homology.alignment_filter_stats']:
+        for aln_filter_stat in outputs['ei_homology.alignment_filter_stats']:
+            symlink(outputs_path, aln_filter_stat)
 
     # File loci = MikadoPick.loci
     symlink(outputs_path, outputs['ei_homology.loci'])

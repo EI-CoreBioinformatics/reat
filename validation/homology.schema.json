@@ -51,6 +51,6 @@
             "type": "integer"
         }
     },
-    "required": ["ei_homology.genome_to_annotate", "ei_homology.annotations", "ei_homology.species"]
+    "required": ["ei_homology.genome_to_annotate", "ei_homology.species"]
 }
 
