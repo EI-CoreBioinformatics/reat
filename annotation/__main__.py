@@ -540,18 +540,6 @@ available evidence new gene models or update existing ones'''))
     return args, genetic_code, mikado_genetic_code
 
 
-def cromwell_submit(cli_arguments, input_parameters_filepath, workflow_options_file, wdl_file):
-    # FIXME
-    #  Package the pipeline dependencies from the installed resources folder into a zip file for submitting
-
-    subprocess.run(
-        ["cromwell", "submit", "-h", cli_arguments.server, "-i",
-         input_parameters_filepath, "-o", workflow_options_file, wdl_file]
-    )
-    # FIXME return the code of the request or some mapping to useful error codes
-    return 0
-
-
 def main():
     print("Welcome to REAT")
     print("version -", VERSION)
