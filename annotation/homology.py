@@ -14,8 +14,10 @@ def combine_arguments_homology(cli_arguments):
     if cli_arguments.computational_resources:
         computational_resources = json.load(cli_arguments.computational_resources)
     cromwell_inputs = computational_resources
-    annotation = validate_annotations(cli_arguments.annotations_csv)
-    cromwell_inputs.update(annotation)
+
+    if cli_arguments.annotations_csv:
+        annotation = validate_annotations(cli_arguments.annotations_csv)
+        cromwell_inputs.update(annotation)
 
     cromwell_inputs["ei_homology.genome_to_annotate"] = cli_arguments.genome.name
     cromwell_inputs["ei_homology.species"] = cli_arguments.alignment_species
@@ -23,8 +25,15 @@ def combine_arguments_homology(cli_arguments):
     cromwell_inputs["ei_homology.mikado_scoring"] = cli_arguments.mikado_scoring.name
     cromwell_inputs["ei_homology.output_prefix"] = cli_arguments.output_prefix
 
-    if cli_arguments.protein_sequences:
+    if cli_arguments.protein_sequences and len(cli_arguments.protein_sequences) > 1:
         cromwell_inputs["ei_homology.protein_sequence_files"] = cli_arguments.protein_sequences
+    else:
+        if not cli_arguments.annotations_csv:
+            import sys
+            print(f"Please use more than a single cross species protein sequence file\n"
+                  f"{cli_arguments.protein_sequences}", file=sys.stderr)
+            exit(1)
+
 
     # Optional extra parameters
     if cli_arguments.pick_extra_config:
