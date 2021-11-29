@@ -64,3 +64,7 @@ print(transcriptome_help.stdout.decode(), file=open('modules/transcriptome/trans
 # Generate a full CLI help for the homology command
 homology_help = subprocess.run(['reat', 'homology', '--help'], capture_output=True)
 print(homology_help.stdout.decode(), file=open('modules/homology/homology_help.txt', 'w'))
+
+# Generate a full CLI help for the prediction command
+# prediction_help = subprocess.run(['reat', 'prediction', '--help'], capture_output=True)
+# print(prediction_help.stdout.decode(), file=open('modules/prediction/prediction_help.txt', 'w'))

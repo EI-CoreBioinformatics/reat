@@ -55,6 +55,7 @@ The workflow options can be used to activate the caching behaviour in cromwell, 
 
    modules/transcriptome/index
    modules/homology/index
+   modules/prediction/index
 
 
 Indices and tables

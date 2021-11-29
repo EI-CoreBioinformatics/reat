@@ -1,4 +1,4 @@
-Homology workflow
+Homology Workflow
 -----------------
 
 When there is protein evidence available from related species, the homology workflow can be used to generate gene models based on this evidence. This is achieved by aligning the proteins provided through a set of related species annotations and evaluating these alignments to generate a score.
