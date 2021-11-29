@@ -9,3 +9,5 @@ repeats to generate gene predictions ab initio and evidence based gene predictio
 .. include:: ./prediction_help.txt
   :literal:
 
+.. image:: /_static/prediction_workflow.png
+  :alt: Prediction workflow diagram
