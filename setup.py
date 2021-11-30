@@ -48,7 +48,7 @@ setup(
     extras_require={
         'docs': [
             'sphinx',
-            'sphinx_pdj_theme',
+            'sphinx_rtd_theme',
         ]
     },
     package_data={
