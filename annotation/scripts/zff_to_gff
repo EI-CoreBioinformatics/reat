@@ -4,41 +4,64 @@ from collections import namedtuple
 
 CDSPart = namedtuple('CDSPart', ('start', 'end', 'strand', 'phase'))
 
+def get_zff_line(zff_file, chrom):
+    line = zff_file.readline()
+    while line and line[0] == '#':
+        line = zff_file.readline()
+    while line and line[0] == '>':
+        chrom = line[1:-1]
+        line = zff_file.readline()
+    return line, chrom
 
 def zff_to_gff(zff_file, source):
     current_chrom = ""
+    current_group = ""
     cds_parts = []
-    first = True
+    print("#gff-version\t3")
     with open(zff_file) as zff:
-        for line in zff:
-            if line[0] == '#':
-                continue
-            if line[0] == '>':
-                current_chrom = line[1:-1]
-                continue
+        line, current_chrom = get_zff_line(zff, current_chrom)
+        while line:
             feature, start, end, strand, score, fp_overhang, tp_overhang, phase, group = line.strip().split('\t')
             start = int(start)
             end = int(end)
-            if first:
-                first = False
-                print("#gff-version\t3")
-            if feature == 'Esngl':
-                print(f"{current_chrom}\t{source}\tgene\t{start}\t{end}\t.\t{strand}\t.\tID={group}.g;Name={group}")
-                print(f"{current_chrom}\t{source}\tmRNA\t{start}\t{end}\t.\t{strand}\t.\tID={group}.m;Parent={group}.g")
-                print(f"{current_chrom}\t{source}\tCDS\t{start}\t{end}\t.\t{strand}\t{phase}\tID={group}.1;Parent={group}.m")
-            elif feature == 'Einit':
-                cds_parts.append(CDSPart(start, end, strand, phase))
-            elif feature == 'Exon':
-                cds_parts.append(CDSPart(start, end, strand, phase))
-            elif feature == 'Eterm':
-                cds_parts.append(CDSPart(start, end, strand, phase))
-                print(f"{current_chrom}\t{source}\tgene\t{start}\t{end}\t.\t{strand}\t.\tID={group}.g;Name={group}")
-                print(f"{current_chrom}\t{source}\tmRNA\t{start}\t{end}\t.\t{strand}\t.\tID={group}.m;Parent={group}.g")
-                for i, c in enumerate(cds_parts):
-                    print(f"{current_chrom}\t{source}\tCDS\t{c.start}\t{c.end}\t.\t{c.strand}\t{c.phase}\t"
-                          f"ID={group}.{i};Parent={group}.m")
-                cds_parts.clear()
+            if current_group:
+                while line and group == current_group:
+                    current_group = group
+                    cds_parts.append(CDSPart(start, end, strand, phase))
+                    line, current_chrom = get_zff_line(zff, current_chrom)
+                    feature, start, end, strand, score, fp_overhang, tp_overhang, phase, group = line.strip().split('\t')
+                    start = int(start)
+                    end = int(end)
+                else:
+                    fstart = cds_parts[0].start if cds_parts[0].strand == '+' else cds_parts[-1].start
+                    fend = cds_parts[-1].end if cds_parts[0].strand == '+' else cds_parts[0].end
+                    if fstart > fend:
+                        fend, fstart = fstart, fend
 
+                    print(f"{current_chrom}\t{source}\tgene\t{fstart}\t{fend}\t.\t{cds_parts[0].strand}\t.\tID={current_group}.g;Name={current_group}")
+                    print(f"{current_chrom}\t{source}\tmRNA\t{fstart}\t{fend}\t.\t{cds_parts[0].strand}\t.\tID={current_group}.m;Parent={current_group}.g")
+                    for i, c in enumerate(cds_parts):
+                        print(f"{current_chrom}\t{source}\tCDS\t{c.start}\t{c.end}\t.\t{c.strand}\t{c.phase}\t"
+                              f"ID={current_group}.{i};Parent={current_group}.m")
+                    cds_parts.clear()
+                    cds_parts.append(CDSPart(start, end, strand, phase))
+                    current_group = group
+            else:
+                current_group = group
+                cds_parts.append(CDSPart(start, end, strand, phase))
+            line, current_chrom = get_zff_line(zff, current_chrom)
+        if cds_parts:
+            fstart = cds_parts[0].start if cds_parts[0].strand == '+' else cds_parts[-1].start
+            fend = cds_parts[-1].end if cds_parts[0].strand == '+' else cds_parts[0].end
+            if fstart > fend:
+                fend, fstart = fstart, fend
+            print(
+                f"{current_chrom}\t{source}\tgene\t{fstart}\t{fend}\t.\t{cds_parts[0].strand}\t.\tID={current_group}.g;Name={current_group}")
+            print(
+                f"{current_chrom}\t{source}\tmRNA\t{fstart}\t{fend}\t.\t{cds_parts[0].strand}\t.\tID={current_group}.m;Parent={current_group}.g")
+            for i, c in enumerate(cds_parts):
+                print(f"{current_chrom}\t{source}\tCDS\t{c.start}\t{c.end}\t.\t{c.strand}\t{c.phase}\t"
+                      f"ID={current_group}.{i};Parent={current_group}.m")
 
 def main():
     p = argparse.ArgumentParser()

@@ -25,3 +25,10 @@ dependencies:
   - blast>=2.9.0
   - diamond>=2.0.0
   - scallop-lr=0.9.2
+  - bedtools=2.30.0
+  - ucsc-wigtobigwig=377
+  - glimmerhmm=3.0.4
+  - snap=2013_11_29
+  - codingquarry=2.0
+  - augustus=3.4.0
+  - evidencemodeler=1.1.1

@@ -1,0 +1,83 @@
+#!/usr/bin/env python3
+from argparse import ArgumentParser, FileType, ArgumentDefaultsHelpFormatter
+from networkx import Graph, connected_components
+
+from annotation import minimal_gxf_parser
+
+
+def main():
+    parser = ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)
+    parser.add_argument('-b', '--blast_hits', type=FileType('r'), help='Hits from self blast check')
+    parser.add_argument('-c', '--classification', type=FileType('r'), help='Transcript full length classification')
+    parser.add_argument('-t', '--transcripts', type=FileType('r'), help='Transcripts checking for self hits')
+    parser.add_argument('-n', '--top_n', type=int, default=0, help='Only output the top N transcripts, if 0 output all')
+    parser.add_argument('--max_identity', type=int, default=80, help='Maximum identity allowed between hits')
+    parser.add_argument('--max_coverage', type=int, default=80, help='Maximum coverage allowed between hits')
+    args = parser.parse_args()
+
+    print(f"Parsing input transcripts {args.transcripts.name}")
+
+    # Parse transcripts and hits
+    genes, tid2gid = minimal_gxf_parser(args.transcripts.name)
+
+    print(f"Found {len(tid2gid)} transcripts in {len(genes)} genes")
+    print(f"Calculating {args.max_coverage}cov{args.max_identity}id redundant groups")
+    # If hit matches something else with 80cov 80id add edge to graph
+    edges = []
+    for hit_line in args.blast_hits:
+        qseqid, sseqid, qlen, slen, pident, length, mismatch, \
+        gapopen, qstart, qend, sstart, send, evalue, bitscore, ppos, btop = hit_line.strip().split('\t')
+        if qseqid == sseqid:
+            continue
+        scov = 100 * (int(send) - int(sstart) + 1) / int(slen)
+        qcov = 100 * (int(qend) - int(qstart) + 1) / int(qlen)
+        cov = min(scov, qcov)
+        if float(pident) > args.max_identity and cov > args.max_coverage:
+            edges.append(sorted((qseqid, sseqid)))
+
+    # Parse the classification to obtain the scores
+    next(args.classification)
+    txct_scores = {}
+    for i, l in enumerate(args.classification):
+        record = l.strip().split('\t')
+        txct_scores[record[4]] = (float(record[8]), i, record[6])
+
+    # From connected components pick the best element to print and 'filter' the rest
+    graph = Graph()
+    graph.add_edges_from(edges)
+    discard = set()
+    ccomponents = 0
+    for ccomponents, component in enumerate(connected_components(graph)):
+        keep = max(component, key=lambda txtc_id: txct_scores.get(txtc_id, (-1.0, -1, '\0')))  # \0 as is smallest char
+        component.remove(keep)
+        discard.update(component)
+    print(f"Found {ccomponents} groups of similar transcripts")
+
+    print(f"Discarding {len(discard)} transcripts as redundant by sequence content")
+    print("Generating output files")
+    # Output the top N models models not in the 'discard' pile from (gold+silver), (gold+silver+bronze)
+    # gold+silver are models with utr which can be used for training "with utr" donwstream
+    # gold+silver+bronze are simply models that meet the 'train' requirements
+    for piles in [
+        (open('with_utr.gff', 'w'), {'Gold', 'Silver'}),
+        (open('without_utr.gff', 'w'), {'Gold', 'Silver', 'Bronze'})
+    ]:
+        print('##gff-version 3', file=piles[0])
+        num_output = 0
+        for tid, scores in txct_scores.items():
+            if tid in discard:
+                continue
+            if scores[2] not in piles[1]:
+                continue
+            if args.top_n and num_output >= args.top_n:
+                break
+            gene = genes[tid2gid[tid]]
+            print(gene.__str__().split('\n')[0], file=piles[0])
+            print(gene[tid].format('gff'), file=piles[0])
+            print('###', file=piles[0])
+            num_output += 1
+        print(f"{num_output} transcripts generated in {piles[0].name}")
+
+
+if __name__ == "__main__":
+    main()

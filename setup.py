@@ -56,7 +56,8 @@ setup(
         "annotation": ["transcriptome_module/*.wdl",
                        "transcriptome_module/*/**/*.wdl",
                        "transcriptome_module/*/**/**/*.wdl",
-                       "homology_module/*.wdl"],
+                       "homology_module/*.wdl",
+                       "prediction_module/*.wdl"],
         "annotation.lib.cy_utils": ["annotation/lib/cy_utils/contrast.pxd"]
     },
     entry_points={

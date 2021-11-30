@@ -1,0 +1,109 @@
+#!/usr/bin/env python3
+
+import sys
+
+# This script will generate the hints' SOURCE and PRIORITY for augustus from the selected list of hints in our custom
+# extrinsic file.
+
+# There is no validation done with regards to this file as that validation happens at the CLI level up-front.
+
+# The hints defined in this file are static and match the hints expected by the pipeline, this aspect of the workflow is
+# not dynamic and would require changes both at the workflow level and on this specific file, namely on the list of
+# parameters to be parsed
+EXPECTED_PARAMS = ('gold', 'silver', 'bronze', 'all', 'gold_intron',
+                   'silver_intron', 'protein', 'alignment', 'repeat', 'hq_assembly',
+                   'lq_assembly', 'hq_protein_alignments', 'lq_protein_alignments')
+
+
+def main():
+    try:
+        line_num = 1
+        with open(sys.argv[1]) as hint_params:
+            for param in EXPECTED_PARAMS:
+                with open(f'{param}.s', 'w') as source_f, open(f'{param}.p', 'w') as prio_f:
+                    param_pair_l = next(hint_params)
+                    param_pair = param_pair_l.split()
+                    if len(param_pair) > 2:
+                        print(f"The current line {line_num}:\n {param_pair_l} has more than 2 parts, "
+                              f"please only use pair entries.", file=sys.stderr)
+                        return 3
+                    print(param_pair)
+                    print(param_pair[0], file=source_f)
+                    print(param_pair[1], file=prio_f)
+    except StopIteration:
+        print(f"Insufficient parameters in {sys.argv[1]}, please check this file contains "
+              f"{len(EXPECTED_PARAMS)} lines for the following (in order): {[print(p) for p in EXPECTED_PARAMS]}", file=sys.stderr)
+        return 1
+    return 0
+
+
+if __name__ == '__main__':
+    exit(main())
+
+
+# Eg. input file:
+# S 1
+# P 2
+# E 3
+# D 4
+# C 5
+# V 6
+# G 7
+# B 8
+# N 9
+
+# Example outputs:
+
+# ==> alignment.p <==
+# 8
+#
+# ==> alignment.s <==
+# B
+#
+# ==> all.p <==
+# 4
+#
+# ==> all.s <==
+# D
+#
+# ==> bronze.p <==
+# 3
+#
+# ==> bronze.s <==
+# E
+#
+# ==> gold.p <==
+# 1
+#
+# ==> gold.s <==
+# S
+#
+# ==> intron_gold.p <==
+# 5
+#
+# ==> intron_gold.s <==
+# C
+#
+# ==> intron_silver.p <==
+# 6
+#
+# ==> intron_silver.s <==
+# V
+#
+# ==> protein.p <==
+# 7
+#
+# ==> protein.s <==
+# G
+#
+# ==> repeat.p <==
+# 9
+#
+# ==> repeat.s <==
+# N
+#
+# ==> silver.p <==
+# 2
+#
+# ==> silver.s <==
+# P

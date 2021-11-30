@@ -1,0 +1,95 @@
+#!/usr/bin/env python3
+import argparse
+import re
+import sys
+
+
+def print_features(exons, introns, seqid, source, ftype, score, strand, phase, attributes):
+    if len(exons) == 1:
+        print(f"{seqid}\t{source}\t{ftype}part\t{exons[0]}\t{score}\t{strand}\t{phase}\t{attributes}")
+    else:
+        print(f"{seqid}\t{source}\t{ftype}part\t{exons[0]}\t{score}\t{strand}\t{phase}\t{attributes}")
+        for e in exons[1:-1]:
+            print(f"{seqid}\t{source}\t{ftype}\t{e}\t{score}\t{strand}\t{phase}\t{attributes}")
+        print(f"{seqid}\t{source}\t{ftype}part\t{exons[-1]}\t{score}\t{strand}\t{phase}\t{attributes}")
+
+    for i in introns:
+        print(f"{seqid}\t{source}\tintron\t{i}\t{score}\t{strand}\t{phase}\t{attributes}")
+
+
+def transform_gff_to_hint(gff_file, order, priority, source_hint, source_gff, feature_type):
+    pre_seqid = ''
+    pre_source = ''
+    pre_start = 0
+    pre_end = 0
+    pre_score = 0
+    pre_strand = ''
+    pre_phase = ''
+    pre_attributes = ''
+    exons = []
+    introns = []
+    tmp_gid = ''
+    for line in gff_file:
+        if line.startswith('#') or line.isspace() or len(line) == 0:
+            continue
+        seqid, source, ftype, start, end, score, strand, phase, attributes = line.strip().split('\t', maxsplit=9)
+        start = int(start)
+        end = int(end)
+        start, end = (end, start) if end < start else (start, end)
+        if ftype not in ('exon', 'match_part'):
+            continue
+        try:
+            gid = re.search('Parent *= *([^;]+)', attributes).group(1)
+        except AttributeError:
+            print(f"The feature:\n{line.strip()}\nin {gff_file.name} is missing the Parent attribute, please make sure this file is valid", file=sys.stderr)
+            sys.exit(1)
+        if gid != tmp_gid:
+            new_attributes = f"src={source_hint};grp={gid};pri={priority};"
+            #  output results
+            if tmp_gid != '':
+                print_features(exons, introns, pre_seqid, source_gff, feature_type, pre_score, pre_strand,
+                               pre_phase, pre_attributes)
+            exons = []
+            introns = []
+            tmp_gid = gid
+            pre_seqid = seqid
+            pre_start = start
+            pre_end = end
+            pre_score = score
+            pre_strand = strand
+            pre_phase = phase
+            pre_attributes = new_attributes
+            exons.append(f"{start}\t{end}")
+        else:
+            exons.append(f"{start}\t{end}")
+            if order == 'inc' or strand == '+':
+                introns.append(f"{pre_end + 1}\t{start - 1}")
+            else:
+                introns.append(f"{end + 1}\t{pre_start - 1}")
+            pre_start = start
+            pre_end = end
+
+    print_features(exons, introns, pre_seqid, source_gff, feature_type, pre_score, pre_strand, pre_phase,
+                   pre_attributes)
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-P', '--priority_hint', type=int, help='Augustus priority hint')
+    parser.add_argument('-S', '--source_hint', type=str, help='Augustus src hint')
+    parser.add_argument('-o', '--order', choices=('inc', 'dec'), default='inc',
+                        help="Choose increase (inc) or decrease (dec) depending on if the exon/cds features on whether"
+                             "the - strand coordinates increase or decrease from one line to the following")
+    parser.add_argument('-s', '--source', type=str, help='GFF source')
+    parser.add_argument('-t', '--type', choices=("CDS", "exon"), help='Feature type to be parsed, protein data would '
+                                                                      'typically use \'CDS\' and transcript data \'exon\'')
+    parser.add_argument('GFF', nargs='?', default=sys.stdin, type=argparse.FileType('r'), help='GFF file')
+
+    args = parser.parse_args()
+    gff_file = args.GFF
+
+    transform_gff_to_hint(gff_file, args.order, args.priority_hint, args.source_hint, args.source, args.type)
+
+
+if __name__ == "__main__":
+    main()

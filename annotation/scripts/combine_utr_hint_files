@@ -1,0 +1,26 @@
+#!/usr/bin/env python3
+
+from argparse import ArgumentParser, FileType
+from annotation import UTR_SELECTION_OPTIONS
+import sys
+
+def parse_arguments(args):
+    parser = ArgumentParser("")
+    for option in UTR_SELECTION_OPTIONS:
+        parser.add_argument(f"--{option}", type=FileType('r'))
+    parser.add_argument("--selection", choices=UTR_SELECTION_OPTIONS, nargs='+')
+    args = parser.parse_args(args)
+    return args
+
+
+def main():
+    args = parse_arguments(sys.argv[1:])
+
+    for option in UTR_SELECTION_OPTIONS:
+        if option in args.selection:
+            for l in getattr(args, option):
+                print(l, end='')
+    return 0
+
+if '__main__' == __name__:
+    sys.exit(main())

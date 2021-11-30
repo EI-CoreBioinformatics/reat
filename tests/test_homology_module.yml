@@ -1,3 +1,21 @@
+- name: Homology_no_annotation
+  tags:
+    - homology
+  command: >-
+    reat --workflow_options_file tests/integration/homology/options.json
+    --computational_resources tests/integration/homology/compute_inputs.json
+    homology
+    --genome tests/integration/homology/inputs/Athaliana_447_TAIR10_Chr3_1065466-1464870.fa
+    --alignment_species arabthal
+    --output_prefix homology_test
+    --protein_sequences tests/integration/homology/inputs/BrapaFPsc_Chr3_1065466-1464870.faa tests/integration/homology/inputs/Cgrandiflora_Chr3_1065466-1464870.faa
+    --mikado_config tests/integration/homology/inputs/config.yaml
+    --mikado_scoring tests/integration/homology/inputs/plant.protein.wport_wex.percentage.yaml
+  files:
+    - path: "log.out"
+      contains:
+      - "SingleWorkflowRunnerActor workflow finished with status 'Succeeded'"
+
 - name: Homology
   tags:
     - homology

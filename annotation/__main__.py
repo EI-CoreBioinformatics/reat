@@ -23,26 +23,25 @@
 # If the user wishes to 'cancel' the workflow, SIGTERM or SIGINT will be managed by cascading them to the cromwell
 # process, SIGINT should allow for 'happy' process termination.
 
-import argparse
 # Generates all required inputs and parses mikado's multiple runs extra configurations and places them in a reusable
 # location where they can be edited for the user's convenience
 import datetime
-import io
 import json
 import os
-import signal
 import subprocess
 import sys
+import textwrap
 import time
 from textwrap import wrap
 
+from annotation import UTR_SELECTION_OPTIONS, LONG_READ_ALIGNER_CHOICES
 from annotation import VERSION
-from annotation.homology import combine_arguments_homology, validate_homology_inputs
-from annotation.transcriptome import combine_arguments, validate_transcriptome_inputs, transcriptome_cli_validation, \
+from annotation.homology import homology_module
+from annotation.prediction import prediction_module
+from annotation.prediction_module import add_classification_parser_parameters
+from annotation.transcriptome import transcriptome_cli_validation, \
     genetic_code_str_to_int
-
-LONG_READ_ALIGNER_CHOICES = ['minimap2', 'gmap', '2pass', '2pass_merged']
-RUN_METADATA = "run_details.json"
+from annotation.transcriptome import transcriptome_module
 
 try:
     import importlib.resources as pkg_resources
@@ -53,6 +52,17 @@ try:
     from yaml import CLoader as Loader, CDumper as Dumper
 except ImportError:
     from yaml import Loader, Dumper
+
+from argparse import (
+    ArgumentDefaultsHelpFormatter,
+    ArgumentParser,
+    FileType,
+    RawTextHelpFormatter
+)
+
+
+class ReatHelpFormatter(ArgumentDefaultsHelpFormatter, RawTextHelpFormatter):
+    pass
 
 
 def check_environment(force_quit=True):
@@ -98,6 +108,8 @@ def check_environment(force_quit=True):
         except RuntimeError as e:
             print(f"When executing {key}, found the following error:\n{e}\n"
                   f"Please ensure your environment and hardware support REAT's requirements", file=sys.stderr)
+        except KeyboardInterrupt:
+            exit(10)
         output = result.stdout.decode()
         output += result.stderr.decode()
         item["rc"] = result.returncode
@@ -141,23 +153,23 @@ def parse_arguments():
 
     :return: Object containing the validated CLI input arguments.
     """
-    reat_ap = argparse.ArgumentParser(add_help=True, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    reat_ap = ArgumentParser(add_help=True, formatter_class=ReatHelpFormatter)
 
-    reat_ap.add_argument("-j", "--jar_cromwell", type=argparse.FileType('r'),
+    reat_ap.add_argument("-j", "--jar_cromwell", type=FileType('r'),
                          help="Cromwell server jar file")
-    reat_ap.add_argument("-r", "--runtime_configuration", type=argparse.FileType('r'),
+    reat_ap.add_argument("-r", "--runtime_configuration", type=FileType('r'),
                          help="Configuration file for the backend, please follow "
                               "https://cromwell.readthedocs.io/en/stable/backends/HPC/ for more information.\n"
                               "An example of this file can be found at ")
 
-    reat_ap.add_argument("-c", "--computational_resources", type=argparse.FileType('r'),
+    reat_ap.add_argument("-c", "--computational_resources", type=FileType('r'),
                          help="Computational resources for REAT, please look at the template for more information",
                          required=True)
     reat_ap.add_argument("-o", "--output_parameters_file", type=str,
                          help="REAT parameters file, this file will be used as the input for REAT. "
                               "It provides the arguments for the workflow runtime.",
                          default="reat_input.json")
-    reat_ap.add_argument("--workflow_options_file", type=argparse.FileType('r'),
+    reat_ap.add_argument("--workflow_options_file", type=FileType('r'),
                          help="Workflow execution options, includes cache usage and result directories "
                               "structure and location")
 
@@ -165,56 +177,61 @@ def parse_arguments():
 
     transcriptome_ap = subparsers.add_parser('transcriptome',
                                              help="Transcriptome module",
-                                             formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+                                             formatter_class=ReatHelpFormatter)
     # General inputs
-    transcriptome_ap.add_argument("--reference", type=argparse.FileType('r'),
+    transcriptome_ap.add_argument("--reference", type=FileType('r'),
                                   help="Reference FASTA to annotate", required=True)
-    transcriptome_ap.add_argument("--samples", nargs='+', type=argparse.FileType('r'),
+    transcriptome_ap.add_argument("--samples", nargs='+', type=FileType('r'),
                                   help="Reads organised in the input specification for REAT, for more information "
-                                       "please look at https://github.com/ei-corebioinformatics/reat for an example")
-    transcriptome_ap.add_argument("--csv_paired_samples", type=argparse.FileType('r'),
-                                  help="CSV formatted input paired read samples. Without headers.\n"
-                                       "The CSV fields are as follows name, strand, files (because"
-                                       " this is an array that can contain one or more pairs, this fields' values are "
-                                       "separated by semi-colon and space. Files in a pair are separated by semi-colon"
-                                       "pairs are separated by a single space), merge, score, is_ref, "
-                                       "exclude_redundant\n\n"
-                                       "sample_strand takes values \'fr-firststrand\', \'fr-unstranded\', "
-                                       "\'fr-secondstrand\'\n"
-                                       "merge, is_ref and exclude_redundant are boolean and take values 'true', 'false'\n\n"
-                                       "Example:\n"
-                                       "PR1,fr-secondstrand,A_R1.fq;A_R2.fq /samples/paired/B1.fq;/samples/paired/B2.fq"
-                                       ",false,2")
-    transcriptome_ap.add_argument("--csv_long_samples", type=argparse.FileType('r'),
-                                  help="CSV formatted input long read samples. Without headers.\n"
-                                       "The CSV fields are as follows name, strand, files (space "
-                                       "separated if there is more than one), quality, score, is_ref, "
-                                       "exclude_redundant\n\n"
-                                       "sample_strand takes values \'fr-firststrand\', \'fr-unstranded\', "
-                                       "\'fr-secondstrand\'\n"
-                                       "quality takes values 'low', 'high'\n"
-                                       "is_ref and exclude_redundant are booleans and take values 'true', 'false'\n\n"
-                                       "Example:\n"
-                                       "Sample1,fr-firststrand,A.fq /samples/long/B.fq ./inputs/C.fq,low,2")
-    transcriptome_ap.add_argument("--annotation", type=argparse.FileType('r'),
-                                  help="Annotation of the reference, this file will be used as the base for the new"
-                                       " annotation which will incorporate from the available evidence new gene models"
-                                       " or update existing ones")
+                                       "please look at https://github.com/ei-corebioinformatics/reat\nfor an example")
+    transcriptome_ap.add_argument("--csv_paired_samples", type=FileType('r'),
+                                  help=textwrap.dedent('''\
+CSV formatted input paired read samples. Without headers.
+
+The CSV fields are as follows name, strand, files (because this is an array that can contain one or more pairs, 
+this fields' values are separated by semi-colon and space. Files in a pair are separated by semi-colon pairs are 
+separated by a single space), merge, score, is_ref, exclude_redundant.
+
+sample_strand takes values \'fr-firststrand\', \'fr-unstranded\', \'fr-secondstrand\'
+
+merge, is_ref and exclude_redundant are boolean and take values 'true', 'false'                                       
+
+Example:
+PR1,fr-secondstrand,A_R1.fq;A_R2.fq /samples/paired/B1.fq;/samples/paired/B2.fq,false,2
+''')
+                                  )
+    transcriptome_ap.add_argument("--csv_long_samples", type=FileType('r'),
+                                  help=textwrap.dedent('''\
+CSV formatted input long read samples. Without headers."
+The CSV fields are as follows name, strand, files (space separated if there is more than one), quality, score, is_ref, exclude_redundant
+
+sample_strand takes values \'fr-firststrand\', \'fr-unstranded\', \'fr-secondstrand\'
+quality takes values 'low', 'high'
+is_ref and exclude_redundant are booleans and take values 'true', 'false'
+
+Example:
+
+Sample1,fr-firststrand,A.fq /samples/long/B.fq ./inputs/C.fq,low,2''')
+                                  )
+    transcriptome_ap.add_argument("--annotation", type=FileType('r'),
+                                  help=textwrap.dedent('''\
+Annotation of the reference, this file will be used as the base for the new annotation which will incorporate from the 
+available evidence new gene models or update existing ones'''))
     transcriptome_ap.add_argument("--annotation_score", type=int, default=1,
                                   help="Score for models in the reference annotation file")
     transcriptome_ap.add_argument("--check_reference", action="store_true", default=False,
                                   help="At mikado stage, annotation models will be evaluated in the same manner as "
-                                       "RNA-seq based models, removing any models deemed incorrect")
+                                       "RNA-seq based models, removing any models\ndeemed incorrect")
     transcriptome_ap.add_argument("--mode", choices=['basic', 'update', 'only_update'], default='basic',
                                   help="basic: Annotation models are treated the same as the RNA-Seq models at the pick"
-                                       " stage."
-                                       "update: Annotation models are prioritised but also novel loci are reported."
+                                       " stage.\n"
+                                       "update: Annotation models are prioritised but also novel loci are reported.\n"
                                        "only_update: Annotation models are prioritised and non-reference loci are "
                                        "excluded.")
-    transcriptome_ap.add_argument("--extra_junctions", type=argparse.FileType('r'),
+    transcriptome_ap.add_argument("--extra_junctions", type=FileType('r'),
                                   help="Extra junctions provided by the user, this file will be used as a set of valid"
-                                       " junctions for alignment of short and long read samples, in the case of long"
-                                       " reads, these junctions are combined with the results of portcullis whenever"
+                                       " junctions for alignment of short and\nlong read samples, in the case of long"
+                                       " reads, these junctions are combined with the results of portcullis whenever\n"
                                        " short read samples have been provided as part of the input datasets")
     transcriptome_ap.add_argument("--skip_mikado_long", action='store_true', default=False,
                                   help="Disables generation of the long read only mikado run")
@@ -222,42 +239,44 @@ def parse_arguments():
                                   help="Use all the junctions available to filter the HQ_assemblies before mikado")
     transcriptome_ap.add_argument("--filter_LQ_assemblies", action='store_true', default=False,
                                   help="Use all the junctions available to filter the LQ_assemblies before mikado")
-    transcriptome_ap.add_argument("--parameters_file", type=argparse.FileType('r'),
+    transcriptome_ap.add_argument("--parameters_file", type=FileType('r'),
                                   help="Base parameters file, this file can be the output of a previous REAT run "
-                                       "which will be used as the base for a new parameters file written to the"
+                                       "which will be used as the base for a new\nparameters file written to the"
                                        " output_parameters_file argument")
     transcriptome_ap.add_argument("--genetic_code",
-                                  help=f"Parameter for the translation table used in Mikado for translating CDS "
-                                       f"sequences, and for ORF calling, can take values in the genetic code range of "
-                                       f"NCBI as an integer. E.g 1, 6, 10 "
-                                       f"or when using TransDecoder as ORF caller, one of: "
-                                       f"{', '.join(genetic_code_str_to_int.keys())}. 0 is equivalent to Standard, NCBI"
-                                       f" #1, but only ATG is considered a valid start codon.", default='0')
+                                  help="\n".join(textwrap.wrap(
+                                      "Parameter for the translation table used in Mikado for translating CDS "
+                                      "sequences, and for ORF calling, can take values in the genetic code range of "
+                                      "NCBI as an integer. E.g 1, 6, 10 or when using TransDecoder as ORF caller, "
+                                      "one of: {}. 0 is equivalent to Standard, NCBI #1, but only ATG is "
+                                      "considered a valid start codon.".format(
+                                          ', '.join(genetic_code_str_to_int.keys())), 110)),
+                                  default='0')
 
     # Mikado arguments
     mikado_parameters = transcriptome_ap.add_argument_group("Mikado", "Parameters for Mikado runs")
-    mikado_parameters.add_argument("--all_extra_config", type=argparse.FileType('r'),
+    mikado_parameters.add_argument("--all_extra_config", type=FileType('r'),
                                    help="External configuration file for Paired and Long reads mikado")
-    mikado_parameters.add_argument("--long_extra_config", type=argparse.FileType('r'),
+    mikado_parameters.add_argument("--long_extra_config", type=FileType('r'),
                                    help="External configuration file for Long reads mikado run")
-    mikado_parameters.add_argument("--lq_extra_config", type=argparse.FileType('r'),
+    mikado_parameters.add_argument("--lq_extra_config", type=FileType('r'),
                                    help="External configuration file for Low-quality long reads only mikado run "
-                                        "(this is only applied when 'separate_mikado_LQ' is enabled)")
-    mikado_parameters.add_argument("--all_scoring_file", type=argparse.FileType('r'),
+                                        "(this is only applied when \n'separate_mikado_LQ' is enabled)")
+    mikado_parameters.add_argument("--all_scoring_file", type=FileType('r'),
                                    help="Mikado long and short scoring file", required=True)
-    mikado_parameters.add_argument("--long_scoring_file", type=argparse.FileType('r'),
+    mikado_parameters.add_argument("--long_scoring_file", type=FileType('r'),
                                    help="Mikado long scoring file")
-    mikado_parameters.add_argument("--long_lq_scoring_file", type=argparse.FileType('r'),
+    mikado_parameters.add_argument("--long_lq_scoring_file", type=FileType('r'),
                                    help="Mikado low-quality long scoring file")
-    mikado_parameters.add_argument("--homology_proteins", type=argparse.FileType('r'),
+    mikado_parameters.add_argument("--homology_proteins", type=FileType('r'),
                                    help="Homology proteins database, used to score transcripts by Mikado")
     mikado_parameters.add_argument("--separate_mikado_LQ", type=bool,
                                    help="Specify whether or not to analyse low-quality long reads separately from "
-                                        "high-quality, this option generates an extra set of mikado analyses "
+                                        "high-quality, this option generates an\nextra set of mikado analyses "
                                         "including low-quality data")
     mikado_parameters.add_argument("--exclude_LQ_junctions", action='store_true', default=False,
                                    help="When this parameter is defined, junctions derived from low-quality long reads "
-                                        "will not be included in the set of valid junctions for the mikado analyses")
+                                        "will not be included in the set of\nvalid junctions for the mikado analyses")
 
     # Aligner choices
     alignment_parameters = transcriptome_ap.add_argument_group("Alignment",
@@ -266,13 +285,13 @@ def parse_arguments():
                                       help="Choice of short read aligner", default='hisat')
     alignment_parameters.add_argument("--skip_2pass_alignment", action='store_true', default=False,
                                       help="If not required, the second round of alignments for 2passtools can be "
-                                           "skipped when this parameter is active")
+                                           "skipped when this parameter\nis active")
     alignment_parameters.add_argument("--HQ_aligner", choices=LONG_READ_ALIGNER_CHOICES,
                                       help="Choice of aligner for high-quality long reads", default='minimap2')
     alignment_parameters.add_argument("--LQ_aligner", choices=LONG_READ_ALIGNER_CHOICES,
                                       help="Choice of aligner for low-quality long reads", default='minimap2')
-    alignment_parameters.add_argument("--min_identity", type=float,
-                                      help="Minimum alignment identity to retain transcript", default=0.9)
+    alignment_parameters.add_argument("--min_identity", type=int, choices=range(0, 101), metavar='[0-100]',
+                                      help="Minimum alignment identity (passed only to gmap)", default=90)
     alignment_parameters.add_argument("--min_intron_len", type=int,
                                       help="Where available, the minimum intron length allowed will be specified for "
                                            "the aligners", default=20)
@@ -281,26 +300,26 @@ def parse_arguments():
                                            "the aligners", default=200000)
     alignment_parameters.add_argument("--max_intron_len_ends", type=int,
                                       help="Where available, the maximum *boundary* intron length allowed will be "
-                                           "specified for the aligner, when specified this implies max_intron_len "
+                                           "specified for the aligner, when specified\nthis implies max_intron_len "
                                            "only applies to the *internal* introns and this parameter to the *boundary*"
                                            " introns",
                                       default=100000)
 
     alignment_parameters.add_argument("--PR_hisat_extra_parameters", type=str,
                                       help="Extra command-line parameters for the selected short read aligner, please "
-                                           "note that extra parameters are not validated and will have to match the "
+                                           "note that extra parameters are not\nvalidated and will have to match the "
                                            "parameters available for the selected read aligner")
     alignment_parameters.add_argument("--PR_star_extra_parameters", type=str,
                                       help="Extra command-line parameters for the selected short read aligner, please "
-                                           "note that extra parameters are not validated and will have to match the "
+                                           "note that extra parameters are not\nvalidated and will have to match the "
                                            "parameters available for the selected read aligner")
     alignment_parameters.add_argument("--HQ_aligner_extra_parameters", type=str,
                                       help="Extra command-line parameters for the selected long read aligner, please "
-                                           "note that extra parameters are not validated and will have to match the "
+                                           "note that extra parameters are not\nvalidated and will have to match the "
                                            "parameters available for the selected read aligner")
     alignment_parameters.add_argument("--LQ_aligner_extra_parameters", type=str,
                                       help="Extra command-line parameters for the selected long read aligner, please "
-                                           "note that extra parameters are not validated and will have to match the "
+                                           "note that extra parameters are not\nvalidated and will have to match the "
                                            "parameters available for the selected read aligner")
 
     # Assembler choices
@@ -311,51 +330,51 @@ def parse_arguments():
                                      choices=["filter", "merge", "stringtie", "stringtie_collapse"],
                                      help="Choice of long read assembler."
                                           "\n- filter: Simply filters the reads based on identity and coverage"
-                                          "- merge: cluster the input transcripts into loci, discarding "
-                                          "\"duplicated\" transcripts (those with the same exact introns and fully "
+                                          "\n- merge: cluster the input transcripts into loci, discarding "
+                                          "\"duplicated\" transcripts (those with the same exact\n\tintrons and fully "
                                           "contained or equal boundaries). This option also discards contained "
                                           "transcripts"
-                                          "- stringtie: Assembles the long reads alignments into transcripts"
-                                          "- stringtie_collapse: Cleans and collapses long reads but does not "
+                                          "\n- stringtie: Assembles the long reads alignments into transcripts"
+                                          "\n- stringtie_collapse: Cleans and collapses long reads but does not "
                                           "assemble them", default='filter')
     assembly_parameters.add_argument("--LQ_assembler",
                                      choices=["filter", "merge", "stringtie", "stringtie_collapse"],
                                      help="Choice of long read assembler."
                                           "\n- filter: Simply filters the reads based on identity and coverage"
-                                          "- merge: cluster the input transcripts into loci, discarding "
-                                          "\"duplicated\" transcripts (those with the same exact introns and fully "
+                                          "\n- merge: cluster the input transcripts into loci, discarding "
+                                          "\"duplicated\" transcripts (those with the same exact\n\tintrons and fully "
                                           "contained or equal boundaries). This option also discards contained "
                                           "transcripts"
-                                          "- stringtie: Assembles the long reads alignments into transcripts"
-                                          "- stringtie_collapse: Cleans and collapses long reads but does not "
+                                          "\n- stringtie: Assembles the long reads alignments into transcripts"
+                                          "\n- stringtie_collapse: Cleans and collapses long reads but does not "
                                           "assembles them", default='stringtie_collapse')
-    assembly_parameters.add_argument("--HQ_min_identity",
+    assembly_parameters.add_argument("--HQ_min_identity", type=int, choices=range(0, 101), metavar='[0-100]',
                                      help="When the 'filter' option is selected, this parameter defines the minimum "
                                           "identity used to filtering")
-    assembly_parameters.add_argument("--HQ_min_coverage",
+    assembly_parameters.add_argument("--HQ_min_coverage", type=int, choices=range(0, 101), metavar='[0-100]',
                                      help="When the 'filter' option is selected, this parameter defines the minimum "
                                           "coverage used for filtering")
     assembly_parameters.add_argument("--HQ_assembler_extra_parameters",
                                      help="Extra parameters for the long reads assembler, please note that extra "
-                                          "parameters are not validated and will have to match the parameters "
+                                          "parameters are not validated and will have to\nmatch the parameters "
                                           "available for the selected assembler")
-    assembly_parameters.add_argument("--LQ_min_identity",
+    assembly_parameters.add_argument("--LQ_min_identity", type=int, choices=range(0, 101), metavar='[0-100]',
                                      help="When the 'filter' option is selected, this parameter defines the minimum "
                                           "identity used to filtering")
-    assembly_parameters.add_argument("--LQ_min_coverage",
+    assembly_parameters.add_argument("--LQ_min_coverage", type=int, choices=range(0, 101), metavar='[0-100]',
                                      help="When the 'filter' option is selected, this parameter defines the minimum "
                                           "coverage used for filtering")
     assembly_parameters.add_argument("--LQ_assembler_extra_parameters",
                                      help="Extra parameters for the long reads assembler, please note that extra "
-                                          "parameters are not validated and will have to match the parameters "
+                                          "parameters are not validated and will have to\nmatch the parameters "
                                           "available for the selected assembler")
     assembly_parameters.add_argument("--PR_stringtie_extra_parameters",
                                      help="Extra parameters for stringtie, please note that extra "
-                                          "parameters are not validated and will have to match the parameters "
+                                          "parameters are not validated and will have to\nmatch the parameters "
                                           "available for stringtie")
     assembly_parameters.add_argument("--PR_scallop_extra_parameters",
                                      help="Extra parameters for scallop, please note that extra "
-                                          "parameters are not validated and will have to match the parameters "
+                                          "parameters are not validated and will have to\nmatch the parameters "
                                           "available for scallop")
 
     # Portcullis extra parameters
@@ -366,14 +385,14 @@ def parse_arguments():
     orf_calling_parameters = transcriptome_ap.add_argument_group("ORF Caller", "Parameters for ORF calling programs")
     orf_calling_parameters.add_argument("--orf_caller", choices=['prodigal', 'transdecoder', 'none'],
                                         help="Choice of available orf calling softwares", default='prodigal')
-    orf_calling_parameters.add_argument("--orf_calling_proteins", type=argparse.FileType('r'),
+    orf_calling_parameters.add_argument("--orf_calling_proteins", type=FileType('r'),
                                         help="Set of proteins to be aligned to the genome for orf prediction by "
                                              "Transdecoder")
 
     homology_ap = subparsers.add_parser('homology', help="Homology module",
-                                        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+                                        formatter_class=ReatHelpFormatter)
 
-    homology_ap.add_argument("--genome", type=argparse.FileType('r'),
+    homology_ap.add_argument("--genome", type=FileType('r'),
                              help="Fasta file of the genome to annotate",
                              required=True)
     homology_ap.add_argument("-p", "--output_prefix", type=str, default='xspecies',
@@ -382,10 +401,10 @@ def parse_arguments():
                              help="Species specific parameters, select a value from the first or second column of "
                                   "https://raw.githubusercontent.com/ogotoh/spaln/master/table/gnm2tab",
                              required=True)
-    homology_ap.add_argument("--annotations_csv", type=argparse.FileType('r'),
+    homology_ap.add_argument("--annotations_csv", type=FileType('r'),
                              help="CSV file with reference annotations to extract proteins/cdnas for spliced alignments"
-                                  " in csv format. The CSV fields are as follows genome_fasta,annotation_gff  "
-                                  "e.g Athaliana.fa,Athaliana.gff")
+                                  ". The CSV fields are: genome_fasta,annotation_gff"
+                                  "\nExample:\nAthaliana.fa,Athaliana.gff")
     homology_ap.add_argument("--protein_sequences", type=str, nargs='*',
                              help="List of files containing protein sequences to use as evidence")
     homology_ap.add_argument("--annotation_filters",
@@ -394,18 +413,18 @@ def parse_arguments():
                              nargs='+',
                              help="Filter annotation coding genes by the filter types specified",
                              default=['none'])
-    homology_ap.add_argument("--mikado_config", type=argparse.FileType('r'),
+    homology_ap.add_argument("--mikado_config", type=FileType('r'),
                              help="Base configuration for Mikado consolidation stage.",
                              required=True)
-    homology_ap.add_argument("--mikado_scoring", type=argparse.FileType('r'),
+    homology_ap.add_argument("--mikado_scoring", type=FileType('r'),
                              help="Scoring file for Mikado pick at consolidation stage.",
                              required=True)
-    homology_ap.add_argument("--junctions", type=argparse.FileType('r'),
+    homology_ap.add_argument("--junctions", type=FileType('r'),
                              help="Validated junctions BED file for use in Mikado consolidation stage.")
-    homology_ap.add_argument("--utrs", type=argparse.FileType('r'),
+    homology_ap.add_argument("--utrs", type=FileType('r'),
                              help="Gene models that may provide UTR extensions to the homology based models at the "
                                   "mikado stage")
-    homology_ap.add_argument("--pick_extra_config", type=argparse.FileType('r'),
+    homology_ap.add_argument("--pick_extra_config", type=FileType('r'),
                              help="Extra configuration for Mikado pick stage")
     homology_ap.add_argument("--min_cdna_length", type=int, default=100,
                              help="Minimum cdna length for models to consider in Mikado consolidation stage")
@@ -416,12 +435,12 @@ def parse_arguments():
                                   "this parameter will be filtered out",
                              default=20)
     homology_ap.add_argument("--filter_max_intron", type=int,
-                             help="If 'intron_len' filter is enabled, any features "
-                                  "with introns longer than this parameter will be filtered out",
+                             help="If 'intron_len' filter is enabled, any features with introns longer than this "
+                                  "parameter will be filtered out",
                              default=200000)
     homology_ap.add_argument("--filter_min_exon", type=int,
-                             help="If 'exon_len' filter is enabled, any features "
-                                  "with exons shorter than this parameter will be filtered out",
+                             help="If 'exon_len' filter is enabled, any features with exons shorter than this "
+                                  "parameter will be filtered out",
                              default=20)
     homology_ap.add_argument("--alignment_min_exon_len", type=int, help="Minimum exon length, alignment parameter",
                              default=20)
@@ -446,6 +465,72 @@ def parse_arguments():
                              help="Filter alignments scored against its original structure with a CDS junction f1 "
                                   "lower than this value")
 
+    prediction_ap = subparsers.add_parser('prediction', help="Prediction module",
+                                          formatter_class=ReatHelpFormatter)
+
+    prediction_ap.add_argument("--genome", type=FileType('r'), required=True,
+                               help="Genome fasta file")
+    prediction_ap.add_argument("--augustus_config_path", type=str, required=True,
+                               help="Template path for augustus config, this path will not be modified as a copy will "
+                                    "be created internally for the workflow's use")
+    prediction_ap.add_argument("--extrinsic_config", type=FileType('r'), nargs='*',
+                               help="Augustus extrinsic configuration file, defines the boni/mali for each type of "
+                                    "feature-evidence combination")
+    prediction_ap.add_argument("--species", type=str, required=True,
+                               help="Name of the species to train models for, if it does not exist in the augustus "
+                                    "config path it will be created.")
+    prediction_ap.add_argument("--transcriptome_models", type=FileType('r'), nargs='*',
+                               help="Models derived from transcriptomic data")
+    prediction_ap.add_argument("--homology_models", type=FileType('r'), nargs='*',
+                               help="Models derived from protein alignments")
+    prediction_ap.add_argument("--introns", type=FileType('r'),
+                               help="Introns to be used as hints for Augustus")
+    prediction_ap.add_argument("--expression", type=FileType('r'),
+                               help="RNASeq data alignments used for coverage information as exon hints")
+    prediction_ap.add_argument("--repeats", type=FileType('r'),
+                               help="Repeat annotation GFF file.")
+    prediction_ap.add_argument("--homology_proteins", type=FileType('r'),
+                               help="Protein sequences used for determining whether the evidence provided is "
+                                    "full-length or not")
+    prediction_ap.add_argument('--optimise_augustus', action='store_true',
+                               help="Enable augustus metaparameter optimisation")
+    prediction_ap.add_argument('--kfold', type=int, default=8, help="Number of batches for augustus optimisation")
+    prediction_ap.add_argument('--force_train', action='store_true',
+                               help="Re-train augustus even if the species is found in the \'augustus_config_path\'")
+    prediction_ap.add_argument('--augustus_runs', type=FileType('r'), nargs='*',
+                               help="File composed of 9 lines with SOURCE PRIORITY pairs for each of the types of "
+                                    "evidence that can be used in an Augustus run. These evidence types are: "
+                                    "gold models, silver models, bronze models, all models, "
+                                    "gold introns, silver introns, protein models, coverage hints, and repeat hints.")
+    prediction_ap.add_argument('--EVM_weights', type=FileType('r'), required=True,
+                               help="Evidence modeler requires a weighting to be provided for each source of evidence,"
+                                    " this file is the means to do so.")
+    prediction_ap.add_argument('--hq_protein_alignments', type=FileType('r'),
+                               help="High confidence protein alignments to be used as hints for Augustus runs")
+    prediction_ap.add_argument('--lq_protein_alignments', type=FileType('r'),
+                               help="Low confidence protein alignments to be used as hints for Augustus runs")
+    prediction_ap.add_argument('--hq_assembly', type=FileType('r'),
+                               help="High confidence assemblies (for example from HiFi source) to be used as hints for "
+                                    "Augustus runs")
+    prediction_ap.add_argument('--lq_assembly', type=FileType('r'),
+                               help="Low confidence assemblies (short reads or low quality long reads) to be used as "
+                                    "hints for Augustus runs")
+    prediction_ap.add_argument('--mikado_utr_files', choices=UTR_SELECTION_OPTIONS, nargs='*',
+                               default=['gold', 'silver'],
+                               help=f"Choose any combination of space separated values from: "
+                                    f"{' '.join(UTR_SELECTION_OPTIONS)}")
+    prediction_ap.add_argument('--do_glimmer', action='store_true')
+    prediction_ap.add_argument('--do_snap', action='store_true')
+    prediction_ap.add_argument('--do_codingquarry', action='store_true')
+    prediction_ap.add_argument('--no_augustus', action='store_false')
+    prediction_ap.add_argument('--filter_top_n', type=int, default=0,
+                               help='Only output the top N transcripts that pass the self blast filter (0 outputs all)')
+    prediction_ap.add_argument('--filter_max_identity', type=int, default=80,
+                               help='Maximum identity between models for redundancy classification')
+    prediction_ap.add_argument('--filter_max_coverage', type=int, default=80,
+                               help='Maximum coverage between models for redundancy classification')
+    add_classification_parser_parameters(prediction_ap)
+
     args = reat_ap.parse_args()
 
     genetic_code = 0
@@ -453,420 +538,6 @@ def parse_arguments():
     if args.reat_module == 'transcriptome':
         genetic_code, mikado_genetic_code = transcriptome_cli_validation(args, reat_ap)
     return args, genetic_code, mikado_genetic_code
-
-
-def symlink(path, out_file):
-    if os.path.exists(os.path.join(path, os.path.basename(out_file))):
-        os.unlink(os.path.join(path, os.path.basename(out_file)))
-    os.symlink(out_file, os.path.join(path, os.path.basename(out_file)))
-
-
-def collect_transcriptome_output(RUN_METADATA, output_path="outputs"):
-    # Get the outputs and symlink them to the output folder
-    run_metadata = json.load(open(RUN_METADATA))
-    outputs = run_metadata["outputs"]
-    prfx = "ei_annotation."
-    outputs_path = output_path
-    if not os.path.exists(outputs_path):
-        os.mkdir(outputs_path)
-
-    # reat/outputs
-    # ├── align_long.HQ_read_samples.summary.stats.tsv
-    # ├── alignments/
-    # ├── align_short.SR_read_samples.summary.stats.tsv
-    # ├── assembly_long/
-    # ├── assembly_short/
-    # ├── assembly_short.scallop.summary.stats.tsv
-    # ├── assembly_short.stringtie.summary.stats.tsv
-    # ├── plots/
-    # ├── Mikado_long-permissive.loci.gff3
-    # ├── Mikado_long-permissive.loci.gff3.stats
-    # ├── Mikado_long-permissive.loci.metrics.tsv
-    # ├── Mikado_long-permissive.loci.scores.tsv
-    # ├── Mikado_short_and_long-permissive.loci.gff3
-    # ├── Mikado_short_and_long-permissive.loci.gff3.stats
-    # ├── Mikado_short_and_long-permissive.loci.metrics.tsv
-    # ├── Mikado_short_and_long-permissive.loci.scores.tsv
-    # ├── mikado.summary.stats.tsv
-    # └── portcullis/
-
-    # Alignments
-    # Array[AlignedSample]? SR_bams = wf_align.SR_bams
-    # Array[File]? SR_alignment_summary_stats = wf_align.SR_summary_stats
-    # File? SR_alignment_summary_stats_table = wf_align.SR_summary_stats_table
-    link_bams(outputs, outputs_path, prfx + 'SR_bams', prfx + 'SR_alignment_summary_stats',
-              prfx + 'SR_alignment_summary_stats_table')
-    # Array[AlignedSample]? LQ_bams = wf_align.LQ_bams
-    # Array[File]? LQ_alignment_summary_stats = wf_align.LQ_summary_stats
-    # File? LQ_alignment_summary_stats_table = wf_align.LQ_summary_stats_table
-    link_bams(outputs, outputs_path, prfx + 'LQ_bams', prfx + 'LQ_alignment_summary_stats',
-              prfx + 'LQ_alignment_summary_stats_table')
-    # Array[AlignedSample]? HQ_bams = wf_align.HQ_bams
-    # Array[File]? HQ_alignment_summary_stats = wf_align.HQ_summary_stats
-    # File? HQ_alignment_summary_stats_table = wf_align.HQ_summary_stats_table
-    link_bams(outputs, outputs_path, prfx + 'HQ_bams', prfx + 'HQ_alignment_summary_stats',
-              prfx + 'HQ_alignment_summary_stats_table')
-
-    # assembly_short
-    # Array[AssembledSample]? SR_asms = wf_align.SR_gff
-    # Array[File]? SR_assembly_stats = wf_align.SR_assembly_stats
-    link_assemblies(prfx + 'SR_asms', os.path.join(outputs_path, 'assembly_short'), prfx + 'SR_assembly_stats', outputs)
-
-    # assembly_long
-    # Array[AssembledSample]? LQ_asms = wf_align.LQ_gff
-    # Array[File]? LQ_assembly_stats = wf_align.LQ_assembly_stats
-    link_assemblies(prfx + 'LQ_asms', os.path.join(outputs_path, 'assembly_long'), prfx + 'LQ_assembly_stats', outputs)
-    # Array[AssembledSample]? HQ_asms = wf_align.HQ_gff
-    # Array[File]? HQ_assembly_stats = wf_align.HQ_assembly_stats
-    link_assemblies(prfx + 'HQ_asms', os.path.join(outputs_path, 'assembly_long'), prfx + 'HQ_assembly_stats', outputs)
-
-    # portcullis
-    if any((outputs[prfx + 'portcullis_pass_bed'],
-            outputs[prfx + 'portcullis_pass_gff3'],
-            outputs[prfx + 'portcullis_fail_bed'],
-            outputs[prfx + 'portcullis_fail_gff3'])):
-        portcullis_path = os.path.join(outputs_path, 'portcullis')
-        os.mkdir(portcullis_path) if not os.path.exists(portcullis_path) else ""
-        # File? portcullis_pass_bed = wf_align.pass_filtered_bed
-        if outputs[prfx + 'portcullis_pass_bed']:
-            symlink(portcullis_path, outputs[prfx + 'portcullis_pass_bed'])
-        # File? portcullis_pass_gff3 = wf_align.pass_filtered_gff3
-        if outputs[prfx + 'portcullis_pass_gff3']:
-            symlink(portcullis_path, outputs[prfx + 'portcullis_pass_gff3'])
-        # File? portcullis_fail_bed = wf_align.fail_filtered_bed
-        if outputs[prfx + 'portcullis_fail_bed']:
-            symlink(portcullis_path, outputs[prfx + 'portcullis_fail_bed'])
-        # File? portcullis_fail_gff3 = wf_align.fail_filtered_gff3
-        if outputs[prfx + 'portcullis_fail_gff3']:
-            symlink(portcullis_path, outputs[prfx + 'portcullis_fail_gff3'])
-
-    # TODO
-    #  Plots
-    #  Array[Array[File]]? stats = wf_align.stats
-    #  Array[Array[File]]? actg_cycles_plots = wf_align.actg_cycles_plots
-    #  Array[Array[File]]? coverage_plots = wf_align.coverage_plots
-    #  Array[Array[File]]? gc_content_plots = wf_align.gc_content_plots
-    #  Array[Array[File]]? gc_depth_plots = wf_align.gc_depth_plots
-    #  Array[Array[File]]? htmls = wf_align.htmls
-    #  Array[Array[File]]? indel_cycles_plots = wf_align.indel_cycles_plots
-    #  Array[Array[File]]? indel_dist_plots = wf_align.indel_dist_plots
-    #  Array[Array[File]]? insert_size_plots = wf_align.insert_size_plots
-    #  Array[Array[File]]? quals_plots = wf_align.quals_plots
-    #  Array[Array[File]]? quals2_plots = wf_align.quals2_plots
-    #  Array[Array[File]]? quals3_plots = wf_align.quals3_plots
-    #  Array[Array[File]]? quals_hm_plots = wf_align.quals_hm_plots
-
-    # File? SR_stringtie_summary_stats = wf_align.SR_stringtie_summary_stats
-    if outputs[prfx + 'SR_stringtie_summary_stats']:
-        symlink(outputs_path, outputs[prfx + 'SR_stringtie_summary_stats'])
-    # File? SR_scallop_summary_stats = wf_align.SR_scallop_summary_stats
-    if outputs[prfx + 'SR_scallop_summary_stats']:
-        symlink(outputs_path, outputs[prfx + 'SR_scallop_summary_stats'])
-    # File? LQ_assembly_summary_stats = wf_align.LQ_assembly_summary_stats
-    if outputs[prfx + 'LQ_assembly_summary_stats']:
-        symlink(outputs_path, outputs[prfx + 'LQ_assembly_summary_stats'])
-    # File? HQ_assembly_summary_stats = wf_align.HQ_assembly_summary_stats
-    if outputs[prfx + 'HQ_assembly_summary_stats']:
-        symlink(outputs_path, outputs[prfx + 'HQ_assembly_summary_stats'])
-
-    # File? mikado_long_loci = wf_main_mikado.long_loci
-    # File? mikado_long_scores = wf_main_mikado.long_scores
-    # File? mikado_long_metrics = wf_main_mikado.long_metrics
-    # File? mikado_long_stats = wf_main_mikado.long_stats
-    link_mikado(outputs, outputs_path, prfx + 'mikado_long_')
-    #
-    # File? mikado_short_loci = wf_main_mikado.short_loci
-    # File? mikado_short_scores = wf_main_mikado.short_scores
-    # File? mikado_short_metrics = wf_main_mikado.short_metrics
-    # File? mikado_short_stats = wf_main_mikado.short_stats
-    link_mikado(outputs, outputs_path, prfx + 'mikado_short_')
-    #
-    # File? mikado_short_and_long_noLQ_loci = wf_main_mikado.short_and_long_noLQ_loci
-    # File? mikado_short_and_long_noLQ_scores = wf_main_mikado.short_and_long_noLQ_scores
-    # File? mikado_short_and_long_noLQ_metrics = wf_main_mikado.short_and_long_noLQ_metrics
-    # File? mikado_short_and_long_noLQ_stats = wf_main_mikado.short_and_long_noLQ_stats
-    link_mikado(outputs, outputs_path, prfx + 'mikado_short_and_long_noLQ_')
-    #
-    # File? mikado_longHQ_loci = wf_main_mikado.longHQ_loci
-    # File? mikado_longHQ_scores = wf_main_mikado.longHQ_scores
-    # File? mikado_longHQ_metrics = wf_main_mikado.longHQ_metrics
-    # File? mikado_longHQ_stats = wf_main_mikado.longHQ_stats
-    link_mikado(outputs, outputs_path, prfx + 'mikado_longHQ_')
-    #
-    # File? mikado_longLQ_loci = wf_main_mikado.longLQ_loci
-    # File? mikado_longLQ_scores = wf_main_mikado.longLQ_scores
-    # File? mikado_longLQ_metrics = wf_main_mikado.longLQ_metrics
-    # File? mikado_longLQ_stats = wf_main_mikado.longLQ_stats
-    link_mikado(outputs, outputs_path, prfx + 'mikado_longLQ_')
-
-    # File mikado_summary_stats = wf_main_mikado.mikado_stats_summary
-    if outputs[prfx + 'mikado_summary_stats']:
-        symlink(outputs_path, outputs[prfx + 'mikado_summary_stats'])
-
-
-def link_mikado(outputs, outputs_path, mikado):
-    for suffix in ('loci', 'scores', 'metrics', 'stats'):
-        mikado_name = mikado + suffix
-        if outputs[mikado_name]:
-            symlink(outputs_path, outputs[mikado_name])
-
-
-def link_assemblies(assemblies, assembly_path, assembly_stats, outputs):
-    if outputs[assemblies]:
-        if not os.path.exists(assembly_path):
-            os.mkdir(assembly_path)
-        if outputs[assembly_stats]:
-            for stats in outputs[assembly_stats]:
-                symlink(assembly_path, stats)
-        for sr_asm in outputs[assemblies]:
-            symlink(assembly_path, sr_asm['assembly'])
-
-
-def link_bams(outputs, outputs_path, bams_array, stats_array, stats_table):
-    alignments_path = os.path.join(outputs_path, 'alignments')
-    if outputs[bams_array]:
-        if not os.path.exists(alignments_path):
-            os.mkdir(alignments_path)
-        for aligned_sample in outputs[bams_array]:
-            for bam in aligned_sample['bam']:
-                symlink(alignments_path, bam)
-    if outputs[stats_array]:
-        for stats in outputs[stats_array]:
-            symlink(alignments_path, stats)
-    if outputs[stats_table]:
-        symlink(alignments_path, outputs[stats_table])
-
-
-def transcriptome_module(cli_arguments, genetic_code='0', mikado_genetic_code=0):
-    """
-    Collects the CLI arguments and combines them with CLI defined input files.
-    The resulting object is validated and the final inputs are written to a json Cromwell input file.
-    :param cli_arguments: Validated CLI values with un-inspected files
-    :return: Return code from Cromwell
-    """
-    # Print input file for cromwell
-    cromwell_inputs = combine_arguments(cli_arguments)
-    cromwell_inputs['ei_annotation.mikado_genetic_code'] = mikado_genetic_code
-    cromwell_inputs['ei_annotation.genetic_code'] = str(genetic_code)
-    cromwell_jar, runtime_config = prepare_cromwell_arguments(cli_arguments)
-
-    # Validate input against schema
-    validate_transcriptome_inputs(cromwell_inputs)
-    with open(cli_arguments.output_parameters_file, 'w') as cromwell_input_file:
-        json.dump(cromwell_inputs, cromwell_input_file)
-    # Submit pipeline to server or run locally depending on the arguments
-    with pkg_resources.path("annotation.transcriptome_module", "main.wdl") as wdl_file:
-        workflow_options_file = None
-        if cli_arguments.workflow_options_file is not None:
-            workflow_options_file = cli_arguments.workflow_options_file.name
-        rc = execute_cromwell(runtime_config, cromwell_jar,
-                              cli_arguments.output_parameters_file, workflow_options_file, wdl_file)
-        if rc == 0:
-            collect_transcriptome_output(RUN_METADATA)
-        return rc
-
-
-def prepare_cromwell_arguments(cli_arguments):
-    cromwell_jar = os.environ.get('CROMWELL_JAR', None)
-    if cli_arguments.jar_cromwell:
-        cromwell_jar = cli_arguments.jar_cromwell.name
-    runtime_config = os.environ.get('CROMWELL_RUNTIME_CONFIG', None)
-    if cli_arguments.runtime_configuration:
-        runtime_config = cli_arguments.runtime_configuration.name
-    return cromwell_jar, runtime_config
-
-
-def collect_homology_output(run_metadata):
-    # Get the outputs and symlink them to the output folder
-    run_metadata = json.load(open(run_metadata))
-    outputs = run_metadata['outputs']
-    outputs_path = 'outputs'
-    if not os.path.exists(outputs_path):
-        os.mkdir(outputs_path)
-
-    # ├── Annotations
-    # │      ├── Homo_sapiens.coding.annotation.stats
-    # │      ├── Homo_sapiens.coding.clean.extra_attr.gff
-    # │      ├── Monodelphis_domestica.coding.annotation.stats
-    # │      ├── Monodelphis_domestica.coding.clean.extra_attr.gff
-    # │      ├── Notamacropus_eugenii.coding.annotation.stats
-    # │      ├── Notamacropus_eugenii.coding.clean.extra_attr.gff
-    # │      ├── Sarcophilus_harrisii.coding.annotation.stats
-    # │      └── Sarcophilus_harrisii.coding.clean.extra_attr.gff
-    # ├── Homo_sapiens.alignment.stats
-    # ├── Homo_sapiens.alignment.stop_extended.extra_attr.mgc.xspecies_scores.gff
-    # ├── Monodelphis_domestica.alignment.stats
-    # ├── Monodelphis_domestica.alignment.stop_extended.extra_attr.mgc.xspecies_scores.gff
-    # ├── Notamacropus_eugenii.alignment.stats
-    # ├── Notamacropus_eugenii.alignment.stop_extended.extra_attr.mgc.xspecies_scores.gff
-    # ├── Sarcophilus_harrisii.alignment.stats
-    # ├── Sarcophilus_harrisii.alignment.stop_extended.extra_attr.mgc.xspecies_scores.gff
-    # ├── ScoreAlignments
-    # │      ├── all_avgF1.bin.txt
-    # │      ├── comp_Homo_sapiens.alignment.stop_extended.extra_attr_Homo_sapiens_detail.tab
-    # │      ├── comp_Homo_sapiens.alignment.stop_extended.extra_attr_Homo_sapiens.tab
-    # │      ├── comp_Monodelphis_domestica.alignment.stop_extended.extra_attr_Monodelphis_domestica_detail.tab
-    # │      ├── comp_Monodelphis_domestica.alignment.stop_extended.extra_attr_Monodelphis_domestica.tab
-    # │      ├── comp_Notamacropus_eugenii.alignment.stop_extended.extra_attr_Notamacropus_eugenii_detail.tab
-    # │      ├── comp_Notamacropus_eugenii.alignment.stop_extended.extra_attr_Notamacropus_eugenii.tab
-    # │      ├── comp_Sarcophilus_harrisii.alignment.stop_extended.extra_attr_Sarcophilus_harrisii_detail.tab
-    # │      └── comp_Sarcophilus_harrisii.alignment.stop_extended.extra_attr_Sarcophilus_harrisii.tab
-    # ├── xspecies.loci.gff3
-    # ├── xspecies.loci.gff3.stats
-    # ├── xspecies.loci.metrics.tsv
-    # └── xspecies.loci.scores.tsv
-
-    # Annotations
-    annotations_path = os.path.join(outputs_path, 'ei_homology.annotations')
-    if not os.path.exists(annotations_path):
-        os.mkdir(annotations_path)
-    # Array[File] clean_annotations = PrepareAnnotations.cleaned_up_gff
-    for clean_annotation in outputs['ei_homology.clean_annotations']:
-        symlink(annotations_path, clean_annotation)
-    # Array[File] annotation_filter_stats = PrepareAnnotations.stats
-    for annotation_stats in outputs['ei_homology.annotation_filter_stats']:
-        symlink(annotations_path, annotation_stats)
-
-    # ScoreAlignments
-    score_alignments_path = os.path.join(outputs_path, 'ei_homology.score_alignments')
-    if not os.path.exists(score_alignments_path):
-        os.mkdir(score_alignments_path)
-    # Array[File] mgc_evaluation = ScoreAlignments.alignment_compare
-    for mgc_eval in outputs['ei_homology.mgc_evaluation']:
-        symlink(score_alignments_path, mgc_eval)
-    # Array[File] mgc_evaluation_detail = ScoreAlignments.alignment_compare_detail
-    for mgc_eval_detail in outputs['ei_homology.mgc_evaluation_detail']:
-        symlink(score_alignments_path, mgc_eval_detail)
-    # File        mgc_score_summary = ScoreSummary.summary_table
-    symlink(score_alignments_path, outputs['ei_homology.mgc_score_summary'])
-
-    # Main output folder
-    # Array[File] xspecies_combined_alignments = CombineXspecies.xspecies_scored_alignment
-    for xspc_combined_aln in outputs['ei_homology.xspecies_combined_alignments']:
-        symlink(outputs_path, xspc_combined_aln)
-    # Array[File] alignment_filter_stats = AlignProteins.stats
-    for aln_filter_stat in outputs['ei_homology.alignment_filter_stats']:
-        symlink(outputs_path, aln_filter_stat)
-
-    # File loci = MikadoPick.loci
-    symlink(outputs_path, outputs['ei_homology.loci'])
-    # File scores = MikadoPick.scores
-    symlink(outputs_path, outputs['ei_homology.scores'])
-    # File metrics = MikadoPick.metrics
-    symlink(outputs_path, outputs['ei_homology.metrics'])
-    # File stats = MikadoPick.stats
-    symlink(outputs_path, outputs['ei_homology.stats'])
-
-
-def homology_module(cli_arguments):
-    cromwell_inputs = combine_arguments_homology(cli_arguments)
-    validate_homology_inputs(cromwell_inputs)
-
-    cromwell_jar, runtime_config = prepare_cromwell_arguments(cli_arguments)
-
-    with open(cli_arguments.output_parameters_file, 'w') as cromwell_input_file:
-        json.dump(cromwell_inputs, cromwell_input_file)
-    # Submit pipeline to server or run locally depending on the arguments
-    with pkg_resources.path("annotation.homology_module", "main.wdl") as wdl_file:
-        workflow_options_file = None
-        if cli_arguments.workflow_options_file is not None:
-            workflow_options_file = cli_arguments.workflow_options_file.name
-        rc = execute_cromwell(runtime_config, cromwell_jar,
-                              cli_arguments.output_parameters_file, workflow_options_file, wdl_file)
-        if rc == 0:
-            collect_homology_output(RUN_METADATA)
-
-        return rc
-
-
-def execute_cromwell(workflow_configuration_file, jar_cromwell, input_parameters_filepath, workflow_options_file,
-                     wdl_file):
-    return cromwell_run(workflow_configuration_file, jar_cromwell,
-                        input_parameters_filepath, workflow_options_file, wdl_file)
-
-
-def cromwell_submit(cli_arguments, input_parameters_filepath, workflow_options_file, wdl_file):
-    # FIXME
-    #  Package the pipeline dependencies from the installed resources folder into a zip file for submitting
-
-    subprocess.run(
-        ["cromwell", "submit", "-h", cli_arguments.server, "-i",
-         input_parameters_filepath, "-o", workflow_options_file, wdl_file]
-    )
-    # FIXME return the code of the request or some mapping to useful error codes
-    return 0
-
-
-def kill_cromwell(sig, frame):
-    raise KeyboardInterrupt
-
-
-def cromwell_run(workflow_configuration_file, jar_cromwell, input_parameters_filepath, workflow_options_file, wdl_file,
-                 log_level="INFO"):
-    formatted_command_line = ["java", f"-Dconfig.file={str(workflow_configuration_file)}",
-                              f"-DLOG_LEVEL={log_level}",
-                              "-jar", str(jar_cromwell),
-                              "run",
-                              "-i", str(input_parameters_filepath)]
-    if workflow_options_file:
-        formatted_command_line.extend(["-o", str(workflow_options_file)])
-
-    formatted_command_line.extend(["-m", RUN_METADATA, str(wdl_file)])
-
-    print("Starting:")
-    print(' '.join(formatted_command_line))
-    cromwell_sp_output = io.StringIO()
-    try:
-        sp_cromwell = subprocess.Popen(
-            formatted_command_line,
-            universal_newlines=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE
-        )
-        signal.signal(signal.SIGINT, kill_cromwell)
-        signal.signal(signal.SIGTERM, kill_cromwell)
-        while True:
-            output = sp_cromwell.stdout.readline()
-            if sp_cromwell.poll() is not None:
-                break
-            if output:
-                cromwell_sp_output.write(output)
-                print(output.strip())
-                sys.stdout.flush()
-    except KeyboardInterrupt:
-        sp_cromwell.send_signal(signal.SIGINT)
-        sp_cromwell.wait()
-        for line in sp_cromwell.stdout:
-            print(line.strip())
-    sys.stdout.flush()
-    rc = sp_cromwell.poll()
-    if rc != 0:
-        if rc == 130:
-            print("REAT stopped by user request")
-        else:
-            sentinel = "Check the content of stderr for potential additional information: "
-            cromwell_sp_output_str = cromwell_sp_output.getvalue()
-            error_file_start_pos = cromwell_sp_output_str.find(sentinel)
-            for line in sp_cromwell.stderr:
-                print(line)
-            if error_file_start_pos < 0:
-                # FIXME Unhandled error
-                print("Unhandled errors, please report this as an issue to add support for improved messages and "
-                      "suggestions for actions on how to resolve it")
-                print(cromwell_sp_output_str)
-            else:
-                error_file = cromwell_sp_output_str[error_file_start_pos + len(sentinel):].split("\n")[0][:-1]
-                print("\n\n\nREAT Failed, the following file might contain information with the reasons behind"
-                      " the failure")
-                print(error_file)
-                if os.path.exists(error_file):
-                    with open(error_file, 'r') as failed_job_stderr_file:
-                        print(failed_job_stderr_file.read())
-                else:
-                    print("The stderr file for the process that failed was not found, this can happen when the job was "
-                          "killed outside REAT i.e when there was an out-of-memory issue, please check the logs for "
-                          "failed jobs and provide the necessary resources for these to complete")
-    return rc
 
 
 def main():
@@ -893,6 +564,8 @@ def main():
         rc = transcriptome_module(cli_arguments, genetic_code, mikado_genetic_code)
     elif cli_arguments.reat_module == "homology":
         rc = homology_module(cli_arguments)
+    elif cli_arguments.reat_module == "prediction":
+        rc = prediction_module(cli_arguments)
     else:
         rc = 1
 
