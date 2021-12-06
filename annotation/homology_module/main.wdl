@@ -201,12 +201,9 @@ task Mikado {
 
         if [ "" != "~{utrs}" ]
         then
-             apply_pad=""
-#            for i in ~{sep=" " utrs}
-#            do
-                label="UTRs"
-                echo -e "~{utrs}\t${label}\tTrue\t0\tFalse" >> list.txt
-#            done
+            apply_pad=""
+            label="UTRs"
+            echo -e "~{utrs}\t${label}\tTrue\t0\tFalse" >> list.txt
         fi
 
         # mikado configure

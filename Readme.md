@@ -136,3 +136,17 @@ Running reat under slurm requires changing the `-Dconfig.file` argument from the
 #!/bin/sh
 java -Dconfig.file=reat/cromwell_configuration/slurm.conf -jar cromwell.jar
 ```
+
+
+## Releasing new versions
+
+To create a new release, make sure your repository is in a clean state and please use:
+
+```shell
+bumpversion minor --verbose --tag --message "Minor version bump" --tag-message "Minor version bump
+
+List of changes (note that this message will be used in the Release)
+Finally you may want to update the release message by editing it directly
+```
+
+The above will bump a minor version (options are major, minor and patch), create a tag with the message above, trigger the github actions for checking the commit and generating a new github release.
