@@ -76,14 +76,20 @@ def combine_arguments_prediction(cli_arguments):
 
     if cli_arguments.do_glimmer:
         cromwell_inputs['ei_prediction.do_glimmer'] = 'true'
+        if cli_arguments.do_glimmer is not True and os.access(cli_arguments.do_glimmer, os.R_OK):
+            cromwell_inputs['ei_prediction.glimmer_training'] = cli_arguments.do_glimmer
 
     if cli_arguments.do_snap:
         cromwell_inputs['ei_prediction.do_snap'] = 'true'
+        if cli_arguments.do_snap is not True and os.access(cli_arguments.do_snap, os.R_OK):
+            cromwell_inputs['ei_prediction.snap_training'] = cli_arguments.do_snap
 
     if cli_arguments.do_codingquarry:
         cromwell_inputs['ei_prediction.do_codingquarry'] = 'true'
+        if cli_arguments.do_codingquarry is not True and os.access(cli_arguments.do_codingquarry, os.R_OK):
+            cromwell_inputs['ei_prediction.codingquarry_training'] = cli_arguments.do_codingquarry
 
-    if cli_arguments.no_augustus and cli_arguments.no_augustus == False:
+    if cli_arguments.no_augustus and cli_arguments.no_augustus is False:
         cromwell_inputs['ei_prediction.do_augustus'] = 'false'
 
     if cli_arguments.min_pct_cds_fraction:

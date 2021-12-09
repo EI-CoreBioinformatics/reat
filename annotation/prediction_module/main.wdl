@@ -734,7 +734,9 @@ task CodingQuarry {
 		if [ "~{codingquarry_training}" == "" ]; then
 			CodingQuarry -p ~{num_cpus} -f ~{genome.fasta} -a ~{transcripts} ~{if fresh_prediction then "-n" else ""}
 		else
-			export QUARRY_PATH=~{codingquarry_training}
+			cp -r $QUARRY_PATH QuarryFiles
+			cp -r ~{codingquarry_training} QuarryFiles/species/~{species}
+			export QUARRY_PATH=./QuarryFiles
 			CodingQuarry -p ~{num_cpus} -f ~{genome.fasta} -a ~{transcripts} -s ~{species} ~{if fresh_prediction then "-n" else ""}
 		fi
 		mv out/PredictedPass.gff3 codingquarry.predictions.gff
@@ -793,7 +795,7 @@ task SNAP {
 			cd params
 			forge ../export.ann ../export.dna
 			cd ..
-			hmm-assembler.pl ~{genome.fasta} params > ~{genome.fasta}.hmm
+			hmm-assembler.pl ~{genome.fasta} params > ~{basename(genome.fasta)}.hmm
 			snap ~{genome.fasta}.hmm ~{genome.fasta} > snap.predictions.zff
 		else
 			snap ~{pretrained_hmm} ~{genome.fasta} > snap.predictions.zff
@@ -1075,8 +1077,8 @@ task EVM {
 	}
 
 	command <<<
-		cat ~{if defined(hq_protein_alignments) then hq_protein_alignments else "/dev/null"} | awk -v OFS="\t" '$3=="CDS" {$3="nucleotide_to_protein_match"; print} | sed 's/ID=.*;Parent=/ID=/g' >> protein_alignments.gff
-		cat ~{if defined(lq_protein_alignments) then hq_protein_alignments else "/dev/null"} | awk -v OFS="\t" '$3=="CDS" {$3="nucleotide_to_protein_match"; print} | sed 's/ID=.*;Parent=/ID=/g' >> protein_alignments.gff
+		cat ~{if defined(hq_protein_alignments) then hq_protein_alignments else "/dev/null"} | awk -v OFS="\t" '$3=="CDS" {$3="nucleotide_to_protein_match"; print}' | sed -E 's/(ID=.*;)?Parent=/ID=/g' >> protein_alignments.gff
+		cat ~{if defined(lq_protein_alignments) then lq_protein_alignments else "/dev/null"} | awk -v OFS="\t" '$3=="CDS" {$3="nucleotide_to_protein_match"; print}' | sed -E 's/(ID=.*;)?Parent=/ID=/g' >> protein_alignments.gff
 
 		cat ~{if defined(hq_assembly) then hq_assembly else "/dev/null"} | gff_to_evm augustus >> transcript_alignments.gff
 		cat ~{if defined(lq_assembly) then lq_assembly else "/dev/null"} | gff_to_evm augustus >> transcript_alignments.gff

@@ -184,13 +184,7 @@ workflow wf_augustus {
 	{
 		call cat as augustus_hints {
 			input:
-			files = select_all([gold.result, silver.result, bronze.result, all.result,
-							   PrepareIntronHints.gold_intron_hints, PrepareIntronHints.silver_intron_hints,
-							   PrepareProteinHints.protein_hints,
-							   UpdateExonPartSourceAndPriority.sp_gff,
-							   hq_assembly.result, lq_assembly.result,
-							   hq_protein_alignments.result, lq_protein_alignments.result,
-							   repeats_gff]),
+			files = hints_files,
 			out_filename = "hints_" + run_id + ".gff"
 		}
 		if (defined(single_seqs)) {

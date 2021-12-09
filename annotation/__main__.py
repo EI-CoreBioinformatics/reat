@@ -499,8 +499,8 @@ available evidence new gene models or update existing ones'''))
                                help="Re-train augustus even if the species is found in the \'augustus_config_path\'")
     prediction_ap.add_argument('--augustus_runs', type=FileType('r'), nargs='*',
                                help="File composed of 9 lines with SOURCE PRIORITY pairs for each of the types of "
-                                    "evidence that can be used in an Augustus run. These evidence types are: "
-                                    "gold models, silver models, bronze models, all models, "
+                                    "evidence that can be used in\n an Augustus run. These evidence types are: "
+                                    "gold models, silver models, bronze models, all models,\n"
                                     "gold introns, silver introns, protein models, coverage hints, and repeat hints.")
     prediction_ap.add_argument('--EVM_weights', type=FileType('r'), required=True,
                                help="Evidence modeler requires a weighting to be provided for each source of evidence,"
@@ -519,9 +519,12 @@ available evidence new gene models or update existing ones'''))
                                default=['gold', 'silver'],
                                help=f"Choose any combination of space separated values from: "
                                     f"{' '.join(UTR_SELECTION_OPTIONS)}")
-    prediction_ap.add_argument('--do_glimmer', action='store_true')
-    prediction_ap.add_argument('--do_snap', action='store_true')
-    prediction_ap.add_argument('--do_codingquarry', action='store_true')
+    prediction_ap.add_argument('--do_glimmer', nargs='?', const=True,
+                               help="Enables GlimmerHmm predictions, optionally accepts a training directory")
+    prediction_ap.add_argument('--do_snap', nargs='?', const=True,
+                               help="Enables SNAP predictions, optionally accepts a training directory")
+    prediction_ap.add_argument('--do_codingquarry', nargs='?', const=True,
+                               help="Enables CodingQuarry predictions, optionally accepts a training directory")
     prediction_ap.add_argument('--no_augustus', action='store_false')
     prediction_ap.add_argument('--filter_top_n', type=int, default=0,
                                help='Only output the top N transcripts that pass the self blast filter (0 outputs all)')
