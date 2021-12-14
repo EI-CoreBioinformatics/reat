@@ -23,5 +23,98 @@ Once models have been scored, a user defined number of models at a user defined 
 Each of the ab initio predictors the user selected is then trained and used to generate predictions. In the case of Augustus, there is an initial ab initio prediction made with limited evidence, but further rounds of prediction with different weights for each evidence type can then be configured using a file containing a SOURCE and a SCORE value for each criteria (more details). All these predictions are then combined using Evidence Modeler with configurable weights for each type of prediction and evidence (more details). Finally, the EVM output is processed through Mikado using the Gold and Silver category models (which contain UTRs) to add UTRs where evidence supports it.
 
 
+Configurable computational resources available::
+
+  "ei_prediction.AlignProteins.resources": " {
+                 cpu_cores -> Int
+                max_retries -> Int?
+                boot_disk_gb -> Int?
+                queue -> String?
+                disk_gb -> Int?
+                constraints -> String?
+                mem_gb -> Float?
+                preemptible_tries -> Int?
+                }? (optional)",
+  "ei_prediction.Augustus.resources": " {
+                 cpu_cores -> Int
+                max_retries -> Int?
+                boot_disk_gb -> Int?
+                queue -> String?
+                disk_gb -> Int?
+                constraints -> String?
+                mem_gb -> Float?
+                preemptible_tries -> Int?
+                }? (optional)",
+  "ei_prediction.AugustusAbinitio.resources": " {
+                 cpu_cores -> Int
+                max_retries -> Int?
+                boot_disk_gb -> Int?
+                queue -> String?
+                disk_gb -> Int?
+                constraints -> String?
+                mem_gb -> Float?
+                preemptible_tries -> Int?
+                }? (optional)",
+  "ei_prediction.ExecuteEVMCommand.resources": " {
+                 cpu_cores -> Int
+                max_retries -> Int?
+                boot_disk_gb -> Int?
+                queue -> String?
+                disk_gb -> Int?
+                constraints -> String?
+                mem_gb -> Float?
+                preemptible_tries -> Int?
+                }? (optional)",
+  "ei_prediction.IndexProteinsDatabase.resources": " {
+                 cpu_cores -> Int
+                max_retries -> Int?
+                boot_disk_gb -> Int?
+                queue -> String?
+                disk_gb -> Int?
+                constraints -> String?
+                mem_gb -> Float?
+                preemptible_tries -> Int?
+                }? (optional)",
+  "ei_prediction.LengthChecker.resources": " {
+                 cpu_cores -> Int
+                max_retries -> Int?
+                boot_disk_gb -> Int?
+                queue -> String?
+                disk_gb -> Int?
+                constraints -> String?
+                mem_gb -> Float?
+                preemptible_tries -> Int?
+                }? (optional)",
+  "ei_prediction.Mikado.resources": " {
+                 cpu_cores -> Int
+                max_retries -> Int?
+                boot_disk_gb -> Int?
+                queue -> String?
+                disk_gb -> Int?
+                constraints -> String?
+                mem_gb -> Float?
+                preemptible_tries -> Int?
+                }? (optional)",
+  "ei_prediction.MikadoPick.resources": " {
+                 cpu_cores -> Int
+                max_retries -> Int?
+                boot_disk_gb -> Int?
+                queue -> String?
+                disk_gb -> Int?
+                constraints -> String?
+                mem_gb -> Float?
+                preemptible_tries -> Int?
+                }? (optional)",
+  "ei_prediction.SelfBlastFilter.resources": " {
+                 cpu_cores -> Int
+                max_retries -> Int?
+                boot_disk_gb -> Int?
+                queue -> String?
+                disk_gb -> Int?
+                constraints -> String?
+                mem_gb -> Float?
+                preemptible_tries -> Int?
+                }? (optional)"
+
 .. image:: /_static/prediction_workflow.png
   :alt: Prediction workflow diagram

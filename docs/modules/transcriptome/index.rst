@@ -85,89 +85,284 @@ Where multiple read files correspond to a single sample (this implies they resul
 
 Configurable computational resources available::
 
-   {
-       "ei_annotation.wf_align.long_read_alignment_resources":
-       {
-           "cpu_cores": 6,
-           "max_retries": 1,
-           "mem_gb": 16
-       },
-       "ei_annotation.wf_align.long_read_assembly_resources":
-       {
-           "cpu_cores": 6,
-           "max_retries": 1,
-           "mem_gb": 16
-       },
-       "ei_annotation.wf_align.long_read_indexing_resources":
-       {
-           "cpu_cores": 6,
-           "max_retries": 1,
-           "mem_gb": 16
-       },
-       "ei_annotation.wf_align.short_read_alignment_resources":
-       {
-           "cpu_cores": 6,
-           "max_retries": 1,
-           "mem_gb": 16
-       },
-       "ei_annotation.wf_align.short_read_alignment_sort_resources":
-       {
-           "cpu_cores": 6,
-           "max_retries": 1,
-           "mem_gb": 16
-       },
-       "ei_annotation.wf_align.short_read_merge_resources": {
-           "cpu_cores": 4,
-           "max_retries": 1,
-           "mem_gb": 16
-       },
-       "ei_annotation.wf_align.short_read_scallop_assembly_resources":
-       {
-           "cpu_cores": 6,
-           "max_retries": 1,
-           "mem_gb": 16
-       },
-       "ei_annotation.wf_align.short_read_stringtie_assembly_resources":
-       {
-           "cpu_cores": 6,
-           "max_retries": 1,
-           "mem_gb": 16
-       },
-       "ei_annotation.wf_align.short_read_stats_resources":
-       {
-           "cpu_cores": 6,
-           "max_retries": 1,
-           "mem_gb": 8
-       },
-       "ei_annotation.wf_main_mikado.homology_alignment_resources":
-       {
-           "cpu_cores": 6,
-           "max_retries": 1,
-           "mem_gb": 16
-       },
-       "ei_annotation.wf_main_mikado.homology_index_resources":
-       {
-           "cpu_cores": 6,
-           "max_retries": 1,
-           "mem_gb": 8
-       },
-       "ei_annotation.wf_main_mikado.orf_calling_resources":
-       {
-           "cpu_cores": 6,
-           "max_retries": 1,
-           "mem_gb": 8
-       },
-       "ei_annotation.wf_main_mikado.protein_alignment_resources":
-       {
-           "cpu_cores": 6,
-           "max_retries": 1,
-           "mem_gb": 16
-       },
-       "ei_annotation.wf_main_mikado.protein_index_resources":
-       {
-           "cpu_cores": 6,
-           "max_retries": 1,
-           "mem_gb": 16
-       }
-   }
+  "ei_annotation.wf_align.long_read_alignment_resources": " {
+                 cpu_cores -> Int?
+                max_retries -> Int?
+                boot_disk_gb -> Int?
+                queue -> String?
+                disk_gb -> Int?
+                constraints -> String?
+                mem_gb -> Float?
+                preemptible_tries -> Int?
+                }? (optional)",
+  "ei_annotation.wf_align.long_read_assembly_resources": " {
+                 cpu_cores -> Int?
+                max_retries -> Int?
+                boot_disk_gb -> Int?
+                queue -> String?
+                disk_gb -> Int?
+                constraints -> String?
+                mem_gb -> Float?
+                preemptible_tries -> Int?
+                }? (optional)",
+  "ei_annotation.wf_align.long_read_indexing_resources": " {
+                 cpu_cores -> Int?
+                max_retries -> Int?
+                boot_disk_gb -> Int?
+                queue -> String?
+                disk_gb -> Int?
+                constraints -> String?
+                mem_gb -> Float?
+                preemptible_tries -> Int?
+                }? (optional)",
+  "ei_annotation.wf_align.long_read_twopass_merge_resources": " {
+                 cpu_cores -> Int?
+                max_retries -> Int?
+                boot_disk_gb -> Int?
+                queue -> String?
+                disk_gb -> Int?
+                constraints -> String?
+                mem_gb -> Float?
+                preemptible_tries -> Int?
+                }? (optional)",
+  "ei_annotation.wf_align.long_read_twopass_resources": " {
+                 cpu_cores -> Int?
+                max_retries -> Int?
+                boot_disk_gb -> Int?
+                queue -> String?
+                disk_gb -> Int?
+                constraints -> String?
+                mem_gb -> Float?
+                preemptible_tries -> Int?
+                }? (optional)",
+  "ei_annotation.wf_align.portcullis_resources": " {
+                 cpu_cores -> Int?
+                max_retries -> Int?
+                boot_disk_gb -> Int?
+                queue -> String?
+                disk_gb -> Int?
+                constraints -> String?
+                mem_gb -> Float?
+                preemptible_tries -> Int?
+                }? (optional)",
+  "ei_annotation.wf_align.sanitise_reference_resources": " {
+                 cpu_cores -> Int?
+                max_retries -> Int?
+                boot_disk_gb -> Int?
+                queue -> String?
+                disk_gb -> Int?
+                constraints -> String?
+                mem_gb -> Float?
+                preemptible_tries -> Int?
+                }? (optional)",
+  "ei_annotation.wf_align.short_read_alignment_resources": " {
+                 cpu_cores -> Int?
+                max_retries -> Int?
+                boot_disk_gb -> Int?
+                queue -> String?
+                disk_gb -> Int?
+                constraints -> String?
+                mem_gb -> Float?
+                preemptible_tries -> Int?
+                }? (optional)",
+  "ei_annotation.wf_align.short_read_alignment_sort_resources": " {
+                 cpu_cores -> Int?
+                max_retries -> Int?
+                boot_disk_gb -> Int?
+                queue -> String?
+                disk_gb -> Int?
+                constraints -> String?
+                mem_gb -> Float?
+                preemptible_tries -> Int?
+                }? (optional)",
+  "ei_annotation.wf_align.short_read_indexing_resources": " {
+                 cpu_cores -> Int?
+                max_retries -> Int?
+                boot_disk_gb -> Int?
+                queue -> String?
+                disk_gb -> Int?
+                constraints -> String?
+                mem_gb -> Float?
+                preemptible_tries -> Int?
+                }? (optional)",
+  "ei_annotation.wf_align.short_read_merge_resources": " {
+                 cpu_cores -> Int?
+                max_retries -> Int?
+                boot_disk_gb -> Int?
+                queue -> String?
+                disk_gb -> Int?
+                constraints -> String?
+                mem_gb -> Float?
+                preemptible_tries -> Int?
+                }? (optional)",
+  "ei_annotation.wf_align.short_read_scallop_assembly_resources": " {
+                 cpu_cores -> Int?
+                max_retries -> Int?
+                boot_disk_gb -> Int?
+                queue -> String?
+                disk_gb -> Int?
+                constraints -> String?
+                mem_gb -> Float?
+                preemptible_tries -> Int?
+                }? (optional)",
+  "ei_annotation.wf_align.short_read_stats_resources": " {
+                 cpu_cores -> Int?
+                max_retries -> Int?
+                boot_disk_gb -> Int?
+                queue -> String?
+                disk_gb -> Int?
+                constraints -> String?
+                mem_gb -> Float?
+                preemptible_tries -> Int?
+                }? (optional)",
+  "ei_annotation.wf_align.short_read_stringtie_assembly_resources": " {
+                 cpu_cores -> Int?
+                max_retries -> Int?
+                boot_disk_gb -> Int?
+                queue -> String?
+                disk_gb -> Int?
+                constraints -> String?
+                mem_gb -> Float?
+                preemptible_tries -> Int?
+                }? (optional)",
+  "ei_annotation.wf_main_mikado.homology_alignment_resources": " {
+                 cpu_cores -> Int?
+                max_retries -> Int?
+                boot_disk_gb -> Int?
+                queue -> String?
+                disk_gb -> Int?
+                constraints -> String?
+                mem_gb -> Float?
+                preemptible_tries -> Int?
+                }? (optional)",
+  "ei_annotation.wf_main_mikado.homology_index_resources": " {
+                 cpu_cores -> Int?
+                max_retries -> Int?
+                boot_disk_gb -> Int?
+                queue -> String?
+                disk_gb -> Int?
+                constraints -> String?
+                mem_gb -> Float?
+                preemptible_tries -> Int?
+                }? (optional)",
+  "ei_annotation.wf_main_mikado.mikado_all_pick_resources": " {
+                 cpu_cores -> Int?
+                max_retries -> Int?
+                boot_disk_gb -> Int?
+                queue -> String?
+                disk_gb -> Int?
+                constraints -> String?
+                mem_gb -> Float?
+                preemptible_tries -> Int?
+                }? (optional)",
+  "ei_annotation.wf_main_mikado.mikado_all_prepare_resources": " {
+                 cpu_cores -> Int?
+                max_retries -> Int?
+                boot_disk_gb -> Int?
+                queue -> String?
+                disk_gb -> Int?
+                constraints -> String?
+                mem_gb -> Float?
+                preemptible_tries -> Int?
+                }? (optional)",
+  "ei_annotation.wf_main_mikado.mikado_all_serialise_resources": " {
+                 cpu_cores -> Int?
+                max_retries -> Int?
+                boot_disk_gb -> Int?
+                queue -> String?
+                disk_gb -> Int?
+                constraints -> String?
+                mem_gb -> Float?
+                preemptible_tries -> Int?
+                }? (optional)",
+  "ei_annotation.wf_main_mikado.mikado_long_lq_pick_resources": " {
+                 cpu_cores -> Int?
+                max_retries -> Int?
+                boot_disk_gb -> Int?
+                queue -> String?
+                disk_gb -> Int?
+                constraints -> String?
+                mem_gb -> Float?
+                preemptible_tries -> Int?
+                }? (optional)",
+  "ei_annotation.wf_main_mikado.mikado_long_lq_prepare_resources": " {
+                 cpu_cores -> Int?
+                max_retries -> Int?
+                boot_disk_gb -> Int?
+                queue -> String?
+                disk_gb -> Int?
+                constraints -> String?
+                mem_gb -> Float?
+                preemptible_tries -> Int?
+                }? (optional)",
+  "ei_annotation.wf_main_mikado.mikado_long_lq_serialise_resources": " {
+                 cpu_cores -> Int?
+                max_retries -> Int?
+                boot_disk_gb -> Int?
+                queue -> String?
+                disk_gb -> Int?
+                constraints -> String?
+                mem_gb -> Float?
+                preemptible_tries -> Int?
+                }? (optional)",
+  "ei_annotation.wf_main_mikado.mikado_long_pick_resources": " {
+                 cpu_cores -> Int?
+                max_retries -> Int?
+                boot_disk_gb -> Int?
+                queue -> String?
+                disk_gb -> Int?
+                constraints -> String?
+                mem_gb -> Float?
+                preemptible_tries -> Int?
+                }? (optional)",
+  "ei_annotation.wf_main_mikado.mikado_long_prepare_resources": " {
+                 cpu_cores -> Int?
+                max_retries -> Int?
+                boot_disk_gb -> Int?
+                queue -> String?
+                disk_gb -> Int?
+                constraints -> String?
+                mem_gb -> Float?
+                preemptible_tries -> Int?
+                }? (optional)",
+  "ei_annotation.wf_main_mikado.mikado_long_serialise_resources": " {
+                 cpu_cores -> Int?
+                max_retries -> Int?
+                boot_disk_gb -> Int?
+                queue -> String?
+                disk_gb -> Int?
+                constraints -> String?
+                mem_gb -> Float?
+                preemptible_tries -> Int?
+                }? (optional)",
+  "ei_annotation.wf_main_mikado.orf_calling_resources": " {
+                 cpu_cores -> Int?
+                max_retries -> Int?
+                boot_disk_gb -> Int?
+                queue -> String?
+                disk_gb -> Int?
+                constraints -> String?
+                mem_gb -> Float?
+                preemptible_tries -> Int?
+                }? (optional)",
+  "ei_annotation.wf_main_mikado.protein_alignment_resources": " {
+                 cpu_cores -> Int?
+                max_retries -> Int?
+                boot_disk_gb -> Int?
+                queue -> String?
+                disk_gb -> Int?
+                constraints -> String?
+                mem_gb -> Float?
+                preemptible_tries -> Int?
+                }? (optional)",
+  "ei_annotation.wf_main_mikado.protein_index_resources": " {
+                 cpu_cores -> Int?
+                max_retries -> Int?
+                boot_disk_gb -> Int?
+                queue -> String?
+                disk_gb -> Int?
+                constraints -> String?
+                mem_gb -> Float?
+                preemptible_tries -> Int?
+                }? (optional)"
 
