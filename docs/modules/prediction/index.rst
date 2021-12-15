@@ -8,7 +8,7 @@ The intention of the prediction workflow is to use a variety of transcript evide
   :literal:
 
 
-The prediction module takes as input a genome file along with a set of evidences for annotations over the genome, these can come from homology proteins or transcript alignments, rna-seq gene models, repeat annotations, rna-seq alignments which can provide evidence to the presence/absence of exons. Also, the user should provide a set of proteins to validate against, these proteins are used to score input models, categorize them into Gold, Silver or Bronze and select the best models for training of the ab initio gene predictors.
+The prediction module takes as input a genome file along with a set of evidences for annotations over the genome (these should have gene->mrna->{exon,CDS} structure, where CDS is required for protein inputs), these can come from homology proteins or transcript alignments, rna-seq gene models, repeat annotations, rna-seq alignments which can provide evidence to the presence/absence of exons. Also, the user should provide a set of proteins to validate against, these proteins are used to score input models, categorize them into Gold, Silver or Bronze and select the best models for training of the ab initio gene predictors.
 
 Multiple sets of input models from homology proteins or transcriptomic sources are aligned to a protein database of the user's choice and the results of these alignments are used to classify and score each input model into Bronze, Silver and Gold. Models from the Gold and Silver category are defined by:
 
