@@ -489,8 +489,8 @@ available evidence new gene models or update existing ones'''))
                                help="RNASeq data alignments used for coverage information as exon hints")
     prediction_ap.add_argument("--repeats", type=FileType('r'),
                                help="Repeat annotation GFF file.")
-    prediction_ap.add_argument("--homology_proteins", type=FileType('r'),
-                               help="Protein sequences used for determining whether the evidence provided is "
+    prediction_ap.add_argument("--homology_proteins", type=FileType('r'), required=True,
+                               help="Protein DB of sequences used for determining whether the evidence provided is "
                                     "full-length or not")
     prediction_ap.add_argument('--optimise_augustus', action='store_true',
                                help="Enable augustus metaparameter optimisation")
