@@ -498,10 +498,12 @@ available evidence new gene models or update existing ones'''))
     prediction_ap.add_argument('--force_train', action='store_true',
                                help="Re-train augustus even if the species is found in the \'augustus_config_path\'")
     prediction_ap.add_argument('--augustus_runs', type=FileType('r'), nargs='*',
-                               help="File composed of 9 lines with SOURCE PRIORITY pairs for each of the types of "
-                                    "evidence that can be used in\n an Augustus run. These evidence types are: "
+                               help="File composed of 13 lines with SOURCE PRIORITY pairs for each of the types of "
+                                    "evidence that can be used in\nan Augustus run. These evidence types are: "
                                     "gold models, silver models, bronze models, all models,\n"
-                                    "gold introns, silver introns, protein models, coverage hints, and repeat hints.")
+                                    "gold introns, silver introns, protein models, coverage hints, repeat hints, "
+                                    "high quality assemblies,\nlow quality assemblies, high quality proteins, and low "
+                                    "quality proteins.")
     prediction_ap.add_argument('--EVM_weights', type=FileType('r'), required=True,
                                help="Evidence modeler requires a weighting to be provided for each source of evidence,"
                                     " this file is the means to do so.")

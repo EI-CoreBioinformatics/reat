@@ -83,7 +83,10 @@ Where multiple read files correspond to a single sample (this implies they resul
 .. image:: /_static/transcriptome_workflow.png
   :alt: Transcriptome workflow diagram
 
-Configurable computational resources available::
+Configurable computational resources available
+------------------------------------------------
+
+ ::
 
   "ei_annotation.wf_align.long_read_alignment_resources": " {
                  cpu_cores -> Int?

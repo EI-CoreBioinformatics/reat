@@ -5,6 +5,8 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
 import subprocess
 
+from importlib import resources as pkg_resources
+
 from annotation import VERSION
 import sphinx_rtd_theme
 
@@ -68,3 +70,13 @@ print(homology_help.stdout.decode(), file=open('modules/homology/homology_help.t
 # Generate a full CLI help for the prediction command
 prediction_help = subprocess.run(['reat', 'prediction', '--help'], capture_output=True)
 print(prediction_help.stdout.decode(), file=open('modules/prediction/prediction_help.txt', 'w'))
+
+with pkg_resources.path("annotation.prediction_module", "extrinsic.ei_augustus_generic.cfg") as extrinsic_path:
+    with open("modules/prediction/extrinsic.ei_augustus_generic.cfg", 'w') as extrinsic_copy:
+        contents = open(extrinsic_path).readlines()
+        print(''.join(contents), file=extrinsic_copy)
+
+with pkg_resources.path("annotation.prediction_module", "evm_default_weights.wgt") as evm_path:
+    with open("modules/prediction/evm_default_weights.wgt", 'w') as evm_copy:
+        contents = open(evm_path).readlines()
+        print(''.join(contents), file=evm_copy)

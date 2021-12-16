@@ -23,6 +23,7 @@ To install REAT you can:
   git clone https://github.com/ei-corebioinformatics/reat
   wget https://github.com/broadinstitute/cromwell/releases/download/62/cromwell-62.jar
   conda env create -f reat/reat.yml
+  pip install ./reat
 
 These commands will download the cromwell binary required to execute the workflows and make REAT available in the 'reat' conda environment which can be activated using:
 
