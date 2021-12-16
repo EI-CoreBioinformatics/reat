@@ -1,4 +1,5 @@
-# Release process
+# Release process
+
 
 To create a new release, please use `bumpversion`. The following is an example of a release, when this command is executed it creates a commit and a tag which need to be pushed to the repository. 
 
