@@ -313,7 +313,7 @@ task SubdivideSequence {
 # Parse first line for the seq length
 python3 -c "
 chunks_file=open('chunks.txt', 'w')
-sequence_file=open(~{sequence})
+sequence_file=open('~{sequence}')
 name, seq_length = sequence_file.readline().strip().split(maxsplit=2)
 start=1
 end=0
