@@ -315,6 +315,7 @@ python3 -c "
 chunks_file=open('chunks.txt', 'w')
 sequence_file=open('~{sequence}')
 name, seq_length = sequence_file.readline().strip().split(maxsplit=2)
+seq_length = int(seq_length)
 start=1
 end=0
 # Chunk this sequence and print the 'chunks' to a file
