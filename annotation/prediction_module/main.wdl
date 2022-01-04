@@ -354,8 +354,8 @@ workflow ei_prediction {
 		hq_assembly = hq_assembly.processed_gff,
 		lq_assembly = lq_assembly.processed_gff,
 		weights = EVM_weights,
-		segment_size = 500000,
-		overlap_size = 50000
+		segment_size = 5000000,
+		overlap_size = 500000
 	}
 
 	scatter(emv_part in read_lines(EVM.evm_commands)) {
@@ -586,24 +586,51 @@ task Bam2Hints {
 			else
 				strand='1++,1--,2+-,2-+'
 			fi
-			touch ~{bam_name}.Forward.wig ~{bam_name}.Reverse.wig ~{bam_name}.wig
-			samtools view -H ~{basename(expression_bam.bam)} | grep '^\@SQ'| cut -f2,3 | sed -e 's/SN://g' -e 's/LN://g' > lengths.txt
-			bam2wig -i ~{basename(expression_bam.bam)} -s lengths.txt -o ~{bam_name} --strand="$strand"
+			samtools depth <(samtools view -b -f 128 -F 16 ~{basename(expression_bam.bam)}) <(samtools view -b -f 80 ~{basename(expression_bam.bam)}) | \
+			awk -v OFS='\t' '
+				BEGIN{chrm=""; split("", values); start="undef"; prev_pos=0}
+				{
+				if (chrm != $1) {chrm=$1;}
+				total_coverage=0; for (i=3; i <= NF; i++) total_coverage += $i;
+				if (total_coverage < 10) next;
+				if (start=="undef") start=$2;
+				if ($2-start > 10 || length(values)>10) {
+					tot=0; for (v in values) tot += values[v]; ftot = tot/length(values);
+					print chrm, "w2h_~{jid}", "exonpart", start-1, prev_pos+1, ftot, "+", ".", "src=generic_source;pri=0;mult="int(ftot);
+					start="undef";
+					split("", values);
+				} prev_pos = $2; values[$2] = total_coverage;}' > ~{bam_name}.Forward.exonhints.augustus.gff &
 
-			cat ~{bam_name}.Forward.wig | \
-			wig2hints.pl --width=10 --margin=10 --minthresh=2 --minscore=4 --prune=0.1 --src=generic_source --type=exonpart --radius=4.5 --pri=0 --strand='+' | \
-			sed 's/\\tw2h\\t/\\tw2h_~{jid}\\t/' > ~{bam_name}.Forward.exonhints.augustus.gff &
-
-			cat ~{bam_name}.Reverse.wig | \
-			awk '/^variableStep/ {gsub(/-/,\"\");print;} !/^variableStep/ {print;}' \ |
-			wig2hints.pl --width=10 --margin=10 --minthresh=2 --minscore=4 --prune=0.1 --src=generic_source --type=exonpart --radius=4.5 --pri=0 --strand='-' | \
-			sed 's/\\tw2h\\t/\\tw2h_~{jid}\\t/' > ~{bam_name}.Reverse.exonhints.augustus.gff &
+			samtools depth <(samtools view -b -f 144 ~{basename(expression_bam.bam)}) <(samtools view -b -f 64 -F 16 ~{basename(expression_bam.bam)}) | \
+			awk -v OFS='\t' '
+				BEGIN{chrm=""; split("", values); start="undef"; prev_pos=0}
+				{
+				if (chrm != $1) {chrm=$1;}
+				total_coverage=0; for (i=3; i <= NF; i++) total_coverage += $i;
+				if (total_coverage < 10) next;
+				if (start=="undef") start=$2;
+				if ($2-start > 10 || length(values)>10) {
+					tot=0; for (v in values) tot += values[v]; ftot = tot/length(values);
+					print chrm, "w2h_~{jid}", "exonpart", start-1, prev_pos+1, ftot, "-", ".", "src=generic_source;pri=0;mult="int(ftot);
+					start="undef";
+					split("", values);
+				} prev_pos = $2; values[$2] = total_coverage;}' > ~{bam_name}.Reverse.exonhints.augustus.gff &
 			wait
 		else
-			bam2wig ~{basename(expression_bam.bam)} | \
-			wig2hints.pl --width=10 --margin=10 --minthresh=2 \
-			--minscore=4 --prune=0.1 --src=generic_source --type=exonpart \
-			--radius=4.5 --pri=0 --strand="." > ~{bam_name}.unstranded.exonhints.augustus.gff
+			samtools depth ~{basename(expression_bam.bam)} | \
+			awk -v OFS='\t' '
+				BEGIN{chrm=""; split("", values); start="undef"; prev_pos=0}
+				{
+				if (chrm != $1) {chrm=$1;}
+				total_coverage=0; for (i=3; i <= NF; i++) total_coverage += $i;
+				if (total_coverage < 10) next;
+				if (start=="undef") start=$2;
+				if ($2-start > 10 || length(values)>10) {
+					tot=0; for (v in values) tot += values[v]; ftot = tot/length(values);
+					print chrm, "w2h_~{jid}", "exonpart", start-1, prev_pos+1, ftot, ".", ".", "src=generic_source;pri=0;mult="int(ftot);
+					start="undef";
+					split("", values);
+				} prev_pos = $2; values[$2] = total_coverage;}' > ~{bam_name}.unstranded.exonhints.augustus.gff
 		fi
 
 		cat ~{bam_name}.unstranded.exonhints.augustus.gff  \
@@ -786,6 +813,7 @@ task SNAP {
 	}
 
 	command <<<
+
 		set -euxo pipefail
 		if [ "~{pretrained_hmm}" == "" ]; then
 			gff_to_zff -a ~{transcripts} > ~{transcripts}.ann
@@ -817,6 +845,7 @@ task GlimmerHMM {
 	}
 
 	command <<<
+
 		set -euxo pipefail
 		ln -s ~{genome.fasta}
 		ln -s ~{genome.index}

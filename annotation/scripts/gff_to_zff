@@ -1,39 +1,28 @@
 #!/usr/bin/env python3
 import argparse
 
-from annotation.lib.parsers.GFF import GFFReader
+from annotation import minimal_gxf_parser
 
 
 def gff_to_zff(gff_file):
     current_chrom = ""
-    for gene in GFFReader(gff_file):
-        for mrna in gene.mrnas.values():
-            num_coding_exons = len(mrna.cds_exons)
+    genes, tid2gid = minimal_gxf_parser(gff_file)
+    for gene in genes:
+        for mrna in genes[gene].transcripts.values():
+            num_coding_exons = len(mrna.coding_exons)
             if num_coding_exons == 0:
                 continue
-            if gene.chrom != current_chrom:
-                current_chrom = gene.chrom
+            if mrna.chrom != current_chrom:
+                current_chrom = mrna.chrom
                 print(f">{current_chrom}")
             if num_coding_exons == 1:
-                if mrna.strand == '-':
-                    print('Esngl', mrna.cds_exons[0].end, mrna.cds_exons[0].start, mrna.uid, sep='\t')
-                else:
-                    print('Esngl', mrna.cds_exons[0].start, mrna.cds_exons[0].end, mrna.uid, sep='\t')
+                print('Esngl', mrna.coding_exons[0][0], mrna.coding_exons[0][1], mrna.id, sep='\t')
 
             elif num_coding_exons > 1:
-                if mrna.strand == '-':
-                    print('Einit', mrna.cds_exons[0].end, mrna.cds_exons[0].start, mrna.uid, sep='\t')
-                else:
-                    print('Einit', mrna.cds_exons[0].start, mrna.cds_exons[0].end, mrna.uid, sep='\t')
-                for cds in mrna.cds_exons[1:-1]:
-                    if mrna.strand == '-':
-                        print('Exon', cds.end, cds.start, mrna.uid, sep='\t')
-                    else:
-                        print('Exon', cds.start, cds.end, mrna.uid, sep='\t')
-                if mrna.strand == '-':
-                    print('Eterm', mrna.cds_exons[-1].end, mrna.cds_exons[-1].start, mrna.uid, sep='\t')
-                else:
-                    print('Eterm', mrna.cds_exons[-1].start, mrna.cds_exons[-1].end, mrna.uid, sep='\t')
+                print('Einit', mrna.coding_exons[0][0], mrna.coding_exons[0][1], mrna.id, sep='\t')
+                for cds in mrna.coding_exons[1:-1]:
+                    print('Exon', cds[0], cds[1], mrna.id, sep='\t')
+                print('Eterm', mrna.coding_exons[-1][0], mrna.coding_exons[-1][1], mrna.id, sep='\t')
 
 
 def main():
@@ -43,7 +32,7 @@ def main():
                    help="GFF file of the annotated species to extract proteins from")
     args = p.parse_args()
     gff_file = args.annotation
-    gff_to_zff(gff_file)
+    gff_to_zff(gff_file.name)
 
 
 if __name__ == "__main__":
