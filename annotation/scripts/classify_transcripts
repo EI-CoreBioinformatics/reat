@@ -276,23 +276,33 @@ def main():
 
     stdev_param = 2.0
     gdfl = []
-    outputs = defaultdict(list)
-    for name in names:
-        query = df.loc[df.qseqid == name]
-        score = query.score.values[0]
-        best_evalue = query.evalue.values[0]
-        beval_filter = int((best_evalue - (best_evalue / evalue_filter_difference)))
-        if query.shape[0] > top_n_hits:
-            beval_filt = query[query.evalue < beval_filter][:top_n_hits]
-        else:
-            beval_filt = query
 
-        qlen = beval_filt.qlen.values[0]
+    df = df.set_index('qseqid')
+    df.sort_index()
+
+    print("Classifying")
+
+    for name in sorted(names):
+        query = df.loc[name]
         fl_category = FL_CATEGORY[PARTIAL]
-        if any(beval_filt.full_length != FL_CATEGORY[PARTIAL]):
-            if abs(qlen - beval_filt.slen.mean()) <= stdev_param * beval_filt.slen.std():
-                fl_category = beval_filt.full_length.values[0]
-        outputs[fl_category].append((name, beval_filt.score.mean()))
+        if len(query.shape) > 1:
+            score = query.score.values[0]
+            best_evalue = query.evalue.values[0]
+            beval_filter = int((best_evalue - (best_evalue / evalue_filter_difference)))
+            if query.shape[0] > top_n_hits:
+                beval_filt = query[query.evalue < beval_filter][:top_n_hits]
+            else:
+                beval_filt = query
+            qlen = beval_filt.qlen.values[0]
+            if any(beval_filt.full_length != FL_CATEGORY[PARTIAL]):
+                if abs(qlen - beval_filt.slen.mean()) <= stdev_param * beval_filt.slen.std():
+                    fl_category = beval_filt.full_length.values[0]
+        else:
+            score = query.score
+            beval_filt = query
+            if beval_filt.full_length != FL_CATEGORY[PARTIAL]:
+                fl_category = beval_filt.full_length
+
         txct = genes[tid2gid[name]][name]
         txct_reqs = (
                 min_fp_utr <= txct.five_utr_num <= max_fp_utr and txct.five_utr_num_complete <= max_fp_utr_complete and  # 5' is complete or not too many
@@ -327,7 +337,7 @@ def main():
                     if txct.id in cat_names:
                         print(gene.__str__().split('\n')[0], file=category_gff)
                         print(txct.format("gff"), file=category_gff)
-                print('###', file=category_gff)
+                        print('###', file=category_gff)
 
 
 if __name__ == "__main__":
