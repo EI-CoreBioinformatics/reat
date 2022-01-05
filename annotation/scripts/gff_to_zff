@@ -1,38 +1,60 @@
 #!/usr/bin/env python3
 import argparse
+import re
+from collections import defaultdict
 
-from annotation import minimal_gxf_parser
 
-
-def gff_to_zff(gff_file):
-    current_chrom = ""
-    genes, tid2gid = minimal_gxf_parser(gff_file)
-    for gene in genes:
-        for mrna in genes[gene].transcripts.values():
-            num_coding_exons = len(mrna.coding_exons)
-            if num_coding_exons == 0:
-                continue
-            if mrna.chrom != current_chrom:
-                current_chrom = mrna.chrom
-                print(f">{current_chrom}")
-            if num_coding_exons == 1:
-                print('Esngl', mrna.coding_exons[0][0], mrna.coding_exons[0][1], mrna.id, sep='\t')
-
-            elif num_coding_exons > 1:
-                print('Einit', mrna.coding_exons[0][0], mrna.coding_exons[0][1], mrna.id, sep='\t')
-                for cds in mrna.coding_exons[1:-1]:
-                    print('Exon', cds[0], cds[1], mrna.id, sep='\t')
-                print('Eterm', mrna.coding_exons[-1][0], mrna.coding_exons[-1][1], mrna.id, sep='\t')
+def load_cdss(gff_file):
+    C = defaultdict(dict)
+    for raw_line in gff_file:
+        if raw_line[0] == '#':
+            continue
+        chrom, source, feature, start, end, phase, strand, frame, attributes = raw_line.strip().split('\t', maxsplit=9)
+        if feature.lower() != "cds":
+            continue
+        gid = re.search('Parent *= *([^;]+)', attributes).group(1)
+        start, end = (end, start) if strand == '-' else (start, end)
+        try:
+            C[chrom][gid+strand].append((start, end))
+        except KeyError:
+            C[chrom].update({gid+strand: [(start, end)]})
+    return C
 
 
 def main():
-
     p = argparse.ArgumentParser()
     p.add_argument("-a", "--annotation", type=argparse.FileType('r'),
                    help="GFF file of the annotated species to extract proteins from")
+    p.add_argument("-g", "--genome", type=argparse.FileType('r'), help="Genome file")
     args = p.parse_args()
     gff_file = args.annotation
-    gff_to_zff(gff_file.name)
+    C = load_cdss(gff_file)
+
+    C_order = []
+    for line in args.genome:
+        if line[0] != '>':
+            continue
+        C_order.append(line[1:-1])
+
+    for c in C_order:
+        if len(C[c]) > 0:
+            print(f">{c}")
+        for n, g in C[c].items():
+            strand = n[-1]
+            name = n[:-1]
+            if len(g) == 1:
+                print(f"Esngl\t{g[0][0]}\t{g[0][1]}\t{name}")
+            else:
+                if strand == '+':
+                    print(f"Einit\t{g[0][0]}\t{g[0][1]}\t{name}")
+                    for e in g[1:-1]:
+                        print(f"Exon\t{e[0]}\t{e[1]}\t{name}")
+                    print(f"Eterm\t{g[-1][0]}\t{g[-1][1]}\t{name}")
+                else:
+                    print(f"Eterm\t{g[0][0]}\t{g[0][1]}\t{name}")
+                    for e in reversed(g[1:-1]):
+                        print(f"Exon\t{e[0]}\t{e[1]}\t{name}")
+                    print(f"Einit\t{g[-1][0]}\t{g[-1][1]}\t{name}")
 
 
 if __name__ == "__main__":

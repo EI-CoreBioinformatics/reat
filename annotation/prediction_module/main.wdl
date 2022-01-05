@@ -816,15 +816,15 @@ task SNAP {
 
 		set -euxo pipefail
 		if [ "~{pretrained_hmm}" == "" ]; then
-			gff_to_zff -a ~{transcripts} > ~{transcripts}.ann
-			fathom ~{transcripts}.ann ~{genome.fasta} -categorize 1000
+			gff_to_zff -a ~{transcripts} -g ~{genome.fasta} > ~{basename(transcripts)}.ann
+			fathom ~{basename(transcripts)}.ann ~{genome.fasta} -categorize 1000
 			fathom uni.ann uni.dna -export 1000 -plus
 			mkdir params
 			cd params
 			forge ../export.ann ../export.dna
 			cd ..
 			hmm-assembler.pl ~{genome.fasta} params > ~{basename(genome.fasta)}.hmm
-			snap ~{genome.fasta}.hmm ~{genome.fasta} > snap.predictions.zff
+			snap ~{basename(genome.fasta)}.hmm ~{genome.fasta} > snap.predictions.zff
 		else
 			snap ~{pretrained_hmm} ~{genome.fasta} > snap.predictions.zff
 		fi
