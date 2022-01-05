@@ -204,6 +204,8 @@ def collect_homology_output(run_metadata):
     symlink(outputs_path, outputs['ei_homology.metrics'])
     # File stats = MikadoPick.stats
     symlink(outputs_path, outputs['ei_homology.stats'])
+    # File summary_stats = MikadoSummaryStats.summary
+    symlink(outputs_path, outputs['ei_homology.stats_summary'])
 
 
 def homology_module(cli_arguments):
