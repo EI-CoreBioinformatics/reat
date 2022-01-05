@@ -313,16 +313,17 @@ task SubdivideSequence {
 # Parse first line for the seq length
 python3 -c "
 chunks_file=open('chunks.txt', 'w')
-sequence_file=open(~{sequence})
+sequence_file=open('~{sequence}')
 name, seq_length = sequence_file.readline().strip().split(maxsplit=2)
+seq_length = int(seq_length)
 start=1
 end=0
 # Chunk this sequence and print the 'chunks' to a file
-print("This sequence generates the following chunks:")
+print('This sequence generates the following chunks:')
 while end < seq_length:
 	end = min(seq_length, start + ~{chunk_size})
-	print(f"{start},{end}", file=chunks_file)
-	print(f"{name}:{start}-{end}")
+	print(f'{start},{end}', file=chunks_file)
+	print(f'{name}:{start}-{end}')
 	start += end + 1 - ~{overlap}
 chunks_file.close()
 "
