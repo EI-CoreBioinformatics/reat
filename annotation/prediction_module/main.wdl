@@ -1013,6 +1013,7 @@ task SelfBlastFilter {
 	Int cpus = 1
     RuntimeAttr default_attr = object {
         cpu_cores: "~{cpus}",
+        constraints: "avx|avx2|sse4",
         mem_gb: 8,
         max_retries: 1,
         queue: ""
