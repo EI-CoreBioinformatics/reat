@@ -468,10 +468,28 @@ workflow ei_prediction {
 			output_prefix = "mikado"
 	}
 
-	call MikadoSummaryStats {
-		input:
-			stats = [MikadoPick.stats],
-			output_prefix = "mikado"
+	Array[File]? augustus_runs_predictions_stats =  EVM.formatted_augustus_runs_predictions_stats
+
+	if (defined(augustus_runs_predictions_stats)) {
+		call MikadoSummaryStats as FinalStats {
+			input:
+				stats = flatten(select_all([select_all(
+						[MikadoPick.stats, EVM.formatted_snap_predictions_stats, EVM.formatted_glimmer_predictions_stats,
+						EVM.formatted_codingquarry_predictions_stats, EVM.formatted_codingquarry_fresh_predictions_stats,
+						EVM.formatted_augustus_abinitio_predictions_stats]), augustus_runs_predictions_stats])),
+				output_prefix = "prediction"
+		}
+	}
+
+	if (!defined(augustus_runs_predictions_stats)) {
+		call MikadoSummaryStats as FinalStats_noRuns {
+			input:
+				stats = select_all(
+						[MikadoPick.stats, EVM.formatted_snap_predictions_stats, EVM.formatted_glimmer_predictions_stats,
+						EVM.formatted_codingquarry_predictions_stats, EVM.formatted_codingquarry_fresh_predictions_stats,
+						EVM.formatted_augustus_abinitio_predictions_stats]),
+				output_prefix = "prediction"
+		}
 	}
 
 	output {
@@ -1221,23 +1239,46 @@ task EVM {
 	output {
 		File evm_commands = "commands.list"
 		File partitions_list = "partitions_list.out"
+
+		File? formatted_hq_protein_alignment = "hq_protein_alignments.gff"
+		File? formatted_lq_protein_alignment = "lq_protein_alignments.gff"
+
+		File? formatted_hq_assembly = "hq_assembly.gff"
+		File? formatted_lq_assembly = "lq_assembly.gff"
+
+		File? formatted_homology_models = "homology_models.gff"
+		File? formatted_transcriptome_models = "transcriptome_models.gff"
+
+		File? formatted_snap_predictions = "snap.predictions.gff"
+		File? formatted_glimmer_predictions = "glimmer.predictions.gff"
+		File? formatted_codingquarry_predictions = "codingquarry.predictions.gff"
+		File? formatted_codingquarry_fresh_predictions = "codingquarry_fresh.predictions.gff"
+		File? formatted_augustus_abinitio_predictions = "augustus_abinitio.predictions.gff"
+		Array[File]? formatted_augustus_runs_predictions = glob("augustus_*.predictions.gff")
+
+		File? formatted_snap_predictions_stats = "snap.predictions.stats"
+		File? formatted_glimmer_predictions_stats = "glimmer.predictions.stats"
+		File? formatted_codingquarry_predictions_stats = "codingquarry.predictions.stats"
+		File? formatted_codingquarry_fresh_predictions_stats = "codingquarry_fresh.predictions.stats"
+		File? formatted_augustus_abinitio_predictions_stats = "augustus_abinitio.predictions.stats"
+		Array[File]? formatted_augustus_runs_predictions_stats = glob("augustus_*.predictions.stats")
 	}
 
 	command <<<
-		cat ~{if defined(hq_protein_alignments) then hq_protein_alignments else "/dev/null"} | awk -v OFS="\t" '$3=="CDS" {$3="nucleotide_to_protein_match"; print}' | sed -E 's/(ID=.*;)?Parent=/ID=/g' >> protein_alignments.gff
-		cat ~{if defined(lq_protein_alignments) then lq_protein_alignments else "/dev/null"} | awk -v OFS="\t" '$3=="CDS" {$3="nucleotide_to_protein_match"; print}' | sed -E 's/(ID=.*;)?Parent=/ID=/g' >> protein_alignments.gff
+		cat ~{if defined(hq_protein_alignments) then hq_protein_alignments else "/dev/null"} | awk -v OFS="\t" '$3=="CDS" {$3="nucleotide_to_protein_match"; print}' | sed -E 's/(ID=.*;)?Parent=/ID=/g' | tee hq_protein_alignments.gff >> protein_alignments.gff
+		cat ~{if defined(lq_protein_alignments) then lq_protein_alignments else "/dev/null"} | awk -v OFS="\t" '$3=="CDS" {$3="nucleotide_to_protein_match"; print}' | sed -E 's/(ID=.*;)?Parent=/ID=/g' | tee lq_protein_alignments.gff >> protein_alignments.gff
 
-		cat ~{if defined(hq_assembly) then hq_assembly else "/dev/null"} | gff_to_evm augustus >> transcript_alignments.gff
-		cat ~{if defined(lq_assembly) then lq_assembly else "/dev/null"} | gff_to_evm augustus >> transcript_alignments.gff
+		cat ~{if defined(hq_assembly) then hq_assembly else "/dev/null"} | awk -v OFS="\t" '$3=="exon" {$3="EST_match"; print}' | sed -E 's/(ID=.*;)?Parent=/ID=/g' | tee hq_assembly.gff >> transcript_alignments.gff
+		cat ~{if defined(lq_assembly) then lq_assembly else "/dev/null"} | awk -v OFS="\t" '$3=="exon" {$3="EST_match"; print}' | sed -E 's/(ID=.*;)?Parent=/ID=/g' | tee lq_assembly.gff >> transcript_alignments.gff
 
 		if [ "~{if defined(homology_models) then length(select_first([homology_models])) else 0}" != "0" ];
 		then
-			cat ~{sep=" " homology_models} | awk '$2="homology_models"' >> predictions.gff
+			cat ~{sep=" " homology_models} | awk -v OFS="\t" '$2="homology_models"' | tee homology_models.gff >> predictions.gff
 		fi
 
 		if [ "~{if defined(transcriptome_models) then length(select_first([transcriptome_models])) else 0}" != "0" ];
 		then
-			cat ~{sep=" " transcriptome_models} | awk '$2="transcriptome_models"' >> predictions.gff
+			cat ~{sep=" " transcriptome_models} | awk -v OFS="\t" '$2="transcriptome_models"' | tee transcriptome_models.gff >> predictions.gff
 		fi
 
 		transcript_alignments_param=''
@@ -1253,27 +1294,33 @@ task EVM {
 		fi
 
 		if [ "~{snap_predictions}" != "" ]; then
-			cat ~{snap_predictions} | gff_to_evm snap >> predictions.gff
+			cat ~{snap_predictions} | gff_to_evm snap | tee snap.predictions.gff >> predictions.gff
+			mikado util stats snap.predictions.gff snap.predictions.stats
 		fi
 		if [ "~{glimmer_predictions}" != "" ]; then
-			cat ~{glimmer_predictions} | gff_to_evm glimmer >> predictions.gff
+			cat ~{glimmer_predictions} | gff_to_evm glimmer | tee glimmer.predictions.gff >> predictions.gff
+			mikado util stats glimmer.predictions.gff glimmer.predictions.stats
 		fi
 
 		if [ "~{codingquarry_predictions}" != "" ]; then
-			cat ~{codingquarry_predictions} | gff_to_evm codingquarry >> predictions.gff
+			cat ~{codingquarry_predictions} | gff_to_evm codingquarry | tee codingquarry.predictions.gff >> predictions.gff
+			mikado util stats codingquarry.predictions.gff codingquarry.predictions.stats
 		fi
 		if [ "~{codingquarry_fresh_predictions}" != "" ]; then
-			cat ~{codingquarry_fresh_predictions} | gff_to_evm codingquarry >> predictions.gff
+			cat ~{codingquarry_fresh_predictions} | gff_to_evm codingquarry | tee codingquarry_fresh.predictions.gff >> predictions.gff
+			mikado util stats codingquarry_fresh.predictions.gff codingquarry_fresh.predictions.stats
 		fi
 
 		if [ "~{augustus_abinitio}" != "" ]; then
-			cat ~{augustus_abinitio} | gff_to_evm augustus | awk -v OFS="\t" '($2="AUGUSTUS_RUN_ABINITIO") && NF>8' >> predictions.gff
+			cat ~{augustus_abinitio} | gff_to_evm augustus | awk -v OFS="\t" '($2="AUGUSTUS_RUN_ABINITIO") && NF>8' | tee augustus_abinitio.predictions.gff >> predictions.gff
+			mikado util stats augustus_abinitio.predictions.gff augustus_abinitio.predictions.stats
 		fi
 
 		augustus_run=0
 		for i in ~{sep=" " augustus_predictions}; do
 			((augustus_run++))
-			cat $i | gff_to_evm augustus | awk -v OFS="\t" -v RUN=${augustus_run} '($2="AUGUSTUS_RUN"RUN) && NF>8' >> predictions.gff
+			cat $i | gff_to_evm augustus | awk -v OFS="\t" -v RUN=${augustus_run} '($2="AUGUSTUS_RUN"RUN) && NF>8' | tee augustus_${augustus_run}.predictions.gff >> predictions.gff
+			mikado util stats augustus_${augustus_run}.predictions.gff augustus_${augustus_run}.predictions.stats
 		done
 
 		predictions_fp=$(realpath predictions.gff)
