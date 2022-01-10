@@ -489,8 +489,12 @@ available evidence new gene models or update existing ones'''))
                                help="Models derived from protein alignments")
     prediction_ap.add_argument("--introns", type=FileType('r'),
                                help="Introns to be used as hints for Augustus")
-    prediction_ap.add_argument("--expression", type=FileType('r'),
-                               help="RNASeq data alignments used for coverage information as exon hints")
+    prediction_ap.add_argument("--firststrand_expression", type=FileType('r'),
+                               help="Sorted by position first-strand RNASeq alignments used for coverage hints")
+    prediction_ap.add_argument("--secondstrand_expression", type=FileType('r'),
+                               help="Sorted by position second-strand RNAseq alignments used for coverage hints")
+    prediction_ap.add_argument("--unstranded_expression", type=FileType('r'),
+                               help="Sorted by position unstranded RNAseq alignments used for coverage hints")
     prediction_ap.add_argument("--repeats", type=FileType('r'),
                                help="Repeat annotation GFF file.")
     prediction_ap.add_argument("--homology_proteins", type=FileType('r'), required=True,
@@ -511,14 +515,14 @@ available evidence new gene models or update existing ones'''))
     prediction_ap.add_argument('--EVM_weights', type=FileType('r'), required=True,
                                help="Evidence modeler requires a weighting to be provided for each source of evidence,"
                                     " this file is the means to do so.")
-    prediction_ap.add_argument('--hq_protein_alignments', type=FileType('r'),
+    prediction_ap.add_argument('--hq_protein_alignments', type=FileType('r'), nargs='*',
                                help="High confidence protein alignments to be used as hints for Augustus runs")
-    prediction_ap.add_argument('--lq_protein_alignments', type=FileType('r'),
+    prediction_ap.add_argument('--lq_protein_alignments', type=FileType('r'), nargs='*',
                                help="Low confidence protein alignments to be used as hints for Augustus runs")
-    prediction_ap.add_argument('--hq_assembly', type=FileType('r'),
+    prediction_ap.add_argument('--hq_assembly', type=FileType('r'), nargs='*',
                                help="High confidence assemblies (for example from HiFi source) to be used as hints for "
                                     "Augustus runs")
-    prediction_ap.add_argument('--lq_assembly', type=FileType('r'),
+    prediction_ap.add_argument('--lq_assembly', type=FileType('r'), nargs='*',
                                help="Low confidence assemblies (short reads or low quality long reads) to be used as "
                                     "hints for Augustus runs")
     prediction_ap.add_argument('--mikado_utr_files', choices=UTR_SELECTION_OPTIONS, nargs='*',

@@ -22,6 +22,8 @@ Once models have been scored, models with more than a coverage and identity user
 
 Each of the ab initio predictors the user selected is then trained and used to generate predictions. In the case of Augustus, there is an initial ab initio prediction made with limited evidence, but further rounds of prediction with different weights for each evidence type can then be configured using a file containing a SOURCE and a SCORE value for each criteria (:ref:`see <augustus-runs>`). These parameters depend on the extrinsic information configuration file used by Augustus, for more information about REAT's default :ref:`see the following section <augustus-configuration>`. All these predictions are then combined using Evidence Modeler with configurable weights for each type of prediction and evidence (:ref:`see <evm-weights>`). Finally, the EVM output is processed through Mikado using the Gold and Silver category models (which contain UTRs) to add UTRs where evidence supports it.
 
+TODO: (Weights file corresponds to the number of runs and the rest of the inputs should be fixed. If a user does not want to use some predictions then the corresponding line should be removed)
+
 .. _augustus-runs:
 
 Configuring Augustus runs
@@ -47,6 +49,9 @@ The default Augustus configuration file can be overriden to make available for t
 
 
 .. _augustus-configuration:
+
+
+TODO: Outputs run# corresponds to CLI input order.
 
 Extrinsic information configuration file
 -----------------------------------------

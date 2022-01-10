@@ -23,7 +23,11 @@ workflow ei_prediction {
 		Array[File]? HQ_assembly
 		Array[File]? LQ_assembly
 		File? intron_hints  # Separate into gold == 1.0 score and silver (the rest)
-		IndexedBAM? expressed_exon_hints  # Transform into gff passing by bigwig
+
+		IndexedBAM? secondstrand_exon_hints  # Transform into Augustus style hints gff
+		IndexedBAM? firststrand_exon_hints  # Transform into Augustus style hints gff
+		IndexedBAM? unstranded_exon_hints  # Transform into Augustus style hints gff
+
 		File? repeats_gff  # These are passed through to augustus
 		File? extra_training_models  # These models are taken as-is directly as results from the training model selection
 		Int flank = 200
@@ -83,25 +87,71 @@ workflow ei_prediction {
 		}
 	}
 
-	if (defined(expressed_exon_hints)) {
-		IndexedBAM def_exon = select_first([expressed_exon_hints])
-		if (!defined(def_exon.index)) {
-			call IndexBAM {
+	if (defined(secondstrand_exon_hints)) {
+		IndexedBAM def_seconstrand_exon = select_first([secondstrand_exon_hints])
+		if (!defined(def_seconstrand_exon.index)) {
+			call IndexBAM as SecondStrandIndexBAM{
 				input:
-				bam = def_exon.bam
+				bam = def_seconstrand_exon.bam
 			}
-			IndexedBAM def_calc_index = object {bam: def_exon.bam, index: IndexBAM.index}
+			IndexedBAM def_secondstrand_index = object {bam: def_seconstrand_exon.bam, index: SecondStrandIndexBAM.index}
+		}
+		call Bam2Hints as SecondStrandHints{
+			input:
+			bam = def_secondstrand_indexed_bam,
+			dUTP = "secondstrand",
+			output_prefix = "secondstrand"
 		}
 
-		IndexedBAM def_indexed_bam = select_first([def_calc_index, def_exon])
+		IndexedBAM def_secondstrand_indexed_bam = select_first([def_secondstrand_index, def_seconstrand_exon])
+	}
 
-		call Bam2Hints {
+	if (defined(firststrand_exon_hints)) {
+		IndexedBAM def_firststrand_exon = select_first([firststrand_exon_hints])
+		if (!defined(def_firststrand_exon.index)) {
+			call IndexBAM as FirstStrandIndexBAM {
+				input:
+				bam = def_firststrand_exon.bam
+			}
+			IndexedBAM def_firststrand_index = object {bam: def_firststrand_exon.bam, index: FirstStrandIndexBAM.index}
+		}
+		call Bam2Hints as FirstStrandHints{
 			input:
-			expression_bam = def_indexed_bam,
-			dUTP = true
+			bam = def_firststrand_indexed_bam,
+			dUTP = "firststrand",
+			output_prefix = "firststrand"
+		}
+
+		IndexedBAM def_firststrand_indexed_bam = select_first([def_firststrand_index, def_firststrand_exon])
+	}
+
+	if (defined(unstranded_exon_hints)) {
+		IndexedBAM def_unstranded_exon = select_first([unstranded_exon_hints])
+		if (!defined(def_unstranded_exon.index)) {
+			call IndexBAM as UnstrandedIndexBAM {
+				input:
+				bam = def_unstranded_exon.bam
+			}
+			IndexedBAM def_unstranded_index = object {bam: def_unstranded_exon.bam, index: UnstrandedIndexBAM.index}
+		}
+
+		IndexedBAM def_unstranded_indexed_bam = select_first([def_unstranded_index, def_unstranded_exon])
+		call Bam2Hints as UnstrandedHints {
+			input:
+			bam = def_unstranded_indexed_bam,
+			dUTP = "unstranded",
+			output_prefix = "unstranded"
 		}
 	}
 
+	if (defined(SecondStrandHints.expression_gff) || defined(FirstStrandHints.expression_gff) || defined(UnstrandedHints.expression_gff)) {
+		call JoinBamHints {
+			input:
+			secondstrand_gff = SecondStrandHints.expression_gff,
+			firststrand_gff = FirstStrandHints.expression_gff,
+			unstranded_gff = UnstrandedHints.expression_gff
+		}
+	}
 
 	if (! defined(reference_genome.index)) {
 		call IndexGenome {
@@ -317,7 +367,7 @@ workflow ei_prediction {
 					augustus_config = final_augustus_config,
 					extrinsic_config = extrinsic_config,
 					intron_hints = intron_hints,
-					expressed_exon_hints = Bam2Hints.expression_gff,
+					expressed_exon_hints = JoinBamHints.gff,
 					homology_models = homology_models,
 					repeats_gff = PreprocessRepeats.processed_gff,
 					train_utr = train_utr,
@@ -558,85 +608,135 @@ task ChangeSource {
 
 task Bam2Hints {
 	input {
-		IndexedBAM expression_bam
-		Boolean? dUTP
+		IndexedBAM? bam
+		String? dUTP
+		String output_prefix
 	}
 
-	String bam_name = basename(expression_bam.bam, ".bam")
-	String jid = basename(expression_bam.bam)
-
 	output {
-		File expression_gff = bam_name + '.exonhints.gff'
+		File expression_gff = output_prefix + '.exonhints.gff'
 	}
 
 	# Uses 2 cpus
 
 	command <<<
-		ln -s ~{expression_bam.bam}
-		ln -s ~{expression_bam.index}
+		touch unstranded.exonhints.augustus.gff \
+		firststrand.Forward.exonhints.augustus.gff \
+		firststrand.Reverse.exonhints.augustus.gff \
+		secondstrand.Forward.exonhints.augustus.gff \
+		secondstrand.Reverse.exonhints.augustus.gff
 
-		touch ~{bam_name}.unstranded.exonhints.augustus.gff \
-		~{bam_name}.Forward.exonhints.augustus.gff \
-		~{bam_name}.Reverse.exonhints.augustus.gff
-
-		if [[ "~{dUTP}" != "" ]];
+		if [ "~{dUTP}" == "secondstrand" ];
 		then
-			if [ ~{dUTP} ];
-			then
-				strand='1+-,1-+,2++,2--'
-			else
-				strand='1++,1--,2+-,2-+'
-			fi
-			samtools depth <(samtools view -b -f 128 -F 16 ~{basename(expression_bam.bam)}) <(samtools view -b -f 80 ~{basename(expression_bam.bam)}) | \
-			awk -v OFS='\t' '
-				BEGIN{chrm=""; split("", values); start="undef"; prev_pos=0}
-				{
-				if (chrm != $1) {chrm=$1;}
-				total_coverage=0; for (i=3; i <= NF; i++) total_coverage += $i;
-				if (total_coverage < 10) next;
-				if (start=="undef") start=$2;
-				if ($2-start > 10 || length(values)>10) {
-					tot=0; for (v in values) tot += values[v]; ftot = tot/length(values);
-					print chrm, "w2h_~{jid}", "exonpart", start-1, prev_pos+1, ftot, "+", ".", "src=generic_source;pri=0;mult="int(ftot);
-					start="undef";
-					split("", values);
-				} prev_pos = $2; values[$2] = total_coverage;}' > ~{bam_name}.Forward.exonhints.augustus.gff &
+				ln -s ~{select_first([bam]).bam}
+				ln -s ~{select_first([bam]).index}
+				samtools depth <(samtools view -b -f 128 -F 16 ~{basename(select_first([bam]).bam)}) <(samtools view -b -f 80 ~{basename(select_first([bam]).bam)}) | \
+				awk -v OFS='\t' '
+					BEGIN{chrm=""; split("", values); start="undef"; prev_pos=0}
+					{
+					if (chrm != $1) {chrm=$1;}
+					total_coverage=0; for (i=3; i <= NF; i++) total_coverage += $i;
+					if (total_coverage < 10) next;
+					if (start=="undef") start=$2;
+					if ($2-start > 10 || length(values)>10) {
+						tot=0; for (v in values) tot += values[v]; ftot = tot/length(values);
+						print chrm, "w2h_secondstrand", "exonpart", start-1, prev_pos+1, ftot, "+", ".", "src=generic_source;pri=0;mult="int(ftot);
+						start="undef";
+						split("", values);
+					} prev_pos = $2; values[$2] = total_coverage;}' > secondstrand.Forward.exonhints.augustus.gff &
 
-			samtools depth <(samtools view -b -f 144 ~{basename(expression_bam.bam)}) <(samtools view -b -f 64 -F 16 ~{basename(expression_bam.bam)}) | \
-			awk -v OFS='\t' '
-				BEGIN{chrm=""; split("", values); start="undef"; prev_pos=0}
-				{
-				if (chrm != $1) {chrm=$1;}
-				total_coverage=0; for (i=3; i <= NF; i++) total_coverage += $i;
-				if (total_coverage < 10) next;
-				if (start=="undef") start=$2;
-				if ($2-start > 10 || length(values)>10) {
-					tot=0; for (v in values) tot += values[v]; ftot = tot/length(values);
-					print chrm, "w2h_~{jid}", "exonpart", start-1, prev_pos+1, ftot, "-", ".", "src=generic_source;pri=0;mult="int(ftot);
-					start="undef";
-					split("", values);
-				} prev_pos = $2; values[$2] = total_coverage;}' > ~{bam_name}.Reverse.exonhints.augustus.gff &
-			wait
-		else
-			samtools depth ~{basename(expression_bam.bam)} | \
-			awk -v OFS='\t' '
-				BEGIN{chrm=""; split("", values); start="undef"; prev_pos=0}
-				{
-				if (chrm != $1) {chrm=$1;}
-				total_coverage=0; for (i=3; i <= NF; i++) total_coverage += $i;
-				if (total_coverage < 10) next;
-				if (start=="undef") start=$2;
-				if ($2-start > 10 || length(values)>10) {
-					tot=0; for (v in values) tot += values[v]; ftot = tot/length(values);
-					print chrm, "w2h_~{jid}", "exonpart", start-1, prev_pos+1, ftot, ".", ".", "src=generic_source;pri=0;mult="int(ftot);
-					start="undef";
-					split("", values);
-				} prev_pos = $2; values[$2] = total_coverage;}' > ~{bam_name}.unstranded.exonhints.augustus.gff
+				samtools depth <(samtools view -b -f 144 ~{basename(select_first([bam]).bam)}) <(samtools view -b -f 64 -F 16 ~{basename(select_first([bam]).bam)}) | \
+				awk -v OFS='\t' '
+					BEGIN{chrm=""; split("", values); start="undef"; prev_pos=0}
+					{
+					if (chrm != $1) {chrm=$1;}
+					total_coverage=0; for (i=3; i <= NF; i++) total_coverage += $i;
+					if (total_coverage < 10) next;
+					if (start=="undef") start=$2;
+					if ($2-start > 10 || length(values)>10) {
+						tot=0; for (v in values) tot += values[v]; ftot = tot/length(values);
+						print chrm, "w2h_secondstrand", "exonpart", start-1, prev_pos+1, ftot, "-", ".", "src=generic_source;pri=0;mult="int(ftot);
+						start="undef";
+						split("", values);
+					} prev_pos = $2; values[$2] = total_coverage;}' > secondstrand.Reverse.exonhints.augustus.gff &
 		fi
 
-		cat ~{bam_name}.unstranded.exonhints.augustus.gff  \
-		~{bam_name}.Forward.exonhints.augustus.gff \
-		~{bam_name}.Reverse.exonhints.augustus.gff > ~{bam_name}.exonhints.gff
+		if [ "~{dUTP}" == "firststrand" ];
+		then
+				ln -s ~{select_first([bam]).bam}
+				ln -s ~{select_first([bam]).index}
+				samtools depth <(samtools view -b -f 128 -F 16 ~{basename(select_first([bam]).bam)}) <(samtools view -b -f 80 ~{basename(select_first([bam]).bam)}) | \
+				awk -v OFS='\t' '
+					BEGIN{chrm=""; split("", values); start="undef"; prev_pos=0}
+					{
+					if (chrm != $1) {chrm=$1;}
+					total_coverage=0; for (i=3; i <= NF; i++) total_coverage += $i;
+					if (total_coverage < 10) next;
+					if (start=="undef") start=$2;
+					if ($2-start > 10 || length(values)>10) {
+						tot=0; for (v in values) tot += values[v]; ftot = tot/length(values);
+						print chrm, "w2h_firststrand", "exonpart", start-1, prev_pos+1, ftot, "+", ".", "src=generic_source;pri=0;mult="int(ftot);
+						start="undef";
+						split("", values);
+					} prev_pos = $2; values[$2] = total_coverage;}' > firstrand.Reverse.exonhints.augustus.gff &
+
+				samtools depth <(samtools view -b -f 144 ~{basename(select_first([bam]).bam)}) <(samtools view -b -f 64 -F 16 ~{basename(select_first([bam]).bam)}) | \
+				awk -v OFS='\t' '
+					BEGIN{chrm=""; split("", values); start="undef"; prev_pos=0}
+					{
+					if (chrm != $1) {chrm=$1;}
+					total_coverage=0; for (i=3; i <= NF; i++) total_coverage += $i;
+					if (total_coverage < 10) next;
+					if (start=="undef") start=$2;
+					if ($2-start > 10 || length(values)>10) {
+						tot=0; for (v in values) tot += values[v]; ftot = tot/length(values);
+						print chrm, "w2h_firststrand", "exonpart", start-1, prev_pos+1, ftot, "-", ".", "src=generic_source;pri=0;mult="int(ftot);
+						start="undef";
+						split("", values);
+					} prev_pos = $2; values[$2] = total_coverage;}' > firststrand.Forward.exonhints.augustus.gff &
+		fi
+
+		if [ "~{dUTP}" == "unstranded" ];
+		then
+			ln -s ~{select_first([bam]).bam}
+			ln -s ~{select_first([bam]).index}
+			samtools depth ~{basename(select_first([bam]).bam)} | \
+			awk -v OFS='\t' '
+				BEGIN{chrm=""; split("", values); start="undef"; prev_pos=0}
+				{
+				if (chrm != $1) {chrm=$1;}
+				total_coverage=0; for (i=3; i <= NF; i++) total_coverage += $i;
+				if (total_coverage < 10) next;
+				if (start=="undef") start=$2;
+				if ($2-start > 10 || length(values)>10) {
+					tot=0; for (v in values) tot += values[v]; ftot = tot/length(values);
+					print chrm, "w2h_unstranded", "exonpart", start-1, prev_pos+1, ftot, ".", ".", "src=generic_source;pri=0;mult="int(ftot);
+					start="undef";
+					split("", values);
+				} prev_pos = $2; values[$2] = total_coverage;}' > unstranded.exonhints.augustus.gff &
+		fi
+
+		wait
+
+		cat unstranded.exonhints.augustus.gff  \
+		secondstrand.Forward.exonhints.augustus.gff firststrand.Forward.exonhints.augustus.gff \
+		secondstrand.Reverse.exonhints.augustus.gff firststrand.Reverse.exonhints.augustus.gff > ~{output_prefix}.exonhints.gff
+	>>>
+}
+
+task JoinBamHints {
+	input {
+		File? secondstrand_gff
+		File? firststrand_gff
+		File? unstranded_gff
+	}
+
+	output {
+		File gff = "exonhints.gff"
+	}
+
+	command <<<
+		cat ~{secondstrand_gff} ~{firststrand_gff} ~{unstranded_gff} > exonhints.gff
 	>>>
 }
 

@@ -20,10 +20,20 @@ def combine_arguments_prediction(cli_arguments):
     cromwell_inputs['ei_prediction.chunk_size'] = cli_arguments.chunk_size
     cromwell_inputs['ei_prediction.overlap_size'] = cli_arguments.overlap_size
 
-    if cli_arguments.expression:
-        cromwell_inputs['ei_prediction.expressed_exon_hints'] = {'bam': cli_arguments.expression.name}
-        if os.path.isfile(cli_arguments.expression.name + '.csi'):
-            cromwell_inputs['ei_prediction.expressed_exon_hints']['index'] = cli_arguments.expression.name + '.csi'
+    if cli_arguments.firststrand_expression:
+        cromwell_inputs['ei_prediction.firststrand_exon_hints'] = {'bam': cli_arguments.firststrand_expression.name}
+        if os.path.isfile(cli_arguments.firststrand_expression.name + '.csi'):
+            cromwell_inputs['ei_prediction.firststrand_exon_hints']['index'] = cli_arguments.firststrand_expression.name + '.csi'
+
+    if cli_arguments.secondstrand_expression:
+        cromwell_inputs['ei_prediction.secondstrand_exon_hints'] = {'bam': cli_arguments.secondstrand_expression.name}
+        if os.path.isfile(cli_arguments.secondstrand_expression.name + '.csi'):
+            cromwell_inputs['ei_prediction.secondstrand_exon_hints']['index'] = cli_arguments.secondstrand_expression.name + '.csi'
+
+    if cli_arguments.unstranded_expression:
+        cromwell_inputs['ei_prediction.unstranded_exon_hints'] = {'bam': cli_arguments.unstranded_expression.name}
+        if os.path.isfile(cli_arguments.unstranded_expression.name + '.csi'):
+            cromwell_inputs['ei_prediction.unstranded_exon_hints']['index'] = cli_arguments.unstranded_expression.name + '.csi'
 
     if cli_arguments.EVM_weights:
         cromwell_inputs['ei_prediction.EVM_weights'] = cli_arguments.EVM_weights.name
@@ -62,16 +72,16 @@ def combine_arguments_prediction(cli_arguments):
         cromwell_inputs['ei_prediction.protein_validation_database'] = cli_arguments.homology_proteins.name
 
     if cli_arguments.hq_protein_alignments:
-        cromwell_inputs['ei_prediction.HQ_protein_alignments'] = cli_arguments.hq_protein_alignments.name
+        cromwell_inputs['ei_prediction.HQ_protein_alignments'] = [f.name for f in cli_arguments.hq_protein_alignments]
 
     if cli_arguments.lq_protein_alignments:
-        cromwell_inputs['ei_prediction.LQ_protein_alignments'] = cli_arguments.lq_protein_alignments.name
+        cromwell_inputs['ei_prediction.LQ_protein_alignments'] = [f.name for f in cli_arguments.lq_protein_alignments]
 
     if cli_arguments.hq_assembly:
-        cromwell_inputs['ei_prediction.HQ_assembly'] = cli_arguments.hq_assembly.name
+        cromwell_inputs['ei_prediction.HQ_assembly'] = [f.name for f in cli_arguments.hq_assembly]
 
     if cli_arguments.lq_assembly:
-        cromwell_inputs['ei_prediction.LQ_assembly'] = cli_arguments.lq_assembly.name
+        cromwell_inputs['ei_prediction.LQ_assembly'] = [f.name for f in cli_arguments.lq_assembly]
 
     if cli_arguments.mikado_utr_files:
         cromwell_inputs['ei_prediction.mikado_utr_files'] = ' '.join(cli_arguments.mikado_utr_files)
