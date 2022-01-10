@@ -542,6 +542,11 @@ available evidence new gene models or update existing ones'''))
                                help='Maximum identity between models for redundancy classification')
     prediction_ap.add_argument('--filter_max_coverage', type=int, default=80,
                                help='Maximum coverage between models for redundancy classification')
+    prediction_ap.add_argument('--codingquarry_extra_params', help='Extra parameters for CodingQuarry predictions')
+    prediction_ap.add_argument('--glimmer_extra_params', help='Extra parameters for glimmer predictions')
+    prediction_ap.add_argument('--snap_extra_params', help='Extra parameters for snap predictions')
+    prediction_ap.add_argument('--augustus_extra_params', help='Extra parameters for all Augustus predictions')
+    prediction_ap.add_argument('--evm_extra_params', help='Extra parameters for EVM gene predictions consolidation')
     add_classification_parser_parameters(prediction_ap)
 
     args = reat_ap.parse_args()

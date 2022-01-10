@@ -193,6 +193,17 @@ def combine_arguments_prediction(cli_arguments):
     if cli_arguments.filter_max_identity:
         cromwell_inputs['ei_prediction.SelfBlastFilter.identity'] = cli_arguments.filter_max_identity
 
+    if cli_arguments.codingquarry_extra_params:
+        cromwell_inputs['ei_prediction.codingquarry_extra_params'] = cli_arguments.codingquarry_extra_params
+    if cli_arguments.glimmer_extra_params:
+        cromwell_inputs['ei_prediction.glimmer_extra_params'] = cli_arguments.glimmer_extra_params
+    if cli_arguments.snap_extra_params:
+        cromwell_inputs['ei_prediction.snap_extra_params'] = cli_arguments.snap_extra_params
+    if cli_arguments.augustus_extra_params:
+        cromwell_inputs['ei_prediction.augustus_extra_params'] = cli_arguments.augustus_extra_params
+    if cli_arguments.evm_extra_params:
+        cromwell_inputs['ei_prediction.evm_extra_params'] = cli_arguments.evm_extra_params
+
     return cromwell_inputs
 
 

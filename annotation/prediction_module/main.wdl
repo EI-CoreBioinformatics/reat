@@ -42,6 +42,12 @@ workflow ei_prediction {
 		String? mikado_utr_files # Users can choose which of the classified models go into this step ('gold', 'silver' and/or 'bronze')
 		File? mikado_config
 		File? mikado_scoring
+
+		String? codingquarry_extra_params
+		String? glimmer_extra_params
+		String? snap_extra_params
+		String? augustus_extra_params
+		String? evm_extra_params
 	}
 
 	call SoftMaskGenome {
@@ -251,7 +257,8 @@ workflow ei_prediction {
 			genome = def_reference_genome,
 			transcripts = select_first([def_training_models]),
 			species = species,
-			codingquarry_training = codingquarry_training
+			codingquarry_training = codingquarry_training,
+			extra_params = codingquarry_extra_params
 		}
 
 		call CodingQuarry as CodingQuarryFresh {
@@ -260,7 +267,8 @@ workflow ei_prediction {
 			transcripts = select_first([def_training_models]),
 			species = species,
 			codingquarry_training = codingquarry_training,
-			fresh_prediction = true
+			fresh_prediction = true,
+			extra_params = codingquarry_extra_params
 		}
 	}
 
@@ -271,7 +279,8 @@ workflow ei_prediction {
 			input:
 			genome = def_reference_genome,
 			transcripts = select_first([def_training_models]),
-			pretrained_hmm = snap_training
+			pretrained_hmm = snap_training,
+			extra_params = snap_extra_params
 		}
 	}
 
@@ -282,7 +291,8 @@ workflow ei_prediction {
 			input:
 			genome = object {fasta: SoftMaskGenome.hard_masked_genome, index: def_reference_genome.index},
 			transcripts = select_first([def_training_models]),
-			training_directory = glimmer_training
+			training_directory = glimmer_training,
+			extra_params = glimmer_extra_params
 		}
 	}
 
@@ -331,7 +341,8 @@ workflow ei_prediction {
 				repeats_gff = PreprocessRepeats.processed_gff,
 				chunk_size = chunk_size,
 				overlap_size = overlap_size,
-				run_id = "_ABINITIO"
+				run_id = "_ABINITIO",
+				extra_params = augustus_extra_params
 			}
 
 			if (optimise_augustus) {
@@ -382,7 +393,8 @@ workflow ei_prediction {
 					hints_source_and_priority = augustus_run_and_index.left,
 					chunk_size = chunk_size,
 					overlap_size = overlap_size,
-					run_id = augustus_run_and_index.right + 1
+					run_id = augustus_run_and_index.right + 1,
+					extra_params = augustus_extra_params
 				}
 			}
 			Array[File] def_augustus_predictions = select_all(Augustus.predictions)
@@ -849,6 +861,7 @@ task CodingQuarry {
 		File transcripts
 		Directory? codingquarry_training
 		String? species
+		String? extra_params
 	}
 
 	output {
@@ -865,7 +878,7 @@ task CodingQuarry {
 			cp -r $QUARRY_PATH QuarryFiles
 			cp -r ~{codingquarry_training} QuarryFiles/species/~{species}
 			export QUARRY_PATH=./QuarryFiles
-			CodingQuarry -p ~{num_cpus} -f ~{genome.fasta} -a ~{transcripts} -s ~{species} ~{if fresh_prediction then "-n" else ""}
+			CodingQuarry ~{extra_params} -p ~{num_cpus} -f ~{genome.fasta} -a ~{transcripts} -s ~{species} ~{if fresh_prediction then "-n" else ""}
 		fi
 		mv out/PredictedPass.gff3 codingquarry.predictions.gff
 	>>>
@@ -906,6 +919,7 @@ task SNAP {
 		IndexedReference genome
 		File transcripts
 		File? pretrained_hmm
+		String? extra_params
 	}
 
 	output {
@@ -927,7 +941,7 @@ task SNAP {
 			hmm-assembler.pl ~{genome.fasta} params > ~{basename(genome.fasta)}.hmm
 			snap ~{basename(genome.fasta)}.hmm ~{genome.fasta} > snap.predictions.zff
 		else
-			snap ~{pretrained_hmm} ~{genome.fasta} > snap.predictions.zff
+			snap ~{extra_params} ~{pretrained_hmm} ~{genome.fasta} > snap.predictions.zff
 		fi
 		zff_to_gff -z snap.predictions.zff > snap.predictions.gff
 	>>>
@@ -938,6 +952,7 @@ task GlimmerHMM {
 		IndexedReference genome
 		File transcripts
 		Directory? training_directory
+		String? extra_params
 	}
 
 	output {
@@ -953,9 +968,9 @@ task GlimmerHMM {
 		if [ "~{training_directory}" == "" ]; then
 			gff_to_glimmer -a ~{transcripts} > ~{transcripts}.cds
 			trainGlimmerHMM ~{basename(genome.fasta)} ~{transcripts}.cds -d glimmer_training
-			glimmhmm.pl $(which glimmerhmm) ~{basename(genome.fasta)} glimmer_training -g | tee glimmer.raw.gtf | gffread -g ~{basename(genome.fasta)} -vE --keep-genes -P > glimmer.predictions.gff
+			glimmhmm.pl $(which glimmerhmm) ~{extra_params} ~{basename(genome.fasta)} glimmer_training -g | tee glimmer.raw.gtf | gffread -g ~{basename(genome.fasta)} -vE --keep-genes -P > glimmer.predictions.gff
 		else
-			glimmhmm.pl $(which glimmerhmm) ~{basename(genome.fasta)} ~{training_directory} -g | tee glimmer.raw.gtf | gffread -g ~{basename(genome.fasta)} -vE --keep-genes -P > glimmer.predictions.gff
+			glimmhmm.pl $(which glimmerhmm) ~{extra_params} ~{basename(genome.fasta)} ~{training_directory} -g | tee glimmer.raw.gtf | gffread -g ~{basename(genome.fasta)} -vE --keep-genes -P > glimmer.predictions.gff
 		fi
 
 	>>>
@@ -1200,6 +1215,7 @@ task EVM {
 		File weights
 		Array[File]? homology_models
 		Array[File]? transcriptome_models
+		String? extra_params
 	}
 
 	output {
@@ -1267,7 +1283,7 @@ task EVM {
 		--overlapSize ~{overlap_size} \
 		--partition_listing partitions_list.out
 
-		$EVM_HOME/EvmUtils/write_EVM_commands.pl -S --debug --genome ~{genome} \
+		$EVM_HOME/EvmUtils/write_EVM_commands.pl -S --debug ~{extra_params} --genome ~{genome} \
 		--gene_predictions ${predictions_fp} ${protein_alignments_param} ${transcript_alignments_param} \
 		--weights ~{weights} \
 		--search_long_introns 5000 \
