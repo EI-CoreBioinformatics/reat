@@ -456,6 +456,7 @@ workflow ei_prediction {
 			extra_config = mikado_config,
 			prediction = CombineEVM.predictions,
 			utrs = DefineMikadoUTRs.out,
+			junctions = intron_hints,
 			output_prefix = "mikado"
 	}
 
@@ -1412,7 +1413,15 @@ task Mikado {
 		--max-intron-length ~{max_intron_length} --minimum-cdna-length ~{min_cdna_length} \
 		--reference ~{reference.fasta} --list=list.txt original-mikado.yaml
 
-		yaml-merge -s original-mikado.yaml ~{"-m " + extra_config} -o ~{output_prefix}-mikado.yaml
+		touch only_confirmed_introns.yaml
+		if ~{defined(junctions)};
+		then
+			echo "picking:" >> only_confirmed_introns.yaml
+			echo "  alternative_splicing:" >> only_confirmed_introns.yaml
+			echo "    only_confirmed_introns: true" >> only_confirmed_introns.yaml
+		fi
+
+		yaml-merge -s original-mikado.yaml -m only_confirmed_introns.yaml ~{"-m " + extra_config} -o ~{output_prefix}-mikado.yaml
 
 		# mikado prepare
 		mikado prepare --procs=~{task_cpus} --json-conf ~{output_prefix}-mikado.yaml -od ~{output_prefix}-mikado
