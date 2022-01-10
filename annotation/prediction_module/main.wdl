@@ -18,10 +18,10 @@ workflow ei_prediction {
 		Boolean do_augustus = true
 		Array[File]? transcriptome_models  # Classify and divide into Gold, Silver and Bronze
 		Array[File]? homology_models  # Take as is
-		File? HQ_protein_alignments
-		File? LQ_protein_alignments
-		File? HQ_assembly
-		File? LQ_assembly
+		Array[File]? HQ_protein_alignments
+		Array[File]? LQ_protein_alignments
+		Array[File]? HQ_assembly
+		Array[File]? LQ_assembly
 		File? intron_hints  # Separate into gold == 1.0 score and silver (the rest)
 		IndexedBAM? expressed_exon_hints  # Transform into gff passing by bigwig
 		File? repeats_gff  # These are passed through to augustus
@@ -34,8 +34,8 @@ workflow ei_prediction {
 		Boolean force_train = false
 		Array[File]? augustus_runs # File with SOURCE PRIORITY pairs defining the augustus configurations
 		File protein_validation_database
-		File EVM_weights
-		String? mikado_utr_files
+		File EVM_weights # The 'tags' on this file need to correspond to the ones applied on the pipeline
+		String? mikado_utr_files # Users can choose which of the classified models go into this step ('gold', 'silver' and/or 'bronze')
 		File? mikado_config
 		File? mikado_scoring
 	}
@@ -355,7 +355,10 @@ workflow ei_prediction {
 		lq_assembly = lq_assembly.processed_gff,
 		weights = EVM_weights,
 		segment_size = 5000000,
-		overlap_size = 500000
+		overlap_size = 500000,
+		homology_models = processed_homology,
+		transcriptome_models = PreprocessTranscriptomic.out,
+		extra_params = evm_extra_params
 	}
 
 	scatter(emv_part in read_lines(EVM.evm_commands)) {
@@ -382,8 +385,6 @@ workflow ei_prediction {
 			all = LengthChecker.clustered_models,
 			hq_assembly = hq_assembly.processed_gff,
 			lq_assembly = lq_assembly.processed_gff,
-#			files = select_all([LengthChecker.gold, LengthChecker.silver, LengthChecker.bronze, LengthChecker.clustered_models,
-#							   hq_assembly.processed_gff, lq_assembly.processed_gff, hq_protein.processed_gff, lq_protein.processed_gff]),
 			out_filename = "models_with_utrs.gff3"
 	}
 
@@ -538,20 +539,20 @@ task PreprocessRepeats {
 }
 task ChangeSource {
 	input {
-		File gff
+		Array[File] gff
 		String source
 	}
 
 	output {
-		File processed_gff = sub(basename(gff), "\\.(gff|gtf)" , "") + ".post.gff"
+		File processed_gff = source+".post.gff"
 	}
 
 	command <<<
-		cat ~{gff} | gffread --keep-genes --keep-exon-attrs -F -vE | awk -v 'OFS=\t' '
+		cat ~{sep=' ' gff} | gffread --keep-genes --keep-exon-attrs -F -vE | awk -v 'OFS=\t' '
 		$3=="exon" {print $1, "~{source}", "exon", $4, $5, $6, $7, $8, $9";src=generic_source;pri=0"}
 		$3=="CDS" {print $1, "~{source}", "CDS", $4, $5, $6, $7, $8, $9";src=generic_source;pri=0"}
 		($3 != "exon" && $3 != "CDS") {print $1, "~{source}", $3, $4, $5, $6, $7, $8, $9}
-		' > ~{sub(basename(gff), "\\.(gff|gtf)" , "") + ".post.gff"}
+		' > ~{source}.post.gff
 	>>>
 }
 

@@ -27,6 +27,7 @@ workflow wf_augustus {
 		File? lq_protein_alignment_models
 		File? hints_source_and_priority
 		RuntimeAttr? resources
+		String? extra_params
 	}
 
 	if (defined(hints_source_and_priority)) {
@@ -211,6 +212,12 @@ workflow wf_augustus {
 					runtime_attr_override = resources
 					}
 				}
+
+				call JoinGenes {
+					input:
+					augustus_chunks = AugustusByChunk.predictions,
+					name = 'augustus.predictions'
+				}
 			}
 		}
 
@@ -256,6 +263,12 @@ workflow wf_augustus {
 					runtime_attr_override = resources
 					}
 				}
+
+				call JoinGenes as JoinGenes_noHint {
+					input:
+					augustus_chunks = AugustusByChunk_noHints.predictions,
+					name = 'augustus.predictions'
+				}
 			}
 		}
 
@@ -274,14 +287,13 @@ workflow wf_augustus {
 				}
 			}
 		}
-
 	}
 
 	if (defined(Augustus.predictions) || defined(Augustus_noHints.predictions)) {
 		Array[File] single_aug = flatten(select_all([Augustus.predictions, Augustus_noHints.predictions]))
 	}
-	if (defined(AugustusByChunk_noHints.predictions) || defined(AugustusByChunk.predictions)) {
-		Array[File] multi_aug = flatten(select_all(select_first([AugustusByChunk_noHints.predictions, AugustusByChunk.predictions])))
+	if (defined(JoinGenes_noHint.predictions) || defined(JoinGenes.predictions)) {
+		Array[File] multi_aug = flatten(select_all([JoinGenes_noHint.predictions, JoinGenes.predictions]))
 	}
 
 	if (defined(single_aug) || defined(multi_aug)) {
@@ -340,6 +352,7 @@ task AugustusByChunk {
 		String species
 		File? hints
 		String id
+		String? extra_params
 		RuntimeAttr? runtime_attr_override
 	}
 
@@ -369,12 +382,27 @@ task AugustusByChunk {
 		pred_start=$(echo "~{chunk}" | awk -F',' '{print $1}')
 		pred_end=$(echo "~{chunk}" | awk -F',' '{print $2}')
 		ln -s ~{config_path} config
-		augustus --AUGUSTUS_CONFIG_PATH=~{config_path} --gff3=on \
+		augustus --AUGUSTUS_CONFIG_PATH=~{config_path} --gff3=on ~{extra_params} \
 		--predictionStart=$pred_start --predictionEnd=$pred_end \
-		--UTR=~{if with_utr then "ON" else "OFF"} --stopCodonExcludedFromCDS=true --genemodel=partial \
+		--UTR=~{if with_utr then "ON" else "OFF"} --stopCodonExcludedFromCDS=false --genemodel=partial \
 		--alternatives-from-evidence=true ~{'--hintsfile=' + hints} --noInFrameStop=true \
 		--allow_hinted_splicesites=atac --errfile=run~{id}.log --extrinsicCfgFile=~{extrinsic_config} \
 		--species=~{species} ~{reference} | grep -v '^#' | awk -v 'OFS=\t' '$2="AUGUSTUS_RUN~{id}"' > augustus_~{id}.predictions.gff
+	>>>
+}
+
+task JoinGenes {
+	input {
+		Array[File] augustus_chunks
+		String name
+	}
+
+	output {
+		File predictions = name+'.gff'
+	}
+
+	command <<<
+		cat ~{sep=' ' augustus_chunks} | join_aug_pred.pl > ~{name}.gff
 	>>>
 }
 
@@ -525,6 +553,7 @@ task Augustus {
 		File? hints
 		String id
 		RuntimeAttr? runtime_attr_override
+		String? extra_params
 	}
 
 	Int cpus = 1
@@ -551,8 +580,8 @@ task Augustus {
 
 	command <<<
 		ln -s ~{config_path} config
-		augustus --AUGUSTUS_CONFIG_PATH=~{config_path} --gff3=on \
-		--UTR=~{if with_utr then "ON" else "OFF"} --stopCodonExcludedFromCDS=true --genemodel=partial \
+		augustus --AUGUSTUS_CONFIG_PATH=~{config_path} --gff3=on ~{extra_params} \
+		--UTR=~{if with_utr then "ON" else "OFF"} --stopCodonExcludedFromCDS=false --genemodel=partial \
 		--alternatives-from-evidence=true ~{'--hintsfile=' + hints} --noInFrameStop=true \
 		--allow_hinted_splicesites=atac --errfile=run~{id}.log --extrinsicCfgFile=~{extrinsic_config} \
 		--species=~{species} ~{reference} | grep -v '^#' | awk -v 'OFS=\t' '$2="AUGUSTUS_RUN~{id}"' > augustus_~{id}.predictions.gff

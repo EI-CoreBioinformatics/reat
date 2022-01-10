@@ -479,6 +479,10 @@ available evidence new gene models or update existing ones'''))
     prediction_ap.add_argument("--species", type=str, required=True,
                                help="Name of the species to train models for, if it does not exist in the augustus "
                                     "config path it will be created.")
+    prediction_ap.add_argument("--chunk_size", type=int, default=3000000,
+                               help="Maximum length of sequence to be processed by Augustus or EVM")
+    prediction_ap.add_argument("--overlap_size", type=int, default=100000,
+                               help="Overlap length for sequences longer than chunk_size for EVM and Augustus")
     prediction_ap.add_argument("--transcriptome_models", type=FileType('r'), nargs='*',
                                help="Models derived from transcriptomic data")
     prediction_ap.add_argument("--homology_models", type=FileType('r'), nargs='*',

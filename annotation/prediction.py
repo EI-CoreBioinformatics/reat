@@ -17,6 +17,8 @@ def combine_arguments_prediction(cli_arguments):
     cromwell_inputs['ei_prediction.augustus_config_path'] = cli_arguments.augustus_config_path
     cromwell_inputs['ei_prediction.species'] = cli_arguments.species
     cromwell_inputs['ei_prediction.kfold'] = cli_arguments.kfold
+    cromwell_inputs['ei_prediction.chunk_size'] = cli_arguments.chunk_size
+    cromwell_inputs['ei_prediction.overlap_size'] = cli_arguments.overlap_size
 
     if cli_arguments.expression:
         cromwell_inputs['ei_prediction.expressed_exon_hints'] = {'bam': cli_arguments.expression.name}
