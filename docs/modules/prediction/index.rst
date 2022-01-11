@@ -23,7 +23,7 @@ Once models have been scored, models with more than a coverage and identity user
 Each of the ab initio predictors the user selected is then trained and used to generate predictions. In the case of Augustus, there is an initial ab initio prediction made with limited evidence, but further rounds of prediction with different weights for each evidence type can then be configured using a file containing a SOURCE and a SCORE value for each criteria (:ref:`see <augustus-runs>`). These parameters depend on the extrinsic information configuration file used by Augustus, for more information about REAT's default :ref:`see the following section <augustus-configuration>`. All these predictions are then combined using Evidence Modeler with configurable weights for each type of prediction and evidence (:ref:`see <evm-weights>`). Finally, the EVM output is processed through Mikado using the Gold and Silver category models (which contain UTRs) to add UTRs where evidence supports it.
 
 .. note::
-The EVM weights file should contain a line per prediction, in case of :code:`--augustus_runs` there should be a line with a label and a weight for each Augustus run, the labels are fixed and have the form `AUGUSTUS_RUN#` where `#` corresponds to the position of the run file in the list of :code:`--augustus_runs` provided through the command-line arguments.
+	The EVM weights file should contain a line per prediction, in case of :code:`--augustus_runs` there should be a line with a label and a weight for each Augustus run, the labels are fixed and have the form `AUGUSTUS_RUN#` where `#` corresponds to the position of the run file in the list of :code:`--augustus_runs` provided through the command-line arguments.
 
 
 .. _augustus-runs:
@@ -53,7 +53,7 @@ The default Augustus configuration file can be overridden to make available for 
 .. _augustus-configuration:
 
 .. note::
-The output directory will contain a file of predictions corresponding to each :code:`--augustus_runs` input files, these files are named `augustus_run#` where `#` corresponds to the position of the file in the command-line argument list of run files.
+	The output directory will contain a file of predictions corresponding to each :code:`--augustus_runs` input files, these files are named `augustus_run#` where `#` corresponds to the position of the file in the command-line argument list of run files.
 
 Extrinsic information configuration file
 -----------------------------------------
