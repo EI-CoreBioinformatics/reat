@@ -37,8 +37,7 @@ def main():
         C_order.append(line[1:-1])
 
     for c in C_order:
-        if len(C[c]) > 0:
-            print(f">{c}")
+        print(f">{c}")
         for n, g in C[c].items():
             strand = n[-1]
             name = n[:-1]
