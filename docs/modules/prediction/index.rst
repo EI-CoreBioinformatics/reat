@@ -25,6 +25,17 @@ Each of the ab initio predictors the user selected is then trained and used to g
 .. note::
 	The EVM weights file should contain a line per prediction, in case of :code:`--augustus_runs` there should be a line with a label and a weight for each Augustus run, the labels are fixed and have the form `AUGUSTUS_RUN#` where `#` corresponds to the position of the run file in the list of :code:`--augustus_runs` provided through the command-line arguments.
 
+	An example weights file with three augustus runs would look like this:
+		.
+		.
+		.
+		OTHER_PREDICTION	AUGUSTUS_RUN1	1
+		OTHER_PREDICTION	AUGUSTUS_RUN2	1
+		OTHER_PREDICTION	AUGUSTUS_RUN3	1
+		.
+		.
+		.
+
 
 .. _augustus-runs:
 
@@ -32,6 +43,9 @@ Configuring Augustus runs
 ---------------------------
 
 When generating predictions using Augustus, we need to choose the weight parameters for each type of evidence, whilst at the same time possibly wanting to have multiple options of weight sets and priorities as to predict a comprehensive set of models that will maximise our chances of predicting correct structures. In REAT we can decide the number of Augustus predictions and the weights for each prediction using a configuration file per prediction. This file contains a pair of SOURCE and SCORE for each of the evidence types available, which are: gold models, silver models, bronze models, all models, gold introns, silver introns, protein models, coverage hints, repeat hints, high quality assemblies, low quality assemblies, high quality proteins, and low quality proteins. Each file provided to the :code:`--augustus_runs` parameter will trigger a run of Augustus using the specific combination of weights and priorities defined for each evidence type, resulting in as many predictions as files provided.
+
+.. note::
+	The output directory will contain a file of predictions corresponding to each :code:`--augustus_runs` input files, these files are named `augustus_run#` where `#` corresponds to the position of the file in the command-line argument list of run files.
 
 The default Augustus configuration file can be overridden to make available for the user different 'SOURCE's which can then be used for the :code:`--augustus_runs` files, the following is an example of a 'run' file::
 
@@ -49,11 +63,24 @@ The default Augustus configuration file can be overridden to make available for 
 	E 2
 	E 2
 
+.. note::
+	The order of the features in this file is as follows:
+		- gold models
+		- silver models
+		- bronze models
+		- all models
+		- gold introns
+		- silver introns
+		- protein models
+		- coverage hints
+		- repeat hints
+		- high quality assemblies
+		- low quality assemblies
+		- high quality proteins
+		- low quality proteins
+
 
 .. _augustus-configuration:
-
-.. note::
-	The output directory will contain a file of predictions corresponding to each :code:`--augustus_runs` input files, these files are named `augustus_run#` where `#` corresponds to the position of the file in the command-line argument list of run files.
 
 Extrinsic information configuration file
 -----------------------------------------
