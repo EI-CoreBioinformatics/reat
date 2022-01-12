@@ -324,7 +324,8 @@ workflow ei_prediction {
 
 			call etraining as base_training {
 				input:
-				models = SelectAugustusTestAndTrain.train,
+				train_models = SelectAugustusTestAndTrain.train,
+				test_models = SelectAugustusTestAndTrain.test,
 				species = species,
 				config_path = Species.config_path,
 				with_utr = train_utr
@@ -357,7 +358,8 @@ workflow ei_prediction {
 
 				call etraining as train_after_optimise {
 					input:
-					models = SelectAugustusTestAndTrain.train,
+					train_models = SelectAugustusTestAndTrain.train,
+					test_models = SelectAugustusTestAndTrain.test,
 					species = species,
 					config_path = OptimiseAugustus.optimised_config_path,
 					with_utr = train_utr
@@ -494,17 +496,37 @@ workflow ei_prediction {
 	}
 
 	output {
-		File? gold_models = LengthChecker.gold
-		File? silver_models = LengthChecker.silver
-		File? bronze_models = LengthChecker.bronze
-		File? training_models = def_training_models
-		File? coding_quarry_predictions = CodingQuarry.predictions
-		File? snap_predictions = SNAP.predictions
-		File? glimmerhmm_predictions = GlimmerHMM.predictions
-		Array[File]? augustus_predictions = def_augustus_predictions
-		File? augustus_abinitio_predictions = AugustusAbinitio.predictions
-		File evm_predictions = CombineEVM.predictions
 		Directory? augustus_config = final_augustus_config
+
+		File? classification_gold_models = LengthChecker.gold
+		File? classification_silver_models = LengthChecker.silver
+		File? classification_bronze_models = LengthChecker.bronze
+		File? classification_all = LengthChecker.classification
+		File? classification_non_redundant = LengthChecker.nr_classification
+
+		File? training_selected_models = def_training_models
+		Directory? training_augustus_etraining_training = base_training.improved_config_path
+		Directory? training_augustus_optimise_augustus_training = train_after_optimise.improved_config_path
+		File? training_augustus_etraining_evaluation = base_training.evaluation
+		File? training_augustus_optimise_augustus_evaluation = train_after_optimise.evaluation
+		Directory? training_glimmer_training = GlimmerHMM.training
+		File? training_snap_training = SNAP.training
+
+		File? predictions_coding_quarry = CodingQuarry.predictions
+		File? predictions_snap = SNAP.predictions
+		File? predictions_glimmer = GlimmerHMM.predictions
+		Array[File]? predictions_augustus = def_augustus_predictions
+		File? predictions_augustus_abinitio = AugustusAbinitio.predictions
+
+		File? snap = EVM.formatted_snap_predictions
+		File? codingquarry = EVM.formatted_codingquarry_predictions
+		File? codingquarry_fresh = EVM.formatted_codingquarry_fresh_predictions
+		File? augustus_abinitio = EVM.formatted_augustus_abinitio_predictions
+		Array[File]? augustus = EVM.formatted_augustus_runs_predictions
+		File evm_predictions = CombineEVM.predictions
+		File mikado_loci = MikadoPick.loci
+		File mikado_stats = MikadoPick.stats
+		File mikado_summary_stats = select_first([FinalStats.summary, FinalStats_noRuns.summary])
 	}
 }
 
@@ -566,6 +588,7 @@ task SoftMaskGenome {
 
 	output {
 		File soft_masked_genome = sub(basename(genome.fasta), "\\.(fasta|fa)$", ".softmasked.fa")
+		File soft_masked_genome_index = sub(basename(genome.fasta), "\\.(fasta|fa)$", ".softmasked.fa.fai")
 		File hard_masked_genome = sub(basename(genome.fasta), "\\.(fasta|fa)$", ".hardmasked.fa")
 		File unmasked_genome = sub(basename(genome.fasta), "\\.(fasta|fa)$", ".unmasked.fa")
 	}
@@ -586,6 +609,8 @@ then
 fi
 bedtools maskfasta -soft -fi ~{genome.fasta} -bed <(gffread --bed $rep_file) -fo ~{sub(basename(genome.fasta), "\\.(fasta|fa)", ".softmasked.fa")}
 bedtools maskfasta -mc 'N' -fi ~{genome.fasta} -bed <(gffread --bed $rep_file) -fo ~{sub(basename(genome.fasta), "\\.(fasta|fa)", ".hardmasked.fa")}
+
+samtools faidx ~{sub(basename(genome.fasta), "\\.(fasta|fa)", ".softmasked.fa")}
 	>>>
 }
 
@@ -837,7 +862,8 @@ task Species {
 
 task etraining {
 	input {
-		File models
+		File train_models
+		File test_models
 		String species
 		Boolean with_utr
 		Directory config_path
@@ -845,11 +871,15 @@ task etraining {
 
 	output {
 		Directory improved_config_path = "config"
+		File evaluation = "evaluation.txt"
 	}
 
 	command <<<
 		ln -s ~{config_path} config
-		etraining --AUGUSTUS_CONFIG_PATH=config --species=~{species} ~{models}
+		etraining --AUGUSTUS_CONFIG_PATH=config --species=~{species} ~{train_models}
+
+		augustus --AUGUSTUS_CONFIG_PATH=config --species=~{species} ~{test_models} | tee >(tail -n 42 > evaluation.txt)
+
 	>>>
 }
 
@@ -944,6 +974,7 @@ task SNAP {
 	output {
 		File predictions = "snap.predictions.gff"
 		File raw = "snap.predictions.zff"
+		File training = basename(genome.fasta) + ".hmm"
 	}
 
 	command <<<
@@ -977,6 +1008,7 @@ task GlimmerHMM {
 	output {
 		File predictions = "glimmer.predictions.gff"
 		File raw = "glimmer.raw.gtf"
+		Directory training = "glimmer_training"
 	}
 
 	command <<<
@@ -989,9 +1021,9 @@ task GlimmerHMM {
 			trainGlimmerHMM ~{basename(genome.fasta)} ~{transcripts}.cds -d glimmer_training
 			glimmhmm.pl $(which glimmerhmm) ~{extra_params} ~{basename(genome.fasta)} glimmer_training -g | tee glimmer.raw.gtf | gffread -g ~{basename(genome.fasta)} -vE --keep-genes -P > glimmer.predictions.gff
 		else
+			ln -s ~{training_directory} glimmer_training
 			glimmhmm.pl $(which glimmerhmm) ~{extra_params} ~{basename(genome.fasta)} ~{training_directory} -g | tee glimmer.raw.gtf | gffread -g ~{basename(genome.fasta)} -vE --keep-genes -P > glimmer.predictions.gff
 		fi
-
 	>>>
 }
 
@@ -1416,7 +1448,7 @@ task Mikado {
 		touch only_confirmed_introns.yaml
 		if ~{defined(junctions)};
 		then
-			echo "picking:" >> only_confirmed_introns.yaml
+			echo "pick:" >> only_confirmed_introns.yaml
 			echo "  alternative_splicing:" >> only_confirmed_introns.yaml
 			echo "    only_confirmed_introns: true" >> only_confirmed_introns.yaml
 		fi
