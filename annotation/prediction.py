@@ -280,7 +280,7 @@ def collect_prediction_output(run_metadata):
         if not os.path.exists(augustus_prediction_path):
             os.mkdir(augustus_prediction_path)
         for i, o in enumerate(outputs['ei_prediction.predictions_augustus']):
-            symlink(augustus_prediction_path, f"augustus_run{i+1}.gff")
+            symlink(augustus_prediction_path, o, f"augustus_run{i+1}.gff")
     if outputs['ei_prediction.predictions_augustus_abinitio']:
         symlink(augustus_prediction_path, outputs['ei_prediction.predictions_augustus_abinitio'], "augustus_abinitio.gff")
 
