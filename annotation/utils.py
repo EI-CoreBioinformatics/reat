@@ -1,10 +1,11 @@
 import os
 
 
-def symlink(path, out_file):
-    if os.path.exists(os.path.join(path, os.path.basename(out_file))):
-        os.unlink(os.path.join(path, os.path.basename(out_file)))
-    os.symlink(out_file, os.path.join(path, os.path.basename(out_file)))
+def symlink(path, out_file, name=None):
+    opath = os.path.join(path, name) if name else os.path.join(path, os.path.basename(out_file))
+    if os.path.exists(opath):
+        os.unlink(opath)
+    os.symlink(out_file, opath)
 
 
 def link_mikado(outputs, outputs_path, mikado):

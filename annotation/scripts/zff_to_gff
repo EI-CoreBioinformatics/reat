@@ -29,6 +29,8 @@ def zff_to_gff(zff_file, source):
                     current_group = group
                     cds_parts.append(CDSPart(start, end, strand, phase))
                     line, current_chrom = get_zff_line(zff, current_chrom)
+                    if not line:
+                        break
                     feature, start, end, strand, score, fp_overhang, tp_overhang, phase, group = line.strip().split('\t')
                     start = int(start)
                     end = int(end)
@@ -62,6 +64,7 @@ def zff_to_gff(zff_file, source):
             for i, c in enumerate(cds_parts):
                 print(f"{current_chrom}\t{source}\tCDS\t{c.start}\t{c.end}\t.\t{c.strand}\t{c.phase}\t"
                       f"ID={current_group}.{i};Parent={current_group}.m")
+
 
 def main():
     p = argparse.ArgumentParser()

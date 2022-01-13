@@ -1,8 +1,10 @@
 import os.path
+import shutil
 from importlib import resources as pkg_resources
 import json
 
 from annotation import RUN_METADATA, prepare_cromwell_arguments, execute_cromwell
+from annotation.utils import symlink
 
 
 def combine_arguments_prediction(cli_arguments):
@@ -208,7 +210,133 @@ def combine_arguments_prediction(cli_arguments):
 
 
 def collect_prediction_output(run_metadata):
-    ...
+    run_metadata = json.load(open(run_metadata))
+    outputs = run_metadata['outputs']
+    outputs_path = 'outputs'
+    if not os.path.exists(outputs_path):
+        os.mkdir(outputs_path)
+
+    if outputs['ei_prediction.augustus_config']:
+        symlink(outputs_path, outputs['ei_prediction.augustus_config'], "final_augustus_config")
+
+    if outputs['ei_prediction.snap']:
+        symlink(outputs_path, outputs['ei_prediction.snap'])
+    if outputs['ei_prediction.codingquarry']:
+        symlink(outputs_path, outputs['ei_prediction.codingquarry'])
+    if outputs['ei_prediction.codingquarry_fresh']:
+        symlink(outputs_path, outputs['ei_prediction.codingquarry_fresh'])
+    if outputs['ei_prediction.augustus_abinitio']:
+        symlink(outputs_path, outputs['ei_prediction.augustus_abinitio'])
+
+    if outputs['ei_prediction.augustus']:
+        for o in outputs['ei_prediction.augustus']:
+            symlink(outputs_path, o)
+
+    if outputs['ei_prediction.evm_predictions']:
+        symlink(outputs_path, outputs['ei_prediction.evm_predictions'])
+    symlink(outputs_path, outputs['ei_prediction.mikado_loci'])
+    symlink(outputs_path, outputs['ei_prediction.mikado_stats'])
+    symlink(outputs_path, outputs['ei_prediction.mikado_summary_stats'])
+
+    predictions_path = os.path.join(outputs_path, 'GenePredictors')
+    glimmer_prediction_path = os.path.join(predictions_path, "GlimmerHMM")
+    snap_prediction_path = os.path.join(predictions_path, "SNAP")
+    codingquarry_prediction_path = os.path.join(predictions_path, "CodingQuarry")
+    augustus_prediction_path = os.path.join(predictions_path, "Augustus")
+    if not os.path.exists(predictions_path):
+        os.mkdir(predictions_path)
+
+    if outputs['ei_prediction.predictions_codingquarry']:
+        if not os.path.exists(codingquarry_prediction_path):
+            os.mkdir(codingquarry_prediction_path)
+        symlink(codingquarry_prediction_path, outputs['ei_prediction.predictions_codingquarry'])
+
+    if outputs['ei_prediction.predictions_codingquarry_fresh']:
+        if not os.path.exists(codingquarry_prediction_path):
+            os.mkdir(codingquarry_prediction_path)
+        symlink(codingquarry_prediction_path, outputs['ei_prediction.predictions_codingquarry_fresh'])
+
+    if not (outputs['ei_prediction.predictions_codingquarry'] or outputs['ei_prediction.predictions_codingquarry_fresh']):
+        if os.path.exists(codingquarry_prediction_path):
+            shutil.rmtree(codingquarry_prediction_path)
+
+    if outputs['ei_prediction.predictions_snap']:
+        if not os.path.exists(snap_prediction_path):
+            os.mkdir(snap_prediction_path)
+        symlink(snap_prediction_path, outputs['ei_prediction.predictions_snap'])
+    else:
+        if os.path.exists(snap_prediction_path):
+            shutil.rmtree(snap_prediction_path)
+
+    if outputs['ei_prediction.predictions_glimmer']:
+        if not os.path.exists(glimmer_prediction_path):
+            os.mkdir(glimmer_prediction_path)
+        symlink(glimmer_prediction_path, outputs['ei_prediction.predictions_glimmer'])
+    else:
+        if os.path.exists(glimmer_prediction_path):
+            shutil.rmtree(glimmer_prediction_path)
+
+    if outputs['ei_prediction.predictions_augustus']:
+        if not os.path.exists(augustus_prediction_path):
+            os.mkdir(augustus_prediction_path)
+        for i, o in enumerate(outputs['ei_prediction.predictions_augustus']):
+            symlink(augustus_prediction_path, f"augustus_run{i+1}.gff")
+    if outputs['ei_prediction.predictions_augustus_abinitio']:
+        symlink(augustus_prediction_path, outputs['ei_prediction.predictions_augustus_abinitio'], "augustus_abinitio.gff")
+
+    if not (outputs['ei_prediction.predictions_augustus'] or outputs['ei_prediction.predictions_augustus_abinitio']):
+        if os.path.exists(augustus_prediction_path):
+            shutil.rmtree(augustus_prediction_path)
+
+    training_path = os.path.join(outputs_path, 'GenePredictorsTraining')
+    glimmer_training_path = os.path.join(training_path, "GlimmerHMM")
+    snap_training_path = os.path.join(training_path, "SNAP")
+    augustus_training_path = os.path.join(training_path, "Augustus")
+    if not os.path.exists(training_path):
+        os.mkdir(training_path)
+        os.mkdir(glimmer_training_path)
+        os.mkdir(snap_training_path)
+        os.mkdir(augustus_training_path)
+
+    if outputs['ei_prediction.training_selected_models']:
+        symlink(training_path, outputs['ei_prediction.training_selected_models'], "training_models.gff")
+    if outputs['ei_prediction.training_augustus_etraining_evaluation']:
+        if not os.path.exists(augustus_training_path):
+            os.mkdir(augustus_training_path)
+        symlink(augustus_training_path, outputs['ei_prediction.training_augustus_etraining_evaluation'], "base_training_evaluation.txt")
+        symlink(augustus_training_path, outputs['ei_prediction.training_augustus_etraining_training'], "base_augustus_training")
+    if outputs['ei_prediction.training_augustus_optimise_augustus_evaluation']:
+        symlink(augustus_training_path, outputs['ei_prediction.training_augustus_optimise_augustus_evaluation'], "optimise_training_evaluation.txt")
+        symlink(augustus_training_path, outputs['ei_prediction.training_augustus_optimise_augustus_training'], "optimised_augustus_training")
+    if not (outputs['ei_prediction.training_augustus_etraining_evaluation'] or outputs['ei_prediction.training_augustus_optimise_augustus_evaluation']):
+        if os.path.exists(augustus_training_path):
+            shutil.rmtree(augustus_training_path)
+
+    if outputs['ei_prediction.training_glimmer_training']:
+        if not os.path.exists(glimmer_training_path):
+            os.mkdir(glimmer_training_path)
+        symlink(glimmer_training_path, outputs['ei_prediction.training_glimmer_training'])
+    else:
+        if os.path.exists(glimmer_training_path):
+            shutil.rmtree(glimmer_training_path)
+
+    if outputs['ei_prediction.training_snap_training']:
+        if not os.path.exists(snap_training_path):
+            os.mkdir(snap_training_path)
+        symlink(snap_training_path, outputs['ei_prediction.training_snap_training'])
+    else:
+        if os.path.exists(snap_training_path):
+            shutil.rmtree(snap_training_path)
+
+    classification_path = os.path.join(outputs_path, 'Classification')
+    if not os.path.exists(classification_path):
+        os.mkdir(classification_path)
+
+    symlink(classification_path, outputs['ei_prediction.classification_gold_models'])
+    symlink(classification_path, outputs['ei_prediction.classification_silver_models'])
+    symlink(classification_path, outputs['ei_prediction.classification_bronze_models'])
+    symlink(classification_path, outputs['ei_prediction.classification_all'])
+    symlink(classification_path, outputs['ei_prediction.classification_non_redundant'])
 
 
 def prediction_module(cli_arguments):

@@ -497,6 +497,15 @@ workflow ei_prediction {
 
 	output {
 		Directory? augustus_config = final_augustus_config
+		File? snap = EVM.formatted_snap_predictions
+		File? codingquarry = EVM.formatted_codingquarry_predictions
+		File? codingquarry_fresh = EVM.formatted_codingquarry_fresh_predictions
+		File? augustus_abinitio = EVM.formatted_augustus_abinitio_predictions
+		Array[File]? augustus = EVM.formatted_augustus_runs_predictions
+		File evm_predictions = CombineEVM.predictions
+		File mikado_loci = MikadoPick.loci
+		File mikado_stats = MikadoPick.stats
+		File mikado_summary_stats = select_first([FinalStats.summary, FinalStats_noRuns.summary])
 
 		File? classification_gold_models = LengthChecker.gold
 		File? classification_silver_models = LengthChecker.silver
@@ -512,21 +521,12 @@ workflow ei_prediction {
 		Directory? training_glimmer_training = GlimmerHMM.training
 		File? training_snap_training = SNAP.training
 
-		File? predictions_coding_quarry = CodingQuarry.predictions
+		File? predictions_codingquarry = CodingQuarry.predictions
+		File? predictions_codingquarry_fresh = CodingQuarryFresh.predictions
 		File? predictions_snap = SNAP.predictions
 		File? predictions_glimmer = GlimmerHMM.predictions
 		Array[File]? predictions_augustus = def_augustus_predictions
 		File? predictions_augustus_abinitio = AugustusAbinitio.predictions
-
-		File? snap = EVM.formatted_snap_predictions
-		File? codingquarry = EVM.formatted_codingquarry_predictions
-		File? codingquarry_fresh = EVM.formatted_codingquarry_fresh_predictions
-		File? augustus_abinitio = EVM.formatted_augustus_abinitio_predictions
-		Array[File]? augustus = EVM.formatted_augustus_runs_predictions
-		File evm_predictions = CombineEVM.predictions
-		File mikado_loci = MikadoPick.loci
-		File mikado_stats = MikadoPick.stats
-		File mikado_summary_stats = select_first([FinalStats.summary, FinalStats_noRuns.summary])
 	}
 }
 
@@ -1363,7 +1363,7 @@ task EVM {
 		--overlapSize ~{overlap_size} \
 		--partition_listing partitions_list.out
 
-		$EVM_HOME/EvmUtils/write_EVM_commands.pl -S --debug ~{extra_params} --genome ~{genome} \
+		$EVM_HOME/EvmUtils/write_EVM_commands.pl -S ~{extra_params} --genome ~{genome} \
 		--gene_predictions ${predictions_fp} ${protein_alignments_param} ${transcript_alignments_param} \
 		--weights ~{weights} \
 		--search_long_introns 5000 \
