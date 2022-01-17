@@ -477,9 +477,9 @@ workflow ei_prediction {
 		call MikadoSummaryStats as FinalStats {
 			input:
 				stats = flatten(select_all([select_all(
-						[MikadoPick.stats, EVM.formatted_snap_predictions_stats, EVM.formatted_glimmer_predictions_stats,
-						EVM.formatted_codingquarry_predictions_stats, EVM.formatted_codingquarry_fresh_predictions_stats,
-						EVM.formatted_augustus_abinitio_predictions_stats]), augustus_runs_predictions_stats])),
+						[CombineEVM.predictions_stats, MikadoPick.stats, EVM.formatted_snap_predictions_stats, EVM.formatted_glimmer_predictions_stats,
+						EVM.formatted_codingquarry_predictions_stats, EVM.formatted_codingquarry_fresh_predictions_stats]),
+										   augustus_runs_predictions_stats])),
 				output_prefix = "prediction"
 		}
 	}
@@ -488,7 +488,7 @@ workflow ei_prediction {
 		call MikadoSummaryStats as FinalStats_noRuns {
 			input:
 				stats = select_all(
-						[MikadoPick.stats, EVM.formatted_snap_predictions_stats, EVM.formatted_glimmer_predictions_stats,
+						[CombineEVM.predictions_stats, MikadoPick.stats, EVM.formatted_snap_predictions_stats, EVM.formatted_glimmer_predictions_stats,
 						EVM.formatted_codingquarry_predictions_stats, EVM.formatted_codingquarry_fresh_predictions_stats,
 						EVM.formatted_augustus_abinitio_predictions_stats]),
 				output_prefix = "prediction"
@@ -497,6 +497,7 @@ workflow ei_prediction {
 
 	output {
 		Directory? augustus_config = final_augustus_config
+		File? glimmer = EVM.formatted_glimmer_predictions
 		File? snap = EVM.formatted_snap_predictions
 		File? codingquarry = EVM.formatted_codingquarry_predictions
 		File? codingquarry_fresh = EVM.formatted_codingquarry_fresh_predictions
@@ -539,11 +540,13 @@ task CombineEVM {
 
 	output {
 		File predictions = "evm.out.gff3"
+		File predictions_stats = "evm.out.gff3.stats"
 	}
 
 	command <<<
 		$EVM_HOME/EvmUtils/recombine_EVM_partial_outputs.pl --partitions ~{partitions} --output_file_name evm.out
 		cat $($EVM_HOME/EvmUtils/convert_EVM_outputs_to_GFF3.pl  --partitions ~{partitions} --output evm.out --genome ~{genome} | awk -F',' '{printf $2"/evm.out.gff3"} END{print ""}') > evm.out.gff3
+		mikado util stats evm.out.gff3 evm.out.gff3.stats
 	>>>
 }
 

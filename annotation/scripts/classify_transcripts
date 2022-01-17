@@ -1,16 +1,23 @@
 #!/usr/bin/env python3
+import sys
 from argparse import ArgumentParser, FileType, ArgumentDefaultsHelpFormatter
 from Mikado.serializers.blast_serializer import btop_parser
 from Mikado.serializers.blast_serializer.tabular_utils import Matrices
 import numpy as np
 import pandas as pd
 from math import log10
-from collections import defaultdict
 import itertools
 from annotation import minimal_gxf_parser
 
 # Filtering parameters relating to transcript requirements
 from annotation.prediction_module import add_classification_parser_parameters
+import logging
+
+# change logging format - https://realpython.com/python-logging/
+# format is - time, process_id, user, log level, message
+logging.basicConfig(
+    format='%(asctime)s - %(process)d - %(name)s - %(levelname)s - %(message)s', datefmt='%d-%b-%y %H:%M:%S')
+
 
 min_pct_cds_fraction = 0.5
 max_tp_utr_complete = 1
@@ -143,6 +150,10 @@ def evaluate_completeness(row, best_score):
 
 
 def main():
+    stdout_handler = logging.StreamHandler(sys.stdout)
+    logger = logging.getLogger('main')
+    logger.setLevel(logging.INFO)
+    logger.addHandler(stdout_handler)
     parser = ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)
     parser.add_argument('-b', '--blast', type=FileType('r'), help="Transcripts hits against curated proteins")
     parser.add_argument('-t', '--transcripts_gff', type=FileType('r'), help='Transcripts being analysed in GFF format')
@@ -243,15 +254,13 @@ def main():
     df = pd.read_csv(args.blast, delimiter='\t',
                      names=col_names.split('\t'), comment="#")
     names = df['qseqid'].unique().tolist()
-    print(len(names))
-    print("Before evalue filtering")
-    print(df.shape)
+    logger.info(f"Number of genes: {len(names)}")
+    logger.info(f"Before evalue filtering: {df.shape}")
     df = df[df.evalue.lt(evalue_filter)]
-    print("After evalue filtering")
-    print(df.shape)
+    logger.info(f"After evalue filtering: {df.shape}")
     mlog10 = lambda x: -1000 if x == 0 else int(log10(x))
     df['evalue'] = df['evalue'].apply(mlog10)
-    print('Applied evalue transformation')
+    logger.info('Applied evalue transformation')
     df["subject_coverage"] = 100 * (df.send - df.sstart + 1) / df.slen
     df["query_coverage"] = 100 * (df.qend - df.qstart + 1) / df.qlen
     df["min_coverage"] = df[["subject_coverage", "query_coverage"]].apply(min, axis=1)
@@ -260,19 +269,22 @@ def main():
     df['qstart_dist_gt_lim'] = df.qstart > max_distance_start_query[0]
     df['sstart_dist_gt_lim'] = df.sstart > max_distance_start_target[0]
     df['gap_runs'] = df.apply(calc_coverage, axis=1)
+    logger.info("Calculated gap_runs")
     df['score'] = df.apply(scoring_function, axis=1)
+    logger.info("Calculated scores")
 
     # get a list of names
     names = df['qseqid'].unique().tolist()
     genes, tid2gid = minimal_gxf_parser(args.transcripts_gff.name)
 
     applied_df = df.apply(collect_transcript_metrics, args=(genes, tid2gid), axis='columns', result_type='expand')
+    logger.info("Collected transcript metrics")
     df = pd.concat([df, applied_df], axis='columns')
     df['full_length'] = df.apply(evaluate_completeness, axis=1, args=(best_score,))
+    logger.info("Evaluated completeness")
     df['full_length'] = pd.Categorical(df['full_length'], categories=FL_CATEGORY, ordered=True)
     df.sort_values(['qseqid', 'full_length', 'score', 'evalue'], ascending=(False, True, False, True), inplace=True)
-
-    print("Done")
+    logger.info("Done")
 
     stdev_param = 2.0
     gdfl = []
@@ -280,10 +292,10 @@ def main():
     df = df.set_index('qseqid')
     df.sort_index()
 
-    print("Classifying")
+    logger.info("Classifying")
 
-    for name in sorted(names):
-        query = df.loc[name]
+    for g in df.groupby('qseqid'):
+        query = g[1]
         fl_category = FL_CATEGORY[PARTIAL]
         if len(query.shape) > 1:
             score = query.score.values[0]
@@ -303,7 +315,7 @@ def main():
             if beval_filt.full_length != FL_CATEGORY[PARTIAL]:
                 fl_category = beval_filt.full_length
 
-        txct = genes[tid2gid[name]][name]
+        txct = genes[tid2gid[g[0]]][g[0]]
         txct_reqs = (
                 min_fp_utr <= txct.five_utr_num <= max_fp_utr and txct.five_utr_num_complete <= max_fp_utr_complete and  # 5' is complete or not too many
                 min_tp_utr <= txct.three_utr_num <= max_tp_utr and txct.three_utr_num_complete <= max_tp_utr_complete and  # 3' is complete or not too many
@@ -316,10 +328,10 @@ def main():
             category = TRANSCRIPT_CLASS[SILVER]
         elif fl_category == FL_CATEGORY[COMPLETE]:
             category = TRANSCRIPT_CLASS[BRONZE]
-        gdfl.append((txct.chrom, txct.strand, txct.start, txct.end, name, fl_category,
+        gdfl.append((txct.chrom, txct.strand, txct.start, txct.end, g[0], fl_category,
                      category, txct.attributes['locus'], score))
 
-    print("Generating output")
+    logger.info("Generating output")
     gdf = pd.DataFrame(gdfl, columns=['chrom', 'strand', 'start', 'end', 'qseqid', 'full_length', 'category', 'locus',
                                       'score'])
     gdf['category'] = pd.Categorical(gdf['category'], TRANSCRIPT_CLASS, ordered=True)
@@ -338,6 +350,8 @@ def main():
                         print(gene.__str__().split('\n')[0], file=category_gff)
                         print(txct.format("gff"), file=category_gff)
                         print('###', file=category_gff)
+
+    logger.info("Done")
 
 
 if __name__ == "__main__":

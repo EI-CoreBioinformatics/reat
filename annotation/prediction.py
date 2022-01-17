@@ -219,6 +219,9 @@ def collect_prediction_output(run_metadata):
     if outputs['ei_prediction.augustus_config']:
         symlink(outputs_path, outputs['ei_prediction.augustus_config'], "final_augustus_config")
 
+    if outputs['ei_prediction.glimmer']:
+        symlink(outputs_path, outputs['ei_prediction.glimmer'])
+
     if outputs['ei_prediction.snap']:
         symlink(outputs_path, outputs['ei_prediction.snap'])
     if outputs['ei_prediction.codingquarry']:
