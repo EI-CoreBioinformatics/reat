@@ -13,10 +13,11 @@ workflow bam2hints {
 
 	if (defined(single_seqs)) {
 		# Run chunk by chunk
-		scatter (sequence in select_first([single_seqs])) {
+		scatter (sequence_file in select_first([single_seqs])) {
+			Array[String] sequences = read_lines(sequence_file)
 			call SingleSeq {
 				input:
-				seq = sequence,
+				seq = sequences[0],
 				bam = bam,
 				dUTP = dUTP,
 				output_prefix = "single"
