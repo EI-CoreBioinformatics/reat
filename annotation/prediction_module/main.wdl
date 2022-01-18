@@ -109,7 +109,7 @@ workflow ei_prediction {
 											object {fasta: SoftMaskGenome.soft_masked_genome, index: reference_genome.index}
 											])
 
-	IndexedReference augustus_genome = object { fasta: SoftMaskGenome.unmasked_genome, index: def_reference_genome.index }
+	IndexedReference augustus_genome = object { fasta: SoftMaskGenome.unmasked_genome, index: SoftMaskGenome.unmasked_genome_index }
 
 	call GenerateGenomeChunks {
 		input:
@@ -412,10 +412,11 @@ workflow ei_prediction {
 		}
 	}
 
+	IndexedReference evm_genome = object { fasta: SoftMaskGenome.hard_masked_genome, index: SoftMaskGenome.hard_masked_genome_index }
 
 	call EVM {
 		input:
-		genome = def_reference_genome.fasta,
+		genome = evm_genome.fasta,
 		augustus_abinitio = AugustusAbinitio.predictions,
 		augustus_predictions = def_augustus_predictions,
 		snap_predictions = SNAP.predictions,
@@ -602,7 +603,9 @@ task SoftMaskGenome {
 		File soft_masked_genome = sub(basename(genome.fasta), "\\.(fasta|fa)$", ".softmasked.fa")
 		File soft_masked_genome_index = sub(basename(genome.fasta), "\\.(fasta|fa)$", ".softmasked.fa.fai")
 		File hard_masked_genome = sub(basename(genome.fasta), "\\.(fasta|fa)$", ".hardmasked.fa")
+		File hard_masked_genome_index = sub(basename(genome.fasta), "\\.(fasta|fa)$", ".hardmasked.fa.fai")
 		File unmasked_genome = sub(basename(genome.fasta), "\\.(fasta|fa)$", ".unmasked.fa")
+		File unmasked_genome_index = sub(basename(genome.fasta), "\\.(fasta|fa)$", ".unmasked.fa.fai")
 	}
 
 	command <<<
@@ -622,7 +625,9 @@ fi
 bedtools maskfasta -soft -fi ~{genome.fasta} -bed <(gffread --bed $rep_file) -fo ~{sub(basename(genome.fasta), "\\.(fasta|fa)", ".softmasked.fa")}
 bedtools maskfasta -mc 'N' -fi ~{genome.fasta} -bed <(gffread --bed $rep_file) -fo ~{sub(basename(genome.fasta), "\\.(fasta|fa)", ".hardmasked.fa")}
 
-samtools faidx ~{sub(basename(genome.fasta), "\\.(fasta|fa)", ".softmasked.fa")}
+ln -s ~{genome.index} ~{sub(basename(genome.fasta), "\\.(fasta|fa)", ".softmasked.fa.fai")}
+ln -s ~{genome.index} ~{sub(basename(genome.fasta), "\\.(fasta|fa)", ".unmasked.fa.fai")}
+ln -s ~{genome.index} ~{sub(basename(genome.fasta), "\\.(fasta|fa)", ".hardmasked.fa.fai")}
 	>>>
 }
 
