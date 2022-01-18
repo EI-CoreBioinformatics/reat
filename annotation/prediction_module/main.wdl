@@ -94,20 +94,7 @@ workflow ei_prediction {
 		}
 	}
 
-	if (! defined(reference_genome.index)) {
-		call IndexGenome {
-			input:
-			genome = reference_genome
-		}
-
-		IndexedReference new_reference_genome = object {fasta: SoftMaskGenome.soft_masked_genome, index: IndexGenome.index}
-	}
-
-	IndexedReference def_reference_genome = select_first(
-											[
-											new_reference_genome,
-											object {fasta: SoftMaskGenome.soft_masked_genome, index: reference_genome.index}
-											])
+	IndexedReference def_reference_genome = object {fasta: SoftMaskGenome.soft_masked_genome, index: SoftMaskGenome.soft_masked_genome_index}
 
 	IndexedReference augustus_genome = object { fasta: SoftMaskGenome.unmasked_genome, index: SoftMaskGenome.unmasked_genome_index }
 
@@ -304,7 +291,7 @@ workflow ei_prediction {
 	if (num_models > 2000 && do_glimmer) {
 		call GlimmerHMM {
 			input:
-			genome = object {fasta: SoftMaskGenome.hard_masked_genome, index: def_reference_genome.index},
+			genome = object {fasta: SoftMaskGenome.hard_masked_genome, index: SoftMaskGenome.hard_masked_genome_index},
 			transcripts = select_first([def_training_models]),
 			training_directory = glimmer_training,
 			extra_params = glimmer_extra_params
@@ -609,7 +596,8 @@ task SoftMaskGenome {
 	}
 
 	command <<<
-cat ~{genome.fasta} | python3 -c "
+ln -s ~{genome.fasta} ~{basename(genome.fasta)}
+cat ~{basename(genome.fasta)} | python3 -c "
 import sys;
 for line in sys.stdin:
     if line.startswith('>'):
@@ -625,9 +613,15 @@ fi
 bedtools maskfasta -soft -fi ~{genome.fasta} -bed <(gffread --bed $rep_file) -fo ~{sub(basename(genome.fasta), "\\.(fasta|fa)", ".softmasked.fa")}
 bedtools maskfasta -mc 'N' -fi ~{genome.fasta} -bed <(gffread --bed $rep_file) -fo ~{sub(basename(genome.fasta), "\\.(fasta|fa)", ".hardmasked.fa")}
 
-ln -s ~{genome.index} ~{sub(basename(genome.fasta), "\\.(fasta|fa)", ".softmasked.fa.fai")}
-ln -s ~{genome.index} ~{sub(basename(genome.fasta), "\\.(fasta|fa)", ".unmasked.fa.fai")}
-ln -s ~{genome.index} ~{sub(basename(genome.fasta), "\\.(fasta|fa)", ".hardmasked.fa.fai")}
+genome_index=~{genome.index}
+if [[ "${genome_index}" == "" ]];
+then
+    samtools faidx ~{basename(genome.fasta)}
+    genome_index=~{basename(genome.fasta)}.fai
+fi
+ln -s ${genome_index} ~{sub(basename(genome.fasta), "\\.(fasta|fa)", ".softmasked.fa.fai")}
+ln -s ${genome_index} ~{sub(basename(genome.fasta), "\\.(fasta|fa)", ".unmasked.fa.fai")}
+ln -s ${genome_index} ~{sub(basename(genome.fasta), "\\.(fasta|fa)", ".hardmasked.fa.fai")}
 	>>>
 }
 
