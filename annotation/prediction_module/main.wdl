@@ -2,6 +2,7 @@ version development
 
 import "structs.wdl"
 import "augustus.wdl"
+import "bam2hints.wdl"
 
 workflow ei_prediction {
 	input {
@@ -93,72 +94,6 @@ workflow ei_prediction {
 		}
 	}
 
-	if (defined(secondstrand_exon_hints)) {
-		IndexedBAM def_seconstrand_exon = select_first([secondstrand_exon_hints])
-		if (!defined(def_seconstrand_exon.index)) {
-			call IndexBAM as SecondStrandIndexBAM{
-				input:
-				bam = def_seconstrand_exon.bam
-			}
-			IndexedBAM def_secondstrand_index = object {bam: def_seconstrand_exon.bam, index: SecondStrandIndexBAM.index}
-		}
-		call Bam2Hints as SecondStrandHints{
-			input:
-			bam = def_secondstrand_indexed_bam,
-			dUTP = "secondstrand",
-			output_prefix = "secondstrand"
-		}
-
-		IndexedBAM def_secondstrand_indexed_bam = select_first([def_secondstrand_index, def_seconstrand_exon])
-	}
-
-	if (defined(firststrand_exon_hints)) {
-		IndexedBAM def_firststrand_exon = select_first([firststrand_exon_hints])
-		if (!defined(def_firststrand_exon.index)) {
-			call IndexBAM as FirstStrandIndexBAM {
-				input:
-				bam = def_firststrand_exon.bam
-			}
-			IndexedBAM def_firststrand_index = object {bam: def_firststrand_exon.bam, index: FirstStrandIndexBAM.index}
-		}
-		call Bam2Hints as FirstStrandHints{
-			input:
-			bam = def_firststrand_indexed_bam,
-			dUTP = "firststrand",
-			output_prefix = "firststrand"
-		}
-
-		IndexedBAM def_firststrand_indexed_bam = select_first([def_firststrand_index, def_firststrand_exon])
-	}
-
-	if (defined(unstranded_exon_hints)) {
-		IndexedBAM def_unstranded_exon = select_first([unstranded_exon_hints])
-		if (!defined(def_unstranded_exon.index)) {
-			call IndexBAM as UnstrandedIndexBAM {
-				input:
-				bam = def_unstranded_exon.bam
-			}
-			IndexedBAM def_unstranded_index = object {bam: def_unstranded_exon.bam, index: UnstrandedIndexBAM.index}
-		}
-
-		IndexedBAM def_unstranded_indexed_bam = select_first([def_unstranded_index, def_unstranded_exon])
-		call Bam2Hints as UnstrandedHints {
-			input:
-			bam = def_unstranded_indexed_bam,
-			dUTP = "unstranded",
-			output_prefix = "unstranded"
-		}
-	}
-
-	if (defined(SecondStrandHints.expression_gff) || defined(FirstStrandHints.expression_gff) || defined(UnstrandedHints.expression_gff)) {
-		call JoinBamHints {
-			input:
-			secondstrand_gff = SecondStrandHints.expression_gff,
-			firststrand_gff = FirstStrandHints.expression_gff,
-			unstranded_gff = UnstrandedHints.expression_gff
-		}
-	}
-
 	if (! defined(reference_genome.index)) {
 		call IndexGenome {
 			input:
@@ -173,6 +108,86 @@ workflow ei_prediction {
 											new_reference_genome,
 											object {fasta: SoftMaskGenome.soft_masked_genome, index: reference_genome.index}
 											])
+
+	IndexedReference augustus_genome = object { fasta: SoftMaskGenome.unmasked_genome, index: def_reference_genome.index }
+
+	call GenerateGenomeChunks {
+		input:
+		reference = augustus_genome,
+	}
+
+
+	if (defined(secondstrand_exon_hints)) {
+		IndexedBAM def_seconstrand_exon = select_first([secondstrand_exon_hints])
+		if (!defined(def_seconstrand_exon.index)) {
+			call IndexBAM as SecondStrandIndexBAM{
+				input:
+				bam = def_seconstrand_exon.bam
+			}
+			IndexedBAM def_secondstrand_index = object {bam: def_seconstrand_exon.bam, index: SecondStrandIndexBAM.index}
+		}
+
+		IndexedBAM def_secondstrand_indexed_bam = select_first([def_secondstrand_index, def_seconstrand_exon])
+		call bam2hints.bam2hints as SecondStrandHints{
+			input:
+			single_seqs = GenerateGenomeChunks.single_seqs_list,
+			many_seqs = GenerateGenomeChunks.many_seqs_list,
+			bam = def_secondstrand_indexed_bam,
+			dUTP = "secondstrand",
+			output_prefix = "secondstrand"
+		}
+	}
+
+	if (defined(firststrand_exon_hints)) {
+		IndexedBAM def_firststrand_exon = select_first([firststrand_exon_hints])
+		if (!defined(def_firststrand_exon.index)) {
+			call IndexBAM as FirstStrandIndexBAM {
+				input:
+				bam = def_firststrand_exon.bam
+			}
+			IndexedBAM def_firststrand_index = object {bam: def_firststrand_exon.bam, index: FirstStrandIndexBAM.index}
+		}
+
+		IndexedBAM def_firststrand_indexed_bam = select_first([def_firststrand_index, def_firststrand_exon])
+		call bam2hints.bam2hints as FirstStrandHints{
+			input:
+			single_seqs = GenerateGenomeChunks.single_seqs_list,
+			many_seqs = GenerateGenomeChunks.many_seqs_list,
+			bam = def_firststrand_indexed_bam,
+			dUTP = "firststrand",
+			output_prefix = "firststrand"
+		}
+	}
+
+	if (defined(unstranded_exon_hints)) {
+		IndexedBAM def_unstranded_exon = select_first([unstranded_exon_hints])
+		if (!defined(def_unstranded_exon.index)) {
+			call IndexBAM as UnstrandedIndexBAM {
+				input:
+				bam = def_unstranded_exon.bam
+			}
+			IndexedBAM def_unstranded_index = object {bam: def_unstranded_exon.bam, index: UnstrandedIndexBAM.index}
+		}
+
+		IndexedBAM def_unstranded_indexed_bam = select_first([def_unstranded_index, def_unstranded_exon])
+		call bam2hints.bam2hints as UnstrandedHints {
+			input:
+			single_seqs = GenerateGenomeChunks.single_seqs_list,
+			many_seqs = GenerateGenomeChunks.many_seqs_list,
+			bam = def_unstranded_indexed_bam,
+			dUTP = "unstranded",
+			output_prefix = "unstranded"
+		}
+	}
+
+	if (defined(SecondStrandHints.expression_gff) || defined(FirstStrandHints.expression_gff) || defined(UnstrandedHints.expression_gff)) {
+		call JoinBamHints {
+			input:
+			secondstrand_gff = SecondStrandHints.expression_gff,
+			firststrand_gff = FirstStrandHints.expression_gff,
+			unstranded_gff = UnstrandedHints.expression_gff
+		}
+	}
 
 	if (defined(homology_models)) {
 		scatter (models in select_first([homology_models])) {
@@ -298,12 +313,6 @@ workflow ei_prediction {
 
 	# Augustus
 	if (num_models > 1000 && do_augustus) {
-		IndexedReference augustus_genome = object { fasta: SoftMaskGenome.unmasked_genome, index: def_reference_genome.index }
-
-		call GenerateGenomeChunks {
-			input:
-			reference = augustus_genome,
-		}
 		# Feed all to Augustus in the various configurations
 		# Generate training input for augustus (training + test sets)
 		# Transform tranining set to GeneBank format
@@ -959,6 +968,8 @@ task GenerateGenomeChunks {
 	output {
 		Array[File]? single_seqs = glob("single_seqs_*.fa")
 		Array[File]? many_seqs = glob("many_seqs_*.fa")
+		Array[File]? single_seqs_list = glob("single_seqs_*.txt")
+		Array[File]? many_seqs_list = glob("many_seqs_*.txt")
 	}
 
 	command <<<
@@ -1189,7 +1200,7 @@ task LengthChecker {
 	command <<<
 		set -euxo pipefail
 		ln -s ~{genome.fasta}
-		ln -s ~{genome.index}
+		ln -s ~{genome.index} ~{basename(genome.fasta)}.fai
 		gffread -g ~{basename(genome.fasta)} -F --cluster-only --keep-genes -P ~{sep=" " models} > all_models.clustered.gff
 		classify_transcripts ~{"--min_pct_cds_fraction " + min_pct_cds_fraction} ~{"--max_tp_utr_complete " + max_tp_utr_complete} ~{"--max_tp_utr " + max_tp_utr} ~{"--min_tp_utr " + min_tp_utr} ~{"--max_fp_utr_complete " + max_fp_utr_complete} ~{"--max_fp_utr " + max_fp_utr} ~{"--min_fp_utr " + min_fp_utr} \
 		-b ~{hits} ~{"--query_start_hard_filter_distance " + query_start_hard_filter_distance} ~{"--query_start_score " + query_start_score} ~{"--query_start_scoring_distance " + query_start_scoring_distance} ~{"--query_end_hard_filter_distance " + query_end_hard_filter_distance} ~{"--query_end_score " + query_end_score} ~{"--query_end_scoring_distance " + query_end_scoring_distance} \

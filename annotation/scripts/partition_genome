@@ -36,7 +36,11 @@ def main():
                 seq_idx += 1
                 total_nts += sequences[seq_idx][1]
                 partition_sequences.append(sequences[seq_idx][0])
+
+            with open(f"many_seqs_{partitions}.txt", 'w') as many_seqs_list:
+                print('\n'.join(partition_sequences), file=many_seqs_list)
             print(f"Partition {partitions}, contains {', '.join(partition_sequences)}\nwith a total of {total_nts} nts")
+
             print(f"These sequences are represented in {many_seqs_file.name}")
             for s in partition_sequences:
                 print(f">{s}\n{fasta_index.fetch(s, 1, fasta_index.index[s].rlen)}", file=many_seqs_file)
@@ -44,19 +48,11 @@ def main():
             many_seqs_file.close()
 
         while seq_idx < len(sequences):
-            with open(f'single_seqs_{seq_idx}.fa', 'w') as single_seqs_file:
+            with open(f'single_seqs_{seq_idx}.fa', 'w') as single_seqs_file, open(f'single_seqs_{seq_idx}.txt', 'w') as single_seq_list:
                 seq_name = sequences[seq_idx][0]
                 print(f"Adding {seq_name} to {single_seqs_file.name}")
+                print(f"{seq_name}", file=single_seq_list)
                 print(f">{seq_name} {fasta_index.index[seq_name].rlen}\n{fasta_index.fetch(seq_name, 1, fasta_index.index[seq_name].rlen)}", file=single_seqs_file)
-                # start = 1
-                # end = 0
-                # # Chunk this sequence and print the 'chunks' to a file
-                # print("This sequence generates the following chunks:")
-                # while end < sequences[seq_idx][1]:
-                #     end = min(sequences[seq_idx][1], start + CHUNK_SIZE)
-                #     print(f"{sequences[seq_idx][0]}:{start}-{end}", file=chunks_file)
-                #     print(f"{sequences[seq_idx][0]}:{start}-{end}")
-                #     start += end + 1 - OVERLAP
                 seq_idx += 1
     print("Done")
     return 0
