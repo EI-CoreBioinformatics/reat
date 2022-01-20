@@ -19,13 +19,13 @@ logging.basicConfig(
     format='%(asctime)s - %(process)d - %(name)s - %(levelname)s - %(message)s', datefmt='%d-%b-%y %H:%M:%S')
 
 
-min_pct_cds_fraction = 0.5
-max_tp_utr_complete = 1
-max_tp_utr = 2
-min_tp_utr = 1
-max_fp_utr_complete = 2
-max_fp_utr = 3
-min_fp_utr = 1
+min_pct_cds_fraction = 0.5  # Minimum percentage of sequence in transcript that is part of the CDS
+max_tp_utr_complete = 1  # Maximum number of 3' completely UTR exons
+max_tp_utr = 2  # Maximum number of 3' UTR exons
+min_tp_utr = 1  # Minimum number of 3' UTR exons
+max_fp_utr_complete = 2  # Maximum number of 5' completely UTR exons
+max_fp_utr = 3  # Maximum number of 5' UTR exons
+min_fp_utr = 1  # Minimum number of 5' UTR exons
 
 # Scoring parameters
 max_distance_start_query = [10, 5, 30]  # 10bp for hard filter, max_score 5, 30bp from start for score
@@ -41,6 +41,7 @@ evalue_filter = 10e-7  #  Maximum evalue allowed
 evalue_filter_difference = 10  #  Filter any hits with evalue < best_evalue - (best_evalue/filter_difference)
 top_n_hits = 10  #  After evalue filtering how many hits to take if more than top_n_hits
 
+# Transcript classes and names equivalence
 GOLD = 0
 SILVER = 1
 BRONZE = 2
@@ -161,6 +162,9 @@ def main():
 
     args = parser.parse_args()
 
+    if args.evalue_filter:
+        evalue_filter = args.evalue_filter
+
     if args.min_pct_cds_fraction:
         min_pct_cds_fraction = args.min_pct_cds_fraction
 
@@ -274,7 +278,6 @@ def main():
     logger.info("Calculated scores")
 
     # get a list of names
-    names = df['qseqid'].unique().tolist()
     genes, tid2gid = minimal_gxf_parser(args.transcripts_gff.name)
 
     applied_df = df.apply(collect_transcript_metrics, args=(genes, tid2gid), axis='columns', result_type='expand')
@@ -306,6 +309,8 @@ def main():
             else:
                 beval_filt = query
             qlen = beval_filt.qlen.values[0]
+            # If any hit is not partial, then check whether the target mean length is within stdev_param standard
+            #  deviations of the query length, if so, classify it as the same classification of the best hit.
             if any(beval_filt.full_length != FL_CATEGORY[PARTIAL]):
                 if abs(qlen - beval_filt.slen.mean()) <= stdev_param * beval_filt.slen.std():
                     fl_category = beval_filt.full_length.values[0]

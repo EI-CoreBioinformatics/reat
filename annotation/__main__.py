@@ -547,6 +547,16 @@ available evidence new gene models or update existing ones'''))
     prediction_ap.add_argument('--snap_extra_params', help='Extra parameters for snap predictions')
     prediction_ap.add_argument('--augustus_extra_params', help='Extra parameters for all Augustus predictions')
     prediction_ap.add_argument('--evm_extra_params', help='Extra parameters for EVM gene predictions consolidation')
+    prediction_ap.add_argument("--min_train_models", type=int, default=400,
+                               help='Minimum number of training models')
+    prediction_ap.add_argument("--max_train_models", type=int, default=1000,
+                               help='Maximum number of training models')
+    prediction_ap.add_argument("--max_test_models", type=int, default=200,
+                               help='Maximum number of test models')
+    prediction_ap.add_argument("--target_mono_exonic_percentage", type=int, default=20,
+                               help='Target percentage of mono-exonic models in the training set')
+    prediction_ap.add_argument("--force_train_few_models",  action='store_true',
+                               help="Train Augustus regardless monoexonic model ratio and number of models")
     add_classification_parser_parameters(prediction_ap)
 
     args = reat_ap.parse_args()

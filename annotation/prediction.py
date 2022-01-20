@@ -106,6 +106,24 @@ def combine_arguments_prediction(cli_arguments):
     if cli_arguments.no_augustus and cli_arguments.no_augustus is False:
         cromwell_inputs['ei_prediction.do_augustus'] = 'false'
 
+    if cli_arguments.min_train_models:
+        cromwell_inputs['ei_prediction.SelectAugustusTestAndTrain.min_train_models'] = cli_arguments.min_train_models
+
+    if cli_arguments.max_train_models:
+        cromwell_inputs['ei_prediction.SelectAugustusTestAndTrain.max_train_models'] = cli_arguments.max_train_models
+
+    if cli_arguments.max_test_models:
+        cromwell_inputs['ei_prediction.SelectAugustusTestAndTrain.max_test_models'] = cli_arguments.max_test_models
+
+    if cli_arguments.target_mono_exonic_percentage:
+        cromwell_inputs['ei_prediction.SelectAugustusTestAndTrain.target_mono_exonic_percentage'] = cli_arguments.target_mono_exonic_percentage
+
+    if cli_arguments.force_train_few_models:
+        cromwell_inputs["ei_prediction.SelectAugustusTestAndTrain.force"] = 'true'
+
+    if cli_arguments.evalue_filter:
+        cromwell_inputs['ei_prediction.LengthChecker.evalue_filter'] = cli_arguments.evalue_filter
+
     if cli_arguments.min_pct_cds_fraction:
         cromwell_inputs['ei_prediction.LengthChecker.min_pct_cds_fraction'] = cli_arguments.min_pct_cds_fraction
 

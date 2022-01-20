@@ -31,6 +31,7 @@ workflow ei_prediction {
 
 		File? repeats_gff  # These are passed through to augustus
 		File? extra_training_models  # These models are taken as-is directly as results from the training model selection
+
 		Int flank = 200
 		Int kfold = 8
 		Int chunk_size = 3000000
@@ -899,6 +900,11 @@ task SelectAugustusTestAndTrain {
 		File models
 		IndexedReference reference
 		Int flank = 200
+		Boolean force = false
+		Int? min_train_models
+		Int? max_train_models
+		Int? max_test_models
+		Int? target_mono_exonic_percentage
 	}
 
 	output {
@@ -908,7 +914,7 @@ task SelectAugustusTestAndTrain {
 
 	command <<<
 		set -euxo pipefail
-		generate_augustus_test_and_train ~{models}
+		generate_augustus_test_and_train ~{models} ~{if force then "-f" else ""} ~{"--train_min " + min_train_models} ~{"--train_max " + max_train_models} ~{"--test_max " + max_test_models} ~{"--target_mono_exonic_pct " + target_mono_exonic_percentage}
 		gff2gbSmallDNA.pl test.gff ~{reference.fasta} ~{flank} test.gb
 		gff2gbSmallDNA.pl train.gff ~{reference.fasta} ~{flank} train.gb
 	>>>
@@ -1138,6 +1144,7 @@ task LengthChecker {
 		Array[File] models
 		File protein_models
 		File hits
+		Float? evalue_filter
 		Float? min_pct_cds_fraction
 		Int? max_tp_utr_complete
 		Int? max_tp_utr
@@ -1201,7 +1208,7 @@ task LengthChecker {
 		ln -s ~{genome.fasta}
 		ln -s ~{genome.index} ~{basename(genome.fasta)}.fai
 		gffread -g ~{basename(genome.fasta)} -F --cluster-only --keep-genes -P ~{sep=" " models} > all_models.clustered.gff
-		classify_transcripts ~{"--min_pct_cds_fraction " + min_pct_cds_fraction} ~{"--max_tp_utr_complete " + max_tp_utr_complete} ~{"--max_tp_utr " + max_tp_utr} ~{"--min_tp_utr " + min_tp_utr} ~{"--max_fp_utr_complete " + max_fp_utr_complete} ~{"--max_fp_utr " + max_fp_utr} ~{"--min_fp_utr " + min_fp_utr} \
+		classify_transcripts ~{"--evalue_filter " + evalue_filter} ~{"--min_pct_cds_fraction " + min_pct_cds_fraction} ~{"--max_tp_utr_complete " + max_tp_utr_complete} ~{"--max_tp_utr " + max_tp_utr} ~{"--min_tp_utr " + min_tp_utr} ~{"--max_fp_utr_complete " + max_fp_utr_complete} ~{"--max_fp_utr " + max_fp_utr} ~{"--min_fp_utr " + min_fp_utr} \
 		-b ~{hits} ~{"--query_start_hard_filter_distance " + query_start_hard_filter_distance} ~{"--query_start_score " + query_start_score} ~{"--query_start_scoring_distance " + query_start_scoring_distance} ~{"--query_end_hard_filter_distance " + query_end_hard_filter_distance} ~{"--query_end_score " + query_end_score} ~{"--query_end_scoring_distance " + query_end_scoring_distance} \
 		-t all_models.clustered.gff ~{"--target_start_hard_filter_distance " + target_start_hard_filter_distance} ~{"--target_start_score " + target_start_score} ~{"--target_start_scoring_distance " + target_start_scoring_distance} ~{"--target_end_hard_filter_distance " + target_end_hard_filter_distance} ~{"--target_end_score " + target_end_score} ~{"--target_end_scoring_distance " + target_end_scoring_distance} ~{"--min_query_coverage_hard_filter " + min_query_coverage_hard_filter} ~{"--min_query_coverage_score " + min_query_coverage_score} ~{"--min_query_coverage_scoring_percentage " + min_query_coverage_scoring_percentage} ~{"--min_target_coverage_hard_filter " + min_target_coverage_hard_filter} ~{"--min_target_coverage_score " + min_target_coverage_score} ~{"--min_target_coverage_scoring_percentage " + min_target_coverage_scoring_percentage} ~{"--max_single_gap_hard_filter " + max_single_gap_hard_filter} ~{"--max_single_gap_score " + max_single_gap_score} ~{"--max_single_gap_scoring_length " + max_single_gap_scoring_length}
 	>>>

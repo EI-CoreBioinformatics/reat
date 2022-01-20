@@ -297,7 +297,7 @@ workflow wf_augustus {
 	}
 
 	if (defined(single_aug) || defined(multi_aug)) {
-		call cat as JoinAugustus {
+		call JoinAll as JoinAugustus {
 			input:
 			files = flatten(select_all([single_aug, multi_aug])),
 			out_filename = "augustus.predictions.gff"
@@ -406,7 +406,7 @@ task JoinGenes {
 	>>>
 }
 
-task cat {
+task JoinAll {
 	input {
 		Array[File]+ files
 		String out_filename
@@ -417,7 +417,7 @@ task cat {
 	}
 
 	command <<<
-		cat ~{sep=' ' files} > ~{out_filename}
+		cat ~{sep=' ' files} | join_aug_pred.pl > ~{out_filename}
 	>>>
 }
 

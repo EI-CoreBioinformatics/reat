@@ -1,4 +1,6 @@
 def add_classification_parser_parameters(parser):
+    parser.add_argument('--evalue_filter', type=float, default=10e-7,
+                        help='Hits with a value higher than this will be filtered out of the initial set')
     parser.add_argument('--min_pct_cds_fraction', type=float, default=0.5,
                         help='Transcript requirement for minimum faction of transcript covered by CDS')
     parser.add_argument('--max_tp_utr_complete', type=int, default=1,
@@ -6,13 +8,13 @@ def add_classification_parser_parameters(parser):
     parser.add_argument('--max_tp_utr', type=int, default=2,
                         help='Transcript requirement for maximum number of 3\' UTRs')
     parser.add_argument('--min_tp_utr', type=int, default=1,
-                        help='Transcript requirement for minumum number of 3\' UTRs')
+                        help='Transcript requirement for minimum number of 3\' UTRs')
     parser.add_argument('--max_fp_utr_complete', type=int, default=2,
                         help='Transcript requirement for maximum number of complete 5\' UTRs')
     parser.add_argument('--max_fp_utr', type=int, default=3,
                         help='Transcript requirement for maximum number of 5\' UTRs')
     parser.add_argument('--min_fp_utr', type=int, default=1,
-                        help='Transcript requirement for minumum number of 5\' UTRs')
+                        help='Transcript requirement for minimum number of 5\' UTRs')
     parser.add_argument('--query_start_hard_filter_distance', type=int, default=10,
                         help='If query hit starts after this value, the transcript cannot belong to the Gold category')
     parser.add_argument('--query_start_score', type=int, default=5,
