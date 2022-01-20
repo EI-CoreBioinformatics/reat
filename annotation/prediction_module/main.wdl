@@ -1236,6 +1236,7 @@ task SelfBlastFilter {
         memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
         maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
         queue: select_first([runtime_attr.queue, default_attr.queue])
+		constraints: select_first([runtime_attr.constraints, default_attr.constraints])
     }
 
 	output {
