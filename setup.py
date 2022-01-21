@@ -39,7 +39,6 @@ setup(
         "biopython~=1.78",
         "mikado~=2.3.0",
         "pyfaidx~=0.5.8",
-        "numpy~=1.20.3",
         "jsonschema~=3.2.0",
         "pyyaml~=5.4.1",
         "parasail~=1.2.4",

@@ -10,7 +10,6 @@ dependencies:
   - bioawk=1.0
   - seqkit=0.16.1
   - samtools=1.12
-  - mikado=2.3.3
   - portcullis=1.2.2
   - stringtie=2.1.5
   - hisat2=2.2.1
