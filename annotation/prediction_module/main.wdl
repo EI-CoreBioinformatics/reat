@@ -842,7 +842,7 @@ task OptimiseAugustus {
 
     RuntimeAttr runtime_attr = select_first([resources, default_attr])
 
-    Int cpus = select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
+    Int cpus = select_first([num_fold, runtime_attr.cpu_cores, default_attr.cpu_cores])
 
     runtime {
         cpu: cpus
