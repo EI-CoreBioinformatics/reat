@@ -587,3 +587,18 @@ task Augustus {
 		--species=~{species} ~{reference} | grep -v '^#' | awk -v 'OFS=\t' '$2="AUGUSTUS_RUN~{id}"' > augustus_~{id}.predictions.gff
 	>>>
 }
+
+task cat {
+	input {
+		Array[File] files
+		String out_filename
+	}
+
+	output {
+		File out = out_filename
+	}
+
+	command <<<
+		cat ~{sep=" " files} > ~{out_filename}
+	>>>
+}

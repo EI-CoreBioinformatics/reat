@@ -830,7 +830,26 @@ task OptimiseAugustus {
 		Directory config_path
 		File models
 		Boolean with_utr
+		RuntimeAttr? resources
 	}
+
+	    RuntimeAttr default_attr = object {
+        cpu_cores: 1,
+        mem_gb: 4,
+        max_retries: 1,
+        queue: ""
+    }
+
+    RuntimeAttr runtime_attr = select_first([resources, default_attr])
+
+    Int cpus = select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
+
+    runtime {
+        cpu: cpus
+        memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
+        maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+        queue: select_first([runtime_attr.queue, default_attr.queue])
+    }
 
 	output {
 		Directory optimised_config_path = "config"
@@ -879,7 +898,26 @@ task etraining {
 		String species
 		Boolean with_utr
 		Directory config_path
+		RuntimeAttr? resources
 	}
+
+	    RuntimeAttr default_attr = object {
+        cpu_cores: 1,
+        mem_gb: 4,
+        max_retries: 1,
+        queue: ""
+    }
+
+    RuntimeAttr runtime_attr = select_first([resources, default_attr])
+
+    Int cpus = select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
+
+    runtime {
+        cpu: cpus
+        memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
+        maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+        queue: select_first([runtime_attr.queue, default_attr.queue])
+    }
 
 	output {
 		Directory improved_config_path = "config"
@@ -928,7 +966,26 @@ task CodingQuarry {
 		Directory? codingquarry_training
 		String? species
 		String? extra_params
+		RuntimeAttr? resources
 	}
+
+	    RuntimeAttr default_attr = object {
+        cpu_cores: 1,
+        mem_gb: 4,
+        max_retries: 1,
+        queue: ""
+    }
+
+    RuntimeAttr runtime_attr = select_first([resources, default_attr])
+
+    Int cpus = select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
+
+    runtime {
+        cpu: cpus
+        memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
+        maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+        queue: select_first([runtime_attr.queue, default_attr.queue])
+    }
 
 	output {
 		File predictions = "codingquarry.predictions.gff"
@@ -988,7 +1045,26 @@ task SNAP {
 		File transcripts
 		File? pretrained_hmm
 		String? extra_params
+		RuntimeAttr? resources
 	}
+
+	    RuntimeAttr default_attr = object {
+        cpu_cores: 1,
+        mem_gb: 4,
+        max_retries: 1,
+        queue: ""
+    }
+
+    RuntimeAttr runtime_attr = select_first([resources, default_attr])
+
+    Int cpus = select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
+
+    runtime {
+        cpu: cpus
+        memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
+        maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+        queue: select_first([runtime_attr.queue, default_attr.queue])
+    }
 
 	output {
 		File predictions = "snap.predictions.gff"
@@ -1022,7 +1098,26 @@ task GlimmerHMM {
 		File transcripts
 		Directory? training_directory
 		String? extra_params
+		RuntimeAttr? resources
 	}
+
+	    RuntimeAttr default_attr = object {
+        cpu_cores: 1,
+        mem_gb: 4,
+        max_retries: 1,
+        queue: ""
+    }
+
+    RuntimeAttr runtime_attr = select_first([resources, default_attr])
+
+    Int cpus = select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
+
+    runtime {
+        cpu: cpus
+        memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
+        maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+        queue: select_first([runtime_attr.queue, default_attr.queue])
+    }
 
 	output {
 		File predictions = "glimmer.predictions.gff"
