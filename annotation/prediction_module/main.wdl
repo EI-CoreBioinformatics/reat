@@ -50,6 +50,8 @@ workflow ei_prediction {
 		String? snap_extra_params
 		String? augustus_extra_params
 		String? evm_extra_params
+
+		RuntimeAttr augustus_resources
 	}
 
 	call SoftMaskGenome {
@@ -102,6 +104,7 @@ workflow ei_prediction {
 	call GenerateGenomeChunks {
 		input:
 		reference = augustus_genome,
+		chunk_size = chunk_size
 	}
 
 
@@ -340,7 +343,8 @@ workflow ei_prediction {
 				chunk_size = chunk_size,
 				overlap_size = overlap_size,
 				run_id = "_ABINITIO",
-				extra_params = augustus_extra_params
+				extra_params = augustus_extra_params,
+				augustus_resources = augustus_resources
 			}
 
 			if (optimise_augustus) {
@@ -393,7 +397,8 @@ workflow ei_prediction {
 					chunk_size = chunk_size,
 					overlap_size = overlap_size,
 					run_id = augustus_run_and_index.right + 1,
-					extra_params = augustus_extra_params
+					extra_params = augustus_extra_params,
+					augustus_resources = augustus_resources
 				}
 			}
 			Array[File] def_augustus_predictions = select_all(Augustus.predictions)
@@ -1025,6 +1030,7 @@ task PreprocessFiles {
 task GenerateGenomeChunks {
 	input {
 		IndexedReference reference
+		Int chunk_size
 	}
 
 	output {
@@ -1035,7 +1041,7 @@ task GenerateGenomeChunks {
 	}
 
 	command <<<
-		partition_genome --reference ~{reference.fasta}
+		partition_genome --reference ~{reference.fasta} --chunk_size ~{chunk_size}
 	>>>
 }
 
@@ -1552,7 +1558,7 @@ task Mikado {
 
 		if [ "" != "~{utrs}" ]
 		then
-			label="UTRs"
+			label="UTRs_evm"
 			echo -e "~{utrs}\t${label}\tTrue\t0\tFalse" >> list.txt
 		fi
 

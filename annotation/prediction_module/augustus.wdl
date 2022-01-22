@@ -26,7 +26,7 @@ workflow wf_augustus {
 		File? hq_protein_alignment_models
 		File? lq_protein_alignment_models
 		File? hints_source_and_priority
-		RuntimeAttr? resources
+		RuntimeAttr? augustus_resources
 		String? extra_params
 	}
 
@@ -209,7 +209,7 @@ workflow wf_augustus {
 					species = species,
 					config_path = augustus_config,
 					id = run_id,
-					runtime_attr_override = resources
+					runtime_attr_override = augustus_resources
 					}
 				}
 
@@ -233,7 +233,7 @@ workflow wf_augustus {
 					species = species,
 					config_path = augustus_config,
 					id = run_id,
-					runtime_attr_override = resources
+					runtime_attr_override = augustus_resources
 				}
 			}
 		}
@@ -260,7 +260,7 @@ workflow wf_augustus {
 					species = species,
 					config_path = augustus_config,
 					id = run_id,
-					runtime_attr_override = resources
+					runtime_attr_override = augustus_resources
 					}
 				}
 
@@ -283,7 +283,7 @@ workflow wf_augustus {
 					species = species,
 					config_path = augustus_config,
 					id = run_id,
-					runtime_attr_override = resources
+					runtime_attr_override = augustus_resources
 				}
 			}
 		}
@@ -387,7 +387,7 @@ task AugustusByChunk {
 		--UTR=~{if with_utr then "ON" else "OFF"} --stopCodonExcludedFromCDS=false --genemodel=partial \
 		--alternatives-from-evidence=true ~{'--hintsfile=' + hints} --noInFrameStop=true \
 		--allow_hinted_splicesites=atac --errfile=run~{id}.log --extrinsicCfgFile=~{extrinsic_config} \
-		--species=~{species} ~{reference} | grep -v '^#' | awk -v 'OFS=\t' '$2="AUGUSTUS_RUN~{id}"' > augustus_~{id}.predictions.gff
+		--species=~{species} ~{reference} | awk -v OFS='\t' '/^#/{print} !/^#/{$2="AUGUSTUS_RUN~{id}"; print}' > augustus_~{id}.predictions.gff
 	>>>
 }
 
@@ -402,7 +402,7 @@ task JoinGenes {
 	}
 
 	command <<<
-		cat ~{sep=' ' augustus_chunks} | join_aug_pred.pl > ~{name}.gff
+		cat ~{sep=' ' augustus_chunks} | join_aug_pred.pl | sed 's/# end gene.*/###/' | sed '/# .*/d' > ~{name}.gff
 	>>>
 }
 
@@ -584,7 +584,7 @@ task Augustus {
 		--UTR=~{if with_utr then "ON" else "OFF"} --stopCodonExcludedFromCDS=false --genemodel=partial \
 		--alternatives-from-evidence=true ~{'--hintsfile=' + hints} --noInFrameStop=true \
 		--allow_hinted_splicesites=atac --errfile=run~{id}.log --extrinsicCfgFile=~{extrinsic_config} \
-		--species=~{species} ~{reference} | grep -v '^#' | awk -v 'OFS=\t' '$2="AUGUSTUS_RUN~{id}"' > augustus_~{id}.predictions.gff
+		--species=~{species} ~{reference} | awk -v OFS='\t' '/^#/{print} !/^#/{$2="AUGUSTUS_RUN~{id}"; print}' > augustus_~{id}.predictions.gff
 	>>>
 }
 

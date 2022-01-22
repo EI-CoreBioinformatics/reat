@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 import sys
+import textwrap
+
 import pyfaidx
 from argparse import ArgumentParser, FileType
 # Read the index
@@ -10,15 +12,17 @@ from argparse import ArgumentParser, FileType
 # All the partitions from the previous go multiple many_seqs_N.fa files
 # The rest of the sequences are long enough to be chunked, so they go on to the 'single_seqs.fa' file and the chunked regions are output to the 'chunks.txt' file
 
-def main():
 
+def wrap(text, width=80):
+    return '\n'.join(textwrap.wrap(text, width))
+
+
+def main():
     parser = ArgumentParser("")
     parser.add_argument("--reference", type=FileType('r'), help="Reference genome to partition")
     parser.add_argument("--chunk_size", type=int, default=5000000, help="Size of the chunks to partition the genome into")
-    parser.add_argument("--overlap", type=int, default=500000, help="Size of the overlap between the partitions, typically it is a good idea to choose this larger than the intron size")
     args = parser.parse_args()
     CHUNK_SIZE = args.chunk_size
-    OVERLAP = args.overlap
     sequences = []
     with pyfaidx.Faidx(args.reference.name) as fasta_index:
         for name, v in fasta_index.index.items():
@@ -43,7 +47,7 @@ def main():
 
             print(f"These sequences are represented in {many_seqs_file.name}")
             for s in partition_sequences:
-                print(f">{s}\n{fasta_index.fetch(s, 1, fasta_index.index[s].rlen)}", file=many_seqs_file)
+                print(f">{s}\n{wrap(fasta_index.fetch(s, 1, fasta_index.index[s].rlen).seq)}", file=many_seqs_file)
             seq_idx += 1
             many_seqs_file.close()
 
@@ -52,10 +56,11 @@ def main():
                 seq_name = sequences[seq_idx][0]
                 print(f"Adding {seq_name} to {single_seqs_file.name}")
                 print(f"{seq_name}", file=single_seq_list)
-                print(f">{seq_name} {fasta_index.index[seq_name].rlen}\n{fasta_index.fetch(seq_name, 1, fasta_index.index[seq_name].rlen)}", file=single_seqs_file)
+                print(f">{seq_name} {fasta_index.index[seq_name].rlen}\n{wrap(fasta_index.fetch(seq_name, 1, fasta_index.index[seq_name].rlen).seq)}", file=single_seqs_file)
                 seq_idx += 1
     print("Done")
     return 0
+
 
 if __name__ == "__main__":
     sys.exit(main())
