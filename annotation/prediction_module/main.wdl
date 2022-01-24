@@ -331,22 +331,6 @@ workflow ei_prediction {
 				with_utr = train_utr
 			}
 
-			call augustus.wf_augustus as AugustusAbinitio {
-				input:
-				single_seqs = GenerateGenomeChunks.single_seqs,
-				many_seqs = GenerateGenomeChunks.many_seqs,
-				extrinsic_config = extrinsic_config,
-				train_utr = train_utr,
-				species = species,
-				augustus_config = base_training.improved_config_path,
-				repeats_gff = PreprocessRepeats.processed_gff,
-				chunk_size = chunk_size,
-				overlap_size = overlap_size,
-				run_id = "_ABINITIO",
-				extra_params = augustus_extra_params,
-				augustus_resources = augustus_resources
-			}
-
 			if (optimise_augustus) {
 				call OptimiseAugustus {
 					input:
@@ -369,6 +353,22 @@ workflow ei_prediction {
 		}
 
 		Directory final_augustus_config = select_first([train_after_optimise.improved_config_path, base_training.improved_config_path, Species.config_path])
+
+		call augustus.wf_augustus as AugustusAbinitio {
+			input:
+			single_seqs = GenerateGenomeChunks.single_seqs,
+			many_seqs = GenerateGenomeChunks.many_seqs,
+			extrinsic_config = extrinsic_config,
+			train_utr = train_utr,
+			species = species,
+			augustus_config = final_augustus_config,
+			repeats_gff = PreprocessRepeats.processed_gff,
+			chunk_size = chunk_size,
+			overlap_size = overlap_size,
+			run_id = "ABINITIO",
+			extra_params = augustus_extra_params,
+			augustus_resources = augustus_resources
+		}
 
 		if (defined(augustus_runs)) {
 			Array[Int] counter = range(length(select_first([augustus_runs])))

@@ -212,13 +212,8 @@ workflow wf_augustus {
 					runtime_attr_override = augustus_resources
 					}
 				}
-
-				call JoinGenes {
-					input:
-					augustus_chunks = AugustusByChunk.predictions,
-					name = 'augustus.predictions'
-				}
 			}
+			Array[File] many_augustus = flatten(AugustusByChunk.predictions)
 		}
 
 		if (defined(many_seqs)) {
@@ -263,13 +258,9 @@ workflow wf_augustus {
 					runtime_attr_override = augustus_resources
 					}
 				}
-
-				call JoinGenes as JoinGenes_noHint {
-					input:
-					augustus_chunks = AugustusByChunk_noHints.predictions,
-					name = 'augustus.predictions'
-				}
 			}
+
+			Array[File] no_hints_many_augustus = flatten(AugustusByChunk_noHints.predictions)
 		}
 
 		if (defined(many_seqs)) {
@@ -292,8 +283,8 @@ workflow wf_augustus {
 	if (defined(Augustus.predictions) || defined(Augustus_noHints.predictions)) {
 		Array[File] single_aug = flatten(select_all([Augustus.predictions, Augustus_noHints.predictions]))
 	}
-	if (defined(JoinGenes_noHint.predictions) || defined(JoinGenes.predictions)) {
-		Array[File] multi_aug = flatten(select_all([JoinGenes_noHint.predictions, JoinGenes.predictions]))
+	if (defined(no_hints_many_augustus) || defined(many_augustus)) {
+		Array[File] multi_aug = flatten(select_all([no_hints_many_augustus, many_augustus]))
 	}
 
 	if (defined(single_aug) || defined(multi_aug)) {
@@ -388,21 +379,6 @@ task AugustusByChunk {
 		--alternatives-from-evidence=true ~{'--hintsfile=' + hints} --noInFrameStop=true \
 		--allow_hinted_splicesites=atac --errfile=run~{id}.log --extrinsicCfgFile=~{extrinsic_config} \
 		--species=~{species} ~{reference} | awk -v OFS='\t' '/^#/{print} !/^#/{$2="AUGUSTUS_RUN~{id}"; print}' > augustus_~{id}.predictions.gff
-	>>>
-}
-
-task JoinGenes {
-	input {
-		Array[File] augustus_chunks
-		String name
-	}
-
-	output {
-		File predictions = name+'.gff'
-	}
-
-	command <<<
-		cat ~{sep=' ' augustus_chunks} | join_aug_pred.pl | sed 's/# end gene.*/###/' | sed '/# .*/d' > ~{name}.gff
 	>>>
 }
 
