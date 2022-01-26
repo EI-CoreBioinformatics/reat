@@ -185,13 +185,16 @@ workflow wf_augustus {
 		}
 	}
 
+	if (defined(repeats_gff)) {
+		File def_repeat_hints = select_first([PrepareRepeatHints.repeat_hints, repeats_gff])
+	}
 	Array[File] hints_files = select_first([select_all([gold.result, silver.result, bronze.result, all.result,
 							   PrepareIntronHints.gold_intron_hints, PrepareIntronHints.silver_intron_hints,
 							   PrepareProteinHints.protein_hints,
 							   UpdateExonPartSourceAndPriority.sp_gff,
 							   hq_assembly.result, lq_assembly.result,
 							   hq_protein_alignments.result, lq_protein_alignments.result,
-							   select_first([PrepareRepeatHints.repeat_hints, repeats_gff])]), []])
+							   def_repeat_hints]), []])
 	Boolean with_hints = length(hints_files) > 0
 	if (with_hints)
 	{
