@@ -526,7 +526,7 @@ available evidence new gene models or update existing ones'''))
                                help="Low confidence assemblies (short reads or low quality long reads) to be used as "
                                     "hints for Augustus runs")
     prediction_ap.add_argument('--mikado_utr_files', choices=UTR_SELECTION_OPTIONS, nargs='*',
-                               default=['gold', 'silver'],
+                               default=['augustus', 'gold', 'silver'],
                                help=f"Choose any combination of space separated values from: "
                                     f"{' '.join(UTR_SELECTION_OPTIONS)}")
     prediction_ap.add_argument("--mikado_config", type=FileType('r'),

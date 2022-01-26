@@ -446,6 +446,7 @@ workflow ei_prediction {
 	call DefineMikadoUTRs {
 		input:
 			files_selection = select_first([mikado_utr_files, "gold silver"]),
+			augustus = EVM.formatted_augustus_runs_predictions,
 			gold = LengthChecker.gold,
 			silver = LengthChecker.silver,
 			bronze = LengthChecker.bronze,
@@ -1497,6 +1498,7 @@ task EVM {
 task DefineMikadoUTRs {
 	input {
 		String files_selection
+		Array[File]? augustus
 		File? gold
 		File? silver
 		File? bronze
@@ -1511,7 +1513,12 @@ task DefineMikadoUTRs {
 	}
 
 	command <<<
-		combine_utr_hint_files ~{"--gold " + gold} ~{"--silver " + silver} ~{"--bronze " + bronze} ~{"--all " + all} ~{"--hq_assembly " + hq_assembly} ~{"--lq_assembly " + lq_assembly} --selection ~{files_selection} > ~{out_filename}
+		touch augustus_hints.gff
+		if ~{if defined(augustus) then length(select_first([augustus])) > 0 else false};
+		then
+		cat ~{sep=" " augustus} > augustus_hints.gff
+		fi
+		combine_utr_hint_files --augustus augustus_hints.gff ~{"--gold " + gold} ~{"--silver " + silver} ~{"--bronze " + bronze} ~{"--all " + all} ~{"--hq_assembly " + hq_assembly} ~{"--lq_assembly " + lq_assembly} --selection ~{files_selection} > ~{out_filename}
 	>>>
 }
 

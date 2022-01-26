@@ -10,7 +10,7 @@ from Mikado.transcripts import Gene, Transcript
 VERSION = '0.6.1'
 RUN_METADATA = "run_details.json"
 
-UTR_SELECTION_OPTIONS = ('gold', 'silver', 'bronze', 'all', 'hq_assembly', 'lq_assembly')
+UTR_SELECTION_OPTIONS = ('augustus', 'gold', 'silver', 'bronze', 'all', 'hq_assembly', 'lq_assembly')
 LONG_READ_ALIGNER_CHOICES = ('minimap2', 'gmap', '2pass', '2pass_merged')
 
 def report_errors(errors, samples):
