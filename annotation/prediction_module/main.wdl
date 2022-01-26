@@ -657,7 +657,7 @@ task PreprocessRepeats {
 	}
 
 	command <<<
-	awk 'BEGIN{OFS="\t"} $3=="match" {print $1, "repmask", "nonexonpart", $4, $5, $6, $7, $8, "src=RM;pri=0"}' ~{gff} > repeats.gff
+	awk 'BEGIN{OFS="\t"} $3=="match" {print $1, "repmask", "nonexonpart", $4, $5, $6, ".", $8, "src=RM;pri=0"}' ~{gff} > repeats.gff
 	>>>
 }
 task ChangeSource {
