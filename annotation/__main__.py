@@ -529,6 +529,10 @@ available evidence new gene models or update existing ones'''))
                                default=['gold', 'silver'],
                                help=f"Choose any combination of space separated values from: "
                                     f"{' '.join(UTR_SELECTION_OPTIONS)}")
+    prediction_ap.add_argument("--mikado_config", type=FileType('r'),
+                               help="Base configuration for Mikado consolidation stage.")
+    prediction_ap.add_argument("--mikado_scoring", type=FileType('r'),
+                               help="Scoring file for Mikado pick at consolidation stage.")
     prediction_ap.add_argument('--do_glimmer', nargs='?', const=True,
                                help="Enables GlimmerHmm predictions, optionally accepts a training directory")
     prediction_ap.add_argument('--do_snap', nargs='?', const=True,

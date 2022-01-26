@@ -224,6 +224,12 @@ def combine_arguments_prediction(cli_arguments):
     if cli_arguments.evm_extra_params:
         cromwell_inputs['ei_prediction.evm_extra_params'] = cli_arguments.evm_extra_params
 
+    if cli_arguments.mikado_config:
+        cromwell_inputs['ei_prediction.mikado_config'] = cli_arguments.mikado_config
+
+    if cli_arguments.mikado_scoring:
+        cromwell_inputs['ei_prediction.mikado_scoring'] = cli_arguments.mikado_scoring
+
     return cromwell_inputs
 
 
