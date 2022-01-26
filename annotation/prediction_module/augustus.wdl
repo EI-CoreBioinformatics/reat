@@ -54,6 +54,9 @@ workflow wf_augustus {
 	String all_model_hints_source = select_first([ReadSourceAndPriority.all_model_hints_source, '#'])
 	Int all_model_hints_priority = select_first([ReadSourceAndPriority.all_model_hints_priority, 0])
 
+	String repeat_hints_source = select_first([ReadSourceAndPriority.repeat_hints_source, '#'])
+	Int repeat_hints_priority = select_first([ReadSourceAndPriority.repeat_hints_priority, 0])
+
 	String hq_assembly_hints_source = select_first([ReadSourceAndPriority.hq_assembly_hints_source, '#'])
 	Int hq_assembly_hints_priority = select_first([ReadSourceAndPriority.hq_assembly_hints_priority, 0])
 	String lq_assembly_hints_source = select_first([ReadSourceAndPriority.lq_assembly_hints_source, '#'])
@@ -62,6 +65,15 @@ workflow wf_augustus {
 	Int hq_protein_alignments_hints_priority = select_first([ReadSourceAndPriority.hq_protein_alignment_hints_priority, 0])
 	String lq_protein_alignments_hints_source = select_first([ReadSourceAndPriority.lq_protein_alignment_hints_source, '#'])
 	Int lq_protein_alignments_hints_priority = select_first([ReadSourceAndPriority.lq_protein_alignment_hints_priority, 0])
+
+	if (defined(repeats_gff) && repeat_hints_source != '#' && run_id != "ABINITIO") {
+		call PrepareRepeatHints {
+			input:
+			gff = select_first([repeats_gff]),
+			source = repeat_hints_source,
+			priority = repeat_hints_priority
+		}
+	}
 
 	if (defined(expressed_exon_hints) && alignment_hints_source != '#') {
 		call UpdateExonPartSourceAndPriority {
@@ -179,7 +191,7 @@ workflow wf_augustus {
 							   UpdateExonPartSourceAndPriority.sp_gff,
 							   hq_assembly.result, lq_assembly.result,
 							   hq_protein_alignments.result, lq_protein_alignments.result,
-							   repeats_gff]), []])
+							   select_first([PrepareRepeatHints.repeat_hints, repeats_gff])]), []])
 	Boolean with_hints = length(hints_files) > 0
 	if (with_hints)
 	{
@@ -476,6 +488,22 @@ task ReadSourceAndPriority {
 
 	command <<<
 		generate_augustus_hint_parameters ~{hints_source_and_priority}
+	>>>
+}
+
+task PrepareRepeatHints {
+	input {
+		File gff
+		String source = 'RM'
+		Int priority = 0
+	}
+
+	output {
+		File repeat_hints = 'repeat_hints.S'+source+'P'+priority+'.gff'
+	}
+
+	command <<<
+		awk -v OFS='\t' '{print $1,$2,$3,$4,$5,$6,$7,$8,"src=~{source};pri=~{priority}"}' "~{gff}" > "repeat_hints.S~{source}P~{priority}.gff"
 	>>>
 }
 
