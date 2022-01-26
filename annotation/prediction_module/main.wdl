@@ -616,8 +616,8 @@ then
     touch repeats.gff
     rep_file="repeats.gff"
 fi
-bedtools maskfasta -soft -fi ~{genome.fasta} -bed <(gffread --bed $rep_file) -fo ~{sub(basename(genome.fasta), "\\.(fasta|fa)", ".softmasked.fa")}
-bedtools maskfasta -mc 'N' -fi ~{genome.fasta} -bed <(gffread --bed $rep_file) -fo ~{sub(basename(genome.fasta), "\\.(fasta|fa)", ".hardmasked.fa")}
+bedtools maskfasta -soft -fi ~{genome.fasta} -bed <(awk 'BEGIN{OFS="\t"} $3=="match" {print $1, "repmask", "exon", $4, $5, $6, $7, $8, $9}' ${rep_file}) -fo ~{sub(basename(genome.fasta), "\\.(fasta|fa)", ".softmasked.fa")}
+bedtools maskfasta -mc 'N' -fi ~{genome.fasta} -bed <(awk 'BEGIN{OFS="\t"} $3=="match" {print $1, "repmask", "exon", $4, $5, $6, $7, $8, $9}' ${rep_file}) -fo ~{sub(basename(genome.fasta), "\\.(fasta|fa)", ".hardmasked.fa")}
 
 genome_index=~{genome.index}
 if [[ "${genome_index}" == "" ]];
