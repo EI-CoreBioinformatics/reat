@@ -881,9 +881,9 @@ task Species {
 
 	command <<<
 		set -euxo pipefail
+		mkdir -p config/species
 		if [ ! -d "~{base_config}/species/~{species}" ];
 		then
-			mkdir -p config/species
 			cp -r ~{base_config}/species/generic config/species/generic
 			new_species.pl --species=~{species} --AUGUSTUS_CONFIG_PATH=config
 			sed '/^UTR/s/.*/UTR\ton/' config/species/~{species}/~{species}_parameters.cfg > config/species/~{species}/~{species}_parameters.cfg.utr
@@ -1309,7 +1309,7 @@ task LengthChecker {
 		set -euxo pipefail
 		ln -s ~{genome.fasta}
 		ln -s ~{genome.index} ~{basename(genome.fasta)}.fai
-		gffread -g ~{basename(genome.fasta)} -F --cluster-only --keep-genes -P ~{sep=" " models} > all_models.clustered.gff
+		gffread -g ~{basename(genome.fasta)} --cluster-only --keep-genes -P ~{sep=" " models} > all_models.clustered.gff
 		classify_transcripts ~{"--evalue_filter " + evalue_filter} ~{"--min_pct_cds_fraction " + min_pct_cds_fraction} ~{"--max_tp_utr_complete " + max_tp_utr_complete} ~{"--max_tp_utr " + max_tp_utr} ~{"--min_tp_utr " + min_tp_utr} ~{"--max_fp_utr_complete " + max_fp_utr_complete} ~{"--max_fp_utr " + max_fp_utr} ~{"--min_fp_utr " + min_fp_utr} \
 		-b ~{hits} ~{"--query_start_hard_filter_distance " + query_start_hard_filter_distance} ~{"--query_start_score " + query_start_score} ~{"--query_start_scoring_distance " + query_start_scoring_distance} ~{"--query_end_hard_filter_distance " + query_end_hard_filter_distance} ~{"--query_end_score " + query_end_score} ~{"--query_end_scoring_distance " + query_end_scoring_distance} \
 		-t all_models.clustered.gff ~{"--target_start_hard_filter_distance " + target_start_hard_filter_distance} ~{"--target_start_score " + target_start_score} ~{"--target_start_scoring_distance " + target_start_scoring_distance} ~{"--target_end_hard_filter_distance " + target_end_hard_filter_distance} ~{"--target_end_score " + target_end_score} ~{"--target_end_scoring_distance " + target_end_scoring_distance} ~{"--min_query_coverage_hard_filter " + min_query_coverage_hard_filter} ~{"--min_query_coverage_score " + min_query_coverage_score} ~{"--min_query_coverage_scoring_percentage " + min_query_coverage_scoring_percentage} ~{"--min_target_coverage_hard_filter " + min_target_coverage_hard_filter} ~{"--min_target_coverage_score " + min_target_coverage_score} ~{"--min_target_coverage_scoring_percentage " + min_target_coverage_scoring_percentage} ~{"--max_single_gap_hard_filter " + max_single_gap_hard_filter} ~{"--max_single_gap_score " + max_single_gap_score} ~{"--max_single_gap_scoring_length " + max_single_gap_scoring_length}
