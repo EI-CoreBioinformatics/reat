@@ -44,16 +44,87 @@ Junctions
 ++++++++++
 
 Junctions from RNA-seq data can be determined in several ways.
-By default junctions are collected for all the RNA-seq fastq pair as defined in the 'RNA-seq paired data' section of the CSV file for each sample.
-Alternatively, samples can be combined where appropriate using the 'ei_annotation.wf_align.group_to_samples' parameter in the input.json file.
-This parameter will define arbitrary groupings of the samples present in the short read CSV, with the following format::
+By default junctions are collected for all the RNA-seq fastq pair as defined in the 'RNA-seq paired data' section of the JSON file for each sample, this can be provided using the :code:`--samples` command-line argument.
+Alternatively, samples can be combined where appropriate using the :code:`'ei_annotation.wf_align.group_to_samples'` parameter in the input.json file.
+This parameter will define arbitrary groupings of the samples, with the following format::
 
-  "ei_annotation.wf_align.group_to_samples": {
-    "group1": ["Sample1", "Sample2"],
-    "group2": ["Sample3", "Sample4"]
-  }
+	{
+	  "ei_annotation.paired_samples": [
+		{
+		  "name": "Ara1",
+		  "strand": "fr-firststrand",
+		  "merge": true,
+		  "read_pair": [
+			{
+			  "R1": "inputs/reads/Ara1_1.1.fastq",
+			  "R2": "inputs/reads/Ara1_1.2.fastq"
+			},
+			{
+			  "R1": "inputs/reads/Ara1_2.1.fastq",
+			  "R2": "inputs/reads/Ara1_2.2.fastq"
+			}]
+		},
+		{
+		  "name": "Ara2",
+		  "strand": "fr-firststrand",
+		  "merge": false,
+		  "read_pair": [
+			{
+			  "R1": "inputs/reads/Ara2_1.1.fastq",
+			  "R2": "inputs/reads/Ara2_1.2.fastq"
+			},
+			{
+			  "R1": "inputs/reads/Ara2_2.1.fastq",
+			  "R2": "inputs/reads/Ara2_2.2.fastq"
+			},
+			{
+			  "R1": "inputs/reads/Ara2_3.1.fastq",
+			  "R2": "inputs/reads/Ara2_3.2.fastq"
+			}
+		  ]
+		}
+		{
+		  "name": "Ara3",
+		  "strand": "fr-secondstrand",
+		  "merge": true,
+		  "read_pair": [
+			{
+			  "R1": "inputs/reads/Ara3_1.1.fastq",
+			  "R2": "inputs/reads/Ara3_1.2.fastq"
+			},
+			{
+			  "R1": "inputs/reads/Ara3_2.1.fastq",
+			  "R2": "inputs/reads/Ara3_2.2.fastq"
+			}]
+		},
+		{
+		  "name": "Ara4",
+		  "strand": "fr-secondstrand",
+		  "merge": false,
+		  "read_pair": [
+			{
+			  "R1": "inputs/reads/Ara4_1.1.fastq",
+			  "R2": "inputs/reads/Ara4_1.2.fastq"
+			},
+			{
+			  "R1": "inputs/reads/Ara4_2.1.fastq",
+			  "R2": "inputs/reads/Ara4_2.2.fastq"
+			},
+			{
+			  "R1": "inputs/reads/Ara4_3.1.fastq",
+			  "R2": "inputs/reads/Ara4_3.2.fastq"
+			}
+		  ]
+		}
+	  ],
 
-These groups will be validated against the samples in the CSV files, group names should be unique, samples can only belong to a single group and all samples should be part of a group.
+	  "ei_annotation.wf_align.group_to_samples": {
+		"group1": ["Ara1", "Ara2"],
+		"group2": ["Ara3", "Ara4"]
+	  }
+	}
+
+Group names should be unique, samples can only belong to a single group and all samples should be part of a group.
 
 Long read data
 ^^^^^^^^^^^^^^^^^^
