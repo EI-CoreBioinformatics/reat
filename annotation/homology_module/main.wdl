@@ -198,12 +198,12 @@ task Mikado {
         done
 
         apply_pad="--no-pad "
-
         if [ "" != "~{utrs}" ]
         then
             apply_pad=""
             label="UTRs"
-            echo -e "~{utrs}\t${label}\tTrue\t0\tFalse" >> list.txt
+            gffread -vE ~{utrs} > preprocessed_utrs.gff
+            echo -e "$(pwd -P)/preprocessed_utrs.gff\t${label}\tTrue\t0\tFalse" >> list.txt
         fi
 
         # mikado configure
