@@ -1651,7 +1651,7 @@ task MikadoPick {
 		set -euxo pipefail
 		export TMPDIR=/tmp
 		yaml-merge -s ~{config_file} ~{"-m " + extra_config} -o pick_config.yaml
-		mikado pick --source Mikado_~{output_prefix} --procs=~{task_cpus} ~{"--scoring-file" + scoring_file} \
+		mikado pick --source Mikado_~{output_prefix} --procs=~{task_cpus} ~{"--scoring-file " + scoring_file} \
 		--start-method=spawn --json-conf=pick_config.yaml \
 		--loci-out ~{output_prefix}.loci.gff3 -lv INFO ~{"-db " + mikado_db} \
 		--subloci-out ~{output_prefix}.subloci.gff3 --monoloci-out ~{output_prefix}.monoloci.gff3 \
