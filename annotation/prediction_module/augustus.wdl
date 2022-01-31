@@ -444,12 +444,12 @@ task PrepareIntronHints {
 
 	command <<<
 		if [[ '#' != '~{gold_source}' ]]; then
-			cat ~{intron_gff} | awk -F "\t" '$6==1 {print $0";pri=~{gold_priority};"}' | \
+			cat ~{intron_gff} | sed 's/src=.*/src=~{gold_source}/' | awk -F "\t" '$6==1 {print $0";pri=~{gold_priority};"}' | \
 			sed 's/\tportcullis\t/\tPortcullis_pass_gold_S~{gold_source}P~{gold_priority}\t/' > gold_junctions_S~{gold_source}P~{gold_priority}.gff
 		fi
 
 		if [[ '#' != '~{silver_source}' ]]; then
-			cat ~{intron_gff} | awk -F "\t" '$6<1 {print $0";pri=~{silver_priority};"}' | \
+			cat ~{intron_gff} | sed 's/src=.*/src=~{silver_source}/' | awk -F "\t" '$6<1 {print $0";pri=~{silver_priority};"}' | \
 			sed 's/\tportcullis\t/\tPortcullis_pass_silver_S~{silver_source}P~{silver_priority}\t/' > silver_junctions_S~{silver_source}P~{silver_priority}.gff
 		fi
 	>>>

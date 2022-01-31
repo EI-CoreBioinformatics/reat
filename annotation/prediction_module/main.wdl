@@ -1596,11 +1596,19 @@ task Mikado {
 			touch mikado_prepared.cds.gff
 		fi
 
-		# mikado serialise
-		mikado serialise --force ~{"--junctions " + junctions} \
-		--transcripts ~{output_prefix}-mikado/mikado_prepared.fasta \
-		--orfs mikado_prepared.cds.gff \
-		--json-conf=~{output_prefix}-mikado.yaml --start-method=spawn -od ~{output_prefix}-mikado --procs=~{task_cpus}
+		if ~{defined(junctions)};
+		then
+			junctools convert -o junctions.bed -if igff -of ebed ~{junctions}
+			mikado serialise --force --junctions junctions.bed \
+			--transcripts ~{output_prefix}-mikado/mikado_prepared.fasta \
+			--orfs mikado_prepared.cds.gff \
+			--json-conf=~{output_prefix}-mikado.yaml --start-method=spawn -od ~{output_prefix}-mikado --procs=~{task_cpus}
+		else
+			mikado serialise --force \
+			--transcripts ~{output_prefix}-mikado/mikado_prepared.fasta \
+			--orfs mikado_prepared.cds.gff \
+			--json-conf=~{output_prefix}-mikado.yaml --start-method=spawn -od ~{output_prefix}-mikado --procs=~{task_cpus}
+		fi
 
 	>>>
 
