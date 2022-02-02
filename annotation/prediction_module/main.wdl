@@ -594,12 +594,12 @@ task SoftMaskGenome {
 	}
 
 	output {
-		File soft_masked_genome = sub(basename(genome.fasta), "\\.(fasta|fa)$", ".softmasked.fa")
-		File soft_masked_genome_index = sub(basename(genome.fasta), "\\.(fasta|fa)$", ".softmasked.fa.fai")
-		File hard_masked_genome = sub(basename(genome.fasta), "\\.(fasta|fa)$", ".hardmasked.fa")
-		File hard_masked_genome_index = sub(basename(genome.fasta), "\\.(fasta|fa)$", ".hardmasked.fa.fai")
-		File unmasked_genome = sub(basename(genome.fasta), "\\.(fasta|fa)$", ".unmasked.fa")
-		File unmasked_genome_index = sub(basename(genome.fasta), "\\.(fasta|fa)$", ".unmasked.fa.fai")
+		File soft_masked_genome = sub(basename(genome.fasta), "\\.(fasta|fa|fna)$", ".softmasked.fa")
+		File soft_masked_genome_index = sub(basename(genome.fasta), "\\.(fasta|fa|fna)$", ".softmasked.fa.fai")
+		File hard_masked_genome = sub(basename(genome.fasta), "\\.(fasta|fa|fna)$", ".hardmasked.fa")
+		File hard_masked_genome_index = sub(basename(genome.fasta), "\\.(fasta|fa|fna)$", ".hardmasked.fa.fai")
+		File unmasked_genome = sub(basename(genome.fasta), "\\.(fasta|fa|fna)$", ".unmasked.fa")
+		File unmasked_genome_index = sub(basename(genome.fasta), "\\.(fasta|fa|fna)$", ".unmasked.fa.fai")
 	}
 
 	command <<<
@@ -610,15 +610,15 @@ for line in sys.stdin:
     if line.startswith('>'):
         print(line, end='')
         continue
-    print(line.upper(), end='')" > ~{sub(basename(genome.fasta), "\\.(fasta|fa)", ".unmasked.fa")}
+    print(line.upper(), end='')" > ~{sub(basename(genome.fasta), "\\.(fasta|fa|fna)$", ".unmasked.fa")}
 rep_file=~{repeats_gff}
 if [[ "~{repeats_gff}" == "" ]];
 then
     touch repeats.gff
     rep_file="repeats.gff"
 fi
-bedtools maskfasta -soft -fi ~{genome.fasta} -bed <(awk 'BEGIN{OFS="\t"} $3=="match" {print $1, "repmask", "exon", $4, $5, $6, $7, $8, $9}' ${rep_file}) -fo ~{sub(basename(genome.fasta), "\\.(fasta|fa)", ".softmasked.fa")}
-bedtools maskfasta -mc 'N' -fi ~{genome.fasta} -bed <(awk 'BEGIN{OFS="\t"} $3=="match" {print $1, "repmask", "exon", $4, $5, $6, $7, $8, $9}' ${rep_file}) -fo ~{sub(basename(genome.fasta), "\\.(fasta|fa)", ".hardmasked.fa")}
+bedtools maskfasta -soft -fi ~{genome.fasta} -bed <(awk 'BEGIN{OFS="\t"} $3=="match" {print $1, "repmask", "exon", $4, $5, $6, $7, $8, $9}' ${rep_file}) -fo ~{sub(basename(genome.fasta), "\\.(fasta|fa|fna)$", ".softmasked.fa")}
+bedtools maskfasta -mc 'N' -fi ~{genome.fasta} -bed <(awk 'BEGIN{OFS="\t"} $3=="match" {print $1, "repmask", "exon", $4, $5, $6, $7, $8, $9}' ${rep_file}) -fo ~{sub(basename(genome.fasta), "\\.(fasta|fa|fna)$", ".hardmasked.fa")}
 
 genome_index=~{genome.index}
 if [[ "${genome_index}" == "" ]];
@@ -626,9 +626,9 @@ then
     samtools faidx ~{basename(genome.fasta)}
     genome_index=~{basename(genome.fasta)}.fai
 fi
-ln -s ${genome_index} ~{sub(basename(genome.fasta), "\\.(fasta|fa)", ".softmasked.fa.fai")}
-ln -s ${genome_index} ~{sub(basename(genome.fasta), "\\.(fasta|fa)", ".unmasked.fa.fai")}
-ln -s ${genome_index} ~{sub(basename(genome.fasta), "\\.(fasta|fa)", ".hardmasked.fa.fai")}
+ln -s ${genome_index} ~{sub(basename(genome.fasta), "\\.(fasta|fa|fna)$", ".softmasked.fa.fai")}
+ln -s ${genome_index} ~{sub(basename(genome.fasta), "\\.(fasta|fa|fna)$", ".unmasked.fa.fai")}
+ln -s ${genome_index} ~{sub(basename(genome.fasta), "\\.(fasta|fa|fna)$", ".hardmasked.fa.fai")}
 	>>>
 }
 
