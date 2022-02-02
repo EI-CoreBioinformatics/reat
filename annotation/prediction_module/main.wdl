@@ -1162,7 +1162,7 @@ task GenerateModelProteins {
 		set -euxo pipefail
 		ln -s ~{genome.fasta}
 		ln -s ~{genome.index}
-		cat ~{sep=" " models} | gffread --stream -g ~{basename(genome.fasta)} -y proteins.faa
+		cat ~{sep=" " models} | gffread --stream -S -g ~{basename(genome.fasta)} -y proteins.faa
 	>>>
 }
 
