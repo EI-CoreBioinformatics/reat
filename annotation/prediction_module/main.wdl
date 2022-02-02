@@ -463,6 +463,7 @@ workflow ei_prediction {
 		input:
 			reference = def_reference_genome,
 			extra_config = mikado_config,
+			codon_table = codon_table,
 			prediction = CombineEVM.predictions,
 			utrs = DefineMikadoUTRs.out,
 			junctions = intron_hints,
@@ -1534,6 +1535,7 @@ task Mikado {
 	input {
 		IndexedReference reference
 		File? extra_config
+		Int codon_table
 		Int min_cdna_length = 100
 		Int max_intron_length = 1000000
 		File prediction
@@ -1598,7 +1600,7 @@ task Mikado {
 
 		if [ -s mikado_prepared.nc.fasta ];
 		then
-			prodigal -g 1 -f gff -i mikado_prepared.nc.fasta -o mikado_prepared.cds.gff
+			prodigal -g ~{codon_table} -f gff -i mikado_prepared.nc.fasta -o mikado_prepared.cds.gff
 		else
 			touch mikado_prepared.cds.gff
 		fi
