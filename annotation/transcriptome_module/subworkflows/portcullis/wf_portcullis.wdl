@@ -76,7 +76,7 @@ workflow portcullis {
     call Merge as PassMerge {
         input:
         merge_operator = merge_operator,
-        beds = to_merge_pass,
+        tabs = to_merge_pass,
         output_directory = "portcullis",
         is_pass = true
     }
@@ -84,7 +84,7 @@ workflow portcullis {
     call Merge as FailMerge {
         input:
         merge_operator = merge_operator,
-        beds = to_merge_fail,
+        tabs = to_merge_fail,
         output_directory = "portcullis",
         is_pass = false
     }
@@ -123,9 +123,9 @@ task Full {
     }
 
     output {
-        File pass_tab = "portcullis_out/3-filt/portcullis_filtered.pass.junctions.bed"
+        File pass_tab = "portcullis_out/3-filt/portcullis_filtered.pass.junctions.tab"
 
-        File fail_tab = "portcullis_out/3-filt/portcullis_filtered.fail.junctions.bed"
+        File fail_tab = "portcullis_out/3-filt/portcullis_filtered.fail.junctions.tab"
     }
 
     Int cpus = 8
@@ -204,7 +204,7 @@ task PrepareRef {
 
 task Merge {
     input {
-        Array[File] beds
+        Array[File] tabs
         String merge_operator
         Boolean is_pass
         String output_directory
@@ -237,7 +237,8 @@ task Merge {
         set -euxo pipefail
         mkdir ~{output_directory}
         cd ~{output_directory}
-        (junctools set --prefix=portcullis_merged --output=portcullis.~{type_text}.merged.bed --operator=~{merge_operator} union ~{sep=" " beds} || touch portcullis.~{type_text}.merged.bed)
-        junctools convert -if bed -of igff --output=portcullis.~{type_text}.merged.gff3 portcullis.~{type_text}.merged.bed
+        (junctools set --prefix=portcullis_merged --output=portcullis.~{type_text}.merged.tab --operator=~{merge_operator} union ~{sep=" " tabs} || touch portcullis.~{type_text}.merged.tab)
+        junctools convert -if portcullis -of ebed --output=portcullis.~{type_text}.merged.bed portcullis.~{type_text}.merged.tab
+        junctools convert -if portcullis -of igff --output=portcullis.~{type_text}.merged.gff3 portcullis.~{type_text}.merged.tab
     >>>
 }

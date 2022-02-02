@@ -99,9 +99,11 @@ workflow ei_annotation {
         File? LQ_assembly_summary_stats = wf_align.LQ_assembly_summary_stats
         File? HQ_assembly_summary_stats = wf_align.HQ_assembly_summary_stats
 
+        File? portcullis_pass_tab = wf_align.pass_filtered_tab
         File? portcullis_pass_bed = wf_align.pass_filtered_bed
         File? portcullis_pass_gff3 = wf_align.pass_filtered_gff3
 
+        File? portcullis_fail_tab = wf_align.fail_filtered_tab
         File? portcullis_fail_bed = wf_align.fail_filtered_bed
         File? portcullis_fail_gff3 = wf_align.fail_filtered_gff3
 

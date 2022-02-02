@@ -206,9 +206,11 @@ workflow wf_align {
         IndexedReference clean_reference_index = wf_sanitise.indexed_reference
         File? clean_annotation = wf_sanitise.annotation
 
+        File? pass_filtered_tab = portcullis.pass_tab
         File? pass_filtered_bed = portcullis.pass_bed
         File? pass_filtered_gff3 = portcullis.pass_gff3
 
+        File? fail_filtered_tab = portcullis.fail_tab
         File? fail_filtered_bed = portcullis.fail_bed
         File? fail_filtered_gff3 = portcullis.fail_gff3
 
