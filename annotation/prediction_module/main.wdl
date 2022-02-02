@@ -34,6 +34,7 @@ workflow ei_prediction {
 
 		Int flank = 200
 		Int kfold = 8
+		Int codon_table = 1
 		Int chunk_size = 3000000
 		Int overlap_size = 100000
 		Boolean optimise_augustus = false
@@ -204,6 +205,7 @@ workflow ei_prediction {
 		call GenerateModelProteins {
 			input:
 			genome = def_reference_genome,
+			codon_table = codon_table,
 			models = processed_models
 		}
 
@@ -230,6 +232,7 @@ workflow ei_prediction {
 		call SelfBlastFilter {
 			input:
 			genome = def_reference_genome,
+			codon_table = codon_table,
 			clustered_models = LengthChecker.clustered_models,
 			classification = LengthChecker.nr_classification,
 			extra_training_models = extra_training_models
@@ -1152,6 +1155,7 @@ task GenerateModelProteins {
 	input {
 		IndexedReference genome
 		Array[File] models
+		Int codon_table
 	}
 
 	output {
@@ -1162,7 +1166,8 @@ task GenerateModelProteins {
 		set -euxo pipefail
 		ln -s ~{genome.fasta}
 		ln -s ~{genome.index}
-		cat ~{sep=" " models} | gffread --stream -S -g ~{basename(genome.fasta)} -y proteins.faa
+		cat ~{sep=" " models} | gffread --stream -S -g ~{basename(genome.fasta)} -x proteins.fna
+		cat proteins.fna | seqkit translate -T ~{codon_table} -o proteins.faa
 	>>>
 }
 
@@ -1319,6 +1324,7 @@ task LengthChecker {
 task SelfBlastFilter {
 	input {
 		IndexedReference genome
+		Int codon_table
 		File clustered_models
 		File classification
 		Int? top_n
@@ -1359,7 +1365,8 @@ task SelfBlastFilter {
 		set -euxo pipefail
 		ln -s ~{genome.fasta}
 		ln -s ~{genome.index}
-		gffread -S -y proteins.faa -g ~{basename(genome.fasta)} ~{clustered_models}
+		gffread -S -x proteins.fna -g ~{basename(genome.fasta)} ~{clustered_models}
+		cat proteins.fna | seqkit translate -T ~{codon_table} -o proteins.faa
 
 		diamond makedb --db self -p 8 --in proteins.faa
 		diamond blastp -p 8 -d self -q proteins.faa -f6 qseqid sseqid qlen slen pident length mismatch gapopen qstart qend sstart send evalue bitscore ppos btop > self.hits.tsv

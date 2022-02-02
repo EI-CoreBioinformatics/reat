@@ -479,6 +479,8 @@ available evidence new gene models or update existing ones'''))
     prediction_ap.add_argument("--species", type=str, required=True,
                                help="Name of the species to train models for, if it does not exist in the augustus "
                                     "config path it will be created.")
+    prediction_ap.add_argument("--codon_table", type=int, default=1,
+                               help="NCBI based codon translation table")
     prediction_ap.add_argument("--chunk_size", type=int, default=3000000,
                                help="Maximum length of sequence to be processed by Augustus or EVM")
     prediction_ap.add_argument("--overlap_size", type=int, default=100000,

@@ -21,6 +21,7 @@ def combine_arguments_prediction(cli_arguments):
     cromwell_inputs['ei_prediction.kfold'] = cli_arguments.kfold
     cromwell_inputs['ei_prediction.chunk_size'] = cli_arguments.chunk_size
     cromwell_inputs['ei_prediction.overlap_size'] = cli_arguments.overlap_size
+    cromwell_inputs['ei_prediction.codon_table'] = cli_arguments.codon_table
 
     if cli_arguments.firststrand_expression:
         cromwell_inputs['ei_prediction.firststrand_exon_hints'] = {'bam': cli_arguments.firststrand_expression.name}
