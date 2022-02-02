@@ -1359,7 +1359,7 @@ task SelfBlastFilter {
 		set -euxo pipefail
 		ln -s ~{genome.fasta}
 		ln -s ~{genome.index}
-		gffread -y proteins.faa -g ~{basename(genome.fasta)} ~{clustered_models}
+		gffread -S -y proteins.faa -g ~{basename(genome.fasta)} ~{clustered_models}
 
 		diamond makedb --db self -p 8 --in proteins.faa
 		diamond blastp -p 8 -d self -q proteins.faa -f6 qseqid sseqid qlen slen pident length mismatch gapopen qstart qend sstart send evalue bitscore ppos btop > self.hits.tsv
