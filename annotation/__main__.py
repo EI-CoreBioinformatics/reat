@@ -401,6 +401,8 @@ available evidence new gene models or update existing ones'''))
                              help="Species specific parameters, select a value from the first or second column of "
                                   "https://raw.githubusercontent.com/ogotoh/spaln/master/table/gnm2tab",
                              required=True)
+    homology_ap.add_argument("--codon_table", type=int, default=1,
+                               help="NCBI based codon translation table")
     homology_ap.add_argument("--annotations_csv", type=FileType('r'),
                              help="CSV file with reference annotations to extract proteins/cdnas for spliced alignments"
                                   ". The CSV fields are: genome_fasta,annotation_gff"

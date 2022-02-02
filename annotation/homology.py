@@ -21,6 +21,7 @@ def combine_arguments_homology(cli_arguments):
 
     cromwell_inputs["ei_homology.genome_to_annotate"] = cli_arguments.genome.name
     cromwell_inputs["ei_homology.species"] = cli_arguments.alignment_species
+    cromwell_inputs["ei_homology.codon_table"] = cli_arguments.codon_table
     cromwell_inputs["ei_homology.mikado_config"] = cli_arguments.mikado_config.name
     cromwell_inputs["ei_homology.mikado_scoring"] = cli_arguments.mikado_scoring.name
     cromwell_inputs["ei_homology.output_prefix"] = cli_arguments.output_prefix

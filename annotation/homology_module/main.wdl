@@ -20,6 +20,7 @@ workflow ei_homology {
         File mikado_scoring
         File mikado_config
         String species
+        Int codon_table
         String output_prefix = "xspecies"
         RuntimeAttr? index_attr
         RuntimeAttr? score_attr
@@ -50,7 +51,8 @@ workflow ei_homology {
         scatter (annotation in select_first([annotations])) {
             call PrepareAnnotations {
                 input:
-                annotation = annotation
+                annotation = annotation,
+                codon_table = codon_table
             }
 
             GenomeProteins cleaned_up = object { genome: annotation.genome, annotation_gff: PrepareAnnotations.cleaned_up_gff, protein_sequences: PrepareAnnotations.proteins}
@@ -432,6 +434,7 @@ task PrepareAnnotations {
         Int min_cds_len = 20 # nts
         Int max_intron_len = 200000
         Int min_exon_len = 20
+        Int codon_table
         Array[String] filters = "all"
     }
 
@@ -455,7 +458,8 @@ task PrepareAnnotations {
         --annotation sorted_annotation.gff -g ~{annotation.genome} \
         --max_intron ~{max_intron_len} --min_exon ~{min_exon_len} --min_protein ~{min_cds_len} \
         -x ~{out_prefix}.cdna.fa --bed ~{out_prefix}.bed \
-        -y ~{out_prefix}.proteins.fa -o ~{out_prefix}.clean.extra_attr.gff > ~{out_prefix}.annotation.stats
+        -o ~{out_prefix}.clean.extra_attr.gff > ~{out_prefix}.annotation.stats
+        cat ~{out_prefix}.cdna.fa | seqkit translate -T ~{codon_table} -o ~{out_prefix}.proteins.fa
     >>>
 }
 
