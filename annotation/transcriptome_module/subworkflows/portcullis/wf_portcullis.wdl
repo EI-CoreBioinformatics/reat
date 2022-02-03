@@ -90,9 +90,11 @@ workflow portcullis {
     }
 
     output {
+        File pass_tab = PassMerge.tab
         File pass_bed = PassMerge.bed
         File pass_gff3 = PassMerge.gff3
 
+        File fail_tab = FailMerge.tab
         File fail_bed = FailMerge.bed
         File fail_gff3 = FailMerge.gff3
     }
@@ -229,6 +231,7 @@ task Merge {
   }
 
     output {
+        File tab = output_directory + "/portcullis." + type_text + ".merged.tab"
         File bed = output_directory + "/portcullis." + type_text + ".merged.bed"
         File gff3 = output_directory + "/portcullis." + type_text + ".merged.gff3"
     }
