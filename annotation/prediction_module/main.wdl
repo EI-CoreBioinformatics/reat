@@ -899,6 +899,7 @@ task Species {
 			echo "false" > existed
 		else
 			cp -r ~{base_config}/species/~{species} config/species/~{species}
+			cp -r ~{base_config}/species/generic config/species/generic
 			echo "true" > existed
 		fi
 		cp -R ~{base_config}/{cgp,extrinsic,model,profile,parameters} config/
