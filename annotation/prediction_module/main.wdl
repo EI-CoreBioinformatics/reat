@@ -200,6 +200,9 @@ workflow ei_prediction {
 			}
 		}
 
+	}
+
+	if (defined(processed_homology) || defined(PreprocessTranscriptomic.out)) {
 		Array[File] processed_models = flatten(select_all([PreprocessTranscriptomic.out, processed_homology]))
 		# Generate protein files for the input models
 		call GenerateModelProteins {
@@ -257,10 +260,11 @@ workflow ei_prediction {
 	}
 
 	Boolean train_utr = select_first([train_utr_, false])
+	Int total_models = select_first([num_models, 0])
 
 	# Generate CodingQuarry predictions
 	# Considers lowercase as masked by default
-	if (num_models > 1500 && do_codingquarry) {
+	if (total_models > 1500 && do_codingquarry) {
 		call CodingQuarry {
 			input:
 			genome = def_reference_genome,
@@ -283,7 +287,7 @@ workflow ei_prediction {
 
 	# Generate SNAP predictions
 	# With the -lcmask option treats lowercase as masked nts
-	if (num_models > 1300 && do_snap) {
+	if (total_models > 1300 && do_snap) {
 		call SNAP {
 			input:
 			genome = def_reference_genome,
@@ -295,7 +299,7 @@ workflow ei_prediction {
 
 	# Generate GlimmerHMM predictions
 	# Does not consider any masking
-	if (num_models > 2000 && do_glimmer) {
+	if (total_models > 2000 && do_glimmer) {
 		call GlimmerHMM {
 			input:
 			genome = object {fasta: SoftMaskGenome.hard_masked_genome, index: SoftMaskGenome.hard_masked_genome_index},
@@ -306,7 +310,7 @@ workflow ei_prediction {
 	}
 
 	# Augustus
-	if (num_models > 1000 && do_augustus) {
+	if (total_models > 1000 && do_augustus) {
 		# Feed all to Augustus in the various configurations
 		# Generate training input for augustus (training + test sets)
 		# Transform tranining set to GeneBank format
