@@ -342,7 +342,7 @@ while end < seq_length:
 	end = min(seq_length, start + ~{chunk_size})
 	print(f'{start},{end}', file=chunks_file)
 	print(f'{name}:{start}-{end}')
-	start += end + 1 - ~{overlap}
+	start = end + 1 - ~{overlap}
 chunks_file.close()
 "
 	>>>
