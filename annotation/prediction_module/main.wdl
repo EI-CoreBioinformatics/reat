@@ -782,7 +782,7 @@ task Bam2Hints {
 		then
 			ln -s ~{select_first([bam]).bam}
 			ln -s ~{select_first([bam]).index}
-			samtools depth ~{basename(select_first([bam]).bam)} | \
+			samtools depth <(samtools view -b ~{basename(select_first([bam]).bam)}) | \
 			awk -v OFS='\t' '
 				BEGIN{chrm=""; split("", values); start="undef"; prev_pos=0}
 				{
