@@ -1,0 +1,96 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Script to strip stop codon from protein fasta
+"""
+
+# import libraries
+import os
+import sys
+import argparse
+# import textwrap
+
+
+class StripStopCodon(object):
+    @staticmethod
+    def stripbase(s, suffix):
+        if suffix and s.endswith(suffix):
+            return s[:-1]
+        return s
+
+    def __init__(self, args):
+        self.args = args
+        self.codons = tuple(set(y.strip()
+                                for y in self.args.stop_codons.split(",")))
+
+    def strip_stop_codon(self):
+        header = None
+        seq = list()
+        for line in self.args.fasta:
+            line = line.rstrip()
+            if line.startswith(">"):
+                if header:
+                    print(header)
+                    self.print_seq(seq)
+                    seq = []  # empty the list
+                header = line
+            else:
+                seq.append(line)
+        # EOF
+        print(header)
+        self.print_seq(seq)
+
+    def print_seq(self, s):
+        # print(textwrap.fill(StripStopCodon.stripbase(
+        #     "".join(seq), self.codons), width=self.args.width))
+        if len(s) == 1:
+            print(StripStopCodon.stripbase(s[-1], self.codons))
+        else:
+            print("\n".join(s[0:-1]) + "\n" +
+                  StripStopCodon.stripbase(s[-1], self.codons))
+
+    def run(self):
+        self.strip_stop_codon()
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Script to strip stop codon from protein fasta")
+    parser.add_argument("fasta", nargs='?', type=argparse.FileType(
+        'r'), default=sys.stdin, help="Provide protein fasta file (as a file or stdin)")
+    parser.add_argument("--stop_codons", type=str, default="*,.", nargs='?',
+                        help="Remove these characters from the end of the fasta sequence (default: %(default)s)")
+    # parser.add_argument("-w", "--width", type=int, default=70,
+    #                     help="set line width for fasta sequence lines (default: %(default)s)")
+    args = parser.parse_args()
+
+    StripStopCodon(args).run()
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except BrokenPipeError:
+        # Python flushes standard streams on exit; redirect remaining output
+        # to devnull to avoid another BrokenPipeError at shutdown
+        devnull = os.open(os.devnull, os.O_WRONLY)
+        os.dup2(devnull, sys.stdout.fileno())
+        sys.exit(1)  # Python exits with error code 1 on EPIPE
+
+"""
+# input
+>test1
+MMGVLKSAIGDMLMTFSWVVLSATFGIQTAAIISAGDFQAITWAPLVILTSLIFVYVSIF
+RPQKKKQK*A*
+>test2
+MMGVLKSAIGDMLMTFSWVVLSATFGIQTAAIISAGDFQAITWAPLVILTSLIFVYVSIF
+RPQKKKQK.A.
+
+# output
+>test1
+MMGVLKSAIGDMLMTFSWVVLSATFGIQTAAIISAGDFQAITWAPLVILTSLIFVYVSIF
+RPQKKKQK*A
+>test2
+MMGVLKSAIGDMLMTFSWVVLSATFGIQTAAIISAGDFQAITWAPLVILTSLIFVYVSIF
+RPQKKKQK.A
+"""
