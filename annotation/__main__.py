@@ -475,7 +475,7 @@ available evidence new gene models or update existing ones'''))
     prediction_ap.add_argument("--augustus_config_path", type=str, required=True,
                                help="Template path for augustus config, this path will not be modified as a copy will "
                                     "be created internally for the workflow's use")
-    prediction_ap.add_argument("--extrinsic_config", type=FileType('r'), nargs='*',
+    prediction_ap.add_argument("--extrinsic_config", type=FileType('r'),
                                help="Augustus extrinsic configuration file, defines the boni/mali for each type of "
                                     "feature-evidence combination")
     prediction_ap.add_argument("--species", type=str, required=True,
