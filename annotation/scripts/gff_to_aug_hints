@@ -69,8 +69,9 @@ def transform_gff_to_hint(gff_file, order, priority, source_hint, source_gff, fe
             pre_start = start
             pre_end = end
 
-    print_features(exons, introns, pre_seqid, source_gff, feature_type, pre_score, pre_strand, pre_phase,
-                   pre_attributes)
+    if exons:
+        print_features(exons, introns, pre_seqid, source_gff, feature_type, pre_score, pre_strand, pre_phase,
+                       pre_attributes)
 
 
 def main():
