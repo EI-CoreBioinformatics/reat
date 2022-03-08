@@ -782,7 +782,7 @@ task Bam2Hints {
 		then
 			ln -s ~{select_first([bam]).bam}
 			ln -s ~{select_first([bam]).index}
-			samtools depth ~{basename(select_first([bam]).bam)} | \
+			samtools depth <(samtools view -b ~{basename(select_first([bam]).bam)}) | \
 			awk -v OFS='\t' '
 				BEGIN{chrm=""; split("", values); start="undef"; prev_pos=0}
 				{
@@ -1173,7 +1173,7 @@ task GenerateModelProteins {
 		ln -s ~{genome.fasta}
 		ln -s ~{genome.index}
 		cat ~{sep=" " models} | gffread --stream -S -g ~{basename(genome.fasta)} -x proteins.fna
-		cat proteins.fna | seqkit translate -T ~{codon_table} -o proteins.faa
+		cat proteins.fna | seqkit translate -T ~{codon_table} | strip_stop_codon > proteins.faa
 	>>>
 }
 
@@ -1209,6 +1209,8 @@ task IndexProteinsDatabase {
 
 	command <<<
 		set -euxo pipefail
+		mv ~{db} ~{db}.bkp
+		strip_stop_codon ~{db}.bkp > ~{db}
 		diamond makedb -d ~{basename(db)}.dmnd --in ~{db}
 	>>>
 }
