@@ -760,7 +760,7 @@ task Bam2Hints {
 						print chrm, "w2h_firststrand", "exonpart", start-1, prev_pos+1, ftot, "+", ".", "src=generic_source;pri=0;mult="int(ftot);
 						start="undef";
 						split("", values);
-					} prev_pos = $2; values[$2] = total_coverage;}' > firstrand.Reverse.exonhints.augustus.gff &
+					} prev_pos = $2; values[$2] = total_coverage;}' > firststrand.Reverse.exonhints.augustus.gff &
 
 				samtools depth <(samtools view -b -f 144 ~{basename(select_first([bam]).bam)}) <(samtools view -b -f 64 -F 16 ~{basename(select_first([bam]).bam)}) | \
 				awk -v OFS='\t' '
