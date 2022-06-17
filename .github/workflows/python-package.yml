@@ -57,7 +57,7 @@ jobs:
     - name: Install dependencies
       run: |
         wget -q -O cromwell.jar https://github.com/broadinstitute/cromwell/releases/download/63/cromwell-63.jar
-        pip install pytest-workflow
+        pip install pytest=6.2.5 pytest-workflow
         pip install .
         reat --help
     - name: CLI test
