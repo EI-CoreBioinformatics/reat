@@ -327,11 +327,11 @@ def main():
                 txct.combined_cds_fraction >= min_pct_cds_fraction  # The cDNA is not twice as long as the CDS (indicating too much UTR)
         )
         category = TRANSCRIPT_CLASS[STONE]
-        if fl_category == FL_CATEGORY[COMPLETE] and txct_reqs:
+        if (fl_category == FL_CATEGORY[COMPLETE] or fl_category == FL_CATEGORY[PUTATIVE]) and txct_reqs:
             category = TRANSCRIPT_CLASS[GOLD]
         elif txct_reqs and txct.selected_cds_length >= 900:
             category = TRANSCRIPT_CLASS[SILVER]
-        elif fl_category == FL_CATEGORY[COMPLETE]:
+        elif fl_category == FL_CATEGORY[COMPLETE] or fl_category == FL_CATEGORY[PUTATIVE]:
             category = TRANSCRIPT_CLASS[BRONZE]
         gdfl.append((txct.chrom, txct.strand, txct.start, txct.end, g[0], fl_category,
                      category, txct.attributes['locus'], score))
