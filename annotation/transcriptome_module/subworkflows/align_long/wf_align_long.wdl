@@ -266,6 +266,7 @@ task Minimap2Index {
 	command <<<
 	minimap2 -ax ~{if (is_hq) then "splice:hq" else "splice"} \
 		-t ~{task_cpus} \
+		-I 128G \
 		-d ~{basename(reference)}.mmi ~{reference}
 
 	>>>
