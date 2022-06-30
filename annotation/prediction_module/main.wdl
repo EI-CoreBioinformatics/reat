@@ -646,12 +646,12 @@ task IndexBAM {
 	}
 
 	output {
-		File index = basename(bam)+'.bai'
+		File index = basename(bam)+'.csi'
 	}
 
 	command <<<
 		ln -s ~{bam}
-		samtools index -@ 4 ~{basename(bam)}
+		samtools index -c -@ 4 ~{basename(bam)}
 	>>>
 }
 
