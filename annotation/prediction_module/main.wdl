@@ -428,8 +428,8 @@ workflow ei_prediction {
 		hq_assembly = hq_assembly.processed_gff,
 		lq_assembly = lq_assembly.processed_gff,
 		weights = EVM_weights,
-		segment_size = 5000000,
-		overlap_size = 500000,
+		segment_size = chunk_size,
+		overlap_size = overlap_size,
 		homology_models = processed_homology,
 		transcriptome_models = PreprocessTranscriptomic.out,
 		extra_params = evm_extra_params
