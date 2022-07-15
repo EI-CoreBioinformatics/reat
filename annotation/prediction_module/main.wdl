@@ -35,8 +35,8 @@ workflow ei_prediction {
 		Int flank = 200
 		Int kfold = 8
 		Int codon_table = 1
-		Int chunk_size = 3000000
-		Int overlap_size = 100000
+		Int chunk_size = 5000000
+		Int overlap_size = 500000
 		Boolean optimise_augustus = false
 		Boolean force_train = false
 		Array[File]? augustus_runs # File with SOURCE PRIORITY pairs defining the augustus configurations

@@ -832,13 +832,13 @@ Annotation of the reference, this file will be used as the base for the new anno
     prediction_ap.add_argument(
         "--chunk_size",
         type=int,
-        default=3000000,
+        default=5000000,
         help="Maximum length of sequence to be processed by Augustus or EVM",
     )
     prediction_ap.add_argument(
         "--overlap_size",
         type=int,
-        default=100000,
+        default=500000,
         help="Overlap length for sequences longer than chunk_size for EVM and Augustus",
     )
     prediction_ap.add_argument(
