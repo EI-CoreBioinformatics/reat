@@ -10,8 +10,8 @@ workflow wf_augustus {
 		Boolean train_utr
 		File extrinsic_config
 		Directory augustus_config
-		Int chunk_size = 3000000
-		Int overlap_size = 100000
+		Int chunk_size = 5000000
+		Int overlap_size = 500000
 		String run_id
 		File? intron_hints
 		File? expressed_exon_hints
@@ -320,7 +320,7 @@ task SubdivideSequence {
 	input {
 		File sequence
 		Int chunk_size = 5000000
-		Int overlap = 100000
+		Int overlap = 500000
 	}
 
 	output {
