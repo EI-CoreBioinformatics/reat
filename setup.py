@@ -37,7 +37,7 @@ setup(
     scripts=[script for script in glob.glob("annotation/scripts/*")],
     install_requires=[
         "biopython~=1.78",
-        "mikado~=2.3.0",
+        "mikado~=2.3.4",
         "pyfaidx~=0.5.8",
         "jsonschema~=3.2.0",
         "pyyaml~=5.4.1",
