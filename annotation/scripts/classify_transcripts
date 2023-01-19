@@ -55,18 +55,18 @@ max_distance_end_target = [
 min_coverage_query = [
     90,
     5,
-    70,
-]  # 90% for hard filter, max_score 5 * %cov_qry, 70% to start scoring
+    30,
+]  # 90% for hard filter, max_score 5 * %cov_qry, 30% to start scoring
 min_coverage_target = [
     90,
     5,
-    70,
-]  # 90% for hard filter, max_score 5 * %cov_tgt, 70% to start scoring
+    30,
+]  # 90% for hard filter, max_score 5 * %cov_tgt, 30% to start scoring
 max_single_qgap_length = [
     20,
     5,
-    50,
-]  # 20bp for hard filter, max_score 5 * %long_gap_len/qlen, 50bp to start scoring
+    30,
+]  # 20bp for hard filter, max_score 5 * %long_gap_len/qlen, 30bp to start scoring
 
 # Filtering parameters relating to blast hits
 evalue_filter = 10e-7  #  Maximum evalue allowed
