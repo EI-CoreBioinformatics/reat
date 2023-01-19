@@ -373,7 +373,7 @@ def main():
     )
     logger.info("Done")
 
-    stdev_param = 2.0
+    stdev_param = 1.5
     gdfl = []
 
     df = df.set_index("qseqid")
@@ -396,10 +396,12 @@ def main():
             # If any hit is not partial, then check whether the target mean length is within stdev_param standard
             #  deviations of the query length, if so, classify it as the same classification of the best hit.
             if any(beval_filt.full_length != FL_CATEGORY[PARTIAL]):
-                if (
-                    abs(qlen - beval_filt.slen.mean())
-                    <= stdev_param * beval_filt.slen.std()
-                ):
+                beval_filt_stdev = beval_filt.slen.std()
+                if len(beval_filt.slen) == 1:
+                    beval_filt_stdev = 0.0
+                if abs(qlen - beval_filt.slen.median()) <= min(
+                    stdev_param * beval_filt_stdev, beval_filt.slen.median() / 2
+                ) or abs(qlen - beval_filt.slen.median()) <= min(20, qlen / 10):
                     fl_category = beval_filt.full_length.values[0]
         else:
             score = query.score
