@@ -474,6 +474,11 @@ task AlignProteins {
         Int min_identity = 50
         Int max_per_query = 4
         Int recursion_level = 6
+        String clip = "no_clip"
+        Int term5c_len = 10
+        Int term5i_len = 200000
+        Int term3c_len = 10
+        Int term3i_len = 200000
         String ref_prefix
         String out_prefix
         RuntimeAttr? runtime_attr_override
@@ -499,7 +504,7 @@ task AlignProteins {
         ln ~{sub(genome_index[0], "\.[^/.]+$", "")}.* .
         ln -s ~{genome_proteins.protein_sequences} "./~{basename(genome_proteins.protein_sequences)}"
         spaln -t~{task_cpus} -KP -O0,12 -Q~{recursion_level} -M~{max_per_query}.~{max_per_query} ~{"-T"+species} -dgenome_to_annotate -o ~{out_prefix} -yL~{min_spaln_exon_len} "~{basename(genome_proteins.protein_sequences)+" P"}"
-        sortgrcd -O4 ~{out_prefix}.grd | tee ~{out_prefix}.s | spaln2gff --min_coverage ~{min_coverage} --min_identity ~{min_identity} -s "spaln" > ~{ref_prefix}.alignment.gff
+        sortgrcd -O4 ~{out_prefix}.grd | tee ~{out_prefix}.s | spaln2gff --min_coverage ~{min_coverage} --min_identity ~{min_identity} -s "spaln" | filter_GFF3_terminals.py --protein_alias protein_alias --term5c_len ~{term5c_len}  --term5i_len ~{term5i_len} --term3c_len ~{term3c_len} --term3i_len ~{term3i_len} --clip ~{clip} ~{basename(genome_proteins.protein_sequences)} - > ~{ref_prefix}.alignment.gff
     >>>
 
     runtime {
@@ -522,6 +527,11 @@ task AlignProteinSequences {
         Int min_identity = 50
         Int max_per_query = 4
         Int recursion_level = 6
+        String clip = "no_clip"
+        Int term5c_len = 10
+        Int term5i_len = 200000
+        Int term3c_len = 10
+        Int term3i_len = 200000
         String out_prefix
         RuntimeAttr? runtime_attr_override
     }
@@ -547,7 +557,7 @@ task AlignProteinSequences {
         ln ~{sub(genome_index[0], "\.[^/.]+$", "")}.* .
         ln -s ~{proteins} .
         spaln -t~{task_cpus} -KP -O0,12 -Q~{recursion_level} -M~{max_per_query}.~{max_per_query} ~{"-T"+species} -dgenome_to_annotate -o ~{out_prefix} -yL~{min_spaln_exon_len} ~{basename(proteins)}
-        sortgrcd -O4 ~{out_prefix}.grd | tee ~{out_prefix}.s | spaln2gff --min_coverage ~{min_coverage} --min_identity ~{min_identity} -s "spaln" > ~{basename(proteins)}.alignment.gff
+        sortgrcd -O4 ~{out_prefix}.grd | tee ~{out_prefix}.s | spaln2gff --min_coverage ~{min_coverage} --min_identity ~{min_identity} -s "spaln" | filter_GFF3_terminals.py --protein_alias protein_alias --term5c_len ~{term5c_len}  --term5i_len ~{term5i_len} --term3c_len ~{term3c_len} --term3i_len ~{term3i_len} --clip ~{clip} ~{basename(proteins)} - > ~{basename(proteins)}.alignment.gff
     >>>
 
 

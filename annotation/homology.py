@@ -132,6 +132,26 @@ def combine_arguments_homology(cli_arguments):
             "ei_homology.AlignProteins.recursion_level"
         ] = cli_arguments.alignment_recursion_level
 
+    if cli_arguments.post_alignment_clip:
+        cromwell_inputs[
+            "ei_homology.AlignProteins.clip"
+        ] = cli_arguments.post_alignment_clip
+    if cli_arguments.term5c_len:
+        cromwell_inputs[
+            "ei_homology.AlignProteins.term5c_len"
+        ] = cli_arguments.term5c_len
+    if cli_arguments.term5i_len:
+        cromwell_inputs[
+            "ei_homology.AlignProteins.term5i_len"
+        ] = cli_arguments.term5i_len
+    if cli_arguments.term3c_len:
+        cromwell_inputs[
+            "ei_homology.AlignProteins.term3c_len"
+        ] = cli_arguments.term3c_len
+    if cli_arguments.term3i_len:
+        cromwell_inputs[
+            "ei_homology.AlignProteins.term3i_len"
+        ] = cli_arguments.term3i_len
     return cromwell_inputs
 
 
