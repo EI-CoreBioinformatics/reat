@@ -358,7 +358,7 @@ class FilterGFF3Terminals:
                 # add defaults for mono exonic models
                 mx[
                     ATTRIBUTE
-                ] += ";Q5EXON=0;Q5INTN=0;Q5TERM=0;Q3EXON=0;Q3INTN=0;Q3TERM=0;CLIP5TERM=0;CLIP3TERM=0"
+                ] += ";q5exon=0;q5intn=0;q5term=0;q3exon=0;q3intn=0;q3term=0;clip5term=0;clip3term=0"
 
             # apply filter on multi-exonic models
             elif feat["mono_multi"] == "multi":
@@ -373,41 +373,41 @@ class FilterGFF3Terminals:
                 q3term = False
                 if feat["term5c_len"] <= self.term5c_len:
                     q5exon = True
-                    mx[ATTRIBUTE] += ";Q5EXON=1"
+                    mx[ATTRIBUTE] += ";q5exon=1"
                 else:
                     q5exon = False
-                    mx[ATTRIBUTE] += ";Q5EXON=0"
+                    mx[ATTRIBUTE] += ";q5exon=0"
                 if feat["term5i_len"] >= self.term5i_len:
                     q5intn = True
-                    mx[ATTRIBUTE] += ";Q5INTN=1"
+                    mx[ATTRIBUTE] += ";q5intn=1"
                 else:
                     q5intn = False
-                    mx[ATTRIBUTE] += ";Q5INTN=0"
+                    mx[ATTRIBUTE] += ";q5intn=0"
                 if q5exon and q5intn:
                     q5term = True
-                    mx[ATTRIBUTE] += ";Q5TERM=1"
+                    mx[ATTRIBUTE] += ";q5term=1"
                 else:
                     q5term = False
-                    mx[ATTRIBUTE] += ";Q5TERM=0"
+                    mx[ATTRIBUTE] += ";q5term=0"
 
                 if feat["term3c_len"] <= self.term3c_len:
                     q3exon = True
-                    mx[ATTRIBUTE] += ";Q3EXON=1"
+                    mx[ATTRIBUTE] += ";q3exon=1"
                 else:
                     q3exon = False
-                    mx[ATTRIBUTE] += ";Q3EXON=0"
+                    mx[ATTRIBUTE] += ";q3exon=0"
                 if feat["term3i_len"] >= self.term3i_len:
                     q3intn = True
-                    mx[ATTRIBUTE] += ";Q3INTN=1"
+                    mx[ATTRIBUTE] += ";q3intn=1"
                 else:
                     q3intn = False
-                    mx[ATTRIBUTE] += ";Q3INTN=0"
+                    mx[ATTRIBUTE] += ";q3intn=0"
                 if q3exon and q3intn:
                     q3term = True
-                    mx[ATTRIBUTE] += ";Q3TERM=1"
+                    mx[ATTRIBUTE] += ";q3term=1"
                 else:
                     q3term = False
-                    mx[ATTRIBUTE] += ";Q3TERM=0"
+                    mx[ATTRIBUTE] += ";q3term=0"
 
                 # # USE FOR DEBUGGING
                 # print(
@@ -439,9 +439,9 @@ class FilterGFF3Terminals:
                                 f"Clipping 5prime '{mrna_id}' '{mstrand}' '{self.cds_info[mrna_id][-1]}'"
                             )
                             del self.cds_info[mrna_id][-1]
-                        mx[ATTRIBUTE] += ";CLIP5TERM=1"
+                        mx[ATTRIBUTE] += ";clip5term=1"
                     else:
-                        mx[ATTRIBUTE] += ";CLIP5TERM=0"
+                        mx[ATTRIBUTE] += ";clip5term=0"
 
                     # clip 3'
                     if q3exon:
@@ -457,9 +457,9 @@ class FilterGFF3Terminals:
                                 f"Clipping 3prime '{mrna_id}' '{mstrand}' '{self.cds_info[mrna_id][0]}'"
                             )
                             del self.cds_info[mrna_id][0]
-                        mx[ATTRIBUTE] += ";CLIP3TERM=1"
+                        mx[ATTRIBUTE] += ";clip3term=1"
                     else:
-                        mx[ATTRIBUTE] += ";CLIP3TERM=0"
+                        mx[ATTRIBUTE] += ";clip3term=0"
 
                 # for --clip clip_term_intron-exon option we need to meet q5term or q3term
                 if self.clip in ["clip_term_intron-exon"]:
@@ -477,9 +477,9 @@ class FilterGFF3Terminals:
                                 f"Clipping 5prime '{mrna_id}' '{mstrand}' '{self.cds_info[mrna_id][-1]}'"
                             )
                             del self.cds_info[mrna_id][-1]
-                        mx[ATTRIBUTE] += ";CLIP5TERM=1"
+                        mx[ATTRIBUTE] += ";clip5term=1"
                     else:
-                        mx[ATTRIBUTE] += ";CLIP5TERM=0"
+                        mx[ATTRIBUTE] += ";clip5term=0"
 
                     # clip 3'
                     if q3term:
@@ -495,12 +495,12 @@ class FilterGFF3Terminals:
                                 f"Clipping 3prime '{mrna_id}' '{mstrand}' '{self.cds_info[mrna_id][0]}'"
                             )
                             del self.cds_info[mrna_id][0]
-                        mx[ATTRIBUTE] += ";CLIP3TERM=1"
+                        mx[ATTRIBUTE] += ";clip3term=1"
                     else:
-                        mx[ATTRIBUTE] += ";CLIP3TERM=0"
+                        mx[ATTRIBUTE] += ";clip3term=0"
 
                 if self.clip in ["no_clip"]:
-                    mx[ATTRIBUTE] += ";CLIP5TERM=0;CLIP3TERM=0"
+                    mx[ATTRIBUTE] += ";clip5term=0;clip3term=0"
 
             # extract existing cov and identity based on SPALN
             # For example, current spaln2gff Note attribute format is:
@@ -626,25 +626,25 @@ def main():
         "--term5c_len",
         type=int,
         default=10,
-        help="Minimum five prime terminal CDS exon length (bps).\nAny five prime terminal CDS exon less than the value (default: %(default)s)\nwill be flagged/removed in the GFF3 mRNA attribute (Q5TERM=1) (Q5TERM=0, if not met),\nprovided it also meets the --term5i_len parameter",
+        help="Minimum five prime terminal CDS exon length (bps).\nAny five prime terminal CDS exon less than the value (default: %(default)s)\nwill be flagged/removed in the GFF3 mRNA attribute (q5term=1) (q5term=0, if not met),\nprovided it also meets the --term5i_len parameter",
     )
     parser.add_argument(
         "--term5i_len",
         type=int,
         default=200000,
-        help="Maximum five prime terminal intron length (bps).\nAny five prime terminal intron more than the value (default: %(default)s)\nwill be flagged/removed in the GFF3 mRNA attribute (Q5TERM=1) (Q5TERM=0, if not met),\nprovided it also meets the --term5c_len parameter",
+        help="Maximum five prime terminal intron length (bps).\nAny five prime terminal intron more than the value (default: %(default)s)\nwill be flagged/removed in the GFF3 mRNA attribute (q5term=1) (q5term=0, if not met),\nprovided it also meets the --term5c_len parameter",
     )
     parser.add_argument(
         "--term3c_len",
         type=int,
         default=10,
-        help="Minimum three prime terminal CDS exon length (bps).\nAny three prime terminal CDS exon less than the value (default: %(default)s)\nwill be flagged/removed in the GFF3 mRNA attribute (Q3TERM=1) (Q3TERM=0, if not met),\nprovided it also meets the --term3i_len parameter",
+        help="Minimum three prime terminal CDS exon length (bps).\nAny three prime terminal CDS exon less than the value (default: %(default)s)\nwill be flagged/removed in the GFF3 mRNA attribute (q3term=1) (q3term=0, if not met),\nprovided it also meets the --term3i_len parameter",
     )
     parser.add_argument(
         "--term3i_len",
         type=int,
         default=200000,
-        help="Maximum three prime terminal intron length (bps).\nAny three prime terminal intron more than the value (default: %(default)s)\nwill be flagged/removed in the GFF3 mRNA attribute (Q3TERM=1) (Q3TERM=0, if not met),\nprovided it also meets the --term3c_len parameter",
+        help="Maximum three prime terminal intron length (bps).\nAny three prime terminal intron more than the value (default: %(default)s)\nwill be flagged/removed in the GFF3 mRNA attribute (q3term=1) (q3term=0, if not met),\nprovided it also meets the --term3c_len parameter",
     )
     parser.add_argument(
         "--clip",
