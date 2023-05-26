@@ -15,17 +15,31 @@ class Exon:
         self.phase = phase
 
     def __repr__(self):
-        return "{0}-{1}\t{2}-{3}\t{4}\t{5}".format(self.gstart, self.gend, self.tstart, self.tend, self.phase,
-                                                   self.score)
+        return "{0}-{1}\t{2}-{3}\t{4}\t{5}".format(
+            self.gstart, self.gend, self.tstart, self.tend, self.phase, self.score
+        )
 
     def __str__(self):
-        return "{0}-{1}\t{2}-{3}\t{4}\t{5}".format(self.gstart, self.gend, self.tstart, self.tend, self.phase,
-                                                   self.score)
+        return "{0}-{1}\t{2}-{3}\t{4}\t{5}".format(
+            self.gstart, self.gend, self.tstart, self.tend, self.phase, self.score
+        )
 
 
 class Gene:
-    def __init__(self, uid, genome, gstart, gend, target, strand, score, identity, coverage,
-                 target_length, exons):
+    def __init__(
+        self,
+        uid,
+        genome,
+        gstart,
+        gend,
+        target,
+        strand,
+        score,
+        identity,
+        coverage,
+        target_length,
+        exons,
+    ):
         self.uid = uid
         self.genome = genome
         self.gstart = gstart
@@ -37,7 +51,7 @@ class Gene:
         self.coverage = coverage  # SPALN reported coverage
         self.target_length = target_length
         self.exons = exons
-        if '-' == strand:
+        if "-" == strand:
             self.exons.reverse()
             for e in self.exons:
                 if e.gstart > e.gend:
@@ -47,32 +61,70 @@ class Gene:
         self.gstart = self.exons[0].gstart
 
         alignment_len = self.exons[-1].tend - self.exons[0].tstart + 1
-        if '-' == self.strand:
+        if "-" == self.strand:
             alignment_len = self.exons[0].tstart - self.exons[-1].tend + 1
 
-        self.qcoverage = 100. * alignment_len / self.target_length  # Query coverage
+        self.qcoverage = 100.0 * alignment_len / self.target_length  # Query coverage
 
     def to_gff(self, file=sys.stdout):
-        print("{0}\tALN\tgene\t{1}\t{2}\t{3}\t{4}\t.\tID={5}.g{6};Name={5}.g{6}"
-              .format(self.genome, self.gstart, self.gend, self.score, self.strand, self.target, self.uid),
-              file=file)
-        print("{0}\tALN\tmRNA\t{1}\t{2}\t{3}\t{4}\t.\tID={5}.m{6};Parent={5}.g{6};Name={5}.m{6};"
-              "Note={5}|cov:{7:.2f}|id:{8:.2f}"
-              .format(self.genome, self.gstart, self.gend, self.score, self.strand, self.target, self.uid,
-                      self.qcoverage, self.identity),
-              file=file)
+        print(
+            "{0}\tALN\tgene\t{1}\t{2}\t{3}\t{4}\t.\tID={5}.g{6};Name={5}.g{6}".format(
+                self.genome,
+                self.gstart,
+                self.gend,
+                self.score,
+                self.strand,
+                self.target,
+                self.uid,
+            ),
+            file=file,
+        )
+        print(
+            "{0}\tALN\tmRNA\t{1}\t{2}\t{3}\t{4}\t.\tID={5}.m{6};Parent={5}.g{6};Name={5}.m{6};protein_alias={5};Note={5}|cov:{7:.2f}|id:{8:.2f}".format(
+                self.genome,
+                self.gstart,
+                self.gend,
+                self.score,
+                self.strand,
+                self.target,
+                self.uid,
+                self.qcoverage,
+                self.identity,
+            ),
+            file=file,
+        )
 
         for e, exon in enumerate(self.exons, 1):
             if exon.gstart > exon.gend:
                 exon.gstart, exon.gend = exon.gend, exon.gstart
-            print("{0}\tALN\tCDS\t{1}\t{2}\t{3}\t{4}\t{5}\tID={6}.m{8}.cds{7};Parent={6}.m{8}"
-                  .format(self.genome, exon.gstart, exon.gend, exon.score, self.strand, exon.phase,
-                          self.target, e, self.uid),
-                  file=file)
-            print("{0}\tALN\texon\t{1}\t{2}\t{3}\t{4}\t{5}\tID={6}.m{8}.exon{7};Parent={6}.m{8}"
-                  .format(self.genome, exon.gstart, exon.gend, exon.score, self.strand, exon.phase,
-                          self.target, e, self.uid),
-                  file=file)
+            print(
+                "{0}\tALN\tCDS\t{1}\t{2}\t{3}\t{4}\t{5}\tID={6}.m{8}.cds{7};Parent={6}.m{8}".format(
+                    self.genome,
+                    exon.gstart,
+                    exon.gend,
+                    exon.score,
+                    self.strand,
+                    exon.phase,
+                    self.target,
+                    e,
+                    self.uid,
+                ),
+                file=file,
+            )
+            print(
+                "{0}\tALN\texon\t{1}\t{2}\t{3}\t{4}\t{5}\tID={6}.m{8}.exon{7};Parent={6}.m{8}".format(
+                    self.genome,
+                    exon.gstart,
+                    exon.gend,
+                    exon.score,
+                    self.strand,
+                    exon.phase,
+                    self.target,
+                    e,
+                    self.uid,
+                ),
+                file=file,
+            )
         print("###", file=file)
 
 
@@ -99,9 +151,9 @@ class SpalnReader(object):
         valid = True
         while True:
             try:
-                if self.raw[0] == '!!!!!':
+                if self.raw[0] == "!!!!!":
                     self.advance()
-                if self.raw[0] == '@':
+                if self.raw[0] == "@":
                     self.num_genes += 1
                     genome = self.raw[1]
                     strand = self.raw[2]
@@ -116,8 +168,19 @@ class SpalnReader(object):
                     coverage = float(self.raw[18])
                     target_len = int(self.raw[8])
                     if valid:
-                        return Gene(self.genes[target], genome, gstart, gend, target,
-                                    strand, score, identity, coverage, target_len, exon_list)
+                        return Gene(
+                            self.genes[target],
+                            genome,
+                            gstart,
+                            gend,
+                            target,
+                            strand,
+                            score,
+                            identity,
+                            coverage,
+                            target_len,
+                            exon_list,
+                        )
                     else:
                         self.advance()
                         self.num_exons -= len(exon_list)
@@ -136,22 +199,27 @@ class SpalnReader(object):
                     if gstart <= 0 or gend < 0:
                         valid = False
                     phase = self.raw[18]
-                    if phase == '2':
+                    if phase == "2":
                         phase = 1
-                    if phase == '1':
+                    if phase == "1":
                         phase = 2
-                    exon_list.append(Exon(self.num_exons, gstart, gend, tstart, tend, match, phase))
+                    exon_list.append(
+                        Exon(self.num_exons, gstart, gend, tstart, tend, match, phase)
+                    )
             except StopIteration as _:
                 raise StopIteration("EOF")
             except Exception as e:
-                print(f"Unexpected input at line {self.lineno}:\n {self.line}", file=sys.stderr)
+                print(
+                    f"Unexpected input at line {self.lineno}:\n {self.line}",
+                    file=sys.stderr,
+                )
             self.advance()
 
     def advance(self):
         self.line = self.file.readline()
         self.lineno += 1
         self.raw = self.line.strip().split()
-        if len(self.raw) == 0 or self.raw[0] == '':
+        if len(self.raw) == 0 or self.raw[0] == "":
             raise StopIteration("EOF")
 
 
@@ -169,18 +237,22 @@ def main():
     if not args.spaln_filename:
         spaln_file = sys.stdin
     else:
-        spaln_file = open(args.spaln_filename, 'r')
+        spaln_file = open(args.spaln_filename, "r")
 
     if not args.gff3_output:
         output_gff3 = sys.stdout
     else:
-        output_gff3 = open(args.gff3_output, 'w')
+        output_gff3 = open(args.gff3_output, "w")
 
     print("##gff-version 3", file=output_gff3)
     for g in SpalnReader(spaln_file):
         if g.qcoverage >= min_coverage and g.identity >= min_identity:
-            if all([g.gstart <= e.gstart <= g.gend and
-                    g.gstart <= e.gend <= g.gend for e in g.exons]):
+            if all(
+                [
+                    g.gstart <= e.gstart <= g.gend and g.gstart <= e.gend <= g.gend
+                    for e in g.exons
+                ]
+            ):
                 g.to_gff(output_gff3)
 
 

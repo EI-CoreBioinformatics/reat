@@ -16,10 +16,14 @@ import logging
 # change logging format - https://realpython.com/python-logging/
 # format is - time, process_id, user, log level, message
 logging.basicConfig(
-    format='%(asctime)s - %(process)d - %(name)s - %(levelname)s - %(message)s', datefmt='%d-%b-%y %H:%M:%S')
+    format="%(asctime)s - %(process)d - %(name)s - %(levelname)s - %(message)s",
+    datefmt="%d-%b-%y %H:%M:%S",
+)
 
 
-min_pct_cds_fraction = 0.5  # Minimum percentage of sequence in transcript that is part of the CDS
+min_pct_cds_fraction = (
+    0.5  # Minimum percentage of sequence in transcript that is part of the CDS
+)
 max_tp_utr_complete = 1  # Maximum number of 3' completely UTR exons
 max_tp_utr = 2  # Maximum number of 3' UTR exons
 min_tp_utr = 1  # Minimum number of 3' UTR exons
@@ -28,17 +32,47 @@ max_fp_utr = 3  # Maximum number of 5' UTR exons
 min_fp_utr = 1  # Minimum number of 5' UTR exons
 
 # Scoring parameters
-max_distance_start_query = [10, 5, 30]  # 10bp for hard filter, max_score 5, 30bp from start for score
-max_distance_end_query = [10, 5, 30]  #  10bp for hard filter, max_score 5, 30bp from end for score
-max_distance_start_target = [10, 5, 30]  # 10bp for hard filter, max_score 5, 30bp from start for score
-max_distance_end_target = [10, 5, 30]  # 10bp for hard filter, max_score 5, 30bp from end for score
-min_coverage_query = [90, 5, 70]  # 90% for hard filter, max_score 5 * %cov_qry, 70% to start scoring
-min_coverage_target = [90, 5, 70]  # 90% for hard filter, max_score 5 * %cov_tgt, 70% to start scoring
-max_single_qgap_length = [20, 5, 50]  # 20bp for hard filter, max_score 5 * %long_gap_len/qlen, 50bp to start scoring
+max_distance_start_query = [
+    10,
+    5,
+    30,
+]  # 10bp for hard filter, max_score 5, 30bp from start for score
+max_distance_end_query = [
+    10,
+    5,
+    30,
+]  #  10bp for hard filter, max_score 5, 30bp from end for score
+max_distance_start_target = [
+    10,
+    5,
+    30,
+]  # 10bp for hard filter, max_score 5, 30bp from start for score
+max_distance_end_target = [
+    10,
+    5,
+    30,
+]  # 10bp for hard filter, max_score 5, 30bp from end for score
+min_coverage_query = [
+    90,
+    5,
+    30,
+]  # 90% for hard filter, max_score 5 * %cov_qry, 30% to start scoring
+min_coverage_target = [
+    90,
+    5,
+    30,
+]  # 90% for hard filter, max_score 5 * %cov_tgt, 30% to start scoring
+max_single_qgap_length = [
+    20,
+    5,
+    30,
+]  # 20bp for hard filter, max_score 5 * %long_gap_len/qlen, 30bp to start scoring
 
 # Filtering parameters relating to blast hits
 evalue_filter = 10e-7  #  Maximum evalue allowed
-evalue_filter_difference = 10  #  Filter any hits with evalue < best_evalue - (best_evalue/filter_difference)
+evalue_filter_difference = (
+    10  #  Filter any hits with evalue < best_evalue - (best_evalue/filter_difference)
+)
 top_n_hits = 10  #  After evalue filtering how many hits to take if more than top_n_hits
 
 # Transcript classes and names equivalence
@@ -46,47 +80,58 @@ GOLD = 0
 SILVER = 1
 BRONZE = 2
 STONE = 3
-TRANSCRIPT_CLASS = ['Gold', 'Silver', 'Bronze', 'Stone']
+TRANSCRIPT_CLASS = ["Gold", "Silver", "Bronze", "Stone"]
 
 matrices = Matrices()
-matrix = matrices.get(None, matrices["blosum62"])  # Exact score doesn't matter, so any matrix would do
+matrix = matrices.get(
+    None, matrices["blosum62"]
+)  # Exact score doesn't matter, so any matrix would do
 
-col_names = "qseqid\tsseqid\tqlen\tslen\tpident\tlength\tmismatch\tgapopen\tqstart\tqend\tsstart\tsend\tevalue" \
-            "\tbitscore\tppos\tbtop"
+col_names = (
+    "qseqid\tsseqid\tqlen\tslen\tpident\tlength\tmismatch\tgapopen\tqstart\tqend\tsstart\tsend\tevalue"
+    "\tbitscore\tppos\tbtop"
+)
 
 COMPLETE = 0
 PUTATIVE = 1
 PARTIAL = 2
 FL_CATEGORY = ["Complete", "Putative", "Partial"]
 
+
 def collect_transcript_metrics(row, genes, tid2gid):
     transcript = genes[tid2gid[row.qseqid]][row.qseqid]
     return {
-        'five_utr_num_complete': transcript.five_utr_num_complete,
-        'three_utr_num_complete': transcript.three_utr_num_complete,
-        'five_utr_num': transcript.five_utr_num,
-        'three_utr_num': transcript.three_utr_num,
-        'combined_cds_length': transcript.combined_cds_length,
-        'selected_cds_length': transcript.selected_cds_length,
-        'max_intron_length': transcript.max_intron_length,
-        'locus': transcript.attributes.get('locus', 'NA'),
-        'partialness': transcript.attributes.get('partialness', '')
+        "five_utr_num_complete": transcript.five_utr_num_complete,
+        "three_utr_num_complete": transcript.three_utr_num_complete,
+        "five_utr_num": transcript.five_utr_num,
+        "three_utr_num": transcript.three_utr_num,
+        "combined_cds_length": transcript.combined_cds_length,
+        "selected_cds_length": transcript.selected_cds_length,
+        "max_intron_length": transcript.max_intron_length,
+        "locus": transcript.attributes.get("locus", "NA"),
+        "partialness": transcript.attributes.get("partialness", ""),
     }
 
 
 def calc_coverage(row):
-    query_array = np.zeros([3, row['qlen']], dtype=int)
-    target_array = np.zeros([3, row['slen']], dtype=int)
-    query_array, target_array, aln_span, match = btop_parser.parse_btop(row['btop'],
-                                                                        query_array=query_array,
-                                                                        target_array=target_array,
-                                                                        qpos=row['qstart'],
-                                                                        spos=row['sstart'],
-                                                                        qmult=1,
-                                                                        tmult=1,
-                                                                        matrix=matrix)
+    query_array = np.zeros([3, row["qlen"]], dtype=int)
+    target_array = np.zeros([3, row["slen"]], dtype=int)
+    query_array, target_array, aln_span, match = btop_parser.parse_btop(
+        row["btop"],
+        query_array=query_array,
+        target_array=target_array,
+        qpos=row["qstart"],
+        spos=row["sstart"],
+        qmult=1,
+        tmult=1,
+        matrix=matrix,
+    )
     gap_runs = list(
-        filter(lambda x: x > 10, [len(list(g)) for _, g in itertools.groupby(query_array[1][1:]) if _ == 0]))
+        filter(
+            lambda x: x > 10,
+            [len(list(g)) for _, g in itertools.groupby(query_array[1][1:]) if _ == 0],
+        )
+    )
     return gap_runs
 
 
@@ -99,52 +144,68 @@ def scoring_function(row):
 
     mtsq = max_distance_start_query[2]
     stsq = max_distance_start_query[1]
-    dtsq = row['qstart'] - 1
+    dtsq = row["qstart"] - 1
     score += score_distance(dtsq, mtsq, stsq)
 
-    dteq = row['qlen'] - row['qend']
+    dteq = row["qlen"] - row["qend"]
     mteq = max_distance_end_query[2]
     steq = max_distance_end_query[1]
     score += score_distance(dteq, mteq, steq)
 
     mtst = max_distance_start_target[2]
     stst = max_distance_start_target[1]
-    dtst = row['sstart'] - 1
+    dtst = row["sstart"] - 1
     score += score_distance(dtst, mtst, stst)
 
     mtet = max_distance_end_target[2]
     stet = max_distance_end_target[1]
-    dtet = row['slen'] - row['send']
+    dtet = row["slen"] - row["send"]
     score += score_distance(dtet, mtet, stet)
 
-    query_coverage = row['query_coverage']
-    score += ((query_coverage - min_coverage_query[2]) / (100.0 - min_coverage_query[2])) * min_coverage_query[
-        1] if query_coverage >= min_coverage_query[2] else 0
+    query_coverage = row["query_coverage"]
+    score += (
+        ((query_coverage - min_coverage_query[2]) / (100.0 - min_coverage_query[2]))
+        * min_coverage_query[1]
+        if query_coverage >= min_coverage_query[2]
+        else 0
+    )
 
-    subject_coverage = row['subject_coverage']
-    score += ((subject_coverage - min_coverage_target[2]) / (100.0 - min_coverage_target[2])) * min_coverage_target[
-        1] if subject_coverage >= min_coverage_target[2] else 0
+    subject_coverage = row["subject_coverage"]
+    score += (
+        ((subject_coverage - min_coverage_target[2]) / (100.0 - min_coverage_target[2]))
+        * min_coverage_target[1]
+        if subject_coverage >= min_coverage_target[2]
+        else 0
+    )
 
-    max_gap = max(row['gap_runs'], default=0)
-    score += ((max_single_qgap_length[2] - max_gap) / (max_single_qgap_length[2])) * max_single_qgap_length[
-        1] if max_gap < max_single_qgap_length[2] else 0
+    max_gap = max(row["gap_runs"], default=0)
+    score += (
+        ((max_single_qgap_length[2] - max_gap) / (max_single_qgap_length[2]))
+        * max_single_qgap_length[1]
+        if max_gap < max_single_qgap_length[2]
+        else 0
+    )
 
     return score
 
 
 def evaluate_completeness(row, best_score):
-    if row['partialness'] != '':
+    if row["partialness"] != "":
         return FL_CATEGORY[PARTIAL]
 
-    if row['score'] == best_score and row['partialness'] == '':
+    if row["score"] == best_score and row["partialness"] == "":
         return FL_CATEGORY[COMPLETE]
 
-    if (row['send_dist_gt_lim'] or row['qend_dist_gt_lim']
-            or row['qstart_dist_gt_lim'] or row['sstart_dist_gt_lim']
-            or max(row['gap_runs'], default=0) > max_single_qgap_length[0]
-            or row['query_coverage'] < min_coverage_query[0]
-            or row['subject_coverage'] < min_coverage_target[0]
-            or row['partialness'] != ''):
+    if (
+        row["send_dist_gt_lim"]
+        or row["qend_dist_gt_lim"]
+        or row["qstart_dist_gt_lim"]
+        or row["sstart_dist_gt_lim"]
+        or max(row["gap_runs"], default=0) > max_single_qgap_length[0]
+        or row["query_coverage"] < min_coverage_query[0]
+        or row["subject_coverage"] < min_coverage_target[0]
+        or row["partialness"] != ""
+    ):
         return FL_CATEGORY[PARTIAL]
 
     return FL_CATEGORY[PUTATIVE]
@@ -152,12 +213,22 @@ def evaluate_completeness(row, best_score):
 
 def main():
     stdout_handler = logging.StreamHandler(sys.stdout)
-    logger = logging.getLogger('main')
+    logger = logging.getLogger("main")
     logger.setLevel(logging.INFO)
     logger.addHandler(stdout_handler)
     parser = ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)
-    parser.add_argument('-b', '--blast', type=FileType('r'), help="Transcripts hits against curated proteins")
-    parser.add_argument('-t', '--transcripts_gff', type=FileType('r'), help='Transcripts being analysed in GFF format')
+    parser.add_argument(
+        "-b",
+        "--blast",
+        type=FileType("r"),
+        help="Transcripts hits against curated proteins",
+    )
+    parser.add_argument(
+        "-t",
+        "--transcripts_gff",
+        type=FileType("r"),
+        help="Transcripts being analysed in GFF format",
+    )
     add_classification_parser_parameters(parser)
 
     args = parser.parse_args()
@@ -168,24 +239,18 @@ def main():
     if args.min_pct_cds_fraction:
         min_pct_cds_fraction = args.min_pct_cds_fraction
 
-    if args.max_tp_utr_complete:
-        max_tp_utr_complete = args.max_tp_utr_complete
+    max_tp_utr_complete = args.max_tp_utr_complete
 
-    if args.max_tp_utr:
-        max_tp_utr = args.max_tp_utr
+    max_tp_utr = args.max_tp_utr
 
-    if args.min_tp_utr:
-        min_tp_utr = args.min_tp_utr
+    min_tp_utr = args.min_tp_utr
 
-    if args.max_fp_utr_complete:
-        max_fp_utr_complete = args.max_fp_utr_complete
+    max_fp_utr_complete = args.max_fp_utr_complete
 
-    if args.max_fp_utr:
-        max_fp_utr = args.max_fp_utr
+    max_fp_utr = args.max_fp_utr
 
-    if args.min_fp_utr:
-        min_fp_utr = args.min_fp_utr
-###
+    min_fp_utr = args.min_fp_utr
+    ###
     if args.query_start_hard_filter_distance:
         max_distance_start_query[0] = args.query_start_hard_filter_distance
 
@@ -194,16 +259,7 @@ def main():
 
     if args.query_start_scoring_distance:
         max_distance_start_query[2] = args.query_start_scoring_distance
-####
-    if args.target_start_hard_filter_distance:
-        max_distance_start_target[0] = args.target_start_hard_filter_distance
-
-    if args.target_start_score:
-        max_distance_start_target[1] = args.target_start_score
-
-    if args.target_start_scoring_distance:
-        max_distance_start_target[2] = args.target_start_scoring_distance
-####
+    ####
     if args.query_end_hard_filter_distance:
         max_distance_end_query[0] = args.query_end_hard_filter_distance
 
@@ -212,7 +268,16 @@ def main():
 
     if args.query_end_scoring_distance:
         max_distance_end_query[2] = args.query_end_scoring_distance
-####
+    ####
+    if args.target_start_hard_filter_distance:
+        max_distance_start_target[0] = args.target_start_hard_filter_distance
+
+    if args.target_start_score:
+        max_distance_start_target[1] = args.target_start_score
+
+    if args.target_start_scoring_distance:
+        max_distance_start_target[2] = args.target_start_scoring_distance
+    ####
     if args.target_end_hard_filter_distance:
         max_distance_end_target[0] = args.target_end_hard_filter_distance
 
@@ -221,7 +286,7 @@ def main():
 
     if args.target_end_scoring_distance:
         max_distance_end_target[2] = args.target_end_scoring_distance
-###
+    ###
     if args.min_query_coverage_hard_filter:
         min_coverage_query[0] = args.min_query_coverage_hard_filter
 
@@ -230,7 +295,7 @@ def main():
 
     if args.min_query_coverage_scoring_percentage:
         min_coverage_query[2] = args.min_query_coverage_scoring_percentage
-###
+    ###
     if args.min_target_coverage_hard_filter:
         min_coverage_target[0] = args.min_target_coverage_hard_filter
 
@@ -239,7 +304,7 @@ def main():
 
     if args.min_target_coverage_scoring_percentage:
         min_coverage_target[2] = args.min_target_coverage_scoring_percentage
-###
+    ###
     if args.max_single_gap_hard_filter:
         max_single_qgap_length[0] = args.max_single_gap_hard_filter
     if args.max_single_gap_score:
@@ -247,57 +312,76 @@ def main():
     if args.max_single_gap_scoring_length:
         max_single_qgap_length[2] = args.max_single_gap_scoring_length
 
-    best_score = sum([x[1] for x in [max_distance_start_query,
-                                 max_distance_end_query,
-                                 max_distance_start_target,
-                                 max_distance_end_target,
-                                 min_coverage_query,
-                                 min_coverage_target,
-                                 max_single_qgap_length]])
+    best_score = sum(
+        [
+            x[1]
+            for x in [
+                max_distance_start_query,
+                max_distance_end_query,
+                max_distance_start_target,
+                max_distance_end_target,
+                min_coverage_query,
+                min_coverage_target,
+                max_single_qgap_length,
+            ]
+        ]
+    )
 
-    df = pd.read_csv(args.blast, delimiter='\t',
-                     names=col_names.split('\t'), comment="#")
-    names = df['qseqid'].unique().tolist()
+    df = pd.read_csv(
+        args.blast, delimiter="\t", names=col_names.split("\t"), comment="#"
+    )
+    names = df["qseqid"].unique().tolist()
     logger.info(f"Number of genes: {len(names)}")
     logger.info(f"Before evalue filtering: {df.shape}")
     df = df[df.evalue.lt(evalue_filter)]
     logger.info(f"After evalue filtering: {df.shape}")
     mlog10 = lambda x: -1000 if x == 0 else int(log10(x))
-    df['evalue'] = df['evalue'].apply(mlog10)
-    logger.info('Applied evalue transformation')
+    df["evalue"] = df["evalue"].apply(mlog10)
+    logger.info("Applied evalue transformation")
     df["subject_coverage"] = 100 * (df.send - df.sstart + 1) / df.slen
     df["query_coverage"] = 100 * (df.qend - df.qstart + 1) / df.qlen
     df["min_coverage"] = df[["subject_coverage", "query_coverage"]].apply(min, axis=1)
-    df['send_dist_gt_lim'] = (df["slen"] - df["send"]) > max_distance_end_target[0]
-    df['qend_dist_gt_lim'] = (df['qlen'] - df['qend']) > max_distance_end_query[0]
-    df['qstart_dist_gt_lim'] = df.qstart > max_distance_start_query[0]
-    df['sstart_dist_gt_lim'] = df.sstart > max_distance_start_target[0]
-    df['gap_runs'] = df.apply(calc_coverage, axis=1)
+    df["send_dist_gt_lim"] = (df["slen"] - df["send"]) > max_distance_end_target[0]
+    df["qend_dist_gt_lim"] = (df["qlen"] - df["qend"]) > max_distance_end_query[0]
+    df["qstart_dist_gt_lim"] = df.qstart > max_distance_start_query[0]
+    df["sstart_dist_gt_lim"] = df.sstart > max_distance_start_target[0]
+    df["gap_runs"] = df.apply(calc_coverage, axis=1)
     logger.info("Calculated gap_runs")
-    df['score'] = df.apply(scoring_function, axis=1)
+    df["score"] = df.apply(scoring_function, axis=1)
     logger.info("Calculated scores")
 
     # get a list of names
     genes, tid2gid = minimal_gxf_parser(args.transcripts_gff.name)
 
-    applied_df = df.apply(collect_transcript_metrics, args=(genes, tid2gid), axis='columns', result_type='expand')
+    applied_df = df.apply(
+        collect_transcript_metrics,
+        args=(genes, tid2gid),
+        axis="columns",
+        result_type="expand",
+    )
     logger.info("Collected transcript metrics")
-    df = pd.concat([df, applied_df], axis='columns')
-    df['full_length'] = df.apply(evaluate_completeness, axis=1, args=(best_score,))
+    df = pd.concat([df, applied_df], axis="columns")
+    df["full_length"] = df.apply(evaluate_completeness, axis=1, args=(best_score,))
     logger.info("Evaluated completeness")
-    df['full_length'] = pd.Categorical(df['full_length'], categories=FL_CATEGORY, ordered=True)
-    df.sort_values(['qseqid', 'full_length', 'score', 'evalue'], ascending=(False, True, False, True), inplace=True)
+    df["full_length"] = pd.Categorical(
+        df["full_length"], categories=FL_CATEGORY, ordered=True
+    )
+    df.sort_values(
+        ["qseqid", "full_length", "score", "evalue"],
+        ascending=(False, True, False, True),
+        inplace=True,
+    )
     logger.info("Done")
 
-    stdev_param = 2.0
+    stdev_param = 1.5
     gdfl = []
 
-    df = df.set_index('qseqid')
+    df = df.set_index("qseqid")
     df.sort_index()
 
     logger.info("Classifying")
 
-    for g in df.groupby('qseqid'):
+    for g in df.groupby("qseqid"):
         query = g[1]
         fl_category = FL_CATEGORY[PARTIAL]
         if len(query.shape) > 1:
@@ -312,7 +396,12 @@ def main():
             # If any hit is not partial, then check whether the target mean length is within stdev_param standard
             #  deviations of the query length, if so, classify it as the same classification of the best hit.
             if any(beval_filt.full_length != FL_CATEGORY[PARTIAL]):
-                if abs(qlen - beval_filt.slen.mean()) <= stdev_param * beval_filt.slen.std():
+                beval_filt_stdev = beval_filt.slen.std()
+                if len(beval_filt.slen) == 1:
+                    beval_filt_stdev = 0.0
+                if abs(qlen - beval_filt.slen.median()) <= min(
+                    stdev_param * beval_filt_stdev, beval_filt.slen.median() / 2
+                ) or abs(qlen - beval_filt.slen.median()) <= min(20, qlen / 10):
                     fl_category = beval_filt.full_length.values[0]
         else:
             score = query.score
@@ -322,28 +411,60 @@ def main():
 
         txct = genes[tid2gid[g[0]]][g[0]]
         txct_reqs = (
-                min_fp_utr <= txct.five_utr_num <= max_fp_utr and txct.five_utr_num_complete <= max_fp_utr_complete and  # 5' is complete or not too many
-                min_tp_utr <= txct.three_utr_num <= max_tp_utr and txct.three_utr_num_complete <= max_tp_utr_complete and  # 3' is complete or not too many
-                txct.combined_cds_fraction >= min_pct_cds_fraction  # The cDNA is not twice as long as the CDS (indicating too much UTR)
+            min_fp_utr <= txct.five_utr_num <= max_fp_utr
+            and txct.five_utr_num_complete <= max_fp_utr_complete
+            and min_tp_utr  # 5' is complete or not too many
+            <= txct.three_utr_num
+            <= max_tp_utr
+            and txct.three_utr_num_complete <= max_tp_utr_complete
+            and txct.combined_cds_fraction  # 3' is complete or not too many
+            >= min_pct_cds_fraction  # The cDNA is not twice as long as the CDS (indicating too much UTR)
         )
         category = TRANSCRIPT_CLASS[STONE]
-        if (fl_category == FL_CATEGORY[COMPLETE] or fl_category == FL_CATEGORY[PUTATIVE]) and txct_reqs:
+        if (
+            fl_category == FL_CATEGORY[COMPLETE] or fl_category == FL_CATEGORY[PUTATIVE]
+        ) and txct_reqs:
             category = TRANSCRIPT_CLASS[GOLD]
         elif txct_reqs and txct.selected_cds_length >= 900:
             category = TRANSCRIPT_CLASS[SILVER]
-        elif fl_category == FL_CATEGORY[COMPLETE] or fl_category == FL_CATEGORY[PUTATIVE]:
+        elif (
+            fl_category == FL_CATEGORY[COMPLETE] or fl_category == FL_CATEGORY[PUTATIVE]
+        ):
             category = TRANSCRIPT_CLASS[BRONZE]
-        gdfl.append((txct.chrom, txct.strand, txct.start, txct.end, g[0], fl_category,
-                     category, txct.attributes['locus'], score))
+        gdfl.append(
+            (
+                txct.chrom,
+                txct.strand,
+                txct.start,
+                txct.end,
+                g[0],
+                fl_category,
+                category,
+                txct.attributes["locus"],
+                score,
+            )
+        )
 
     logger.info("Generating output")
-    gdf = pd.DataFrame(gdfl, columns=['chrom', 'strand', 'start', 'end', 'qseqid', 'full_length', 'category', 'locus',
-                                      'score'])
-    gdf['category'] = pd.Categorical(gdf['category'], TRANSCRIPT_CLASS, ordered=True)
+    gdf = pd.DataFrame(
+        gdfl,
+        columns=[
+            "chrom",
+            "strand",
+            "start",
+            "end",
+            "qseqid",
+            "full_length",
+            "category",
+            "locus",
+            "score",
+        ],
+    )
+    gdf["category"] = pd.Categorical(gdf["category"], TRANSCRIPT_CLASS, ordered=True)
     gdf.sort_values(by=["category", "score"], ascending=[True, False], inplace=True)
-    gdf.to_csv("transcripts.classification.tsv", sep='\t', index=False)
-    gdf.drop_duplicates(subset='locus', inplace=True)
-    gdf.to_csv("transcript.locus.classification.tsv", sep='\t', index=False)
+    gdf.to_csv("transcripts.classification.tsv", sep="\t", index=False)
+    gdf.drop_duplicates(subset="locus", inplace=True)
+    gdf.to_csv("transcript.locus.classification.tsv", sep="\t", index=False)
 
     # Print Gold, Silver and Bronze to different files?
     for category in TRANSCRIPT_CLASS[:-1]:
@@ -352,9 +473,9 @@ def main():
             for gene in genes.values():
                 for txct in gene:
                     if txct.id in cat_names:
-                        print(gene.__str__().split('\n')[0], file=category_gff)
+                        print(gene.__str__().split("\n")[0], file=category_gff)
                         print(txct.format("gff"), file=category_gff)
-                        print('###', file=category_gff)
+                        print("###", file=category_gff)
 
     logger.info("Done")
 

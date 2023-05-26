@@ -798,6 +798,40 @@ Annotation of the reference, this file will be used as the base for the new anno
         help="Filter alignments scored against its original structure with a CDS junction f1 "
         "lower than this value",
     )
+    homology_ap.add_argument(
+        "--post_alignment_clip",
+        choices=["no_clip", "clip_term_exon", "clip_term_intron-exon",],
+        help="Filter questionable alignment results by the filter types specified\n"
+        "Select from one of the choices:\n"
+        "'no_clip': Do not clip terminal features.\n"
+        "'clip_term_exon': Clip short terminal exon if either --term5c_len or --term3c_len are\n   met (preferred option for plants like annotation).\n"
+        "'clip_term_intron-exon': Clip short terminal exon/long terminal intron if both\n   --term5c_len,--term5i_len or --term3c_len,--term3i_len are met (preferred\n   option for human like annotation).\n",
+        default="no_clip",
+    )
+    homology_ap.add_argument(
+        "--term5c_len",
+        type=int,
+        help="Minimum five prime terminal CDS exon length (bps).\nAny five prime terminal CDS exon less than the value (default: %(default)s)\nwill be flagged/removed in the GFF3 mRNA attribute (Q5TERM=1) (Q5TERM=0, if not met),\nprovided it also meets the --term5i_len parameter",
+        default=10,
+    )
+    homology_ap.add_argument(
+        "--term5i_len",
+        type=int,
+        help="Maximum five prime terminal intron length (bps).\nAny five prime terminal intron more than the value (default: %(default)s)\nwill be flagged/removed in the GFF3 mRNA attribute (Q5TERM=1) (Q5TERM=0, if not met),\nprovided it also meets the --term5c_len parameter",
+        default=200000,
+    )
+    homology_ap.add_argument(
+        "--term3c_len",
+        type=int,
+        help="Minimum three prime terminal CDS exon length (bps).\nAny three prime terminal CDS exon less than the value (default: %(default)s)\nwill be flagged/removed in the GFF3 mRNA attribute (Q3TERM=1) (Q3TERM=0, if not met),\nprovided it also meets the --term3i_len parameter",
+        default=10,
+    )
+    homology_ap.add_argument(
+        "--term3i_len",
+        type=int,
+        help="Maximum three prime terminal intron length (bps).\nAny three prime terminal intron more than the value (default: %(default)s)\nwill be flagged/removed in the GFF3 mRNA attribute (Q3TERM=1) (Q3TERM=0, if not met),\nprovided it also meets the --term3c_len parameter",
+        default=200000,
+    )
 
     prediction_ap = subparsers.add_parser(
         "prediction", help="Prediction module", formatter_class=ReatHelpFormatter
