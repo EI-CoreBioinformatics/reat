@@ -7,7 +7,7 @@ import sys
 from Mikado.parsers import parser_factory
 from Mikado.transcripts import Gene, Transcript
 
-VERSION = '0.6.1'
+VERSION = '0.7.1'
 RUN_METADATA = "run_details.json"
 
 UTR_SELECTION_OPTIONS = ('augustus', 'gold', 'silver', 'bronze', 'all', 'hq_assembly', 'lq_assembly')
