@@ -31,4 +31,6 @@ dependencies:
   - snap=2013_11_29
   - codingquarry=2.0
   - augustus=3.4.0
+  - helixer=0.3.1
   - evidencemodeler=1.1.1
+
