@@ -176,14 +176,14 @@ task PrepareRef {
         File annotation
         RuntimeAttr? runtime_attr_override
     }
-    
+
     RuntimeAttr default_attr = object {
         cpu_cores: 1,
         mem_gb: 4,
         max_retries: 1,
         queue: ""
     }
-    
+
     RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
 
 
@@ -212,7 +212,7 @@ task Merge {
         String output_directory
         RuntimeAttr? runtime_attr_override
     }
-    
+
     String type_text = if(is_pass) then "pass" else "fail"
     RuntimeAttr default_attr = object {
         cpu_cores: 1,
@@ -220,7 +220,7 @@ task Merge {
         max_retries: 1,
         queue: ""
     }
-    
+
     RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
 
 
@@ -240,7 +240,12 @@ task Merge {
         set -euxo pipefail
         mkdir ~{output_directory}
         cd ~{output_directory}
-        (junctools set --prefix=portcullis_merged --output=portcullis.~{type_text}.merged.tab --operator=~{merge_operator} union ~{sep=" " tabs} || touch portcullis.~{type_text}.merged.tab)
+        num_files=~{length(tabs)}
+        if [ $num_files -eq 1 ]; then
+            ln -s ~{tabs[0]} portcullis.~{type_text}.merged.tab
+        else
+            junctools set --prefix=portcullis_merged --output=portcullis.~{type_text}.merged.tab --operator=~{merge_operator} union ~{sep=" " tabs} || touch portcullis.~{type_text}.merged.tab
+        fi
         junctools convert -if portcullis -of ebed --output=portcullis.~{type_text}.merged.bed portcullis.~{type_text}.merged.tab
         junctools convert -if portcullis -of igff --output=portcullis.~{type_text}.merged.gff3 portcullis.~{type_text}.merged.tab
     >>>
