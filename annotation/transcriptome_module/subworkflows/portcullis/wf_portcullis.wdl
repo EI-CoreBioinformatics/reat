@@ -216,7 +216,7 @@ task Merge {
     String type_text = if(is_pass) then "pass" else "fail"
     RuntimeAttr default_attr = object {
         cpu_cores: 1,
-        mem_gb: 4,
+        mem_gb: 24,
         max_retries: 1,
         queue: ""
     }
