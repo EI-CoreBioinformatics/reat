@@ -137,6 +137,16 @@ Running reat under slurm requires changing the `-Dconfig.file` argument from the
 java -Dconfig.file=reat/cromwell_configuration/slurm.conf -jar cromwell.jar
 ```
 
+## Workflow
+
+### Transcriptome Workflow
+![Alt text](/docs/_static/REAT_Transcriptome.png)
+
+### Homology Workflow
+![Alt text](/docs/_static/REAT_Homology.png)
+
+### Prediction Workflow
+![Alt text](/docs/_static/REAT_Prediction.png)
 
 ## Releasing new versions
 
