@@ -15,7 +15,10 @@ workflow ei_prediction {
 		Boolean do_glimmer = false
 		Directory? glimmer_training
 		Boolean do_snap = false
+		Boolean do_helixer = false
 		File? snap_training
+		String? temp_dir
+		
 		Boolean do_augustus = true
 		Array[File]? transcriptome_models  # Classify and divide into Gold, Silver and Bronze
 		Array[File]? homology_models  # Take as is
@@ -31,6 +34,8 @@ workflow ei_prediction {
 
 		File? repeats_gff  # These are passed through to augustus
 		File? extra_training_models  # These models are taken as-is directly as results from the training model selection
+		File? helixer_model #model used for helixer gene model prediction
+
 
 		Int flank = 200
 		Int kfold = 8
@@ -51,7 +56,7 @@ workflow ei_prediction {
 		String? snap_extra_params
 		String? augustus_extra_params
 		String? evm_extra_params
-
+		String? helixer_extra_params
 		RuntimeAttr augustus_resources
 	}
 
@@ -262,6 +267,18 @@ workflow ei_prediction {
 	Boolean train_utr = select_first([train_utr_, false])
 	Int total_models = select_first([num_models, 0])
 
+	#Run helixer predictions if GPU is available
+	if (do_helixer) {
+		call Helixer {
+			input:
+			genome = def_reference_genome,
+			model = helixer_model,
+			temp_dir = temp_dir,
+			species = species,
+			extra_params = helixer_extra_params
+		}
+	}
+
 	# Generate CodingQuarry predictions
 	# Considers lowercase as masked by default
 	if (total_models > 1500 && do_codingquarry) {
@@ -421,6 +438,7 @@ workflow ei_prediction {
 		augustus_predictions = def_augustus_predictions,
 		snap_predictions = SNAP.predictions,
 		glimmer_predictions = GlimmerHMM.predictions,
+		helixer_predictions = Helixer.predictions,
 		codingquarry_predictions = CodingQuarry.predictions,
 		codingquarry_fresh_predictions = CodingQuarryFresh.predictions,
 		hq_protein_alignments = hq_protein.processed_gff,
@@ -514,6 +532,7 @@ workflow ei_prediction {
 		File? codingquarry = EVM.formatted_codingquarry_predictions
 		File? codingquarry_fresh = EVM.formatted_codingquarry_fresh_predictions
 		File? augustus_abinitio = EVM.formatted_augustus_abinitio_predictions
+		File? helixer = EVM.formatted_helixer_predictions
 		Array[File]? augustus = EVM.formatted_augustus_runs_predictions
 		File evm_predictions = CombineEVM.predictions
 		File mikado_loci = MikadoPick.loci
@@ -1157,6 +1176,56 @@ task GlimmerHMM {
 	>>>
 }
 
+
+task Helixer {
+	input {
+		IndexedReference genome
+		File model
+		Int sequence_length
+		String species
+		String temp_dir
+		RuntimeAttr? resources
+	}
+
+    RuntimeAttr default_attr = object {
+        constraints: "avx|avx2|sse4",
+        cpu_cores: 8,
+        mem_gb: 64,
+        max_retries: 1,
+        queue: "ei-a100,ei-gpu"
+    }
+
+    RuntimeAttr runtime_attr = select_first([resources, default_attr])
+
+    Int cpus = select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
+	Int gpus = select_first([runtime_attr.gpu, default_attr.gpu])
+
+    runtime {
+        cpu: cpus
+        memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
+        constraints: select_first([runtime_attr.constraints, default_attr.constraints])
+        maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+        queue: select_first([runtime_attr.queue, default_attr.queue])
+		gpu: gpus
+    }
+
+
+	output {
+		File predictions = "helixer.predictions.gff3"
+	}
+
+	command <<<
+		set -euxo pipefail
+		ln -s ~{genome.fasta}
+		Helixer.py --model-filepath \
+		--temporary-dir ~{temp_dir} \
+		--species ~{species} \
+		--fasta-path ~{genome.fasta} \
+		~{helixer_extra_params} \
+		--gff-output-path  helixer.predictions.gff3
+	>>>
+}
+
 task GenerateModelProteins {
 	input {
 		IndexedReference genome
@@ -1393,6 +1462,7 @@ task EVM {
 		File? augustus_abinitio
 		File? snap_predictions
 		File? glimmer_predictions
+		File? helixer_predictions
 		File? codingquarry_predictions
 		File? codingquarry_fresh_predictions
 		File? hq_protein_alignments
@@ -1426,6 +1496,7 @@ task EVM {
 		File? formatted_codingquarry_fresh_predictions = "codingquarry_fresh.predictions.gff"
 		File? formatted_augustus_abinitio_predictions = "augustus_abinitio.predictions.gff"
 		Array[File]? formatted_augustus_runs_predictions = glob("augustus_*.predictions.gff")
+		File? formatted_helixer_predictions = "helixer.predictions.gff"
 
 		File? formatted_snap_predictions_stats = "snap.predictions.stats"
 		File? formatted_glimmer_predictions_stats = "glimmer.predictions.stats"
@@ -1433,6 +1504,7 @@ task EVM {
 		File? formatted_codingquarry_fresh_predictions_stats = "codingquarry_fresh.predictions.stats"
 		File? formatted_augustus_abinitio_predictions_stats = "augustus_abinitio.predictions.stats"
 		Array[File]? formatted_augustus_runs_predictions_stats = glob("augustus_*.predictions.stats")
+		File? formatted_helixer_predictions_stats = "helixer.predictions.gff.stats"
 	}
 
 	command <<<
@@ -1485,6 +1557,11 @@ task EVM {
 		if [ "~{augustus_abinitio}" != "" ]; then
 			cat ~{augustus_abinitio} | gff_to_evm augustus | awk -v OFS="\t" '($2="AUGUSTUS_RUN_ABINITIO") && NF>8' | tee augustus_abinitio.predictions.gff >> predictions.gff
 			mikado util stats augustus_abinitio.predictions.gff augustus_abinitio.predictions.stats
+		fi
+
+		if [ "~{helixer_predictions}" != "" ]; then
+			cat ~{helixer_predictions} | gff_to_evm glimmer | tee helixer.predictions.gff >> predictions.gff
+			mikado util stats helixer.predictions.gff helixer.predictions.stats
 		fi
 
 		augustus_run=0

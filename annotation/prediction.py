@@ -59,6 +59,9 @@ def combine_arguments_prediction(cli_arguments):
     if cli_arguments.repeats:
         cromwell_inputs['ei_prediction.repeats_gff'] = cli_arguments.repeats.name
 
+    if cli_arguments.helixer_model:
+        cromwell_inputs['ei_prediction.helixer_model'] = cli_arguments.helixer_model
+
     if cli_arguments.force_train:
         cromwell_inputs['ei_prediction.force_train'] = cli_arguments.force_train
 
@@ -89,6 +92,9 @@ def combine_arguments_prediction(cli_arguments):
     if cli_arguments.mikado_utr_files:
         cromwell_inputs['ei_prediction.mikado_utr_files'] = ' '.join(cli_arguments.mikado_utr_files)
 
+    if cli_arguments.temp_dir:
+        cromwell_inputs['ei_prediction.temp_dir'] = cli_arguments.temp_dir
+
     if cli_arguments.do_glimmer:
         cromwell_inputs['ei_prediction.do_glimmer'] = 'true'
         if cli_arguments.do_glimmer is not True and os.access(cli_arguments.do_glimmer, os.R_OK):
@@ -103,7 +109,10 @@ def combine_arguments_prediction(cli_arguments):
         cromwell_inputs['ei_prediction.do_codingquarry'] = 'true'
         if cli_arguments.do_codingquarry is not True and os.access(cli_arguments.do_codingquarry, os.R_OK):
             cromwell_inputs['ei_prediction.codingquarry_training'] = cli_arguments.do_codingquarry
-
+    
+    if cli_arguments.do_helixer:
+        cromwell_inputs['ei_prediction.do_helixer'] = 'true'
+    
     if cli_arguments.no_augustus and cli_arguments.no_augustus is False:
         cromwell_inputs['ei_prediction.do_augustus'] = 'false'
 
@@ -222,8 +231,11 @@ def combine_arguments_prediction(cli_arguments):
         cromwell_inputs['ei_prediction.snap_extra_params'] = cli_arguments.snap_extra_params
     if cli_arguments.augustus_extra_params:
         cromwell_inputs['ei_prediction.augustus_extra_params'] = cli_arguments.augustus_extra_params
+    if cli_arguments.helixer_extra_params:
+        cromwell_inputs['ei_prediction.helixer_extra_params'] = cli_arguments.helixer_extra_params
     if cli_arguments.evm_extra_params:
         cromwell_inputs['ei_prediction.evm_extra_params'] = cli_arguments.evm_extra_params
+        
 
     if cli_arguments.mikado_config:
         cromwell_inputs['ei_prediction.mikado_config'] = cli_arguments.mikado_config.name
@@ -246,7 +258,8 @@ def collect_prediction_output(run_metadata):
 
     if outputs['ei_prediction.glimmer']:
         symlink(outputs_path, outputs['ei_prediction.glimmer'])
-
+    if outputs['ei_prediction.helixer']:
+        symlink(outputs_path, outputs['ei_prediction.helixer'])
     if outputs['ei_prediction.snap']:
         symlink(outputs_path, outputs['ei_prediction.snap'])
     if outputs['ei_prediction.codingquarry']:
@@ -271,6 +284,7 @@ def collect_prediction_output(run_metadata):
     snap_prediction_path = os.path.join(predictions_path, "SNAP")
     codingquarry_prediction_path = os.path.join(predictions_path, "CodingQuarry")
     augustus_prediction_path = os.path.join(predictions_path, "Augustus")
+    helixer_prediction_path = os.path.join(predictions_path, "Helixer")
     if not os.path.exists(predictions_path):
         os.mkdir(predictions_path)
 
@@ -303,6 +317,14 @@ def collect_prediction_output(run_metadata):
     else:
         if os.path.exists(glimmer_prediction_path):
             shutil.rmtree(glimmer_prediction_path)
+    
+    if outputs['ei_prediction.predictions_helixer']:
+        if not os.path.exists(helixer_prediction_path):
+            os.mkdir(helixer_prediction_path)
+        symlink(helixer_prediction_path, outputs['ei_prediction.predictions_helixer'])
+    else:
+        if os.path.exists(helixer_prediction_path):
+            shutil.rmtree(helixer_prediction_path)
 
     if outputs['ei_prediction.predictions_augustus']:
         if not os.path.exists(augustus_prediction_path):

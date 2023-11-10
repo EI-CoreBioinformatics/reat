@@ -6,7 +6,7 @@ import glob
 
 setup(
     name="reat",
-    version="0.6.1",
+    version="0.7.1",
     packages=find_packages(".", exclude=["tests"]),
     url="https://github.com/ei-corebioinformatics/reat",
     classifiers=[
@@ -19,8 +19,8 @@ setup(
         "Programming Language :: Python :: 3.8",
     ],
     license="MIT",
-    author="Luis Yanes, Gemy Kaithakottil",
-    author_email="luis.yanes@earlham.ac.uk, gemy.kaithakottil@earlham.ac.uk",
+    author="Luis Yanes, Gemy Kaithakottil, Mariano Olivera Fedi",
+    author_email="luis.yanes@earlham.ac.uk, gemy.kaithakottil@earlham.ac.uk, mariano.olivera-fedi@earlham.ac.uk",
     description="Robust Eukaryotic Annotation Toolkit",
     zip_safe=False,
     keywords="gene annotation WDL pipeline workflow cromwell transcriptome homology",
