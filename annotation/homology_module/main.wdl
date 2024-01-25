@@ -275,7 +275,7 @@ task MikadoPick {
     --start-method=spawn --json-conf=pick_config.yaml \
     --loci-out ~{output_prefix}.loci.gff3 -lv INFO ~{"-db " + mikado_db} \
     --subloci-out ~{output_prefix}.subloci.gff3 --monoloci-out ~{output_prefix}.monoloci.gff3 \
-    ~{transcripts}
+    --prefix Mikado_homology ~{transcripts}
     mikado compare -r ~{output_prefix}.loci.gff3 -l ~{output_prefix}-index_loci.log --index
     mikado util stats  ~{output_prefix}.loci.gff3 ~{output_prefix}.loci.gff3.stats
     >>>
