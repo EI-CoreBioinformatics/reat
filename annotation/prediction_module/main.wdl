@@ -48,7 +48,7 @@ workflow ei_prediction {
 
 		String? codingquarry_extra_params
 		String? glimmer_extra_params
-		String? snap_extra_params
+		String snap_extra_params = " -lcmask "
 		String? augustus_extra_params
 		String? evm_extra_params
 
@@ -293,6 +293,7 @@ workflow ei_prediction {
 			genome = def_reference_genome,
 			transcripts = select_first([def_training_models]),
 			pretrained_hmm = snap_training,
+			species = species,
 			extra_params = snap_extra_params
 		}
 	}
@@ -1060,7 +1061,8 @@ task SNAP {
 		IndexedReference genome
 		File transcripts
 		File? pretrained_hmm
-		String? extra_params
+		String? extra_params,
+		String species,
 		RuntimeAttr? resources
 	}
 
@@ -1099,8 +1101,8 @@ task SNAP {
 			cd params
 			forge ../export.ann ../export.dna
 			cd ..
-			hmm-assembler.pl ~{genome.fasta} params > ~{basename(genome.fasta)}.hmm
-			snap ~{basename(genome.fasta)}.hmm ~{genome.fasta} > snap.predictions.zff
+			hmm-assembler.pl ~{species} params > ~{basename(genome.fasta)}.hmm
+			snap ~{extra_params} ~{basename(genome.fasta)}.hmm ~{genome.fasta} > snap.predictions.zff
 		else
 			snap ~{extra_params} ~{pretrained_hmm} ~{genome.fasta} > snap.predictions.zff
 		fi
