@@ -1,61 +1,56 @@
 Bootstrap: docker
-From: ubuntu:18.04
+From: ubuntu:20.04
 
 %environment
-export PATH=$PATH:/opt/software/hisat2-2.2.1
-export PATH=$PATH:/opt/software/TransDecoder-TransDecoder-v5.5.0:/opt/software/TransDecoder-TransDecoder-v5.5.0/util
-export PATH=$PATH:/opt/software/repeatmasker/RepeatMasker:/opt/software/repeatmasker/RepeatModeler
-export PATH=$PATH:/opt/software/spaln/bin
-export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
-export PYTHONPATH=$PYTHONPATH:/usr/local/lib/python3.6/dist-packages/
-export ALN_DBS=/opt/software/spaln/seqdb
-export ALN_TAB=/opt/software/spaln/table
+    export PATH=$PATH:/opt/software/hisat2-2.2.1
+    export PATH=$PATH:/opt/software/TransDecoder-TransDecoder-v5.5.0:/opt/software/TransDecoder-TransDecoder-v5.5.0/util
+    export PATH=$PATH:/opt/software/repeatmasker/RepeatMasker:/opt/software/repeatmasker/RepeatModeler
+    export PATH=$PATH:/opt/software/spaln/bin
+    export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
+    export PYTHONPATH=$PYTHONPATH:/usr/local/lib/python3.6/dist-packages/
+    export ALN_DBS=/opt/software/spaln/seqdb
+    export ALN_TAB=/opt/software/spaln/table
 
 %post
-mkdir /jic
-mkdir /nbi
-mkdir /tgac
-mkdir /ei
-mkdir /tsl
 mkdir /opt/software
 
 ### Install your packages ###
 cd /opt/software/
-apt -y update
-apt -y install software-properties-common build-essential zlib1g-dev libbz2-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev \
+DEBIAN_FRONTEND=noninteractive apt -y update
+DEBIAN_FRONTEND=noninteractive apt -y install software-properties-common build-essential zlib1g-dev libbz2-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev \
 libreadline-dev libffi-dev wget lzma lzma-dev liblzma-dev tk-dev libsqlite3-dev python3 ruby-full libidn11-dev libidn11 \
-default-jdk git libcurl4-openssl-dev curl cmake libcairo2-dev libcogl-pango-dev unzip python python3-pip python-pip \
+default-jdk git libcurl4-openssl-dev curl cmake libcairo2-dev libcogl-pango-dev unzip python python3-pip \
 libboost-all-dev make libssl-dev libghc-zlib-dev libexpat1-dev gettext unzip gnuplot cpanminus bison
 
 java -version
 python3 --version
 python --version
 
-# DIAMOND - 2.0.7
-wget https://github.com/bbuchfink/diamond/archive/v2.0.7.tar.gz
-tar xf v2.0.7.tar.gz
-cd diamond-2.0.7
+# DIAMOND - 2.0.11
+wget https://github.com/bbuchfink/diamond/archive/v2.0.11.tar.gz
+tar xf v2.0.11.tar.gz
+cd diamond-2.0.11
 mkdir build
 cd build
 cmake ../
 make
 make install
 cd ../../
-rm -rf diamond-2.0.7 v2.0.7.tar.gz
+rm -rf diamond-2.0.11 v2.0.11.tar.gz
 diamond --help
 
 # BioPerl
 cpanm -i XML::DOM::XPath --force
-cpanm -i Parallel::ForkManager File::Which Scalar::Util::Numeric URI::Escape Data::Dumper URI::Escape Bio::SeqIO Text::Soundex JSON
+cpanm -i Parallel::ForkManager File::Which Scalar::Util::Numeric URI::Escape Data::Dumper URI::Escape Bio::SeqIO Text::Soundex JSON --force
 
 # FullLengtherNext - 1.0.1
 gem install -q -f full_lengther_next  -v 1.0.1 -N
 full_lengther_next --help
 
-# Install BLAST - 2.7.1 NEEDS UPDATE
-wget ftp://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/2.7.1/ncbi-blast-2.7.1+-x64-linux.tar.gz
-tar xf ncbi-blast-2.7.1+-x64-linux.tar.gz
-cp ncbi-blast-2.7.1+/bin/* /usr/local/bin
+# Install BLAST - 2.16.0
+wget ftp://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/2.16.0/ncbi-blast-2.16.0+-x64-linux.tar.gz
+tar xf ncbi-blast-2.16.0+-x64-linux.tar.gz
+cp ncbi-blast-2.16.0+/bin/* /usr/local/bin
 blastx -help
 
 # Install MagicBlast - 1.5.0
@@ -68,46 +63,47 @@ magicblast -help
 cd /opt/software/
 git clone https://github.com/ebiggers/libdeflate.git
 cd libdeflate
+git checkout tags/v1.14
 make -j 20
 make install
 cd ../
 rm -rf libdeflate
 
-# HTSLib - 1.11
-wget https://github.com/samtools/htslib/releases/download/1.11/htslib-1.11.tar.bz2
-tar xaf htslib-1.11.tar.bz2
-mv htslib-1.11 htslib  # Necessary for augustus
+# HTSLib - 1.18
+wget https://github.com/samtools/htslib/releases/download/1.18/htslib-1.18.tar.bz2
+tar xaf htslib-1.18.tar.bz2
+mv htslib-1.18 htslib  # Necessary for augustus
 cd htslib
 ./configure --enable-libcurl --enable-plugins --enable-s3  --with-libdeflate
 make -j 20
 make install
 htsfile --help 2>&1 | head
 cd ../
-rm htslib-1.11.tar.bz2
+rm htslib-1.18.tar.bz2
 
-# Samtools - 1.11
-wget https://github.com/samtools/samtools/releases/download/1.11/samtools-1.11.tar.bz2
-tar xaf samtools-1.11.tar.bz2
-mv samtools-1.11 samtools  # Necessary for augustus
+# Samtools - 1.18
+wget https://github.com/samtools/samtools/releases/download/1.18/samtools-1.18.tar.bz2
+tar xaf samtools-1.18.tar.bz2
+mv samtools-1.18 samtools  # Necessary for augustus
 cd samtools  # and similarly for bcftools and htslib
 ./configure --enable-libcurl --enable-plugins --enable-s3
 make -j 20
 make install
 samtools --help 2>&1 | head
 cd ../
-rm samtools-1.11.tar.bz2
+rm samtools-1.18.tar.bz2
 
-# BCFTools - 1.11
-wget https://github.com/samtools/bcftools/releases/download/1.11/bcftools-1.11.tar.bz2
-tar xaf bcftools-1.11.tar.bz2
-mv bcftools-1.11 bcftools
+# BCFTools - 1.18
+wget https://github.com/samtools/bcftools/releases/download/1.18/bcftools-1.18.tar.bz2
+tar xaf bcftools-1.18.tar.bz2
+mv bcftools-1.18 bcftools
 cd bcftools
 ./configure --enable-libcurl --enable-plugins --enable-s3
 make -j 20
 make install
 bcftools --help 2>&1 | head
 cd /opt/software/
-rm -rf bcftools-1.11.tar.bz2
+rm -rf bcftools-1.18.tar.bz2
 
 # BAMtools - 2.5.1
 wget https://github.com/pezmaster31/bamtools/archive/v2.5.1.tar.gz -O bamtools-v2.5.1.tar.gz
@@ -140,10 +136,10 @@ cd /opt/software/
 gffread --help 2>&1 | head
 rm -rf gffread gclib
 
-# GMAP - 2021-02-12
-wget http://research-pub.gene.com/gmap/src/gmap-gsnap-2021-02-12.tar.gz
-tar xaf gmap-gsnap-2021-02-12.tar.gz
-cd gmap-2021-02-12
+# GMAP - 2021-03-08
+wget http://research-pub.gene.com/gmap/src/gmap-gsnap-2021-03-08.tar.gz
+tar xaf gmap-gsnap-2021-03-08.tar.gz
+cd gmap-2021-03-08
 for i in sse2 ssse3 sse41 sse42;
 do
     ./configure --with-simd-level=$i --enable-zlib --enable-bzlib
@@ -154,26 +150,26 @@ done;
 gmap --help
 gsnap --help
 cd /opt/software/
-rm -rf gmap-gsnap-2021-02-12.tar.gz
+rm -rf gmap-gsnap-2021-03-08.tar.gz
 
-# MiniMap2 - 2.17
-wget https://github.com/lh3/minimap2/releases/download/v2.17/minimap2-2.17_x64-linux.tar.bz2
-tar xaf minimap2-2.17_x64-linux.tar.bz2
-cd minimap2-2.17_x64-linux
+# MiniMap2 - 2.18
+wget https://github.com/lh3/minimap2/releases/download/v2.18/minimap2-2.18_x64-linux.tar.bz2
+tar xaf minimap2-2.18_x64-linux.tar.bz2
+cd minimap2-2.18_x64-linux
 mv k8 minimap2 paftools.js -t /usr/local/bin/
 minimap2 --help
 cd /opt/software/
-rm -rf minimap2-2.17_x64-linux.tar.bz2 minimap2-2.17_x64-linux
+rm -rf minimap2-2.18_x64-linux.tar.bz2 minimap2-2.18_x64-linux
 
-# GenomeTools - 1.5.10
+# GenomeTools - 1.6.5
 cd /opt/software/
-wget https://github.com/genometools/genometools/archive/v1.5.10.tar.gz -O genometools-1.5.10.tar.gz
-tar xaf genometools-1.5.10.tar.gz
-cd genometools-1.5.10
+wget https://github.com/genometools/genometools/archive/v1.6.5.tar.gz -O genometools-1.6.5.tar.gz
+tar xaf genometools-1.6.5.tar.gz
+cd genometools-1.6.5
 make 64bit=yes opt=yes cairo=no errorcheck=yes useshared=no -j 20
 make install
 cd /opt/software/
-rm -rf genometools-1.5.10.tar.gz genometools-1.5.10
+rm -rf genometools-1.6.5.tar.gz genometools-1.6.5
 
 
 # HISAT2 - 2.2.1
@@ -209,8 +205,8 @@ cp bioawk /usr/local/bin
 
 cd /opt/software
 
-# Stringtie2 - v2.1.4
-git clone -b v2.1.4 https://github.com/gpertea/stringtie.git
+# Stringtie2 - v2.2.3
+git clone -b v2.2.3 https://github.com/gpertea/stringtie.git
 cd stringtie
 make -j 4 release
 cp stringtie /usr/local/bin
@@ -257,23 +253,33 @@ wget https://github.com/TransDecoder/TransDecoder/archive/TransDecoder-v5.5.0.ta
 tar xf TransDecoder-v5.5.0.tar.gz
 
 ## Prepare python dependencies for Mikado and Portcullis
-pip3 install pandas matplotlib setuptools sphinx tabulate cython scipy
+pip3 install "pandas<=1.5.0"  matplotlib setuptools sphinx tabulate "cython<=0.29.32" "scipy<=1.11.1"
 
-# Portcullis - 1.2.2
-wget https://github.com/maplesond/portcullis/archive/1.2.2.tar.gz
-tar xf 1.2.2.tar.gz
-cd portcullis-1.2.2
+# Portcullis - 1.2.4
+wget https://github.com/EI-CoreBioinformatics/portcullis/archive/refs/tags/Release-1.2.4.tar.gz
+tar xf Release-1.2.4.tar.gz
+mv portcullis-Release-1.2.4 portcullis-1.2.4
+cd portcullis-1.2.4
 ./autogen.sh
 ./configure
 make -j 8
 make install
 cd /opt/software
 
-# Gotoh's SPALN
-
-wget https://github.com/ogotoh/spaln/archive/refs/tags/ver.2.4.4.tar.gz
-tar xf ver.2.4.4.tar.gz
-cd spaln-ver.2.4.4/src
+# Gotoh's SPALN - 2.4.7
+wget https://github.com/ogotoh/spaln/archive/refs/tags/ver.2.4.7.tar.gz
+tar xf ver.2.4.7.tar.gz
+cd spaln-ver.2.4.7/src
 ./configure -e /opt/software/spaln/bin -t /opt/software/spaln/table -d /opt/software/spaln/seqdbs
 make -j 4
 make install
+cd /opt/software
+
+# miniprot - 0.12
+wget https://github.com/lh3/miniprot/releases/download/v0.12/miniprot-0.12_x64-linux.tar.bz2
+tar xaf miniprot-0.12_x64-linux.tar.bz2
+cd miniprot-0.12_x64-linux
+mv miniprot -t /usr/local/bin/
+minimap2 --help
+cd /opt/software/
+rm -rf miniprot-0.12_x64-linux.tar.bz2 miniprot-0.12_x64-linux
