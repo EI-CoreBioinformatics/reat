@@ -32,9 +32,9 @@ def combine_arguments_homology(cli_arguments):
     cromwell_inputs["ei_homology.output_prefix"] = cli_arguments.output_prefix
 
     if cli_arguments.protein_sequences and len(cli_arguments.protein_sequences) > 1:
-        cromwell_inputs[
-            "ei_homology.protein_sequence_files"
-        ] = cli_arguments.protein_sequences
+        cromwell_inputs["ei_homology.protein_sequence_files"] = (
+            cli_arguments.protein_sequences
+        )
     else:
         if not cli_arguments.annotations_csv:
             import sys
@@ -48,110 +48,110 @@ def combine_arguments_homology(cli_arguments):
 
     # Optional extra parameters
     if cli_arguments.pick_extra_config:
-        cromwell_inputs[
-            "ei_homology.MikadoPick.extra_config"
-        ] = cli_arguments.pick_extra_config.name
+        cromwell_inputs["ei_homology.MikadoPick.extra_config"] = (
+            cli_arguments.pick_extra_config.name
+        )
     if cli_arguments.junctions:
         cromwell_inputs["ei_homology.Mikado.junctions"] = cli_arguments.junctions.name
     if cli_arguments.utrs:
         cromwell_inputs["ei_homology.Mikado.utrs"] = cli_arguments.utrs.name
     if cli_arguments.min_cdna_length:
-        cromwell_inputs[
-            "ei_homology.Mikado.min_cdna_length"
-        ] = cli_arguments.min_cdna_length
+        cromwell_inputs["ei_homology.Mikado.min_cdna_length"] = (
+            cli_arguments.min_cdna_length
+        )
     if cli_arguments.max_intron_length:
-        cromwell_inputs[
-            "ei_homology.Mikado.max_intron_length"
-        ] = cli_arguments.max_intron_length
+        cromwell_inputs["ei_homology.Mikado.max_intron_length"] = (
+            cli_arguments.max_intron_length
+        )
 
     if cli_arguments.junction_f1_filter:
-        cromwell_inputs[
-            "ei_homology.CombineResults.junction_f1_filter"
-        ] = cli_arguments.junction_f1_filter
+        cromwell_inputs["ei_homology.CombineResults.junction_f1_filter"] = (
+            cli_arguments.junction_f1_filter
+        )
     if cli_arguments.exon_f1_filter:
-        cromwell_inputs[
-            "ei_homology.CombineResults.exon_f1_filter"
-        ] = cli_arguments.exon_f1_filter
+        cromwell_inputs["ei_homology.CombineResults.exon_f1_filter"] = (
+            cli_arguments.exon_f1_filter
+        )
 
     if cli_arguments.annotation_filters:
-        cromwell_inputs[
-            "ei_homology.PrepareAnnotations.filters"
-        ] = cli_arguments.annotation_filters
+        cromwell_inputs["ei_homology.PrepareAnnotations.filters"] = (
+            cli_arguments.annotation_filters
+        )
     if cli_arguments.filter_min_cds:
-        cromwell_inputs[
-            "ei_homology.PrepareAnnotations.min_cds_len"
-        ] = cli_arguments.filter_min_cds
+        cromwell_inputs["ei_homology.PrepareAnnotations.min_cds_len"] = (
+            cli_arguments.filter_min_cds
+        )
     if cli_arguments.filter_max_intron:
-        cromwell_inputs[
-            "ei_homology.PrepareAnnotations.max_intron_len"
-        ] = cli_arguments.filter_max_intron
+        cromwell_inputs["ei_homology.PrepareAnnotations.max_intron_len"] = (
+            cli_arguments.filter_max_intron
+        )
     if cli_arguments.filter_min_exon:
-        cromwell_inputs[
-            "ei_homology.PrepareAnnotations.min_exon_len"
-        ] = cli_arguments.filter_min_exon
+        cromwell_inputs["ei_homology.PrepareAnnotations.min_exon_len"] = (
+            cli_arguments.filter_min_exon
+        )
 
     if cli_arguments.filter_min_cds:
-        cromwell_inputs[
-            "ei_homology.PrepareAlignments.min_cds_len"
-        ] = cli_arguments.filter_min_cds
+        cromwell_inputs["ei_homology.PrepareAlignments.min_cds_len"] = (
+            cli_arguments.filter_min_cds
+        )
     if cli_arguments.alignment_filters:
-        cromwell_inputs[
-            "ei_homology.PrepareAlignments.filters"
-        ] = cli_arguments.alignment_filters
+        cromwell_inputs["ei_homology.PrepareAlignments.filters"] = (
+            cli_arguments.alignment_filters
+        )
     if cli_arguments.filter_min_exon:
-        cromwell_inputs[
-            "ei_homology.PrepareAlignments.min_filter_exon_len"
-        ] = cli_arguments.filter_min_exon
+        cromwell_inputs["ei_homology.PrepareAlignments.min_filter_exon_len"] = (
+            cli_arguments.filter_min_exon
+        )
     if cli_arguments.alignment_show_intron_length:
-        cromwell_inputs[
-            "ei_homology.PrepareAlignments.show_intron_len"
-        ] = cli_arguments.alignment_show_intron_length
+        cromwell_inputs["ei_homology.PrepareAlignments.show_intron_len"] = (
+            cli_arguments.alignment_show_intron_length
+        )
     if cli_arguments.filter_max_intron:
-        cromwell_inputs[
-            "ei_homology.PrepareAlignments.max_intron_len"
-        ] = cli_arguments.filter_max_intron
+        cromwell_inputs["ei_homology.PrepareAlignments.max_intron_len"] = (
+            cli_arguments.filter_max_intron
+        )
 
     if cli_arguments.alignment_min_exon_len:
-        cromwell_inputs[
-            "ei_homology.AlignProteins.min_spaln_exon_len"
-        ] = cli_arguments.alignment_min_exon_len
+        cromwell_inputs["ei_homology.AlignProteins.min_spaln_exon_len"] = (
+            cli_arguments.alignment_min_exon_len
+        )
     if cli_arguments.alignment_min_identity:
-        cromwell_inputs[
-            "ei_homology.AlignProteins.min_identity"
-        ] = cli_arguments.alignment_min_identity
+        cromwell_inputs["ei_homology.AlignProteins.min_identity"] = (
+            cli_arguments.alignment_min_identity
+        )
     if cli_arguments.alignment_min_coverage:
-        cromwell_inputs[
-            "ei_homology.AlignProteins.min_coverage"
-        ] = cli_arguments.alignment_min_coverage
+        cromwell_inputs["ei_homology.AlignProteins.min_coverage"] = (
+            cli_arguments.alignment_min_coverage
+        )
     if cli_arguments.alignment_max_per_query:
-        cromwell_inputs[
-            "ei_homology.AlignProteins.max_per_query"
-        ] = cli_arguments.alignment_max_per_query
+        cromwell_inputs["ei_homology.AlignProteins.max_per_query"] = (
+            cli_arguments.alignment_max_per_query
+        )
     if cli_arguments.alignment_recursion_level:
-        cromwell_inputs[
-            "ei_homology.AlignProteins.recursion_level"
-        ] = cli_arguments.alignment_recursion_level
+        cromwell_inputs["ei_homology.AlignProteins.recursion_level"] = (
+            cli_arguments.alignment_recursion_level
+        )
 
     if cli_arguments.post_alignment_clip:
-        cromwell_inputs[
-            "ei_homology.AlignProteins.clip"
-        ] = cli_arguments.post_alignment_clip
+        cromwell_inputs["ei_homology.AlignProteins.clip"] = (
+            cli_arguments.post_alignment_clip
+        )
     if cli_arguments.term5c_len:
-        cromwell_inputs[
-            "ei_homology.AlignProteins.term5c_len"
-        ] = cli_arguments.term5c_len
+        cromwell_inputs["ei_homology.AlignProteins.term5c_len"] = (
+            cli_arguments.term5c_len
+        )
     if cli_arguments.term5i_len:
-        cromwell_inputs[
-            "ei_homology.AlignProteins.term5i_len"
-        ] = cli_arguments.term5i_len
+        cromwell_inputs["ei_homology.AlignProteins.term5i_len"] = (
+            cli_arguments.term5i_len
+        )
     if cli_arguments.term3c_len:
-        cromwell_inputs[
-            "ei_homology.AlignProteins.term3c_len"
-        ] = cli_arguments.term3c_len
+        cromwell_inputs["ei_homology.AlignProteins.term3c_len"] = (
+            cli_arguments.term3c_len
+        )
     if cli_arguments.term3i_len:
-        cromwell_inputs[
-            "ei_homology.AlignProteins.term3i_len"
-        ] = cli_arguments.term3i_len
+        cromwell_inputs["ei_homology.AlignProteins.term3i_len"] = (
+            cli_arguments.term3i_len
+        )
     return cromwell_inputs
 
 
