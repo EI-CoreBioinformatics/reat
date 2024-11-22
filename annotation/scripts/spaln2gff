@@ -66,10 +66,11 @@ class Gene:
 
         self.qcoverage = 100.0 * alignment_len / self.target_length  # Query coverage
 
-    def to_gff(self, file=sys.stdout):
+    def to_gff(self, source, file=sys.stdout):
         print(
-            "{0}\tALN\tgene\t{1}\t{2}\t{3}\t{4}\t.\tID={5}.g{6};Name={5}.g{6}".format(
+            "{0}\t{1}\tgene\t{2}\t{3}\t{4}\t{5}\t.\tID={6}.g{7};Name={6}.g{7}".format(
                 self.genome,
+                source,
                 self.gstart,
                 self.gend,
                 self.score,
@@ -80,8 +81,9 @@ class Gene:
             file=file,
         )
         print(
-            "{0}\tALN\tmRNA\t{1}\t{2}\t{3}\t{4}\t.\tID={5}.m{6};Parent={5}.g{6};Name={5}.m{6};protein_alias={5};Note={5}|cov:{7:.2f}|id:{8:.2f}".format(
+            "{0}\t{1}\tmRNA\t{2}\t{3}\t{4}\t{5}\t.\tID={6}.m{7};Parent={6}.g{7};Name={6}.m{7};protein_alias={6};Note={6}|cov:{8:.2f}|id:{9:.2f}".format(
                 self.genome,
+                source,
                 self.gstart,
                 self.gend,
                 self.score,
@@ -98,8 +100,9 @@ class Gene:
             if exon.gstart > exon.gend:
                 exon.gstart, exon.gend = exon.gend, exon.gstart
             print(
-                "{0}\tALN\tCDS\t{1}\t{2}\t{3}\t{4}\t{5}\tID={6}.m{8}.cds{7};Parent={6}.m{8}".format(
+                "{0}\t{1}\tCDS\t{2}\t{3}\t{4}\t{5}\t{6}\tID={7}.m{9}.cds{8};Parent={7}.m{9}".format(
                     self.genome,
+                    source,
                     exon.gstart,
                     exon.gend,
                     exon.score,
@@ -112,8 +115,9 @@ class Gene:
                 file=file,
             )
             print(
-                "{0}\tALN\texon\t{1}\t{2}\t{3}\t{4}\t{5}\tID={6}.m{8}.exon{7};Parent={6}.m{8}".format(
+                "{0}\t{1}\texon\t{2}\t{3}\t{4}\t{5}\t{6}\tID={7}.m{9}.exon{8};Parent={7}.m{9}".format(
                     self.genome,
+                    source,
                     exon.gstart,
                     exon.gend,
                     exon.score,
@@ -233,6 +237,7 @@ def main():
     args = ap.parse_args()
     min_identity = args.min_identity
     min_coverage = args.min_coverage
+    source = args.source
 
     if not args.spaln_filename:
         spaln_file = sys.stdin
@@ -253,7 +258,7 @@ def main():
                     for e in g.exons
                 ]
             ):
-                g.to_gff(output_gff3)
+                g.to_gff(source, output_gff3)
 
 
 if __name__ == "__main__":
