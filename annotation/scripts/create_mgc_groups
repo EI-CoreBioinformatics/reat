@@ -5,8 +5,12 @@ import argparse
 
 def main():
     p = argparse.ArgumentParser()
-    p.add_argument("-f", "--fasta_alignments", type=argparse.FileType("r"),
-                   help="Input fasta from the extracted CDS of the alignments")
+    p.add_argument(
+        "-f",
+        "--fasta_alignments",
+        type=argparse.FileType("r"),
+        help="Input fasta from the extracted CDS of the alignments",
+    )
 
     args = p.parse_args()
     alignments_filename = args.fasta_alignments.name
@@ -19,17 +23,16 @@ def main():
 
     gene_to_group = defaultdict(list)
     for k in alignments_fa:
-        gene_to_group['.'.join(k.split('.')[:-1])].append(k)
+        gene_to_group[".".join(k.split(".")[:-1])].append(k)
 
     groupid = 0
     with open("groups.txt", "w") as gf:
         for k, v in gene_to_group.items():
             for a in v:
                 groupid += 1
-                print('.'.join([k]), groupid, file=gf)
+                print(".".join([k]), groupid, file=gf)
                 print(a, groupid, file=gf)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
-
