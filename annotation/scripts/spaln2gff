@@ -232,8 +232,18 @@ def main():
     ap.add_argument("-i", "--spaln_filename")
     ap.add_argument("-o", "--gff3_output")
     ap.add_argument("-s", "--source", required=True, help="source name for gff3 file")
-    ap.add_argument("--min_coverage", type=int, default=80)
-    ap.add_argument("--min_identity", type=int, default=50)
+    ap.add_argument(
+        "--min_coverage",
+        type=int,
+        default=0,
+        help="coverage cutoff [INT 0 - 100] (default: %(default)s)",
+    )
+    ap.add_argument(
+        "--min_identity",
+        type=int,
+        default=0,
+        help="identify cutoff [INT 0 - 100] (default: %(default)s)",
+    )
     args = ap.parse_args()
     min_identity = args.min_identity
     min_coverage = args.min_coverage
