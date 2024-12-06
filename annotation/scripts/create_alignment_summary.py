@@ -14,6 +14,7 @@ import argparse
 from pathlib import Path
 from collections import defaultdict
 
+
 class CreateAlignmentSummary:
     bins = {
         "0-10": [],
@@ -35,11 +36,11 @@ class CreateAlignmentSummary:
         self.bins = {key: [] for key in CreateAlignmentSummary.bins}
 
     def check_and_update_bin(self, value):
+        rounded_value = round(value)
         for bin_range in self.bins:
-            start, end = map(float, bin_range.split("-"))
-            if start <= value <= end:
-                self.bins[bin_range].append(value)
-                break
+            start, end = map(int, bin_range.split("-"))
+            if start <= rounded_value <= end:
+                self.bins[bin_range].append(rounded_value)
 
     def run(self, tab_file):
         with open(tab_file) as f:
@@ -96,7 +97,6 @@ def main():
         for tab_file in args.tab_file:
             row += f"\t{len(collective_bin_values[tab_file][bin_range])}"
         print(row)
-
 
 
 if __name__ == "__main__":
