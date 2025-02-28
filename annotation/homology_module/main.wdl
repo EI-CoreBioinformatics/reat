@@ -1,5 +1,5 @@
 version 1.0
-import "./rt_struct.wdl"
+import "common/rt_struct.wdl"
 
 struct GenomeAnnotation {
     File genome
@@ -19,6 +19,9 @@ workflow ei_homology {
         File genome_to_annotate
         File mikado_scoring
         File mikado_config
+        String spaln_extra_parameters
+		Boolean do_spaln = false
+		Boolean do_miniprot = false
         String species
         Int codon_table
         String output_prefix = "xspecies"
@@ -26,9 +29,15 @@ workflow ei_homology {
         RuntimeAttr? score_attr
         RuntimeAttr? aln_attr
         RuntimeAttr? mikado_attr
+        RuntimeAttr? task_attr
     }
 
-    call IndexGenome {
+    call IndexGenomeSpaln {
+        input:
+        genome = genome_to_annotate,
+        runtime_attr_override = index_attr
+    }
+    call IndexGenomeMiniprot {
         input:
         genome = genome_to_annotate,
         runtime_attr_override = index_attr
@@ -36,13 +45,39 @@ workflow ei_homology {
 
     if (defined(protein_sequence_files)) {
         scatter (protein_sequence_file in select_first([protein_sequence_files])) {
-            call AlignProteinSequences {
+
+            call AlignProteinSequencesSpaln {
                 input:
-                genome_index = IndexGenome.genome_index,
+                genome_index = IndexGenomeSpaln.genome_index,
                 proteins = protein_sequence_file,
                 species = species,
+                spaln_extra_parameters = spaln_extra_parameters,
                 out_prefix = sub(basename(protein_sequence_file), "\.[^/.]+$", ""),
                 runtime_attr_override = aln_attr
+            }
+
+            call AlignProteinSequencesMiniprot {
+                input:
+                genome_index = IndexGenomeMiniprot.genome_index,
+                proteins = protein_sequence_file,
+                out_prefix = sub(basename(protein_sequence_file), "\.[^/.]+$", ""),
+                runtime_attr_override = aln_attr
+            }
+
+            call PrepareProteinAlignments as PrepareProteinAlignmentsSpaln {
+                input:
+                raw_alignments = AlignProteinSequencesSpaln.raw_alignments,
+                aln_prefix = sub(basename(AlignProteinSequencesSpaln.raw_alignments), "\\.alignment\\.gff$", ""),
+                genome_to_annotate = genome_to_annotate,
+                runtime_attr_override = task_attr
+            }
+
+            call PrepareProteinAlignments as PrepareProteinAlignmentsMiniprot {
+                input:
+                raw_alignments = AlignProteinSequencesMiniprot.raw_alignments,
+                aln_prefix = sub(basename(AlignProteinSequencesMiniprot.raw_alignments), "\\.alignment\\.gff$", ""),
+                genome_to_annotate = genome_to_annotate,
+                runtime_attr_override = task_attr
             }
         }
     }
@@ -52,74 +87,130 @@ workflow ei_homology {
             call PrepareAnnotations {
                 input:
                 annotation = annotation,
-                codon_table = codon_table
+                codon_table = codon_table,
+                runtime_attr_override = task_attr
             }
 
             GenomeProteins cleaned_up = object { genome: annotation.genome, annotation_gff: PrepareAnnotations.cleaned_up_gff, protein_sequences: PrepareAnnotations.proteins}
             String out_prefix = sub(basename(cleaned_up.annotation_gff), "\.[^/.]+$", "")
             String ref_prefix = sub(basename(cleaned_up.genome), "\.[^/.]+$", "")
 
-            call AlignProteins {
+            call AlignProteinsSpaln {
                 input:
-                    genome_index = IndexGenome.genome_index,
+                    genome_index = select_first([IndexGenomeSpaln.genome_index]),
                     genome_to_annotate = genome_to_annotate,
                     genome_proteins = cleaned_up,
                     ref_prefix = ref_prefix,
                     out_prefix = out_prefix,
                     species = species,
+                    spaln_extra_parameters = spaln_extra_parameters,
                     runtime_attr_override = aln_attr
             }
 
-            call PrepareAlignments {
+            call AlignProteinsMiniprot {
+                input:
+                    genome_index = IndexGenomeMiniprot.genome_index,
+                    genome_to_annotate = genome_to_annotate,
+                    genome_proteins = cleaned_up,
+                    ref_prefix = ref_prefix,
+                    out_prefix = out_prefix,
+                    runtime_attr_override = aln_attr
+            }
+
+            call PrepareAlignmentsSpaln {
                 input:
                 annotation_cdnas = PrepareAnnotations.cdnas,
                 annotation_bed = PrepareAnnotations.bed,
-                ref_prefix = ref_prefix,
-                raw_alignments = AlignProteins.raw_alignments,
-                genome_to_annotate = genome_to_annotate
+                raw_alignments = AlignProteinsSpaln.raw_alignments,
+                aln_prefix = sub(basename(AlignProteinsSpaln.raw_alignments), "\\.alignment\\.gff$", ""),
+                genome_to_annotate = genome_to_annotate,
+                runtime_attr_override = task_attr
             }
 
-            String aln_prefix = sub(basename(PrepareAlignments.clean_alignments), "\.[^/.]+$", "")
-
-            call ScoreAlignments {
+            call PrepareAlignmentsMiniprot {
                 input:
-                cdnas = PrepareAlignments.cdnas,
-                bed = PrepareAlignments.bed,
-                groups = PrepareAlignments.groups,
-                aln_prefix = aln_prefix,
+                annotation_cdnas = PrepareAnnotations.cdnas,
+                annotation_bed = PrepareAnnotations.bed,
+                raw_alignments = AlignProteinsMiniprot.raw_alignments,
+                aln_prefix = sub(basename(AlignProteinsMiniprot.raw_alignments), "\\.alignment\\.gff$", ""),
+                genome_to_annotate = genome_to_annotate,
+                runtime_attr_override = task_attr
+            }
+
+
+            String spaln_aln_prefix = sub(basename(PrepareAlignmentsSpaln.clean_alignments), "\.[^/.]+$", "")
+            String miniprot_aln_prefix = sub(basename(PrepareAlignmentsMiniprot.clean_alignments), "\.[^/.]+$", "")
+
+            call ScoreAlignmentsSpaln {
+                input:
+                cdnas = PrepareAlignmentsSpaln.cdnas,
+                bed = PrepareAlignmentsSpaln.bed,
+                groups = PrepareAlignmentsSpaln.groups,
+                aln_prefix = spaln_aln_prefix,
                 ref_prefix = ref_prefix,
                 runtime_attr_override = score_attr
             }
 
-            call CombineResults {
+            call ScoreAlignmentsMiniprot {
                 input:
-                alignment_compare_detail = ScoreAlignments.alignment_compare_detail,
-                alignment_gff = PrepareAlignments.clean_alignments
+                cdnas = PrepareAlignmentsMiniprot.cdnas,
+                bed = PrepareAlignmentsMiniprot.bed,
+                groups = PrepareAlignmentsMiniprot.groups,
+                aln_prefix = miniprot_aln_prefix,
+                ref_prefix = ref_prefix,
+                runtime_attr_override = score_attr
+            }
+
+            call CombineResultsSpaln {
+                input:
+                alignment_compare_detail = ScoreAlignmentsSpaln.alignment_compare_detail,
+                alignment_gff = PrepareAlignmentsSpaln.clean_alignments,
+                runtime_attr_override = task_attr
+            }
+
+            call CombineResultsMiniprot {
+                input:
+                alignment_compare_detail = ScoreAlignmentsMiniprot.alignment_compare_detail,
+                alignment_gff = PrepareAlignmentsMiniprot.clean_alignments,
+                runtime_attr_override = task_attr
             }
         }
         call ScoreSummary {
             input:
-            alignments_compare = ScoreAlignments.alignment_compare_detail
+            alignments_compare = flatten(select_all([ScoreAlignmentsSpaln.alignment_compare_detail, ScoreAlignmentsMiniprot.alignment_compare_detail])),
+            runtime_attr_override = task_attr
         }
     }
 
-    Array[File] all_alignments = flatten(select_all([CombineResults.augmented_alignments_gff, AlignProteinSequences.raw_alignments]))
-    scatter (alignment in all_alignments) {
-        call CombineXspecies {
+    Array[File] all_spaln_alignments = flatten(select_all([CombineResultsSpaln.augmented_alignments_gff, PrepareProteinAlignmentsSpaln.clean_alignments]))
+    scatter (alignment in all_spaln_alignments) {
+        call CombineXspecies as CombineXspeciesSpaln {
             input:
             alignment = alignment,
-            alignments = all_alignments
+            alignments = all_spaln_alignments,
+            runtime_attr_override = task_attr
+        }
+    }
+    Array[File] all_miniprot_alignments = flatten(select_all([CombineResultsMiniprot.augmented_alignments_gff, PrepareProteinAlignmentsMiniprot.clean_alignments]))
+    scatter (alignment in all_miniprot_alignments) {
+        call CombineXspecies as CombineXspeciesMiniprot {
+            input:
+            alignment = alignment,
+            alignments = all_miniprot_alignments,
+            runtime_attr_override = task_attr
         }
     }
 
     # With the results so far and some optional inputs such as assemblies and junctions
     # consolidate them in a mikado run that should incorporate UTRs and add junctions to the scoring
 
+    Array[File] all_combined_xspecies = flatten(select_all([CombineXspeciesSpaln.xspecies_scored_alignment, CombineXspeciesMiniprot.xspecies_scored_alignment]))
+
     call Mikado {
         input:
         reference = genome_to_annotate,
         extra_config = mikado_config,
-        xspecies = CombineXspecies.xspecies_scored_alignment,
+        xspecies = all_combined_xspecies,
         output_prefix = output_prefix,
         runtime_attr_override = mikado_attr
     }
@@ -137,17 +228,36 @@ workflow ei_homology {
     call MikadoSummaryStats {
         input:
         stats = [MikadoPick.stats],
-        output_prefix = output_prefix
+        output_prefix = output_prefix,
+        runtime_attr_override = task_attr
     }
 
     output {
-        Array[File]? xspecies_combined_alignments = CombineXspecies.xspecies_scored_alignment
+
+        # cleaned up annotations
         Array[File]? clean_annotations = PrepareAnnotations.cleaned_up_gff
-        Array[File]? mgc_evaluation = ScoreAlignments.alignment_compare
-        Array[File]? mgc_evaluation_detail = ScoreAlignments.alignment_compare_detail
+        Array[File]? clean_annotations_proteins = PrepareAnnotations.proteins
+        # Intermediates and Alignments
+        Array[File]? spaln_intermediates = flatten(select_all([AlignProteinSequencesSpaln.raw_alignments, AlignProteinsSpaln.raw_alignments]))
+        Array[File]? miniprot_intermediates = flatten(select_all([AlignProteinSequencesMiniprot.raw_alignments, AlignProteinsMiniprot.raw_alignments]))
+
+        # add both spaln and miniprot results to mgc_evaluation and mgc_evaluation_detail
+        Array[File]? mgc_evaluation_spaln = ScoreAlignmentsSpaln.alignment_compare
+        Array[File]? mgc_evaluation_spaln_detail = ScoreAlignmentsSpaln.alignment_compare_detail
+        Array[File]? mgc_evaluation_miniprot = ScoreAlignmentsMiniprot.alignment_compare
+        Array[File]? mgc_evaluation_miniprot_detail = ScoreAlignmentsMiniprot.alignment_compare_detail
+
+        # add both spaln and miniprot results to xspecies_scored_alignment
+        Array[File]? xspecies_combined_alignments_spaln = CombineXspeciesSpaln.xspecies_scored_alignment
+        Array[File]? xspecies_combined_alignments_miniprot = CombineXspeciesMiniprot.xspecies_scored_alignment
+
+        # add both spaln and miniprot results to combined_results
         Array[File]? annotation_filter_stats = PrepareAnnotations.stats
-        Array[File]? alignment_filter_stats = PrepareAlignments.stats
-        File?        mgc_score_summary = ScoreSummary.summary_table
+        Array[File]? spaln_alignment_filter_stats = flatten(select_all([PrepareAlignmentsSpaln.stats, PrepareProteinAlignmentsSpaln.stats]))
+        Array[File]? miniprot_alignment_filter_stats = flatten(select_all([PrepareAlignmentsMiniprot.stats, PrepareProteinAlignmentsMiniprot.stats]))
+        File? mgc_score_summary = ScoreSummary.summary_table
+
+        # add mikado_results
         File loci = MikadoPick.loci
         File scores = MikadoPick.scores
         File metrics = MikadoPick.metrics
@@ -192,11 +302,13 @@ task Mikado {
         set -euxo pipefail
         export TMPDIR=/tmp
         # Create the lists file
+        count=1
         for i in ~{sep=" " xspecies}
         do
         bname=$(basename ${i})
         label=${bname%%.*}
-        echo -e "${i}\t${label}\tTrue\t1\tTrue" >> list.txt
+        echo -e "${i}\t${count}_${label}\tTrue\t1\tTrue" >> list.txt
+        count=$((count + 1))
         done
 
         apply_pad="--no-pad "
@@ -292,54 +404,38 @@ task MikadoPick {
 task ScoreSummary {
     input {
         Array[File] alignments_compare
+        RuntimeAttr? runtime_attr_override
     }
 
     output {
-        File summary_table = "ScoreAlignments/all_avgF1.bin.txt"
+        File summary_table = "ScoreAlignments/Junction_precision_binning.tsv"
     }
+
+    Int cpus = 1
+    RuntimeAttr default_attr = object {
+        cpu_cores: "~{cpus}",
+        mem_gb: 20,
+        max_retries: 1,
+        queue: ""
+    }
+
+    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
+
+    Int task_cpus = select_first([runtime_attr.cpu_cores, cpus])
 
     command <<<
         set -euxo pipefail
         mkdir ScoreAlignments
         cd ScoreAlignments
-        for i in ~{sep=" " alignments_compare}; do
-            echo $i;
-            cat $i |awk -vOFS=" " 'NR > 1 {print $11,$13}' |awk '{sum = 0; for (i = 1; i <= NF; i++) sum += $i; sum /= NF; print sum}' | \
-            awk 'BEGIN { delta = (delta == "" ? 0.1 : delta) }
-{bucketNr = int(($0+delta) / delta); cnt[bucketNr]++; numBuckets = (numBuckets > bucketNr ? numBuckets : bucketNr)}
-END { for (bucketNr=1; bucketNr<=numBuckets; bucketNr++) {
-        end = beg + delta
-        printf "%0.1f-%0.1f,%d\n", beg, end, cnt[bucketNr]
-        beg = end
-    }
-}' > `basename $i`_avgF1.tbin.txt;
-        done;
-
-        cat <<COL1 > col1
-bin
-0.0-0.1
-0.1-0.2
-0.2-0.3
-0.3-0.4
-0.4-0.5
-0.5-0.6
-0.6-0.7
-0.7-0.8
-0.8-0.9
-0.9-1.0
-1.0-1.1
-COL1
-        for i in comp*avgF1.tbin.txt; do
-            file=$(echo `basename $i` |cut -d . -f1);
-            printf ",$file\n" > temp;
-            cat $i >> temp;
-            cut -d , -f2 temp > ${file}_temp;
-        done;
-        paste -d , col1 comp*temp > all_avgF1.bin.txt;
-        rm *temp*;
-        rm col1;
-        rm *_avgF1.tbin.txt;
+        create_alignment_summary.py ~{sep=' ' alignments_compare} > Junction_precision_binning.tsv
     >>>
+
+    runtime {
+        cpu: task_cpus
+        memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
+        maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+        queue: select_first([runtime_attr.queue, default_attr.queue])
+    }
 }
 
 task CombineXspecies {
@@ -390,7 +486,7 @@ task CombineXspecies {
     }
 }
 
-task IndexGenome {
+task IndexGenomeSpaln {
     input {
         File genome
         RuntimeAttr? runtime_attr_override
@@ -414,8 +510,45 @@ task IndexGenome {
 
     command <<<
         set -euxo pipefail
-        ln ~{genome} genome_to_annotate.fasta
+        ln -s ~{genome} genome_to_annotate.fasta
         spaln -W -KP -t~{task_cpus} genome_to_annotate.fasta
+    >>>
+
+    runtime {
+        continueOnReturnCode: [0, -1]
+        cpu: task_cpus
+        memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
+        maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+        queue: select_first([runtime_attr.queue, default_attr.queue])
+    }
+}
+
+task IndexGenomeMiniprot {
+    input {
+        File genome
+        RuntimeAttr? runtime_attr_override
+    }
+
+    output {
+        File genome_index = "genome_to_annotate.mpi"
+    }
+
+    Int cpus = 6
+    RuntimeAttr default_attr = object {
+        cpu_cores: "~{cpus}",
+        mem_gb: 50,
+        max_retries: 1,
+        queue: ""
+    }
+
+    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
+
+    Int task_cpus = select_first([runtime_attr.cpu_cores, cpus])
+
+    command <<<
+        set -euxo pipefail
+        ln -s ~{genome} genome_to_annotate.fasta
+        miniprot -t~{task_cpus} -d genome_to_annotate.mpi genome_to_annotate.fasta
     >>>
 
     runtime {
@@ -433,9 +566,10 @@ task PrepareAnnotations {
         String out_prefix = sub(basename(annotation.annotation_gff),  "\.[^/.]+$", "")
         Int min_cds_len = 20 # nts
         Int max_intron_len = 200000
-        Int min_exon_len = 20
+        Int min_exon_len = 10
         Int codon_table
         Array[String] filters = "all"
+        RuntimeAttr? runtime_attr_override
     }
 
     output {
@@ -445,6 +579,18 @@ task PrepareAnnotations {
         File cdnas = 'Annotations/' + out_prefix + ".cdna.fa"
         File bed = 'Annotations/' + out_prefix + ".bed"
     }
+
+    Int cpus = 4
+    RuntimeAttr default_attr = object {
+        cpu_cores: "~{cpus}",
+        mem_gb: 30,
+        max_retries: 1,
+        queue: ""
+    }
+
+    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
+
+    Int task_cpus = select_first([runtime_attr.cpu_cores, cpus])
 
     command <<<
         set -euxo pipefail
@@ -461,19 +607,26 @@ task PrepareAnnotations {
         -o ~{out_prefix}.clean.extra_attr.gff > ~{out_prefix}.annotation.stats
         cat ~{out_prefix}.cdna.fa | seqkit translate -T ~{codon_table} -o ~{out_prefix}.proteins.fa
     >>>
+
+    runtime {
+        cpu: task_cpus
+        memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
+        maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+        queue: select_first([runtime_attr.queue, default_attr.queue])
+    }
 }
 
-task AlignProteins {
+task AlignProteinsSpaln {
     input {
         Array[File] genome_index
         File genome_to_annotate
         GenomeProteins genome_proteins
         String species
-        Int min_spaln_exon_len = 20
+        String spaln_extra_parameters
+        Int min_spaln_intron_length = 20
         Int min_coverage = 80
         Int min_identity = 50
         Int max_per_query = 4
-        Int recursion_level = 6
         String clip = "no_clip"
         Int term5c_len = 10
         Int term5i_len = 200000
@@ -496,15 +649,64 @@ task AlignProteins {
     Int task_cpus = select_first([runtime_attr.cpu_cores, cpus])
 
     output {
-        File raw_alignments = ref_prefix+".alignment.gff"
+        File unfiltered_alignments = "spaln_atn_"+ref_prefix+".raw.alignment.gff"
+        File raw_alignments = "spaln_atn_"+ref_prefix+".alignment.gff"
     }
 
     command <<<
         set -euxo pipefail
         ln ~{sub(genome_index[0], "\.[^/.]+$", "")}.* .
         ln -s ~{genome_proteins.protein_sequences} "./~{basename(genome_proteins.protein_sequences)}"
-        spaln -t~{task_cpus} -KP -O0,12 -Q~{recursion_level} -M~{max_per_query}.~{max_per_query} ~{"-T"+species} -dgenome_to_annotate -o ~{out_prefix} -yL~{min_spaln_exon_len} "~{basename(genome_proteins.protein_sequences)+" P"}"
-        sortgrcd -O4 ~{out_prefix}.grd | tee ~{out_prefix}.s | spaln2gff --min_coverage ~{min_coverage} --min_identity ~{min_identity} -s "spaln" | filter_GFF3_terminals.py --protein_alias protein_alias --term5c_len ~{term5c_len}  --term5i_len ~{term5i_len} --term3c_len ~{term3c_len} --term3i_len ~{term3i_len} --clip ~{clip} ~{basename(genome_proteins.protein_sequences)} - > ~{ref_prefix}.alignment.gff
+        spaln ~{spaln_extra_parameters} -t~{task_cpus} -KP -O12 -M~{max_per_query}.~{max_per_query} ~{"-T"+species} -dgenome_to_annotate -o ~{out_prefix} -yL~{min_spaln_intron_length} "~{basename(genome_proteins.protein_sequences)+" P"}"
+        sortgrcd -O4 ~{out_prefix}.grd | tee ~{out_prefix}.s | spaln2gff -s "~{ref_prefix}.spaln" > spaln_atn_~{ref_prefix}.raw.alignment.gff
+        sortgrcd -O4 ~{out_prefix}.grd | tee ~{out_prefix}.s | spaln2gff --min_coverage ~{min_coverage} --min_identity ~{min_identity} -s "~{ref_prefix}.spaln" | filter_GFF3_terminals.py --protein_alias protein_alias --term5c_len ~{term5c_len}  --term5i_len ~{term5i_len} --term3c_len ~{term3c_len} --term3i_len ~{term3i_len} --clip ~{clip} ~{basename(genome_proteins.protein_sequences)} - > spaln_atn_~{ref_prefix}.alignment.gff
+    >>>
+
+    runtime {
+        cpu: task_cpus
+        memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
+        maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+        queue: select_first([runtime_attr.queue, default_attr.queue])
+    }
+}
+
+
+task AlignProteinsMiniprot {
+    input {
+        File genome_index
+        File genome_to_annotate
+        GenomeProteins genome_proteins
+        Int max_intron_length = 20000
+        Int min_coverage = 80
+        Int min_identity = 50
+        Int max_per_query = 4
+        String ref_prefix
+        String out_prefix
+        RuntimeAttr? runtime_attr_override
+    }
+    Int cpus = 8
+    RuntimeAttr default_attr = object {
+        cpu_cores: "~{cpus}",
+        mem_gb: 32,
+        max_retries: 1,
+        queue: ""
+    }
+
+    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
+
+    Int task_cpus = select_first([runtime_attr.cpu_cores, cpus])
+
+    output {
+        File unfiltered_alignments = "miniprot_atn_"+ref_prefix+".raw.alignment.gff"
+        File raw_alignments = "miniprot_atn_"+ref_prefix+".alignment.gff"
+    }
+
+    command <<<
+        set -euxo pipefail
+        ln -s ~{genome_index}
+        ln -s ~{genome_proteins.protein_sequences} "./~{basename(genome_proteins.protein_sequences)}"
+        miniprot -t~{task_cpus} -G~{max_intron_length} --outn=~{max_per_query} --gff ~{genome_index} ~{genome_proteins.protein_sequences} > miniprot_atn_~{ref_prefix}.raw.alignment.gff
+        miniprot2GFF3.py --source "~{ref_prefix}.miniprot" --identity ~{min_identity} --coverage ~{min_coverage} ~{basename(genome_proteins.protein_sequences)} miniprot_atn_~{ref_prefix}.raw.alignment.gff > miniprot_atn_~{ref_prefix}.alignment.gff
     >>>
 
     runtime {
@@ -517,16 +719,16 @@ task AlignProteins {
 }
 
 
-task AlignProteinSequences {
+task AlignProteinSequencesSpaln {
     input {
         Array[File] genome_index
         File proteins
         String species
-        Int min_spaln_exon_len = 20
+        String spaln_extra_parameters
+        Int min_spaln_intron_length = 20
         Int min_coverage = 80
         Int min_identity = 50
         Int max_per_query = 4
-        Int recursion_level = 6
         String clip = "no_clip"
         Int term5c_len = 10
         Int term5i_len = 200000
@@ -549,15 +751,17 @@ task AlignProteinSequences {
     Int task_cpus = select_first([runtime_attr.cpu_cores, cpus])
 
     output {
-        File raw_alignments = basename(proteins)+".alignment.gff"
+        File unfiltered_alignments = "spaln_ptn_"+basename(proteins)+".raw.alignment.gff"
+        File raw_alignments = "spaln_ptn_"+basename(proteins)+".alignment.gff"
     }
 
     command <<<
         set -euxo pipefail
         ln ~{sub(genome_index[0], "\.[^/.]+$", "")}.* .
         ln -s ~{proteins} .
-        spaln -t~{task_cpus} -KP -O0,12 -Q~{recursion_level} -M~{max_per_query}.~{max_per_query} ~{"-T"+species} -dgenome_to_annotate -o ~{out_prefix} -yL~{min_spaln_exon_len} ~{basename(proteins)}
-        sortgrcd -O4 ~{out_prefix}.grd | tee ~{out_prefix}.s | spaln2gff --min_coverage ~{min_coverage} --min_identity ~{min_identity} -s "spaln" | filter_GFF3_terminals.py --protein_alias protein_alias --term5c_len ~{term5c_len}  --term5i_len ~{term5i_len} --term3c_len ~{term3c_len} --term3i_len ~{term3i_len} --clip ~{clip} ~{basename(proteins)} - > ~{basename(proteins)}.alignment.gff
+        spaln ~{spaln_extra_parameters} -t~{task_cpus} -KP -O12 -M~{max_per_query}.~{max_per_query} ~{"-T"+species} -dgenome_to_annotate -o ~{out_prefix} -yL~{min_spaln_intron_length} ~{basename(proteins)}
+        sortgrcd -O4 ~{out_prefix}.grd | tee ~{out_prefix}.s | spaln2gff -s "~{out_prefix}.spaln" > spaln_ptn_~{basename(proteins)}.raw.alignment.gff
+        sortgrcd -O4 ~{out_prefix}.grd | tee ~{out_prefix}.s | spaln2gff --min_coverage ~{min_coverage} --min_identity ~{min_identity} -s "~{out_prefix}.spaln" | filter_GFF3_terminals.py --protein_alias protein_alias --term5c_len ~{term5c_len}  --term5i_len ~{term5i_len} --term3c_len ~{term3c_len} --term3i_len ~{term3i_len} --clip ~{clip} ~{basename(proteins)} - > spaln_ptn_~{basename(proteins)}.alignment.gff
     >>>
 
 
@@ -570,12 +774,111 @@ task AlignProteinSequences {
 
 }
 
-task PrepareAlignments {
+task AlignProteinSequencesMiniprot {
     input {
-        String ref_prefix
+        File genome_index
+        File proteins
+        Int max_intron_length = 20000
+        Int min_coverage = 80
+        Int min_identity = 50
+        Int max_per_query = 4
+        String out_prefix
+        RuntimeAttr? runtime_attr_override
+    }
+    Int cpus = 8
+    RuntimeAttr default_attr = object {
+        cpu_cores: "~{cpus}",
+        mem_gb: 32,
+        max_retries: 1,
+        queue: ""
+    }
+
+    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
+
+    Int task_cpus = select_first([runtime_attr.cpu_cores, cpus])
+
+    output {
+        File unfiltered_alignments = "miniprot_ptn_"+basename(proteins)+".raw.alignment.gff"
+        File raw_alignments = "miniprot_ptn_"+basename(proteins)+".alignment.gff"
+    }
+
+    command <<<
+        set -euxo pipefail
+        ln -s ~{genome_index}
+        ln -s ~{proteins} .
+        miniprot -t~{task_cpus} -G~{max_intron_length} --outn=~{max_per_query} --gff ~{genome_index} ~{basename(proteins)} > miniprot_ptn_~{basename(proteins)}.raw.alignment.gff
+        miniprot2GFF3.py --source "~{basename(proteins)}.miniprot" --identity ~{min_identity} --coverage ~{min_coverage} ~{basename(proteins)} miniprot_ptn_~{basename(proteins)}.raw.alignment.gff > miniprot_ptn_~{basename(proteins)}.alignment.gff
+    >>>
+
+    runtime {
+        cpu: task_cpus
+        memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
+        maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+        queue: select_first([runtime_attr.queue, default_attr.queue])
+    }
+
+}
+
+task PrepareProteinAlignments {
+    input {
+        String aln_prefix
 
         Int max_intron_len = 200000
-        Int min_filter_exon_len = 20
+        Int min_filter_exon_len = 10
+        Int min_cds_len = 20
+        Boolean show_intron_len = false
+        Array[String] filters = "none"
+
+        File raw_alignments
+        File genome_to_annotate
+
+        RuntimeAttr? runtime_attr_override
+    }
+
+    output {
+        File clean_alignments = aln_prefix + ".alignment.stop_extended.extra_attr.gff"
+        File stats = aln_prefix + ".alignment.stats"
+    }
+
+    Int cpus = 4
+    RuntimeAttr default_attr = object {
+        cpu_cores: "~{cpus}",
+        mem_gb: 20,
+        max_retries: 1,
+        queue: ""
+    }
+
+    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
+
+    Int task_cpus = select_first([runtime_attr.cpu_cores, cpus])
+
+
+    command <<<
+        set -euxo pipefail
+
+        xspecies_cleanup ~{if show_intron_len then "--show_intron_len" else ""} \
+        --filters ~{sep=" " filters} --max_intron ~{max_intron_len} --min_exon ~{min_filter_exon_len} --min_protein ~{min_cds_len} \
+        -g ~{genome_to_annotate} -A ~{raw_alignments} --bed ~{aln_prefix}.alignment.bed \
+        -x ~{aln_prefix}.alignment.cdna.fa \
+        -o ~{aln_prefix}.alignment.stop_extended.extra_attr.gff > ~{aln_prefix}.alignment.stats
+
+    >>>
+
+    runtime {
+        cpu: task_cpus
+        memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
+        maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+        queue: select_first([runtime_attr.queue, default_attr.queue])
+    }
+
+}
+
+task PrepareAlignmentsSpaln {
+    input {
+        String aln_prefix
+
+        Int max_intron_len = 200000
+        Int min_filter_exon_len = 10
         Int min_cds_len = 20
         Boolean show_intron_len = false
         Array[String] filters = "none"
@@ -584,40 +887,119 @@ task PrepareAlignments {
         File genome_to_annotate
         File annotation_cdnas
         File annotation_bed
+
+        RuntimeAttr? runtime_attr_override
     }
 
     output {
-        File clean_alignments = ref_prefix + ".alignment.stop_extended.extra_attr.gff"
-        File stats = ref_prefix + ".alignment.stats"
+        File clean_alignments = aln_prefix + ".alignment.stop_extended.extra_attr.gff"
+        File stats = aln_prefix + ".alignment.stats"
         File cdnas = "all_cdnas.fa"
         File bed = "all_cdnas.bed"
         File groups = "groups.txt"
     }
+
+    Int cpus = 4
+    RuntimeAttr default_attr = object {
+        cpu_cores: "~{cpus}",
+        mem_gb: 20,
+        max_retries: 1,
+        queue: ""
+    }
+
+    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
+
+    Int task_cpus = select_first([runtime_attr.cpu_cores, cpus])
+
 
     command <<<
         set -euxo pipefail
 
         xspecies_cleanup ~{if show_intron_len then "--show_intron_len" else ""} \
         --filters ~{sep=" " filters} --max_intron ~{max_intron_len} --min_exon ~{min_filter_exon_len} --min_protein ~{min_cds_len} \
-        -g ~{genome_to_annotate} -A ~{raw_alignments} --bed ~{ref_prefix}.alignment.bed \
-        -x ~{ref_prefix}.alignment.cdna.fa \
-        -o ~{ref_prefix}.alignment.stop_extended.extra_attr.gff > ~{ref_prefix}.alignment.stats
+        -g ~{genome_to_annotate} -A ~{raw_alignments} --bed ~{aln_prefix}.alignment.bed \
+        -x ~{aln_prefix}.alignment.cdna.fa \
+        -o ~{aln_prefix}.alignment.stop_extended.extra_attr.gff > ~{aln_prefix}.alignment.stats
 
-        create_mgc_groups -f ~{ref_prefix}.alignment.cdna.fa
+        create_mgc_groups_from_gff.py --alignments_gff ~{aln_prefix}.alignment.stop_extended.extra_attr.gff
 
-        cat ~{ref_prefix}.alignment.cdna.fa ~{annotation_cdnas}  > all_cdnas.fa
-        cat ~{ref_prefix}.alignment.bed ~{annotation_bed} > all_cdnas.bed
+        cat ~{aln_prefix}.alignment.cdna.fa ~{annotation_cdnas}  > all_cdnas.fa
+        cat ~{aln_prefix}.alignment.bed ~{annotation_bed} > all_cdnas.bed
     >>>
 
     runtime {
-        cpu: 1
-        memory: "8 GB"
-        maxRetries: 1
+        cpu: task_cpus
+        memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
+        maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+        queue: select_first([runtime_attr.queue, default_attr.queue])
     }
 
 }
 
-task ScoreAlignments {
+task PrepareAlignmentsMiniprot {
+    input {
+        String aln_prefix
+
+        Int max_intron_len = 200000
+        Int min_filter_exon_len = 10
+        Int min_cds_len = 20
+        Boolean show_intron_len = false
+        Array[String] filters = "none"
+
+        File raw_alignments
+        File genome_to_annotate
+        File annotation_cdnas
+        File annotation_bed
+
+        RuntimeAttr? runtime_attr_override
+    }
+
+    output {
+        File clean_alignments = aln_prefix + ".alignment.stop_extended.extra_attr.gff"
+        File stats = aln_prefix + ".alignment.stats"
+        File cdnas = "all_cdnas.fa"
+        File bed = "all_cdnas.bed"
+        File groups = "groups.txt"
+    }
+
+    Int cpus = 4
+    RuntimeAttr default_attr = object {
+        cpu_cores: "~{cpus}",
+        mem_gb: 20,
+        max_retries: 1,
+        queue: ""
+    }
+
+    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
+
+    Int task_cpus = select_first([runtime_attr.cpu_cores, cpus])
+
+
+    command <<<
+        set -euxo pipefail
+
+        xspecies_cleanup ~{if show_intron_len then "--show_intron_len" else ""} \
+        --filters ~{sep=" " filters} --max_intron ~{max_intron_len} --min_exon ~{min_filter_exon_len} --min_protein ~{min_cds_len} \
+        -g ~{genome_to_annotate} -A ~{raw_alignments} --bed ~{aln_prefix}.alignment.bed \
+        -x ~{aln_prefix}.alignment.cdna.fa \
+        -o ~{aln_prefix}.alignment.stop_extended.extra_attr.gff > ~{aln_prefix}.alignment.stats
+
+        create_mgc_groups_from_gff.py --alignments_gff ~{aln_prefix}.alignment.stop_extended.extra_attr.gff
+
+        cat ~{aln_prefix}.alignment.cdna.fa ~{annotation_cdnas}  > all_cdnas.fa
+        cat ~{aln_prefix}.alignment.bed ~{annotation_bed} > all_cdnas.bed
+    >>>
+
+    runtime {
+        cpu: task_cpus
+        memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
+        maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+        queue: select_first([runtime_attr.queue, default_attr.queue])
+    }
+
+}
+
+task ScoreAlignmentsSpaln {
     input {
         File cdnas
         File bed
@@ -663,13 +1045,59 @@ task ScoreAlignments {
 
 }
 
+task ScoreAlignmentsMiniprot {
+    input {
+        File cdnas
+        File bed
+        File groups
+        String aln_prefix
+        String ref_prefix
+        RuntimeAttr? runtime_attr_override
+    }
 
-task CombineResults {
+
+    output {
+        File alignment_compare = 'ScoreAlignments/' + "comp_"+aln_prefix+"_"+ref_prefix+".tab"
+        File alignment_compare_detail = 'ScoreAlignments/' + "comp_"+aln_prefix+"_"+ref_prefix+"_detail.tab"
+    }
+
+    Int cpus = 4
+    RuntimeAttr default_attr = object {
+        cpu_cores: "~{cpus}",
+        mem_gb: 32,
+        max_retries: 1,
+        queue: ""
+    }
+
+    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
+
+    Int task_cpus = select_first([runtime_attr.cpu_cores, cpus])
+
+    command <<<
+        set -euxo pipefail
+        mkdir ScoreAlignments/
+        cd ScoreAlignments
+        multi_genome_compare -t ~{task_cpus} --groups ~{groups} \
+        --cdnas ~{cdnas} --bed12 ~{bed} \
+        -o comp_~{aln_prefix}_~{ref_prefix}.tab -d comp_~{aln_prefix}_~{ref_prefix}_detail.tab
+    >>>
+
+    runtime {
+        cpu: task_cpus
+        memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
+        maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+        queue: select_first([runtime_attr.queue, default_attr.queue])
+    }
+
+}
+
+task CombineResultsSpaln {
     input {
         File alignment_compare_detail
         File alignment_gff
         Int? exon_f1_filter
         Int? junction_f1_filter
+        RuntimeAttr? runtime_attr_override
     }
 
     String aln_prefix = sub(basename(alignment_gff), "\.[^/.]+$", "")
@@ -678,24 +1106,105 @@ task CombineResults {
         File augmented_alignments_gff = aln_prefix+".mgc.gff"
     }
 
+    Int cpus = 4
+    RuntimeAttr default_attr = object {
+        cpu_cores: "~{cpus}",
+        mem_gb: 32,
+        max_retries: 1,
+        queue: ""
+    }
+
+    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
+
+    Int task_cpus = select_first([runtime_attr.cpu_cores, cpus])
+
     command <<<
         set -euxo pipefail
         combine_alignments_with_mgc --detail ~{alignment_compare_detail} ~{'--exon_f1_filter ' + exon_f1_filter} \
         ~{'--junction_f1_filter ' + junction_f1_filter} --gff ~{alignment_gff} -o ~{aln_prefix}.mgc.gff
     >>>
+
+    runtime {
+        cpu: task_cpus
+        memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
+        maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+        queue: select_first([runtime_attr.queue, default_attr.queue])
+    }
 }
+
+task CombineResultsMiniprot {
+    input {
+        File alignment_compare_detail
+        File alignment_gff
+        Int? exon_f1_filter
+        Int? junction_f1_filter
+        RuntimeAttr? runtime_attr_override
+    }
+
+    String aln_prefix = sub(basename(alignment_gff), "\.[^/.]+$", "")
+
+    output {
+        File augmented_alignments_gff = aln_prefix+".mgc.gff"
+    }
+
+    Int cpus = 4
+    RuntimeAttr default_attr = object {
+        cpu_cores: "~{cpus}",
+        mem_gb: 32,
+        max_retries: 1,
+        queue: ""
+    }
+
+    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
+
+    Int task_cpus = select_first([runtime_attr.cpu_cores, cpus])
+
+    command <<<
+        set -euxo pipefail
+        combine_alignments_with_mgc --detail ~{alignment_compare_detail} ~{'--exon_f1_filter ' + exon_f1_filter} \
+        ~{'--junction_f1_filter ' + junction_f1_filter} --gff ~{alignment_gff} -o ~{aln_prefix}.mgc.gff
+    >>>
+
+    runtime {
+        cpu: task_cpus
+        memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
+        maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+        queue: select_first([runtime_attr.queue, default_attr.queue])
+    }
+}
+
 
 task MikadoSummaryStats {
     input {
         Array[File] stats
         String output_prefix
+        RuntimeAttr? runtime_attr_override
     }
 
     output {
         File summary = output_prefix + ".summary.stats.tsv"
     }
 
+    Int cpus = 1
+    RuntimeAttr default_attr = object {
+        cpu_cores: "~{cpus}",
+        mem_gb: 20,
+        max_retries: 1,
+        queue: ""
+    }
+
+    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
+
+    Int task_cpus = select_first([runtime_attr.cpu_cores, cpus])
+
     command <<<
     mikado_summary_stats ~{sep=" " stats} > ~{output_prefix}.summary.stats.tsv
     >>>
+
+    runtime {
+        cpu: task_cpus
+        memory: select_first([runtime_attr.mem_gb, default_attr.mem_gb]) + " GB"
+        maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+        queue: select_first([runtime_attr.queue, default_attr.queue])
+    }
 }
