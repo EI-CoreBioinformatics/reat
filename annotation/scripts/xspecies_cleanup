@@ -39,21 +39,21 @@ def parse_args():
         "--min_protein",
         type=int,
         default=2,
-        help="Check the length of the translated CDS protein is longer than min_protein",
+        help="Check the length of the translated CDS protein is longer than min_protein (defaults: %(default)s)",
     )
     p.add_argument(
         "-M",
         "--max_intron",
         type=int,
         default=200000,
-        help="Check introns are shorter than max_intron",
+        help="Check introns are shorter than max_intron (defaults: %(default)s)",
     )
     p.add_argument(
         "-m",
         "--min_exon",
         type=int,
         default=20,
-        help="Check exons are longer than min_exon",
+        help="Check exons are longer than min_exon (defaults: %(default)s)",
     )
     p.add_argument(
         "-f",
@@ -67,18 +67,50 @@ def parse_args():
             "aa_len",
             "splicing",
         ],
-        help="Select which filters to activate",
+        help="Select which filters to activate (defaults: %(default)s)",
         nargs="+",
         default="none",
     )
-    p.add_argument("--merge", dest="merge", action="store_true")
-    p.add_argument("--no-merge", dest="merge", action="store_false")
+    p.add_argument(
+        "--merge",
+        dest="merge",
+        action="store_true",
+        help="Enable merging of short introns (defaults: %(default)s)",
+    )
+    p.add_argument(
+        "--no-merge",
+        dest="merge",
+        action="store_false",
+        help="Disable merging of short introns (defaults: %(default)s)",
+    )
     p.set_defaults(merge=False)
-    p.add_argument("-y", "--proteins", type=argparse.FileType("w"))
-    p.add_argument("-x", "--cds", type=argparse.FileType("w"))
-    p.add_argument("--show_intron_len", dest="show_intron_len", action="store_true")
-    p.add_argument("--bed", type=argparse.FileType("w"))
-    p.add_argument("-o", "--output", type=argparse.FileType("w"))
+    p.add_argument(
+        "-y",
+        "--proteins",
+        type=argparse.FileType("w"),
+        help="Provide a file to write the proteins fasta",
+    )
+    p.add_argument(
+        "-x",
+        "--cds",
+        type=argparse.FileType("w"),
+        help="Provide a file to write the CDS fasta",
+    )
+    p.add_argument(
+        "--show_intron_len",
+        dest="show_intron_len",
+        action="store_true",
+        help="Show the length of the longest intron for each transcript in the GFF (defaults: %(default)s)",
+    )
+    p.add_argument(
+        "--bed", type=argparse.FileType("w"), help="Provide a file to write the BED"
+    )
+    p.add_argument(
+        "-o",
+        "--output",
+        type=argparse.FileType("w"),
+        help="Provide a file to write the output GFF",
+    )
     args = p.parse_args()
     return args
 
