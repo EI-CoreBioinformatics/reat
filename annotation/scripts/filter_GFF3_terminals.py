@@ -651,11 +651,11 @@ def main():
         type=str,
         choices=("no_clip", "clip_term_exon", "clip_term_intron-exon",),
         default="no_clip",
-        help="Filter questionable alignment results by the filter types specified\n"
+        help="Filter questionable spaln alignment results by the filter types specified\n"
         "Select from one of the choices:\n"
         "'no_clip': Do not clip terminal features.\n"
-        "'clip_term_exon': Clip short terminal exon if either --term5c_len or --term3c_len are\n   met (preferred option for plants like annotation).\n"
-        "'clip_term_intron-exon': Clip short terminal exon/long terminal intron if both\n   --term5c_len,--term5i_len or --term3c_len,--term3i_len are met (preferred\n   option for human like annotation).\n",
+        "'clip_term_exon': Clip short terminal exon if either --term5c_len or --term3c_len are\n   met.\n"
+        "'clip_term_intron-exon': Clip short terminal exon/long terminal intron if both\n   --term5c_len,--term5i_len or --term3c_len,--term3i_len are met (preferred\n   option for species with clearly defined max intron sizes\n   for example, plant like annotation).\n",
     )
     # TODO: Disabiling for now below options
     # parser.add_argument(
