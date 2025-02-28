@@ -75,36 +75,45 @@ def check_environment(force_quit=True):
     :return:
     """
     software_available = {
-        "spaln": {"command": ["spaln"], "result": "SPALN version 2.4.0"},
+        "spaln": {"command": ["spaln"], "result": "SPALN version 3.0.6"},
         "sortgrcd": {
             "command": ["sortgrcd", "--help"],
-            "result": "sortgrcd version 2.2",
+            "result": "sortgrcd version 2.2.2",
         },
         "mikado": {
             "command": "mikado --version".split(" "),
-            "result": "Mikado v2.0rc2",
+            "result": "Mikado v2",
         },
         "diamond": {
             "command": "diamond version".split(" "),
-            "result": "diamond version 0.9.31",
+            "result": "diamond version 2.1.10",
         },
-        "blastn": {"command": "blastn -version".split(" "), "result": "blastn: 2.7.1+"},
-        "blastx": {"command": "blastx -version".split(" "), "result": "blastx: 2.7.1+"},
+        "blastn": {
+            "command": "blastn -version".split(" "),
+            "result": "blastn: 2.16.0+",
+        },
+        "blastx": {
+            "command": "blastx -version".split(" "),
+            "result": "blastx: 2.16.0+",
+        },
         "samtools": {
             "command": "samtools --version".split(" "),
-            "result": "samtools 1.9",
+            "result": "samtools 1.18",
         },
-        "gffread": {"command": "gffread --version".split(" "), "result": "0.12.2"},
+        "gffread": {"command": "gffread --version".split(" "), "result": "0.12.1"},
         "gmap": {
             "command": "gmap --version".split(" "),
-            "result": "version 2019-02-15",
+            "result": "version 2024-11-20",
         },
-        "minimap2": {"command": "minimap2 --version".split(" "), "result": "2.17-r941"},
-        "hisat2": {"command": "hisat2 --version".split(" "), "result": "version 2.1.0"},
-        "star": {"command": "STAR --version".split(" "), "result": "2.7.3a"},
-        "seqtk": {"command": ["seqtk"], "result": "Version: 1.3-r116-dirty"},
-        "stringtie": {"command": "stringtie --version".split(" "), "result": "2.1.1"},
-        "scallop": {"command": "scallop --version".split(" "), "result": "v0.10.4"},
+        "minimap2": {
+            "command": "minimap2 --version".split(" "),
+            "result": "2.28-r1209",
+        },
+        "hisat2": {"command": "hisat2 --version".split(" "), "result": "version 2.2.1"},
+        "star": {"command": "STAR --version".split(" "), "result": "2.7.11a"},
+        "seqtk": {"command": ["seqtk"], "result": "Version: 1.4"},
+        "stringtie": {"command": "stringtie --version".split(" "), "result": "2.2.1"},
+        "scallop": {"command": "scallop --version".split(" "), "result": "v0.10.5"},
         "scallop-lr": {
             "command": "scallop-lr --version".split(" "),
             "result": "v0.9.2",
@@ -119,9 +128,13 @@ def check_environment(force_quit=True):
         },
         "portcullis": {
             "command": "portcullis --version".split(" "),
-            "result": "portcullis 1.2.0",
+            "result": "portcullis 1.2.4",
         },
-        "junctools": {"command": "junctools --version".split(" "), "result": "1.2.0"},
+        "junctools": {"command": "junctools --version".split(" "), "result": "1.2.4"},
+        "miniprot": {
+            "command": "miniprot --version".split(" "),
+            "result": "0.13-r248",
+        },
     }
 
     programs_not_found = set()
@@ -655,6 +668,12 @@ Annotation of the reference, this file will be used as the base for the new anno
         "\nExample:\nAthaliana.fa,Athaliana.gff",
     )
     homology_ap.add_argument(
+        "--spaln_extra_parameters",
+        type=str,
+        default="-Q7 -A1",
+        help="Extra parameters for SPALN alignment. You must include the -Q and -A parameters. Exclude options -t, -K, -O, -Q, -M, -T, -d, -o, -yL which are set by REAT. Make sure to add a space after the first quote as some shells may interpret the - as a flag",
+    )
+    homology_ap.add_argument(
         "--protein_sequences",
         type=str,
         nargs="*",
@@ -734,12 +753,18 @@ Annotation of the reference, this file will be used as the base for the new anno
         type=int,
         help="If 'exon_len' filter is enabled, any features with exons shorter than this "
         "parameter will be filtered out",
-        default=20,
+        default=10,
     )
     homology_ap.add_argument(
-        "--alignment_min_exon_len",
+        "--alignment_max_intron_length",
         type=int,
-        help="Minimum exon length, alignment parameter",
+        help="Max intron size, alignment parameter (miniprot)",
+        default=200000,
+    )
+    homology_ap.add_argument(
+        "--alignment_min_intron_length",
+        type=int,
+        help="Minimum intron length, alignment parameter (spaln)",
         default=20,
     )
     homology_ap.add_argument(
@@ -776,12 +801,6 @@ Annotation of the reference, this file will be used as the base for the new anno
         help="Maximum number of alignments per input query protein",
     )
     homology_ap.add_argument(
-        "--alignment_recursion_level",
-        type=int,
-        default=6,
-        help="SPALN's Q value, indicating the level of recursion for the Hirschberg algorithm",
-    )
-    homology_ap.add_argument(
         "--alignment_show_intron_length",
         action="store_true",
         help="Add an attribute to the alignment gff with the maximum intron len for each mRNA",
@@ -800,12 +819,16 @@ Annotation of the reference, this file will be used as the base for the new anno
     )
     homology_ap.add_argument(
         "--post_alignment_clip",
-        choices=["no_clip", "clip_term_exon", "clip_term_intron-exon",],
+        choices=[
+            "no_clip",
+            "clip_term_exon",
+            "clip_term_intron-exon",
+        ],
         help="Filter questionable alignment results by the filter types specified\n"
         "Select from one of the choices:\n"
         "'no_clip': Do not clip terminal features.\n"
-        "'clip_term_exon': Clip short terminal exon if either --term5c_len or --term3c_len are\n   met (preferred option for plants like annotation).\n"
-        "'clip_term_intron-exon': Clip short terminal exon/long terminal intron if both\n   --term5c_len,--term5i_len or --term3c_len,--term3i_len are met (preferred\n   option for human like annotation).\n",
+        "'clip_term_exon': Clip short terminal exon if either --term5c_len or --term3c_len are met.\n"
+        "'clip_term_intron-exon': Clip short terminal exon/long terminal intron if both\n   --term5c_len,--term5i_len or --term3c_len,--term3i_len are met (preferred\n   option for species with clearly defined max intron sizes\n   for example, plant like annotation).\n",
         default="no_clip",
     )
     homology_ap.add_argument(
